@@ -106,5 +106,26 @@ $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie
 $("refreshLocal").addEventListener("click",()=>{render();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
 $("v11RefreshDetails").addEventListener("click",()=>{render();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
 save();render();
+// Vérifie les nouvelles versions du site sans interrompre une saisie.
+const siteBuild="taxi-v11-autorefresh-20261104";
+let newBuildPending=false;
+function safeToReload(){
+ const a=document.activeElement;
+ const typing=a&&["INPUT","TEXTAREA","SELECT"].includes(a.tagName);
+ const pending=$("quickAmount").value.trim()||$("extraName").value.trim()||$("extraAmount").value.trim();
+ return document.visibilityState==="visible"&&!typing&&!pending&&calendarDialog.hidden;
+}
+async function checkPublishedBuild(){
+ try{
+  const url=new URL(location.href);url.searchParams.set("_buildcheck",String(Date.now()));
+  const response=await fetch(url.toString(),{cache:"no-store"});
+  if(!response.ok)return;
+  const html=await response.text();
+  if(html.includes("const siteBuild=")&&!html.includes('const siteBuild="'+siteBuild+'"'))newBuildPending=true;
+  if(newBuildPending&&safeToReload())location.reload();
+ }catch(e){}
+}
+setInterval(checkPublishedBuild,60000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkPublishedBuild()});
 })();
 </script></body></html>
