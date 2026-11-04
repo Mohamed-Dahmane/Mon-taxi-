@@ -125,7 +125,7 @@ async function checkPublishedBuild(){
   if(newBuildPending&&safeToReload())location.reload();
  }catch(e){}
 }
-setInterval(checkPublishedBuild,60000);
+setInterval(checkPublishedBuild,30000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkPublishedBuild()});
 })();
 </script></body></html>
