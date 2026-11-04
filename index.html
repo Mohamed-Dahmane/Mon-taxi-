@@ -50,6 +50,16 @@ const amounts=["748.89","329.11","280","130","146","130","54","200","50","18","5
 const demo=()=>({months:{"2026-10":{days:{"1":{caisse:"860",fuel:""},"2":{caisse:"390",fuel:"338.14"}},fixed:Object.fromEntries(names.map((n,i)=>[n,amounts[i]])),extra:[]}}});
 const storageKey="gestion-taxi-test-v3";
 let data;try{data=JSON.parse(localStorage.getItem(storageKey))||JSON.parse(localStorage.getItem("gestion-taxi-test-v2"))||JSON.parse(localStorage.getItem("gestion-taxi-test-v1"))||demo();if(!data.months||typeof data.months!=="object")throw Error()}catch(e){data=demo()}
+const pendingNovemberEntry = "taxi-v11-nov4-once";
+if (!localStorage.getItem(pendingNovemberEntry)) {
+  const period = data.months["2026-10"] ||= {days:{},fixed:Object.fromEntries(names.map((n,i)=>[n,amounts[i]])),extra:[]};
+  period.days ||= {};
+  const day = period.days["4"] ||= {};
+  day.caisse = String((parseFloat(day.caisse)||0) + 330);
+  day.expense = String((parseFloat(day.expense)||0) + 25);
+  localStorage.setItem(storageKey, JSON.stringify(data));
+  localStorage.setItem(pendingNovemberEntry, "yes");
+}
 const $=id=>document.getElementById(id);
 const monthSel=$("month"),yearSel=$("year");
 months.forEach((name,i)=>monthSel.add(new Option(name,String(i))));
