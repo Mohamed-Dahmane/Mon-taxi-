@@ -509,7 +509,7 @@ document.querySelector("main").append(logout);
 const formulaNote=document.createElement("p");formulaNote.className="hint";formulaNote.textContent="La caisse automatique inclut cartes nettes + cash réel + appli. Une caisse saisie dans Détails remplace le total automatique de ce jour.";document.querySelector("main").append(formulaNote);
 const callback=new URLSearchParams(location.hash.slice(1));
 if(callback.get("access_token")){const session={access_token:callback.get("access_token"),refresh_token:callback.get("refresh_token"),expires_at:Math.floor(Date.now()/1000)+Number(callback.get("expires_in")||3600)};history.replaceState(null,"",location.pathname+location.search);acceptSession(session);}
-else if(privateSession)loadPrivatePayments();
+else if(privateSession){checkCloudSync().then(()=>loadPrivatePayments());}
 // Au changement de date locale, basculer automatiquement sur la nouvelle journée.
 let homeCalendarDate=new Date().toDateString();
 function rolloverHomeDay(){
