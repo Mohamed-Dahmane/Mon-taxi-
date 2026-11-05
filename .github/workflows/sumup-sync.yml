@@ -8,9 +8,13 @@ on:
     - cron: '17 * * * *'
 permissions:
   contents: read
+concurrency:
+  group: taxi-sumup-sync
+  cancel-in-progress: false
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - name: Verify required private configuration
         env:
@@ -75,7 +79,9 @@ jobs:
           SUMUP_API_KEY: ${{ secrets.SUMUP_API_KEY }}
         run: |
           set -euo pipefail
-          status=$(curl --silent --show-error --output response.json --write-out '%{http_code}' \
+          umask 077
+          trap 'rm -f response.json' EXIT
+          status=$(curl --max-time 90 --silent --show-error --output response.json --write-out '%{http_code}' \
             --request POST "${SUPABASE_URL%/}/functions/v1/taxi-sumup-sync" \
             --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
             --header "X-SumUp-Api-Key: $SUMUP_API_KEY" \
