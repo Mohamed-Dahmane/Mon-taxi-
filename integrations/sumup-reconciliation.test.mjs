@@ -13,3 +13,14 @@ assert.deepEqual(sumupDailyTotals(tx), {'2026-11-05':12.5});
 assert.equal(taxiCashbox({card:12.34,cash:5.66,apbs:10,commissions:3}),25);
 assert.equal(taxiCashbox({}),0);
 console.log('Tests de calcul SumUp/APBS réussis (aucune donnée réelle).');
+
+assert.deepEqual(sumupDailyTotals([
+  {id:'retry',status:'FAILED',timestamp:'2026-11-05T08:00:00Z',localDate:'2026-11-05',amount:20,currency:'EUR'},
+  {id:'retry',status:'SUCCESSFUL',timestamp:'2026-11-05T08:01:00Z',localDate:'2026-11-05',amount:20,currency:'EUR'},
+  {id:'bad',status:'SUCCESSFUL',timestamp:'2026-11-05T08:01:00Z',localDate:'2026-11-05',amount:Infinity,currency:'EUR'},
+  {id:'bad',status:'SUCCESSFUL',timestamp:'2026-11-05T08:02:00Z',localDate:'2026-11-05',amount:1,currency:'EUR'}
+]), {'2026-11-05':21});
+assert.throws(() => taxiCashbox({card:'not-a-number'}), TypeError);
+assert.throws(() => taxiCashbox({card:-2}), RangeError);
+assert.throws(() => taxiCashbox({card:'1.234'}), TypeError);
+assert.equal(taxiCashbox({card:'12.34',cash:'0.66'}),13);
