@@ -81,7 +81,7 @@ jobs:
           set -euo pipefail
           umask 077
           trap 'rm -f response.json' EXIT
-          status=$(curl --max-time 90 --silent --show-error --output response.json --write-out '%{http_code}' \
+          status=$(curl --max-time 90 --connect-timeout 15 --retry 2 --retry-delay 3 --retry-connrefused --silent --show-error --output response.json --write-out '%{http_code}' \
             --request POST "${SUPABASE_URL%/}/functions/v1/taxi-sumup-sync" \
             --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
             --header "X-SumUp-Api-Key: $SUMUP_API_KEY" \
