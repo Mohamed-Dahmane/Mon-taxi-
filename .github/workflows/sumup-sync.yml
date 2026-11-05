@@ -63,6 +63,9 @@ jobs:
                   print('Supabase verified server access: HTTP '+str(response.status))
           except urllib.error.HTTPError as error:
               print('Supabase server credential validation: HTTP '+str(error.code))
+              body=error.read().decode('utf-8','replace').lower()
+              categories={'invalid api key':'invalid_api_key','invalid jwt':'invalid_jwt','legacy api keys are disabled':'legacy_keys_disabled','permission denied':'database_permission_denied','invalid signature':'invalid_signature','expired':'credential_expired','disabled':'credential_disabled','forbidden':'forbidden'}
+              print('Safe rejection categories: '+','.join(label for pattern,label in categories.items() if pattern in body))
               raise SystemExit('Stored server credential was rejected by Supabase; sync stopped.')
           PYCODE
       - name: Invoke protected sync
