@@ -140,7 +140,7 @@ async function checkCloudSync(){
    if(!syncReady){syncReady=true;backupPending=true;scheduleCloudBackup();}
    return;
   }
-  if(latest.id<=lastCloudId){syncReady=true;return;}
+  if(latest.id<=lastCloudId){syncReady=true;return true;}
   if(syncReady&&(backupPending||backupBusy))return;
   const incoming=latest.snapshot;
   if(!incoming||typeof incoming!=="object"||!incoming.months||typeof incoming.months!=="object")throw Error("Sauvegarde distante invalide");
@@ -164,6 +164,7 @@ async function checkCloudSync(){
   }
   backupPending=false;syncReady=true;
   if(pendingStartupEdit)scheduleCloudBackup();
+  return true;
  }catch(e){console.warn("Synchronisation différée",e)}
  finally{cloudPollBusy=false}
 }
@@ -540,7 +541,18 @@ financialSubmitPairs.forEach(([inputId,buttonId])=>{
  });
 });
 $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie à annuler");return}const l=lastEntry;if(!data.months[l.key]?.days?.[l.day])return;if(l.old===undefined)delete data.months[l.key].days[l.day][l.field];else data.months[l.key].days[l.day][l.field]=l.old;lastEntry=null;save();renderDays();refreshMetrics();renderAnnual();showQuickDay();toast("Dernière saisie annulée")});
-$("refreshLocal").addEventListener("click",()=>{render();markRefreshed();checkPublishedBuild();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
+$("refreshLocal").addEventListener("click",async()=>{
+ const button=$("refreshLocal");
+ button.disabled=true;
+ try{
+  document.activeElement?.blur();
+  if(backupPending&&syncReady)await cloudBackup();
+  const synced=await checkCloudSync();
+  await loadPrivatePayments();
+  toast(synced?"Saisies synchronisées vérifiées":"Lecture des saisies non confirmée");
+  checkPublishedBuild();
+ }finally{button.disabled=false;}
+});
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
 save();render();markRefreshed();
 document.querySelector("main").hidden=true;
@@ -569,7 +581,7 @@ window.addEventListener("online",()=>{if(backupPending)cloudBackup("change")});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkDailyCloudBackup()});
 setTimeout(checkDailyCloudBackup,2500);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
-$("refreshLocal").addEventListener("click",loadPrivatePayments);
+
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
 const siteBuild="taxi-v11-cloud-protect-20261106";
 let newBuildPending=false;
