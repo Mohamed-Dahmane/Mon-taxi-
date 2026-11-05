@@ -19,7 +19,7 @@ export function sumupDailyTotals(transactions) {
   }
   return Object.fromEntries([...days].map(([date, cents]) => [date, cents / 100]));
 }
-export function taxiCashbox({ card = 0, cash = 0, commissions = 0 }) {
+export function taxiCashbox({ card = 0, cash = 0, apbs = 0, commissions = 0 }) {
   const toCents = x => Math.round(Number(x || 0) * 100);
-  return (toCents(card) + toCents(cash) - toCents(commissions)) / 100;
+  return (toCents(card) + toCents(cash) + toCents(apbs) - toCents(commissions)) / 100;
 }
