@@ -1,0 +1,32 @@
+name: Vérifier connexion SumUp (privé)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-sumup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier présence du secret sans l'afficher
+        env:
+          SUMUP_API_KEY: ${{ secrets.SUMUP_API_KEY }}
+        shell: bash
+        run: |
+          if [ -z "$SUMUP_API_KEY" ]; then
+            echo "::error::Secret SUMUP_API_KEY absent. Ajoutez-le dans Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "Secret présent (valeur masquée)."
+      - name: Tester l'authentification sans publier les données
+        env:
+          SUMUP_API_KEY: ${{ secrets.SUMUP_API_KEY }}
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 --retry 2 --retry-delay 2 --header "Authorization: Bearer $SUMUP_API_KEY" --header 'Accept: application/json' 'https://api.sumup.com/v0.1/me')"
+          case "$code" in
+            200) echo "Authentification SumUp validée. Aucun paiement ni montant téléchargé ou publié." ;;
+            401|403) echo "::error::Authentification SumUp refusée (HTTP $code). Vérifiez le secret et ses autorisations."; exit 1 ;;
+            *) echo "::error::Réponse SumUp inattendue (HTTP $code). Aucun contenu de réponse affiché."; exit 1 ;;
+          esac
