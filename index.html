@@ -47,7 +47,7 @@ header{gap:10px}header>div{min-width:0}header .v11-refresh{margin:0;align-self:f
 <button class="typeBtn" type="button" data-type="expense">🧾<span>Dépenses</span></button>
 </div>
 <select id="quickType" hidden aria-label="Rubrique"><option value="fuel">Carburant</option><option value="expense">Dépenses</option></select>
-<div class="amount-row"><div><label class="label" for="quickAmount">Montant à ajouter (€)</label><input id="quickAmount" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></div><button class="button" id="validateQuick">✓ Valider</button></div>
+<div class="amount-row"><div><label class="label" for="quickAmount">Montant à ajouter (€)</label><input id="quickAmount" type="number" inputmode="decimal" enterkeyhint="done" step="0.01" placeholder="0,00"></div><button class="button" id="validateQuick">✓ Valider</button></div>
 <div hidden><span id="dailyFuel"></span><span id="dailyExpense"></span><span id="dailyBalance"></span><span id="quickDayTotal"></span></div>
 <div class="toolbar compact-toolbar"><button class="button secondary" id="undoQuick">↶ Annuler saisie</button></div>
 </section>
@@ -388,7 +388,7 @@ $("calendarToday").addEventListener("click",()=>{const t=new Date();yearSel.valu
 quickDay.addEventListener("change",()=>{selectedDay=Number(quickDay.value);showQuickDay()});
 document.querySelectorAll(".typeBtn").forEach(btn=>btn.addEventListener("click",()=>{$("quickType").value=btn.dataset.type;document.querySelectorAll(".typeBtn").forEach(b=>b.classList.toggle("active",b===btn));$("quickAmount").focus()}));
 $("validateQuick").addEventListener("click",()=>{const raw=$("quickAmount").value,field=$("quickType").value,day=quickDay.value;if(!Number.isFinite(Number(raw))||Number(raw)<0){toast("Entre un montant valide");return}const m=ensure();m.days[day]??={};const old=m.days[day][field];const next=raw.trim()===""||Number(raw)===0?0:number(old)+Number(raw);m.days[day][field]=String(Math.round(next*100)/100);lastEntry={key:key(),day,field,old};$("quickAmount").value="";save();renderDays();refreshMetrics();renderAnnual();showQuickDay();toast((next===0?"Montant remis à zéro le ":"Ajout du ")+String(day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" : "+money(number(raw))) });
-$("quickAmount").addEventListener("keydown",event=>{if(event.key==="Enter"&&!event.repeat&&!event.isComposing){event.preventDefault();$("validateQuick").click();$("quickAmount").blur();}});
+$("quickAmount").addEventListener("keydown",event=>{if((event.key==="Enter"||event.key==="NumpadEnter")&&!event.repeat&&!event.isComposing){event.preventDefault();$("validateQuick").click();$("quickAmount").blur();}});
 $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie à annuler");return}const l=lastEntry;if(!data.months[l.key]?.days?.[l.day])return;if(l.old===undefined)delete data.months[l.key].days[l.day][l.field];else data.months[l.key].days[l.day][l.field]=l.old;lastEntry=null;save();renderDays();refreshMetrics();renderAnnual();showQuickDay();toast("Dernière saisie annulée")});
 $("refreshLocal").addEventListener("click",()=>{render();markRefreshed();checkPublishedBuild();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
