@@ -55,6 +55,6 @@ jobs:
           retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
-          name: Gestion-Taxi-V11-APK-test
+          name: Gestion-Taxi-V6-11-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
