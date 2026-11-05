@@ -17,7 +17,7 @@ public class MainActivity extends Activity {
   web = new WebView(this);
   web.setWebViewClient(new WebViewClient(){
    @Override public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError error) {
-    if(req.isForMainFrame()) view.loadUrl("file:///android_asset/offline.html");
+    if(req.isForMainFrame()) view.loadUrl("file:///android_asset/index.html");
    }
    @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
     return !req.getUrl().toString().startsWith(APP_URL);
