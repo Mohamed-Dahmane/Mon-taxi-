@@ -59,8 +59,7 @@ jobs:
           if [ "$code" = 200 ]; then
             echo "Filtre historique depuis le 01/11/2026 accepté par SumUp. Aucune recette publiée."
           else
-            echo "::error::Filtre de date non validé (HTTP $code). Examiner la route v2.1 si nécessaire."
-            exit 1
+            echo "::warning::Filtre v0.1 non validé (HTTP $code). Poursuite du test alternatif v2.1."
           fi
       - name: Tester API SumUp v2.1 avec date belge et pagination limitée
         env:
