@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.hardware.biometrics.BiometricPrompt;
+import android.app.KeyguardManager;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.InputType;
 import android.webkit.*;
@@ -40,25 +42,34 @@ public class MainActivity extends Activity {
  private void showLock() {
   LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);layout.setPadding(36,80,36,36);
   TextView title=new TextView(this);title.setText("Mon Taxi · accès privé");title.setTextSize(24);layout.addView(title);
-  TextView hint=new TextView(this);hint.setText("Déverrouille avec ton empreinte ou ton code PIN Mon Taxi.");layout.addView(hint);
+  TextView hint=new TextView(this);hint.setText("Déverrouille avec ton empreinte ou le code de ton Samsung.");layout.addView(hint);
   Button finger=new Button(this);finger.setText("Utiliser mon empreinte");layout.addView(finger);
-  Button pin=new Button(this);pin.setText(vault.contains("hash")?"Utiliser mon PIN Mon Taxi":"Créer mon PIN Mon Taxi");layout.addView(pin);
+  Button pin=new Button(this);pin.setText("Utiliser le code Samsung");layout.addView(pin);
   finger.setOnClickListener(v->authenticate());
-  pin.setOnClickListener(v->pinDialog(!vault.contains("hash")));
+  pin.setOnClickListener(v->deviceCredential());
   setContentView(layout);
-  if(!vault.contains("hash"))hint.setText("Choisis d’abord un PIN Mon Taxi de 6 chiffres. La connexion privée au compte reste nécessaire lors de la première utilisation.");
+
  }
  private void authenticate() {
-  if(!vault.contains("hash")){pinDialog(true);return;}
-  if(Build.VERSION.SDK_INT<28){pinDialog(false);return;}
+  if(Build.VERSION.SDK_INT<30){deviceCredential();return;}
   if(prompting)return;prompting=true;
   biometric=new CancellationSignal();
-  new BiometricPrompt.Builder(this).setTitle("Ouvrir Mon Taxi").setSubtitle("Confirme avec ton empreinte")
-   .setNegativeButton("Code PIN Mon Taxi",getMainExecutor(),(d,w)->{prompting=false;pinDialog(false);})
+  new BiometricPrompt.Builder(this).setTitle("Ouvrir Mon Taxi").setSubtitle("Empreinte ou code de déverrouillage Samsung")
+   .setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG | android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL)
    .build().authenticate(biometric,getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){
     @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r){prompting=false;openTaxi();}
-    @Override public void onAuthenticationError(int code,CharSequence message){prompting=false;if(code!=BiometricPrompt.BIOMETRIC_ERROR_CANCELED&&code!=BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED)Toast.makeText(MainActivity.this,"Empreinte indisponible : utilise ton PIN Mon Taxi.",Toast.LENGTH_LONG).show();}
+    @Override public void onAuthenticationError(int code,CharSequence message){prompting=false;if(code!=BiometricPrompt.BIOMETRIC_ERROR_CANCELED&&code!=BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED)Toast.makeText(MainActivity.this,"Déverrouillage indisponible : vérifie la sécurité du téléphone.",Toast.LENGTH_LONG).show();}
    });
+ }
+ private void deviceCredential(){
+  KeyguardManager km=(KeyguardManager)getSystemService(Context.KEYGUARD_SERVICE);
+  if(km==null||!km.isDeviceSecure()){Toast.makeText(this,"Configure d'abord le verrouillage sécurisé Samsung.",Toast.LENGTH_LONG).show();return;}
+  android.content.Intent intent=km.createConfirmDeviceCredentialIntent("Ouvrir Mon Taxi","Confirme avec ton code Samsung");
+  if(intent!=null)startActivityForResult(intent,91);
+ }
+ @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
+  super.onActivityResult(requestCode,resultCode,data);
+  if(requestCode==91&&resultCode==RESULT_OK)openTaxi();
  }
  private void pinDialog(boolean setup) {
   long remaining=vault.getLong("blockedUntil",0)-System.currentTimeMillis();
