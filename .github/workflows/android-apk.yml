@@ -1,4 +1,5 @@
 name: Construire APK Gestion Taxi
+# Relance de validation V12 après configuration des secrets de signature
 on:
   workflow_dispatch:
   push:
