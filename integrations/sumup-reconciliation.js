@@ -25,7 +25,7 @@ export function taxiCashbox({ card = 0, cash = 0, apbs = 0, commissions = 0 }) {
   const toCents = x => {
     if (x === null || x === undefined || x === "") return 0;
     if (typeof x !== "number" && typeof x !== "string") throw new TypeError("Invalid monetary amount");
-    if (typeof x === "string" && !/^\\d+(?:\\.\\d{1,2})?$/.test(x)) throw new TypeError("Invalid monetary amount");
+    if (typeof x === "string" && !/^\d+(?:\.\d{1,2})?$/.test(x)) throw new TypeError("Invalid monetary amount");
     const n = Number(x);
     if (!Number.isFinite(n) || n < 0 || !Number.isSafeInteger(Math.round(n * 100))) throw new RangeError("Invalid monetary amount");
     return Math.round(n * 100);
