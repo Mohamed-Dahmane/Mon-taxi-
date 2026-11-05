@@ -435,6 +435,18 @@ const formulaNote=document.createElement("p");formulaNote.className="hint";formu
 const callback=new URLSearchParams(location.hash.slice(1));
 if(callback.get("access_token")){const session={access_token:callback.get("access_token"),refresh_token:callback.get("refresh_token"),expires_at:Math.floor(Date.now()/1000)+Number(callback.get("expires_in")||3600)};history.replaceState(null,"",location.pathname+location.search);acceptSession(session);}
 else if(privateSession)loadPrivatePayments();
+// Au changement de date locale, basculer automatiquement sur la nouvelle journée.
+let homeCalendarDate=new Date().toDateString();
+function rolloverHomeDay(){
+ const now=new Date(),today=now.toDateString();
+ if(today===homeCalendarDate)return;
+ const previous=new Date(homeCalendarDate);
+ const wasCurrent=Number(yearSel.value)===previous.getFullYear()&&Number(monthSel.value)===previous.getMonth()&&selectedDay===previous.getDate();
+ homeCalendarDate=today;
+ if(wasCurrent){yearSel.value=String(now.getFullYear());monthSel.value=String(now.getMonth());selectedDay=now.getDate();quickCorrection=false;$("quickAmount").value="";render();}
+}
+setInterval(rolloverHomeDay,15000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")rolloverHomeDay()});
 setInterval(checkDailyCloudBackup,60000);
 setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup("change")},30000);
 window.addEventListener("online",()=>{if(backupPending)cloudBackup("change")});
