@@ -1,6 +1,9 @@
 name: Synchroniser SumUp vers Mon Taxi V11
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/sumup-sync.yml
   schedule:
     - cron: '17 * * * *'
 permissions:
@@ -18,6 +21,34 @@ jobs:
           test -n "$SUMUP_API_KEY" || { echo "Missing SUMUP_API_KEY secret"; exit 1; }
           test -n "$SUPABASE_URL" || { echo "Missing SUPABASE_URL secret"; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "Missing SUPABASE_SERVICE_ROLE_KEY secret"; exit 1; }
+      - name: Diagnose credential type without revealing credentials
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python3 - <<'PYCODE'
+          import os, json, base64
+          from urllib.parse import urlparse
+          key = os.environ['SUPABASE_SERVICE_ROLE_KEY'].strip()
+          expected = 'uenyvsiturkihectolxp'
+          if urlparse(os.environ['SUPABASE_URL'].strip()).hostname != expected + '.supabase.co':
+              raise SystemExit('Configuration error: SUPABASE_URL targets a different project or is malformed.')
+          if key.startswith('sb_secret_'):
+              print('Credential type: modern server secret; requires apikey authentication.')
+          elif key.startswith('sb_publishable_'):
+              raise SystemExit('Configuration error: a public key was stored as the server credential.')
+          else:
+              try:
+                  payload = key.split('.')[1]
+                  claims = json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4)))
+              except Exception:
+                  raise SystemExit('Configuration error: server credential is not a recognized key format.')
+              if claims.get('role') != 'service_role':
+                  raise SystemExit('Configuration error: JWT is not a service_role credential.')
+              if claims.get('ref') != expected:
+                  raise SystemExit('Configuration error: server credential belongs to another project.')
+              print('Credential format: service_role JWT for the expected project (signature checked by server).')
+          PYCODE
       - name: Invoke protected sync
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
