@@ -355,17 +355,15 @@ function automaticCaisse(day,m,monthKey){
 function paymentData(){const m=ensure();m.payments??={};return m.payments}
 function paymentTotals(){const m=current(),p=m.payments||{},d=p[selectedDay]||{};const rows=Object.values(p);return {cash:number(d.cash),commission:number(d.commission),appele:number(d.appele),cashMonth:rows.reduce((n,x)=>n+number(x.cash),0),commissionMonth:rows.reduce((n,x)=>n+number(x.commission),0),appeleMonth:rows.reduce((n,x)=>n+number(x.appele),0)}}
 function renderPayments(){const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonthPrefix=yearSel.value+"-"+String(Number(monthSel.value)+1).padStart(2,"0")+"-";$("cardMonthLabel").textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;const cardMonthRows=sumupRows.filter(r=>r.status==="SUCCESSFUL"&&String(r.local_day).startsWith(cardMonthPrefix));$("cardMonthTotal").textContent=sumupReady?money(cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0)/100):"—";const cardMonthTotalCents=cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0);const cardMonthFeeCents=cardMonthRows.reduce((total,r)=>total+sumupFeeCents(r),0);$("cardMonthNetIndicative").textContent=sumupReady?money((cardMonthTotalCents-cardMonthFeeCents)/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonthFeeCents/100):"—";$("paymentDate").textContent=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(sumupNetForDay(selectedDay)+(t.cash-t.commission)+t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";$("sumupStatus").textContent=sumupReady?"Synchronisation serveur horaire · lecture toutes les minutes":"Connexion privée requise";$("cashboxStatus").textContent=sumupReady?"cartes nettes + cash réel + appli":"Total partiel · connexion privée requise";}
-function addPayment(field,inputId){const input=$(inputId),raw=input.value.trim(),value=Number(raw);if(!Number.isFinite(value)||value<0){toast("Entre un montant valide");return}const p=paymentData();p[selectedDay]??={};p[selectedDay][field]=String(value===0?0:Math.round((number(p[selectedDay][field])+value)*100)/100);input.value="";save();refreshMetrics();renderDays();renderAnnual();toast("Montant ajouté et enregistré")}
+function addPayment(field,inputId){const input=$(inputId),raw=input.value.trim(),value=Number(raw);if(!Number.isFinite(value)||value<0){toast("Entre un montant valide");return}const p=paymentData();p[selectedDay]??={};const correcting=input.dataset.correcting==="true";p[selectedDay][field]=String(value===0||correcting?Math.round(value*100)/100:Math.round((number(p[selectedDay][field])+value)*100)/100);delete input.dataset.correcting;input.value="";save();refreshMetrics();renderDays();renderAnnual();toast("Montant ajouté et enregistré")}
+// Une correction se fait directement dans la case, sans fenêtre ni confirmation.
 function correctPayment(field,label){
- const p=paymentData(),entry=p[selectedDay]||{},previous=number(entry[field]);
- const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;
- const raw=window.prompt("Corriger le total "+label+" du "+date+" (€) :\\nSaisis le total exact, ou 0 pour annuler les montants.",previous.toFixed(2));
- if(raw===null)return;
- const normalized=raw.trim().replace(",",".");
- const value=Number(normalized);
- if(!Number.isFinite(value)||value<0){toast("Montant invalide : correction annulée");return}
- const fixed=Math.round(value*100)/100;
- p[selectedDay]??={};p[selectedDay][field]=String(fixed);save();refreshMetrics();renderDays();renderAnnual();toast(label+" corrigé et enregistré");
+ const ids={appele:"appeleInput",cash:"cashInput",commission:"commissionInput"};
+ const input=$(ids[field]);
+ input.dataset.correcting="true";
+ input.value=String(number((paymentData()[selectedDay]||{})[field]));
+ input.focus();input.select();
+ input.dispatchEvent(new Event("input",{bubbles:true}));
 }
 $("editAppele").addEventListener("click",()=>correctPayment("appele","Appli"));
 $("editCash").addEventListener("click",()=>correctPayment("cash","Cash"));
