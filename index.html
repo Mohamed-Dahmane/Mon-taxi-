@@ -398,6 +398,24 @@ document.querySelectorAll("#cashInput,#commissionInput,#appeleInput,#extraAmount
   $(buttons[input.id]).click();input.blur();
  });
 });
+// Valider une saisie financière dès que l'utilisateur quitte son champ.
+// Un clic sur son bouton Ajouter/Valider garde le traitement existant (une seule écriture).
+const financialSubmitPairs=[["quickAmount","validateQuick"],["cashInput","addCash"],["commissionInput","addCommission"],["appeleInput","addAppele"],["extraAmount","addExpense"]];
+financialSubmitPairs.forEach(([inputId,buttonId])=>{
+ const input=$(inputId),button=$(buttonId);
+ let changed=false,buttonPressed=false;
+ input.addEventListener("input",()=>{changed=true});
+ button.addEventListener("pointerdown",()=>{buttonPressed=true});
+ button.addEventListener("click",()=>{changed=false;buttonPressed=false});
+ input.addEventListener("focus",()=>{changed=false});
+ input.addEventListener("blur",()=>{
+  if(!changed||buttonPressed)return;
+  changed=false;
+  // Pour une dépense détaillée, il faut aussi un intitulé.
+  if(inputId==="extraAmount"&&!$("extraName").value.trim())return;
+  button.click();
+ });
+});
 $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie à annuler");return}const l=lastEntry;if(!data.months[l.key]?.days?.[l.day])return;if(l.old===undefined)delete data.months[l.key].days[l.day][l.field];else data.months[l.key].days[l.day][l.field]=l.old;lastEntry=null;save();renderDays();refreshMetrics();renderAnnual();showQuickDay();toast("Dernière saisie annulée")});
 $("refreshLocal").addEventListener("click",()=>{render();markRefreshed();checkPublishedBuild();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
