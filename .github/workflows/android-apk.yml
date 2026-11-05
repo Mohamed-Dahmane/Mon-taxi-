@@ -31,8 +31,21 @@ jobs:
         run: |
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/index.html
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
+      - name: Build debug APK with diagnostic logs
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace --info assembleDebug 2>&1 | tee android-build.log
+        shell: bash
+        env:
+          JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+      - name: Upload build diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gestion-Taxi-build-log
+          path: android-build.log
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: Gestion-Taxi-V11-APK-test
