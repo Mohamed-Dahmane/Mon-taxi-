@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
   }
   if (!key) return Response.json({ok:false,reason:"sumup_secret_missing"},{status:503});
   const db = createClient(url,service,{auth:{persistSession:false}});
-  let count=0, cursor=0;
+  let count=0, cursor=0, reachedEnd=false;
   for(let page=0;page<20;page++){
     const endpoint=new URL("https://api.sumup.com/v0.1/me/transactions/history");
     endpoint.searchParams.set("limit","100");
@@ -58,8 +58,9 @@ Deno.serve(async (req) => {
       if(error)return Response.json({ok:false,reason:"database_write_failed"},{status:500});
       count+=rows.length;
     }
-    if(entries.length<100)break;
+    if(entries.length<100){reachedEnd=true;break;}
     cursor+=entries.length;
   }
+  if(!reachedEnd) return Response.json({ok:false,reason:"pagination_limit_reached"},{status:503});
   return Response.json({ok:true,processed:count,window_start:"2026-11-01",note:"No transaction details returned"});
 });
