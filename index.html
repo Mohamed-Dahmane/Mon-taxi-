@@ -365,7 +365,6 @@ function correctPayment(field,label){
  const value=Number(normalized);
  if(!Number.isFinite(value)||value<0){toast("Montant invalide : correction annulée");return}
  const fixed=Math.round(value*100)/100;
- if(!window.confirm("Confirmer le remplacement du total "+label+" du "+date+" : "+money(previous)+" → "+money(fixed)+" ?"))return;
  p[selectedDay]??={};p[selectedDay][field]=String(fixed);save();refreshMetrics();renderDays();renderAnnual();toast(label+" corrigé et enregistré");
 }
 $("editAppele").addEventListener("click",()=>correctPayment("appele","Appli"));
