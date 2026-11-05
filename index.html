@@ -89,6 +89,20 @@ const fixedAmounts=[748.89,329.11,280,130,146,130,54,200,50,18,50,5,35,54,200,10
 const defaultFixed=(monthKey=key())=>Object.fromEntries(names.map((n,i)=>[n,String(fixedAmounts[i])]));
 const current=()=>{const m=data.months[key()]||{days:{},extra:[]};return {...m,fixed:m.fixed||defaultFixed()}};
 const ensure=()=>data.months[key()]||(data.months[key()]={days:{},fixed:defaultFixed(),extra:[]});
+const startupSnapshot=JSON.parse(JSON.stringify(data));
+function mergeStartupEdits(before,local,remote){
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if(same(before,local))return remote;
+ const record=value=>value&&typeof value==="object"&&!Array.isArray(value);
+ if(!record(local)||(!record(before)&&before!==undefined))return local;
+ const merged={...(record(remote)?remote:{})};
+ for(const key of new Set([...Object.keys(before||{}),...Object.keys(local)])){
+  const value=mergeStartupEdits(before?.[key],local[key],merged[key]);
+  if(value===undefined)delete merged[key];
+  else Object.defineProperty(merged,key,{value,writable:true,enumerable:true,configurable:true});
+ }
+ return merged;
+}
 let backupTimer=null,backupBusy=false,backupPending=false,syncReady=false,syncApplying=false,lastCloudId=0,cloudPollBusy=false;
 const save=()=>{try{localStorage.setItem(storageKey,JSON.stringify(data));if(!syncApplying)scheduleCloudBackup()}catch(e){toast("Stockage indisponible : exporte tes données")}};
 function scheduleCloudBackup(){backupPending=true;clearTimeout(backupTimer);backupTimer=setTimeout(()=>cloudBackup("change"),0)}
@@ -105,15 +119,15 @@ async function cloudBackup(type="change"){
   const response=await fetch(privateApi+"/rest/v1/taxi_management_backups",{method:"POST",headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({user_id:identity.id,snapshot,backup_type:type})});
   if(!response.ok)throw Error("Sauvegarde cloud : "+response.status);
   localStorage.setItem("taxi-last-cloud-backup",new Date().toISOString());
-  if(JSON.stringify(data)===JSON.stringify(snapshot))backupPending=false;await checkCloudSync(true);
+  if(JSON.stringify(data)===JSON.stringify(snapshot))backupPending=false;
   return true;
  }catch(e){backupPending=true;console.warn("Sauvegarde distante non confirmée",e);return false}
  finally{backupBusy=false;if(backupPending&&JSON.stringify(data)!==JSON.stringify(snapshot))scheduleCloudBackup()}
 }
 // Une source de vérité Supabase pour Chrome et Android : lecture régulière de la dernière sauvegarde.
-async function checkCloudSync(afterWrite=false){
- if(cloudPollBusy||!privateSession?.access_token||(!syncReady&&afterWrite))return;
- if(!afterWrite&&(backupPending||backupBusy))return;
+async function checkCloudSync(){
+ if(cloudPollBusy||!privateSession?.access_token)return;
+ if(backupBusy||(syncReady&&backupPending))return;
  cloudPollBusy=true;
  try{
   if(privateSession.expires_at&&privateSession.expires_at*1000<Date.now()+60000)await renewPrivateSession();
@@ -127,26 +141,29 @@ async function checkCloudSync(afterWrite=false){
    return;
   }
   if(latest.id<=lastCloudId){syncReady=true;return;}
-  if(backupPending&&!afterWrite&&syncReady)return;
+  if(syncReady&&(backupPending||backupBusy))return;
   const incoming=latest.snapshot;
   if(!incoming||typeof incoming!=="object"||!incoming.months||typeof incoming.months!=="object")throw Error("Sauvegarde distante invalide");
-  if(!afterWrite&&document.activeElement&&["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
+  if(document.activeElement&&["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
   if(JSON.stringify(incoming)!==JSON.stringify(data)){
    try{localStorage.setItem("taxi-before-cloud-sync-"+latest.id,JSON.stringify(data));}catch(e){}
   }
   const hasReceipts=v=>Object.values(v?.months||{}).some(m=>Object.values(m?.payments||{}).some(p=>Object.values(p||{}).some(x=>Math.abs(number(x))>0))||Object.values(m?.days||{}).some(d=>Math.abs(number(d?.caisse))>0));
-  if(!afterWrite&&hasReceipts(data)&&!hasReceipts(incoming)){
+  if(hasReceipts(data)&&!hasReceipts(incoming)){
    lastCloudId=latest.id;syncReady=true;backupPending=true;scheduleCloudBackup();
    toast("Données locales protégées · envoi en cours");
    return;
   }
+  const pendingStartupEdit=!syncReady&&backupPending;
+  const merged=pendingStartupEdit?mergeStartupEdits(startupSnapshot,data,incoming):incoming;
   lastCloudId=latest.id;
-  if(JSON.stringify(incoming)!==JSON.stringify(data)){
+  if(JSON.stringify(merged)!==JSON.stringify(data)){
    syncApplying=true;
-   try{data=incoming;localStorage.setItem(storageKey,JSON.stringify(data));render();}
+   try{data=merged;localStorage.setItem(storageKey,JSON.stringify(data));render();}
    finally{syncApplying=false;}
   }
   backupPending=false;syncReady=true;
+  if(pendingStartupEdit)scheduleCloudBackup();
  }catch(e){console.warn("Synchronisation différée",e)}
  finally{cloudPollBusy=false}
 }
