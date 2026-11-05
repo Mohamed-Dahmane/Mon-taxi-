@@ -30,7 +30,16 @@ jobs:
           test -x "$SDKMANAGER" || SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           test -n "$SDKMANAGER" && test -x "$SDKMANAGER" || { echo "sdkmanager not found"; exit 1; }
           yes | "$SDKMANAGER" --licenses > /dev/null || true
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify build environment
+        run: |
+          java -version
+          gradle --version
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/be/montaxi/gestion/MainActivity.java
+          test -f index.html
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets
