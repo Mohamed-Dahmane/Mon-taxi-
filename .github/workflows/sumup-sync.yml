@@ -13,18 +13,22 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUMUP_API_KEY: ${{ secrets.SUMUP_API_KEY }}
         run: |
+          test -n "$SUMUP_API_KEY" || { echo "Missing SUMUP_API_KEY secret"; exit 1; }
           test -n "$SUPABASE_URL" || { echo "Missing SUPABASE_URL secret"; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "Missing SUPABASE_SERVICE_ROLE_KEY secret"; exit 1; }
       - name: Invoke protected sync
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUMUP_API_KEY: ${{ secrets.SUMUP_API_KEY }}
         run: |
           set -euo pipefail
           status=$(curl --silent --show-error --output response.json --write-out '%{http_code}' \
             --request POST "${SUPABASE_URL%/}/functions/v1/taxi-sumup-sync" \
             --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            --header "X-SumUp-Api-Key: $SUMUP_API_KEY" \
             --header "Content-Type: application/json" --data '{}')
           echo "HTTP status: $status"
           if [ "$status" != "200" ]; then
@@ -36,5 +40,5 @@ jobs:
           with open("response.json") as f: result=json.load(f)
           if result.get("ok") is not True:
               raise SystemExit("Sync did not report success")
-          print("Sync completed. Processed:", result.get("processed", "unknown"))
+          print("SumUp sync returned success (financial details omitted).")
           PY
