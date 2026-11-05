@@ -131,6 +131,15 @@ async function checkCloudSync(afterWrite=false){
   const incoming=latest.snapshot;
   if(!incoming||typeof incoming!=="object"||!incoming.months||typeof incoming.months!=="object")throw Error("Sauvegarde distante invalide");
   if(!afterWrite&&document.activeElement&&["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
+  if(JSON.stringify(incoming)!==JSON.stringify(data)){
+   try{localStorage.setItem("taxi-before-cloud-sync-"+latest.id,JSON.stringify(data));}catch(e){}
+  }
+  const hasReceipts=v=>Object.values(v?.months||{}).some(m=>Object.values(m?.payments||{}).some(p=>Object.values(p||{}).some(x=>Math.abs(number(x))>0))||Object.values(m?.days||{}).some(d=>Math.abs(number(d?.caisse))>0));
+  if(!afterWrite&&hasReceipts(data)&&!hasReceipts(incoming)){
+   lastCloudId=latest.id;syncReady=true;backupPending=true;scheduleCloudBackup();
+   toast("Données locales protégées · envoi en cours");
+   return;
+  }
   lastCloudId=latest.id;
   if(JSON.stringify(incoming)!==JSON.stringify(data)){
    syncApplying=true;
@@ -545,7 +554,7 @@ setTimeout(checkDailyCloudBackup,2500);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",loadPrivatePayments);
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v11-shared-cloud-sync-20261105";
+const siteBuild="taxi-v11-cloud-protect-20261106";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
