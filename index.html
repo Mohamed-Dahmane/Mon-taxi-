@@ -267,6 +267,8 @@ const privateGate=document.createElement("section");
 privateGate.style.cssText="position:fixed;inset:0;z-index:100;background:#0b1020;overflow:auto;padding:30px 18px";
 privateGate.innerHTML='<div class="card" style="max-width:430px;margin:6vh auto"><h1>Mon Taxi · accès privé</h1><p class="hint">Connecte-toi avec ton adresse autorisée pour consulter tes paiements.</p><label class="label" for="privateEmail">Adresse e-mail</label><input id="privateEmail" type="email" autocomplete="email"><button id="privateSend" class="button" style="margin:12px 0">Recevoir un accès par e-mail</button><p class="hint">Colle ici le lien de connexion reçu par e-mail, ou son code si le message en contient un.</p><input id="privateCode" type="text" autocomplete="one-time-code" placeholder="Lien ou code reçu"><button id="privateVerify" class="button" style="margin:12px 0">Ouvrir Mon Taxi</button><p id="privateMessage" class="hint" role="status"></p></div>';
 document.body.append(privateGate);
+// Masquer la page e-mail pendant la vérification silencieuse d’une session existante.
+if(privateSession?.access_token)privateGate.hidden=true;
 function privateMessage(text){$("privateMessage").textContent=text}
 async function authRequest(path,body){
  const response=await fetch(privateApi+"/auth/v1/"+path,{method:"POST",headers:{apikey:privateKey,"Content-Type":"application/json"},body:JSON.stringify(body)});
