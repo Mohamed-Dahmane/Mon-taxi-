@@ -276,7 +276,22 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
  },{passive:true});
 })();
 $("addExpense").addEventListener("click",()=>{const name=$("extraName").value.trim(),amount=$("extraAmount").value;if(!name||!Number.isFinite(Number(amount))||Number(amount)<0){toast("Renseigne le nom et un montant valide");return}ensure().extra.push({name,amount:amount.trim()===""?"0":amount});$("extraName").value="";$("extraAmount").value="";save();renderExpenses();refreshMetrics();renderAnnual();toast("Dépense ajoutée")});
-$("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify({format:"gestion-taxi-test-v3",exportedAt:new Date().toISOString(),data},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sauvegarde_gestion_taxi_"+new Date().toISOString().slice(0,10)+".json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+$("export").addEventListener("click",async()=>{
+ const payload=JSON.stringify({format:"gestion-taxi-test-v3",exportedAt:new Date().toISOString(),data},null,2);
+ const filename="sauvegarde_gestion_taxi_"+new Date().toISOString().slice(0,10)+".json";
+ const blob=new Blob([payload],{type:"application/json"});
+ // Le bouton doit toujours donner un résultat visible, même si Android bloque le téléchargement.
+ const overlay=document.createElement("div");
+ overlay.style.cssText="position:fixed;inset:0;z-index:99999;background:#000b;display:flex;align-items:center;justify-content:center;padding:16px";
+ const panel=document.createElement("div");panel.style.cssText="background:#182235;color:white;border:1px solid #60708a;border-radius:14px;padding:18px;width:min(100%,540px);max-height:85vh;overflow:auto";
+ const heading=document.createElement("h2");heading.textContent="Sauvegarde prête";panel.append(heading);
+ const info=document.createElement("p");info.textContent="Les données ont été préparées ("+new Blob([payload]).size+" octets). Si le téléchargement ne fonctionne pas, copie le contenu ci-dessous et envoie-le dans ChatGPT.";panel.append(info);
+ const field=document.createElement("textarea");field.value=payload;field.readOnly=true;field.style.cssText="display:block;width:100%;height:140px;margin:12px 0;background:#0b1020;color:white;font-size:12px";panel.append(field);
+ const copy=document.createElement("button");copy.className="button";copy.textContent="Copier la sauvegarde";copy.onclick=async()=>{try{await navigator.clipboard.writeText(payload);info.textContent="Sauvegarde copiée. Colle-la dans ChatGPT."}catch(e){field.focus();field.select();const ok=document.execCommand("copy");info.textContent=ok?"Sauvegarde copiée. Colle-la dans ChatGPT.":"Sélectionne le texte puis utilise Copier."}};panel.append(copy);
+ const download=document.createElement("button");download.className="button secondary";download.style.marginLeft="8px";download.textContent="Télécharger JSON";download.onclick=()=>{const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);info.textContent="Téléchargement demandé. Si aucun fichier n'apparaît, utilise Copier la sauvegarde."};panel.append(download);
+ const close=document.createElement("button");close.className="button secondary";close.style.marginTop="12px";close.textContent="Fermer";close.onclick=()=>overlay.remove();panel.append(close);
+ overlay.append(panel);document.body.append(overlay);
+});
 $("importBtn").addEventListener("click",()=>$("importFile").click());
 function prepareMonthlyImport(parsed){
  if(parsed?.format!=="gestion-taxi-month-v1")throw Error("Format mensuel non valide");
