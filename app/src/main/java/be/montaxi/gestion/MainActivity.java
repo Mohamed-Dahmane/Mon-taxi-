@@ -8,12 +8,18 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceError;
 import android.view.View;
+import android.view.WindowManager;
+import android.graphics.Color;
 import android.widget.TextView;
 public class MainActivity extends Activity {
  private WebView web;
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
+  // Keep Android's system status bar visible: clock, network, Wi-Fi, battery and location indicator.
+  getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+  getWindow().getDecorView().setSystemUiVisibility(0);
+  getWindow().setStatusBarColor(Color.rgb(17, 24, 39));
   web = new WebView(this);
   web.setWebViewClient(new WebViewClient(){
    @Override public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError error) {
