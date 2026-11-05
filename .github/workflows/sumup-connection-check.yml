@@ -55,10 +55,29 @@ jobs:
           set -euo pipefail
           # Only checks the API's acceptance of the lower date bound.
           # No response body, amounts, transaction identifiers or API key are logged or stored.
-          code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 --retry 1 --get --header "Authorization: Bearer $SUMUP_API_KEY" --header 'Accept: application/json' --data-urlencode 'limit=1' --data-urlencode 'oldest_time=2026-11-01T00:00:00Z' 'https://api.sumup.com/v0.1/me/transactions/history')"
+          code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 --retry 1 --get --header "Authorization: Bearer $SUMUP_API_KEY" --header 'Accept: application/json' --data-urlencode 'limit=1' --data-urlencode 'oldest_time=2026-10-31T23:00:00Z' 'https://api.sumup.com/v0.1/me/transactions/history')"
           if [ "$code" = 200 ]; then
             echo "Filtre historique depuis le 01/11/2026 accepté par SumUp. Aucune recette publiée."
           else
             echo "::error::Filtre de date non validé (HTTP $code). Examiner la route v2.1 si nécessaire."
             exit 1
+          fi
+      - name: Tester API SumUp v2.1 avec date belge et pagination limitée
+        env:
+          SUMUP_API_KEY: ${{ secrets.SUMUP_API_KEY }}
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          # Merchant identity and payment response remain only in runner memory.
+          merchant_code="$(curl --fail --silent --show-error --max-time 20 --header "Authorization: Bearer $SUMUP_API_KEY" 'https://api.sumup.com/v0.1/me' | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("merchant_code") or (d.get("merchant_profile") or {}).get("merchant_code") or "")')"
+          if [[ ! "$merchant_code" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::warning::Code marchand non trouvé dans le profil; impossible de tester v2.1."
+            exit 0
+          fi
+          code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 --get --header "Authorization: Bearer $SUMUP_API_KEY" --header 'Accept: application/json' --data-urlencode 'limit=1' --data-urlencode 'oldest_time=2026-10-31T23:00:00Z' "https://api.sumup.com/v2.1/merchants/$merchant_code/transactions/history")"
+          if [ "$code" = 200 ]; then
+            echo "API SumUp v2.1 accessible avec borne du 01/11/2026 (heure de Bruxelles)."
+          else
+            echo "::warning::API v2.1 indisponible (HTTP $code); l'ancienne API reste testable séparément."
           fi
