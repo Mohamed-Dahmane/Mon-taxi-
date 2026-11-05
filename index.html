@@ -275,7 +275,7 @@ async function authRequest(path,body){
  return result;
 }
 async function acceptSession(session){
- privateSession=session;privateSession.expires_at??=Math.floor(Date.now()/1000)+Number(session.expires_in||3600);localStorage.setItem("taxi-private-session",JSON.stringify(session));
+ privateSession=session;privateSession.expires_at??=Math.floor(Date.now()/1000)+Number(session.expires_in||3600);localStorage.setItem("taxi-private-session",JSON.stringify(privateSession));
  await loadPrivatePayments();
 }
 $("privateSend").onclick=async()=>{
@@ -340,7 +340,7 @@ async function loadPrivatePayments(){
   // RLS returns no rows for any unapproved account.
   const userResponse=await fetch(privateApi+"/auth/v1/user",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token}});
   if(!userResponse.ok)throw Error("Session expirée. Reconnecte-toi.");
-  if(!rows.length)throw Error("Aucun paiement accessible pour ce compte.");
+  // Un compte sans paiements doit pouvoir ouvrir son tableau de bord.
   sumupRows=rows;sumupReady=true;renderArchive();privateGate.hidden=true;
   document.querySelector("main").hidden=false;render();markRefreshed();
  }catch(e){sumupRows=[];sumupReady=false;privateGate.hidden=false;document.querySelector("main").hidden=true;privateMessage(e.message)}
