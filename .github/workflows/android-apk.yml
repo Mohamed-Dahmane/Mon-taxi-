@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    env:
+      HAS_SIGNING_KEY: ${{ secrets.TAXI_KEYSTORE_B64 != '' && secrets.TAXI_SIGNING_STORE_PASSWORD != '' && secrets.TAXI_SIGNING_KEY_ALIAS != '' && secrets.TAXI_SIGNING_KEY_PASSWORD != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -55,6 +57,28 @@ jobs:
           retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
-          name: Gestion-Taxi-V11-APK-test
+          name: Gestion-Taxi-V12-APK-debug-non-mise-a-jour
           path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Préparer la clé de signature persistante (si configurée)
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        run: |
+          echo "$TAXI_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/taxi-release.jks"
+          echo "TAXI_SIGNING_STORE_FILE=$RUNNER_TEMP/taxi-release.jks" >> "$GITHUB_ENV"
+        env:
+          TAXI_KEYSTORE_B64: ${{ secrets.TAXI_KEYSTORE_B64 }}
+      - name: Construire APK V12 signé pour mise à jour
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        run: gradle --no-daemon assembleRelease
+        env:
+          TAXI_SIGNING_STORE_PASSWORD: ${{ secrets.TAXI_SIGNING_STORE_PASSWORD }}
+          TAXI_SIGNING_KEY_ALIAS: ${{ secrets.TAXI_SIGNING_KEY_ALIAS }}
+          TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
+      - name: Publier APK signé V12
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gestion-Taxi-V12-APK-signe
+          path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
