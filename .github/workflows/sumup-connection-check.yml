@@ -46,3 +46,19 @@ jobs:
             404) echo "::error::Route historique indisponible (HTTP 404) : vérifier la route API avant de conclure sur les permissions."; exit 1 ;;
             *) echo "::error::Vérification historique non validée (HTTP $code), sans contenu de réponse."; exit 1 ;;
           esac
+      - name: Vérifier le filtre de départ au 1er novembre 2026 (sans publier de données)
+        env:
+          SUMUP_API_KEY: ${{ secrets.SUMUP_API_KEY }}
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          # Only checks the API's acceptance of the lower date bound.
+          # No response body, amounts, transaction identifiers or API key are logged or stored.
+          code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 --retry 1 --get --header "Authorization: Bearer $SUMUP_API_KEY" --header 'Accept: application/json' --data-urlencode 'limit=1' --data-urlencode 'oldest_time=2026-11-01T00:00:00Z' 'https://api.sumup.com/v0.1/me/transactions/history')"
+          if [ "$code" = 200 ]; then
+            echo "Filtre historique depuis le 01/11/2026 accepté par SumUp. Aucune recette publiée."
+          else
+            echo "::error::Filtre de date non validé (HTTP $code). Examiner la route v2.1 si nécessaire."
+            exit 1
+          fi
