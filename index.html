@@ -168,7 +168,7 @@ function privateMessage(text){$("privateMessage").textContent=text}
 async function authRequest(path,body){
  const response=await fetch(privateApi+"/auth/v1/"+path,{method:"POST",headers:{apikey:privateKey,"Content-Type":"application/json"},body:JSON.stringify(body)});
  const result=await response.json();
- if(!response.ok)throw Error(response.status===429?"Patiente une minute avant de réessayer.":response.status===403?"Envoi non autorisé par le service de connexion.":"Connexion impossible. Vérifie le lien ou demande un nouvel e-mail.");
+ if(!response.ok)throw Error(response.status===429?"Limite d’envoi Supabase atteinte. N’insiste pas : attends avant une nouvelle demande d’e-mail.":response.status===403?"Envoi non autorisé par le service de connexion.":"Connexion impossible. Vérifie le lien ou demande un nouvel e-mail.");
  return result;
 }
 async function acceptSession(session){
@@ -178,7 +178,7 @@ async function acceptSession(session){
 $("privateSend").onclick=async()=>{
  const b=$("privateSend");b.disabled=true;
  try{const email=$("privateEmail").value.trim();if(!email||!$("privateEmail").checkValidity())throw Error("Entre ton adresse e-mail.");
- await authRequest("otp",{email,create_user:false});
+ await authRequest("otp",{email,create_user:false,options:{emailRedirectTo:location.origin+location.pathname}});
  localStorage.setItem("taxi-private-email",email);privateMessage("E-mail demandé. Colle le lien reçu ci-dessous pour ouvrir Mon Taxi.");
  }catch(e){privateMessage(e.message)}finally{b.disabled=false}
 };
