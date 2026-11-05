@@ -2,6 +2,12 @@ package be.montaxi.gestion;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.MotionEvent;
+import android.view.KeyEvent;
+import android.view.View;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.hardware.biometrics.BiometricPrompt;
@@ -23,6 +29,15 @@ public class MainActivity extends Activity {
  private WebView web;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
+ private static final long IDLE_TIMEOUT_MS=60000L;
+ private long lastInteraction=SystemClock.elapsedRealtime();
+ private long backgroundAt=-1L;
+ private final Handler idleHandler=new Handler(Looper.getMainLooper());
+ private final Runnable idleCheck=new Runnable(){@Override public void run(){if(unlocked){if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS){lockTaxi();}else idleHandler.postDelayed(this,Math.max(1000L,IDLE_TIMEOUT_MS-(SystemClock.elapsedRealtime()-lastInteraction)));}}};
+ private void touchSession(){lastInteraction=SystemClock.elapsedRealtime();if(unlocked){idleHandler.removeCallbacks(idleCheck);idleHandler.postDelayed(idleCheck,IDLE_TIMEOUT_MS);}}
+ private void lockTaxi(){idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null)web.onPause();showLock();}
+ @Override public boolean dispatchTouchEvent(MotionEvent event){if(unlocked)touchSession();return super.dispatchTouchEvent(event);}
+ @Override public boolean dispatchKeyEvent(KeyEvent event){if(unlocked)touchSession();return super.dispatchKeyEvent(event);}
  private CancellationSignal biometric;
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
  @Override public void onCreate(Bundle state) {
@@ -33,6 +48,7 @@ public class MainActivity extends Activity {
   getWindow().getDecorView().setSystemUiVisibility(0);
   getWindow().setStatusBarColor(Color.rgb(17,24,39));
   showLock();
+  getWindow().getDecorView().post(()->authenticate());
  }
  private byte[] derive(char[] pin,byte[] salt) throws Exception {
   PBEKeySpec spec=new PBEKeySpec(pin,salt,210000,256);
@@ -42,13 +58,10 @@ public class MainActivity extends Activity {
  private void showLock() {
   LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);layout.setPadding(36,80,36,36);
   TextView title=new TextView(this);title.setText("Mon Taxi · accès privé");title.setTextSize(24);layout.addView(title);
-  TextView hint=new TextView(this);hint.setText("Déverrouille avec ton empreinte ou le code de ton Samsung.");layout.addView(hint);
-  Button finger=new Button(this);finger.setText("Utiliser mon empreinte");layout.addView(finger);
-  Button pin=new Button(this);pin.setText("Utiliser le code Samsung");layout.addView(pin);
-  finger.setOnClickListener(v->authenticate());
-  pin.setOnClickListener(v->deviceCredential());
+  TextView hint=new TextView(this);hint.setText("Authentification par empreinte ou code Samsung.");layout.addView(hint);
   setContentView(layout);
-
+  // La boîte biométrique système s'ouvre directement, sans écran de choix préalable.
+  layout.post(()->{if(!unlocked&&!prompting)authenticate();});
  }
  private void authenticate() {
   if(Build.VERSION.SDK_INT<30){deviceCredential();return;}
@@ -107,6 +120,7 @@ public class MainActivity extends Activity {
  }
  private void openTaxi() {
   unlocked=true;
+  touchSession();
   if(web==null){
    web=new WebView(this);
    web.setWebViewClient(new WebViewClient(){
@@ -117,14 +131,26 @@ public class MainActivity extends Activity {
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // Toujours charger la dernière version en ligne après déverrouillage.
-  web.loadUrl(APP_URL);
+  if(web.getUrl()==null)web.loadUrl(APP_URL);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   setContentView(web);web.onResume();
  }
+ @Override protected void onPause(){
+  super.onPause();
+  backgroundAt=SystemClock.elapsedRealtime();
+  idleHandler.removeCallbacks(idleCheck);
+ }
+ @Override protected void onResume(){
+  super.onResume();
+  if(unlocked){
+   if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS)lockTaxi();
+   else touchSession();
+  }
+ }
  @Override protected void onStop(){
   super.onStop();
-  if(biometric!=null){biometric.cancel();biometric=null;}prompting=false;
-  if(unlocked){unlocked=false;if(web!=null)web.onPause();showLock();}
+  // Une courte sortie de l'application ne ferme plus la session.
+  if(!unlocked&&biometric!=null){biometric.cancel();biometric=null;prompting=false;}
  }
  @Override public void onBackPressed(){if(unlocked&&web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
 }
