@@ -127,6 +127,38 @@ public class MainActivity extends Activity {
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame())view.loadUrl("file:///android_asset/index.html");}
     @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith(APP_URL);}
    });
+   web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
+    try{
+     if(url.startsWith("blob:")){
+      Toast.makeText(this,"Préparation de la sauvegarde…",Toast.LENGTH_SHORT).show();
+      String js="(function(){fetch("+org.json.JSONObject.quote(url)+").then(r=>r.blob()).then(b=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(b)})).then(v=>window.TaxiDownload.save(v)).catch(e=>console.error('Export',e))})()";
+      web.evaluateJavascript(js,null);
+     }else{
+      android.app.DownloadManager.Request request=new android.app.DownloadManager.Request(android.net.Uri.parse(url));
+      request.setTitle("Sauvegarde Gestion Taxi");
+      request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+      request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS,"sauvegarde_gestion_taxi.json");
+      ((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(request);
+     }
+    }catch(Exception e){Toast.makeText(this,"Export impossible : "+e.getMessage(),Toast.LENGTH_LONG).show();}
+   });
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void save(String dataUrl){
+     try{
+      int comma=dataUrl.indexOf(',');
+      if(comma<0)throw new IllegalArgumentException("Données invalides");
+      byte[] bytes=android.util.Base64.decode(dataUrl.substring(comma+1),android.util.Base64.DEFAULT);
+      android.content.ContentValues values=new android.content.ContentValues();
+      values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME,"sauvegarde_gestion_taxi_"+new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss",java.util.Locale.ROOT).format(new java.util.Date())+".json");
+      values.put(android.provider.MediaStore.Downloads.MIME_TYPE,"application/json");
+      values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,android.os.Environment.DIRECTORY_DOWNLOADS);
+      android.net.Uri target=getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);
+      if(target==null)throw new IllegalStateException("Enregistrement impossible");
+      try(java.io.OutputStream out=getContentResolver().openOutputStream(target)){if(out==null)throw new IllegalStateException("Fichier inaccessible");out.write(bytes);}
+      runOnUiThread(()->Toast.makeText(MainActivity.this,"Sauvegarde enregistrée dans Téléchargements",Toast.LENGTH_LONG).show());
+     }catch(Exception e){runOnUiThread(()->Toast.makeText(MainActivity.this,"Échec sauvegarde : "+e.getMessage(),Toast.LENGTH_LONG).show());}
+    }
+   },"TaxiDownload");
    web.setWebChromeClient(new WebChromeClient());
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
