@@ -496,7 +496,7 @@ setTimeout(checkDailyCloudBackup,2500);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",loadPrivatePayments);
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v11-compact-receipt-table-20261105x";
+const siteBuild="taxi-v11-details-edit-20261105-6d5c3bab";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
@@ -511,7 +511,7 @@ async function checkPublishedBuild(){
   if(!response.ok)return;
   const html=await response.text();
   if(html.includes("const siteBuild=")&&!html.includes('const siteBuild="'+siteBuild+'"'))newBuildPending=true;
-  if(newBuildPending&&safeToReload())location.reload();
+  if(newBuildPending&&safeToReload()){const fresh=new URL(location.href);fresh.searchParams.set("_v",String(Date.now()));location.replace(fresh.toString());}
  }catch(e){}
 }
 setInterval(checkPublishedBuild,10000);
