@@ -24,9 +24,9 @@ header{gap:10px}header>div{min-width:0}header .v11-refresh{margin:0;align-self:f
 <div class="eyebrow">ENCAISSEMENTS · <span id="paymentDate"></span></div>
 <div class="payment-grid">
 <div class="payment-box"><div class="label">💳 SumUp · automatique</div><strong id="sumupToday">—</strong><small id="sumupStatus">Connexion non configurée</small></div>
-<div class="payment-box"><div class="label">💶 Cash du jour</div><strong id="cashToday">0,00 €</strong><div class="payment-entry"><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter du cash"><button type="button" class="button" id="addCash">+ Ajouter</button></div></div>
-<div class="payment-box"><div class="label">📞 APBS du jour</div><strong id="appeleToday">0,00 €</strong><div class="payment-entry"><input id="appeleInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter un revenu APBS"><button type="button" class="button" id="addAppele">+ Ajouter</button></div></div>
-<div class="payment-box"><div class="label">🧾 Commissions du jour</div><strong id="commissionToday">0,00 €</strong><div class="payment-entry"><input id="commissionInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter une commission"><button type="button" class="button" id="addCommission">+ Ajouter</button></div></div>
+<div class="payment-box"><div class="label">💶 Cash du jour</div><strong id="cashToday">0,00 €</strong><div class="payment-entry"><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter du cash"><button type="button" class="button" id="addCash">+ Ajouter</button><button type="button" class="button" id="editCash">✎ Corriger</button></div></div>
+<div class="payment-box"><div class="label">📞 APBS du jour</div><strong id="appeleToday">0,00 €</strong><div class="payment-entry"><input id="appeleInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter un revenu APBS"><button type="button" class="button" id="addAppele">+ Ajouter</button><button type="button" class="button" id="editAppele">✎ Corriger</button></div></div>
+<div class="payment-box"><div class="label">🧾 Commissions du jour</div><strong id="commissionToday">0,00 €</strong><div class="payment-entry"><input id="commissionInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter une commission"><button type="button" class="button" id="addCommission">+ Ajouter</button><button type="button" class="button" id="editCommission">✎ Corriger</button></div></div>
 </div>
 <div class="payment-total daily-cashbox"><div><span>CAISSE JOURNALIÈRE</span><small id="cashboxFormula">SumUp + cash + APBS − commissions</small></div><strong id="paymentNetToday">—</strong></div><div class="status" id="cashboxStatus">En attente de la connexion SumUp · calcul partiel disponible</div>
 <div class="payment-month"><span>Cash du mois <b id="cashMonth">0,00 €</b></span><span>APBS du mois <b id="appeleMonth">0,00 €</b></span><span>Commissions du mois <b id="commissionMonth">0,00 €</b></span></div>
@@ -155,6 +155,21 @@ function paymentData(){const m=ensure();m.payments??={};return m.payments}
 function paymentTotals(){const m=current(),p=m.payments||{},d=p[selectedDay]||{};const rows=Object.values(p);return {cash:number(d.cash),commission:number(d.commission),appele:number(d.appele),cashMonth:rows.reduce((n,x)=>n+number(x.cash),0),commissionMonth:rows.reduce((n,x)=>n+number(x.commission),0),appeleMonth:rows.reduce((n,x)=>n+number(x.appele),0)}}
 function renderPayments(){const t=paymentTotals();$("paymentDate").textContent=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(t.cash+t.appele-t.commission);$("cashboxStatus").textContent="Partiel : cash + APBS − commissions. SumUp pas encore connecté.";}
 function addPayment(field,inputId){const input=$(inputId),raw=input.value.trim(),value=Number(raw);if(!raw||!Number.isFinite(value)||value<=0){toast("Entre un montant supérieur à zéro");return}const p=paymentData();p[selectedDay]??={};p[selectedDay][field]=String(Math.round((number(p[selectedDay][field])+value)*100)/100);input.value="";save();renderPayments();toast("Montant ajouté et enregistré")}
+function correctPayment(field,label){
+ const p=paymentData(),entry=p[selectedDay]||{},previous=number(entry[field]);
+ const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;
+ const raw=window.prompt("Corriger le total "+label+" du "+date+" (€) :\\nSaisis le total exact, ou 0 pour annuler les montants.",previous.toFixed(2));
+ if(raw===null)return;
+ const normalized=raw.trim().replace(",",".");
+ const value=Number(normalized);
+ if(normalized===""||!Number.isFinite(value)||value<0){toast("Montant invalide : correction annulée");return}
+ const fixed=Math.round(value*100)/100;
+ if(!window.confirm("Confirmer le remplacement du total "+label+" du "+date+" : "+money(previous)+" → "+money(fixed)+" ?"))return;
+ p[selectedDay]??={};p[selectedDay][field]=String(fixed);save();renderPayments();toast(label+" corrigé et enregistré");
+}
+$("editAppele").addEventListener("click",()=>correctPayment("appele","APBS"));
+$("editCash").addEventListener("click",()=>correctPayment("cash","Cash"));
+$("editCommission").addEventListener("click",()=>correctPayment("commission","Commissions"));
 $("addAppele").addEventListener("click",()=>addPayment("appele","appeleInput"));
 $("addCash").addEventListener("click",()=>addPayment("cash","cashInput"));
 $("addCommission").addEventListener("click",()=>addPayment("commission","commissionInput"));
@@ -177,7 +192,7 @@ $("refreshLocal").addEventListener("click",()=>{render();markRefreshed();checkPu
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
 save();render();markRefreshed();
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v11-apbs-20261105h";
+const siteBuild="taxi-v11-payment-corrections-20261105i";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
