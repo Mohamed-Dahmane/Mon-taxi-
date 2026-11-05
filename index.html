@@ -285,19 +285,29 @@ function sumupForDay(day,monthKey=key()){
  const date=year+"-"+String(month+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
  return sumupRows.filter(r=>r.local_day===date&&r.status==="SUCCESSFUL").reduce((n,r)=>n+Number(r.amount_cents),0)/100;
 }
+async function renewPrivateSession(){
+ if(!privateSession?.refresh_token)throw Error("Session à renouveler : une connexion par e-mail est nécessaire.");
+ const updated=await authRequest("token?grant_type=refresh_token",{refresh_token:privateSession.refresh_token});
+ if(!updated.access_token||!updated.refresh_token)throw Error("Réponse de renouvellement incomplète.");
+ privateSession={...privateSession,...updated,expires_at:Math.floor(Date.now()/1000)+Number(updated.expires_in||3600)};
+ localStorage.setItem("taxi-private-session",JSON.stringify(privateSession));
+ return privateSession;
+}
 async function loadPrivatePayments(){
  if(sumupLoading||!privateSession?.access_token)return;
  sumupLoading=true;
  try{
   if(privateSession.expires_at && privateSession.expires_at*1000<Date.now()+60000){
-   privateSession=await authRequest("token?grant_type=refresh_token",{refresh_token:privateSession.refresh_token});
-   privateSession.expires_at=Math.floor(Date.now()/1000)+privateSession.expires_in;
-   localStorage.setItem("taxi-private-session",JSON.stringify(privateSession));
+   await renewPrivateSession();
   }
   const rows=[];
   for(let offset=0;;offset+=1000){
-   const response=await fetch(privateApi+"/rest/v1/taxi_sumup_transactions?select=local_day,amount_cents,status,updated_at&order=transaction_id&offset="+offset+"&limit=1000",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},cache:"no-store"});
-   if(!response.ok)throw Error("Accès privé refusé. Reconnecte-toi.");
+   let response=await fetch(privateApi+"/rest/v1/taxi_sumup_transactions?select=local_day,amount_cents,status,updated_at&order=transaction_id&offset="+offset+"&limit=1000",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},cache:"no-store"});
+   if(response.status===401&&privateSession.refresh_token){
+    await renewPrivateSession();
+    response=await fetch(privateApi+"/rest/v1/taxi_sumup_transactions?select=local_day,amount_cents,status,updated_at&order=transaction_id&offset="+offset+"&limit=1000",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},cache:"no-store"});
+   }
+   if(!response.ok)throw Error("Accès privé momentanément indisponible ("+response.status+").");
    const page=await response.json();rows.push(...page);if(page.length<1000)break;
   }
   // RLS returns no rows for any unapproved account.
