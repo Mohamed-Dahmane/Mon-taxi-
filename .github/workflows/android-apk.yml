@@ -75,6 +75,14 @@ jobs:
           TAXI_SIGNING_STORE_PASSWORD: ${{ secrets.TAXI_SIGNING_STORE_PASSWORD }}
           TAXI_SIGNING_KEY_ALIAS: ${{ secrets.TAXI_SIGNING_KEY_ALIAS }}
           TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
+      - name: Vérifier cryptographiquement l'APK V12 signé
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 3
       - name: Publier APK signé V12
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         uses: actions/upload-artifact@v4
