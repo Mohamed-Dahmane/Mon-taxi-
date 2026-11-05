@@ -22,16 +22,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Verify Android SDK on runner
-        run: |
-          test -d "$ANDROID_HOME" || { echo 'Android SDK missing'; exit 1; }
-          echo "Android SDK: $ANDROID_HOME"
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          test -x "$SDKMANAGER" || SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
-          test -n "$SDKMANAGER" && test -x "$SDKMANAGER" || { echo "sdkmanager not found"; exit 1; }
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Install Android SDK reliably
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
       - name: Verify build environment
         run: |
           java -version
