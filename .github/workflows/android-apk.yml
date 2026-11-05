@@ -26,7 +26,11 @@ jobs:
         run: |
           test -d "$ANDROID_HOME" || { echo 'Android SDK missing'; exit 1; }
           echo "Android SDK: $ANDROID_HOME"
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER" || SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          test -n "$SDKMANAGER" && test -x "$SDKMANAGER" || { echo "sdkmanager not found"; exit 1; }
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets
