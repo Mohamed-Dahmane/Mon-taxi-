@@ -178,7 +178,7 @@ async function acceptSession(session){
 $("privateSend").onclick=async()=>{
  const b=$("privateSend");b.disabled=true;
  try{const email=$("privateEmail").value.trim();if(!email||!$("privateEmail").checkValidity())throw Error("Entre ton adresse e-mail.");
- await authRequest("otp",{email,create_user:false,options:{emailRedirectTo:location.origin+location.pathname}});
+ await authRequest("otp?redirect_to="+encodeURIComponent(location.origin+location.pathname),{email,create_user:false});
  localStorage.setItem("taxi-private-email",email);privateMessage("E-mail demandé. Colle le lien reçu ci-dessous pour ouvrir Mon Taxi.");
  }catch(e){privateMessage(e.message)}finally{b.disabled=false}
 };
