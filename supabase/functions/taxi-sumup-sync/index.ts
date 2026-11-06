@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
     const entries=Array.isArray(data)?data:(data && typeof data==="object" ? (data.items??data.transactions) : undefined);
     // A 200 response containing an error object or an unknown shape is not an empty history.
     if(!Array.isArray(entries)) return Response.json({ok:false,reason:"unexpected_sumup_response"},{status:502});
+    // The requested page size is 100; a larger page makes offset pagination unsafe.
+    if(entries.length>100) return Response.json({ok:false,reason:"unexpected_sumup_page_size"},{status:502});
     const rows=[];
     for(const tx of entries){
       if(!tx || !tx.id || !tx.timestamp || tx.currency!=="EUR")continue;
