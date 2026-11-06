@@ -74,15 +74,24 @@ Deno.serve(async (req) => {
     if(entries.length>100) return Response.json({ok:false,reason:"unexpected_sumup_page_size"},{status:502});
     const rows=[];
     for(const tx of entries){
-      if(!tx || !tx.id || !tx.timestamp || tx.currency!=="EUR")continue;
+      // Do not silently lose a EUR payment when SumUp returns an incomplete record.
+      if(!tx || typeof tx!=="object")
+        return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
+      if(tx.currency!=="EUR")continue;
+      if(typeof tx.id!=="string" || !tx.id || typeof tx.timestamp!=="string" ||
+         typeof tx.amount!=="number" || !Number.isFinite(tx.amount))
+        return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
       const transactionId=String(tx.id);
       if(seenTransactionIds.has(transactionId))
         return Response.json({ok:false,reason:"duplicate_sumup_transaction_in_pages"},{status:502});
       seenTransactionIds.add(transactionId);
       const t=Date.parse(tx.timestamp);
-      if(!Number.isFinite(t)||t<START)continue;
+      if(!Number.isFinite(t))
+        return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
+      if(t<START)continue;
       const cents=Math.round(Number(tx.amount)*100);
-      if(!Number.isSafeInteger(cents)||cents<0)continue;
+      if(!Number.isSafeInteger(cents)||cents<0)
+        return Response.json({ok:false,reason:"invalid_sumup_amount"},{status:502});
       const day=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Brussels",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(t));
       if(day<"2026-11-01")continue;
       rows.push({transaction_id:String(tx.id),transaction_time:new Date(t).toISOString(),local_day:day,amount_cents:cents,currency:"EUR",status:String(tx.status??"UNKNOWN"),updated_at:new Date().toISOString()});
