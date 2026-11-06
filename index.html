@@ -95,15 +95,15 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-costs>div{min-width:0}
 #expenseCorrections:not([hidden]){margin-top:8px;border-top:1px solid #354a6b}
 #expenseCorrections .expense{gap:6px}
-#expenseCorrections .button{width:auto;padding:6px 9px;font-size:12px}
 .taxi-costs .taxi-line{flex-wrap:wrap;font-size:13px}
 .taxi-costs .typeBtn{display:inline-flex;font-size:12px;min-height:40px;padding:4px 9px;margin-top:2px}
 #quickEditor .amount-row input{font-size:16px;padding:8px}
 #quickEditor .button{font-size:12px}
 .day-expense-editor{grid-column:1/-1}
 .day-expense-edit{width:100%;min-height:38px;border:1px solid #52698a;border-radius:8px;background:#253650;color:inherit;font:inherit;font-size:11px;padding:4px 2px}
-.day-expense-editor .button,.expense-actions .button{width:auto;padding:6px 8px;font-size:12px}
-.expense-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+.cost-amount{display:inline-flex;align-items:center;gap:3px;min-width:0}
+.cost-pencil{display:inline-grid;place-items:center;flex:none;width:28px;height:34px;padding:0;border:0;border-radius:6px;background:transparent;color:#b7c9df;cursor:pointer}
+.cost-pencil:hover,.cost-pencil:focus-visible{color:#fff;background:#354a6b}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
@@ -130,8 +130,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div class="taxi-line"><span>Appli</span><div class="taxi-amount"><strong><span id="appeleMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editAppeleMonth" aria-label="Corriger le total mensuel Appli" title="Corriger le total mensuel Appli"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealMonth">—</span></strong></div>
 <div class="taxi-costs" role="group" aria-label="Carburant et dépenses du mois">
-<div><div class="taxi-line"><span>Carburant</span><strong><span id="homeFuel">—</span></strong></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button> <button class="typeBtn" type="button" id="editFuel" aria-label="Corriger le carburant du jour sélectionné">Corriger</button></div>
-<div><div class="taxi-line"><span>Dépenses</span><strong><span id="homeExtra">—</span></strong></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button> <button class="typeBtn" type="button" id="editExpenses" aria-controls="expenseCorrections" aria-expanded="false">Corriger</button></div>
+<div><div class="taxi-line"><span>Carburant</span><span class="cost-amount"><strong><span id="homeFuel">—</span></strong><button class="cost-pencil" type="button" id="editFuel" aria-label="Corriger le carburant du jour sélectionné" title="Corriger le carburant du jour sélectionné"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></span></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button></div>
+<div><div class="taxi-line"><span>Dépenses</span><span class="cost-amount"><strong><span id="homeExtra">—</span></strong><button class="cost-pencil" type="button" id="editExpenses" aria-controls="expenseCorrections" aria-expanded="false" aria-label="Corriger les dépenses du mois" title="Corriger les dépenses du mois"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></span></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button></div>
 </div>
 <div id="expenseCorrections" hidden aria-label="Dépenses du mois à corriger"></div>
 <div id="quickEditor" hidden>
@@ -387,6 +387,13 @@ function correctCost(label,previous,apply){
  save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();
  toast("Montant corrigé et enregistré");
 }
+function costPencil(label){
+ const button=document.createElement("button");
+ button.type="button";button.className="cost-pencil";
+ button.setAttribute("aria-label",label);button.title=label;
+ button.innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg>`;
+ return button;
+}
 function renderExpenseCorrections(root=$("expenseCorrections"),dayFilter){
  if(root.hidden)return;
  root.replaceChildren();
@@ -394,9 +401,9 @@ function renderExpenseCorrections(root=$("expenseCorrections"),dayFilter){
  const addRow=(label,value,apply)=>{
   const row=document.createElement("div");row.className="expense";
   const text=document.createElement("span");text.textContent=label+" · "+money(number(value));
-  const button=document.createElement("button");button.type="button";button.className="button secondary";button.textContent="Corriger";
+  const button=costPencil("Corriger "+label);
   button.addEventListener("click",()=>correctCost(label,value,apply));
-  row.append(text,button);root.append(row);
+  text.className="cost-amount";text.append(button);row.append(text);root.append(row);
  };
  (month.extra||[]).forEach((entry,index)=>{
   if(dayFilter!==undefined&&Number(entry.day)!==dayFilter)return;
@@ -422,10 +429,10 @@ $("editExpenses").addEventListener("click",()=>{
  $("editExpenses").setAttribute("aria-expanded",String(!root.hidden));
  renderExpenseCorrections();
 });
-function renderExpenses(){renderExpenseCorrections();const root=$("expenseRows");root.replaceChildren();(current().extra||[]).forEach((e,i)=>{const row=document.createElement("div");row.className="expense";const label=document.createElement("span");label.textContent=(e.day?String(e.day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" · ":"")+e.name+" · "+(e.amount===""?"montant non renseigné":money(number(e.amount)));const b=document.createElement("button");b.className="button danger";b.textContent="Supprimer";b.addEventListener("click",()=>{ensure().extra.splice(i,1);save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive()});const edit=document.createElement("button");edit.type="button";edit.className="button secondary";edit.textContent="Corriger";
+function renderExpenses(){renderExpenseCorrections();const root=$("expenseRows");root.replaceChildren();(current().extra||[]).forEach((e,i)=>{const row=document.createElement("div");row.className="expense";const label=document.createElement("span");label.textContent=(e.day?String(e.day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" · ":"")+e.name+" · "+(e.amount===""?"montant non renseigné":money(number(e.amount)));const b=document.createElement("button");b.className="button danger";b.textContent="Supprimer";b.addEventListener("click",()=>{ensure().extra.splice(i,1);save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive()});const edit=costPencil("Corriger "+e.name);
 edit.addEventListener("click",()=>correctCost((e.day?costDate(e.day)+" · ":"")+e.name,e.amount,value=>{ensure().extra[i].amount=value}));
-const actions=document.createElement("div");actions.className="expense-actions";actions.append(edit,b);
-row.append(label,actions);root.append(row)})}
+label.className="cost-amount";label.append(edit);
+row.append(label,b);root.append(row)})}
 function renderAnnual(){const root=$("annualRows");root.replaceChildren();let total=0;months.forEach((m,i)=>{const monthData=data.months[yearSel.value+"-"+i]||{days:{},extra:[]};const s=stats({...monthData,fixed:monthData.fixed||defaultFixed()},yearSel.value+"-"+i);total+=s.revenue;const row=document.createElement("div");row.className="annualrow";const label=document.createElement("span");label.textContent=m;const rev=document.createElement("strong");rev.textContent=money(s.revenue);const balance=document.createElement("strong");balance.textContent=money(s.balance);balance.className=s.balance<0?"red":"green";row.append(label,rev,balance);root.append(row)});$("annualTotal").textContent=money(total)}
 function render(){ensure();save();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});
