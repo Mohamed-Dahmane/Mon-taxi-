@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       if(!tx || typeof tx!=="object")
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
       // Missing or malformed currency must not silently discard a possible EUR payment.
-      if(typeof tx.currency!=="string" || !tx.currency.trim())
+      if(typeof tx.currency!=="string" || !/^[A-Z]{3}$/.test(tx.currency))
         return Response.json({ok:false,reason:"invalid_sumup_currency"},{status:502});
       if(tx.currency!=="EUR")continue;
       if(typeof tx.id!=="string" || !tx.id || typeof tx.timestamp!=="string" ||
