@@ -72,49 +72,71 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .button.add-action:hover{background:#12653e}
 #home .workday-average{margin-bottom:10px}
 #daily .workday-average{margin-top:16px}
+
+.taxi-summary{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+#home .taxi-summary .payment-day-total,#home .taxi-summary .workday-average{margin:0;max-width:none;min-width:0;padding:5px 4px;text-align:center;border:1px solid #354a6b;border-radius:8px}
+#home .taxi-summary .payment-day-total span,#home .taxi-summary .workday-average .label{font-size:11px;line-height:1.2}
+#home .taxi-summary .payment-day-total strong,#home .taxi-summary .reference-amount{display:block;font-size:19px;line-height:1.2;margin:2px 0;color:#77ecc2}
+#home .taxi-summary .reference-days{font-size:10px;line-height:1.2}
+.taxi-line{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0}
+.taxi-cards{border-top:1px solid #354a6b;align-items:baseline}
+.taxi-cards>div{text-align:right}
+.taxi-cards .green{font-size:clamp(15px,4vw,21px);white-space:nowrap}
+.taxi-cards small,.taxi-fee{font-size:11px;color:#b9c6d8}
+.taxi-fee{margin-bottom:5px;text-align:right}
+.taxi-entry{display:grid;grid-template-columns:minmax(40px,1fr) minmax(67px,.9fr) minmax(105px,1.4fr);gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid #354a6b}
+.taxi-head{font-size:11px;color:#b9c6d8}
+.taxi-head span:last-child{text-align:right}
+.taxi-entry input{min-width:0;padding:5px 7px;min-height:42px;font-size:16px}
+.taxi-amount{display:flex;justify-content:flex-end;align-items:center;gap:3px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#home .taxi-amount .payment-pencil{min-width:36px;min-height:38px}
+.taxi-month>.taxi-line{padding:2px 0}
+.taxi-costs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;border-top:1px solid #354a6b;padding-top:7px}
+.taxi-costs>div{min-width:0}
+.taxi-costs .taxi-line{flex-wrap:wrap;font-size:13px}
+.taxi-costs .typeBtn{display:inline-flex;font-size:12px;min-height:40px;padding:4px 9px;margin-top:2px}
+#quickEditor .amount-row input{font-size:16px;padding:8px}
+#quickEditor .button{font-size:12px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
-<div class="work-reference workday-average"><div class="label">Revenu moyen par jour travaillé<span class="average-period"></span></div><div class="value green reference-amount">—</div><div class="reference-days"><strong>0</strong> <span>jour travaillé</span></div></div>
 <section class="card" id="paymentSplit" aria-label="Encaissements du jour">
-<div class="payment-heading">
 <div class="eyebrow">ENCAISSEMENTS · <span id="paymentDate"></span></div>
-<div class="payment-day-total"><span>Recette du jour</span><strong id="paymentNetToday">—</strong></div>
-</div>
-<div class="payment-grid">
-<div class="payment-box card-payments"><div class="card-comparison"><div><div class="label">Carte (brute)</div><strong id="sumupToday">—</strong></div><div class="card-net"><div class="label">Carte (nette)</div><strong id="cardNetToday">—</strong></div></div><div class="hint">Frais SumUp 1,69 % : <span id="cardFeeToday">—</span></div><div class="card-month-total"><div id="cardMonthLabel">Total du mois</div><div class="card-comparison"><div><div>Carte (brute)</div><strong id="cardMonthTotal">—</strong></div><div class="card-net"><div>Carte (nette)</div><strong id="cardMonthNetIndicative">—</strong></div></div><div class="hint">Frais SumUp 1,69 % : <span id="cardMonthFeeEstimate">—</span></div></div></div>
-<div class="payment-box cash-with-commission">
-<div class="cash-breakdown" role="group" aria-label="Montants à encoder">
-<div class="cash-component"><div class="label">Appli</div><div class="payment-entry"><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"></div></div>
-<div class="cash-component"><div class="label">Cash</div><div class="payment-entry"><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"></div></div>
-<div class="cash-component"><div class="label">Com</div><div class="payment-entry"><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"></div></div>
-</div>
-<div class="cash-daily-totals" role="group" aria-label="Totaux du jour et du mois">
-<div class="cash-component"><div class="label">Appli</div><div class="payment-day-amount"><strong id="appeleToday">—</strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div><div class="card-month-total"><div class="payment-month-label">Total du mois</div><div class="payment-month-amount"><strong id="appeleMonthCard">—</strong><button type="button" class="payment-pencil" id="editAppeleMonth" aria-label="Corriger le total mensuel Appli" title="Corriger le total mensuel Appli"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div></div>
-<div class="cash-component"><div class="label">Cash</div><div class="payment-day-amount"><strong id="cashToday">—</strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div><div class="card-month-total"><div class="payment-month-label">Total du mois</div><div class="payment-month-amount"><strong id="cashMonthCard">—</strong><button type="button" class="payment-pencil" id="editCashMonth" aria-label="Corriger le total mensuel Cash" title="Corriger le total mensuel Cash"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div></div>
-<div class="cash-component"><div class="label">Com</div><div class="payment-day-amount"><strong id="commissionToday">—</strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div><div class="card-month-total"><div class="payment-month-label">Total du mois</div><div class="payment-month-amount"><strong id="commissionMonthCard">—</strong><button type="button" class="payment-pencil" id="editCommissionMonth" aria-label="Corriger le total mensuel Com" title="Corriger le total mensuel Com"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div></div>
-<div class="cash-component cash-real"><div class="label">Cash réel</div><div class="payment-day-amount"><strong id="cashRealToday">—</strong></div><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="cashRealMonth">—</strong></div></div>
-</div>
-</div>
-</div>
+<div class="taxi-summary"><div class="payment-day-total"><span>Recette du jour</span><strong id="paymentNetToday">—</strong></div><div class="work-reference workday-average"><div class="label">Revenu moyen par jour travaillé<span class="average-period"></span></div><div class="value green reference-amount">—</div><div class="reference-days"><strong>0</strong> <span>jour travaillé</span></div></div></div>
+<div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardNetToday">—</span></strong> <small>(brut <span id="sumupToday">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardFeeToday">—</span></div>
+<div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
+<div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry"><label for="commissionInput">Com</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry"><label for="appeleInput">Appli</label><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealToday">—</span></strong></div>
 <div class="payment-month" hidden style="display:none"><span>Cash du mois <b id="cashMonth">0,00 €</b></span><span>Appli du mois <b id="appeleMonth">0,00 €</b></span><span>Commissions du mois <b id="commissionMonth">0,00 €</b></span></div>
 </section>
-<section class="card quick-card" style="margin-bottom:10px">
-<div class="eyebrow" style="margin-bottom:9px">ENCODER UN MONTANT</div>
-<div class="quick-types" role="group" aria-label="Type de montant">
-<button class="typeBtn active" type="button" data-type="fuel">⛽<span>Carburant</span></button>
-<button class="typeBtn" type="button" data-type="expense">🧾<span>Dépenses</span></button>
+<section class="card taxi-month" aria-label="Totaux du mois">
+<div class="eyebrow" id="cardMonthLabel">Total du mois</div>
+<div class="taxi-line"><b>Caisse cumulée</b><strong class="green"><span id="homeMonthlyRevenue">—</span></strong></div>
+<div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardMonthNetIndicative">—</span></strong> <small>(brut <span id="cardMonthTotal">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardMonthFeeEstimate">—</span></div>
+<div class="taxi-line"><span>Cash</span><div class="taxi-amount"><strong><span id="cashMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editCashMonth" aria-label="Corriger le total mensuel Cash" title="Corriger le total mensuel Cash"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-line"><span>Com</span><div class="taxi-amount"><strong><span id="commissionMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editCommissionMonth" aria-label="Corriger le total mensuel Com" title="Corriger le total mensuel Com"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-line"><span>Appli</span><div class="taxi-amount"><strong><span id="appeleMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editAppeleMonth" aria-label="Corriger le total mensuel Appli" title="Corriger le total mensuel Appli"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealMonth">—</span></strong></div>
+<div class="taxi-costs" role="group" aria-label="Carburant et dépenses du mois">
+<div><div class="taxi-line"><span>Carburant</span><strong><span id="homeFuel">—</span></strong></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button></div>
+<div><div class="taxi-line"><span>Dépenses</span><strong><span id="homeExtra">—</span></strong></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button></div>
 </div>
+<div id="quickEditor" hidden>
+<p class="hint">Ajout au jour sélectionné, inclus dans le total du mois.</p>
 <select id="quickType" hidden aria-label="Rubrique"><option value="fuel" selected>Carburant</option><option value="expense">Dépenses</option></select>
 <div id="quickExpenseNature" hidden><label class="label" for="quickExpenseName">Nature de la dépense</label><input id="quickExpenseName" type="text" placeholder="Ex. Réparation, parking"></div>
 <div class="amount-row"><div><label class="label" for="quickAmount">Montant à ajouter (€)</label><input id="quickAmount" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></div><button class="button" id="validateQuick">✓ Valider</button></div>
 <div hidden><span id="dailyFuel"></span><span id="dailyExpense"></span><span id="dailyBalance"></span><span id="quickDayTotal"></span></div>
 <div class="toolbar compact-toolbar"><button class="button secondary" id="undoQuick">↶ Annuler saisie</button></div>
+<button type="button" class="button secondary" id="closeQuick">Fermer</button>
+</div>
+<div hidden><span id="homeBalance"></span><span id="homeStatus"></span><span id="homeFixed"></span><span id="homeCosts"></span></div>
 </section>
-<div hidden><span id="homeBalance"></span><span id="homeStatus"></span><span id="homeFixed"></span><span id="homeFuel"></span><span id="homeExtra"></span><span id="homeCosts"></span></div>
 <p class="hint">Recette du jour = cartes nettes + cash réel + appli. Dans Détails, une caisse saisie manuellement remplace le total automatique du jour.</p>
 </section>
 <section class="page" id="archive"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section><div class="card"><h2>Archives des encaissements</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Encaissements par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details"><div class="card" style="border:2px solid #5378a8;background:#17283e"><div class="eyebrow">TOTAUX DU MOIS · <span id="v11DetailsPeriod"></span></div><div class="v11-summary"><div><span class="label">Caisse cumulée</span><strong class="green" id="v11DetailsCaisse">0,00 €</strong></div><div><span class="label">⛽ Total carburant</span><strong id="v11DetailsFuel">0,00 €</strong></div><div><span class="label">🧾 Total dépenses</span><strong id="v11DetailsExpenses">0,00 €</strong></div><div><span class="label">📋 Total frais fixes</span><strong id="v11DetailsFixed">0,00 €</strong></div><div><span class="label">Charges déduites</span><strong id="v11DetailsCosts">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="v11DetailsNet">0,00 €</strong></div></div></div><section class="card" id="receiptBreakdown"><h2>Recettes journalières · <span id="receiptBreakdownPeriod"></span></h2><div class="receipts-scroll"><table class="receipts-table"><thead><tr><th scope="col">Date</th><th scope="col">Cartes nettes</th><th scope="col">Cash réel</th><th scope="col">Appli</th><th scope="col">Recette totale</th></tr></thead><tbody id="receiptBreakdownRows"></tbody><tfoot><tr><th scope="row">Total du mois</th><td id="receiptCardsTotal">—</td><td id="receiptCashTotal">—</td><td id="receiptAppTotal">—</td><td id="receiptGrandTotal">—</td></tr></tfoot></table></div></section><div class="tabs"><button class="tab active" data-tab="daily">Tableau du mois</button><button class="tab" data-tab="extra">Autres dépenses</button><button class="tab" data-tab="annual">Année</button><button class="tab" data-tab="backup">Sauvegarde</button></div>
@@ -271,7 +293,7 @@ function stats(m,monthKey=key()){
  const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
 }
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function refreshMetrics(){renderReceiptBreakdown();renderPayments();const s=stats(current());const period=months[Number(monthSel.value)]+" "+yearSel.value;renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("fuelSum").textContent=money(s.fuel);$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("extraSum").textContent=money(s.extra);$("fuelSum").textContent=money(s.fuel);$("caisseSum").textContent=money(s.revenue);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
+function refreshMetrics(){renderReceiptBreakdown();renderPayments();const s=stats(current());const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("fuelSum").textContent=money(s.fuel);$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("extraSum").textContent=money(s.extra);$("fuelSum").textContent=money(s.fuel);$("caisseSum").textContent=money(s.revenue);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
 function field(value,placeholder,callback){const input=document.createElement("input");input.type="number";input.inputMode="decimal";input.step="0.01";input.placeholder=placeholder;input.value=value??"";input.addEventListener("input",()=>{callback(input.value);save();refreshMetrics();renderAnnual();renderArchive();showQuickDay()});return input}
 
 function dailyReceiptBreakdown(day,m,monthKey){
@@ -632,9 +654,9 @@ function correctPayment(field,label,monthly=false){
  toast(label+" corrigé et enregistré");
 }
 const paymentInputs=[
- {field:"appele",label:"Appli",input:$("appeleInput"),editId:"editAppele"},
  {field:"cash",label:"Cash",input:$("cashInput"),editId:"editCash"},
- {field:"commission",label:"Com",input:$("commissionInput"),editId:"editCommission"}
+ {field:"commission",label:"Com",input:$("commissionInput"),editId:"editCommission"},
+ {field:"appele",label:"Appli",input:$("appeleInput"),editId:"editAppele"}
 ];
 paymentInputs.forEach(({field,label,input,editId},index)=>{
  $(editId).addEventListener("click",()=>correctPayment(field,label));
@@ -675,7 +697,14 @@ function followToday(){
 }
 $("calendarToday").addEventListener("click",()=>selectToday(new Date()));
 quickDay.addEventListener("change",()=>{selectedDay=Number(quickDay.value);showQuickDay()});
-document.querySelectorAll(".typeBtn").forEach(btn=>btn.addEventListener("click",()=>{$("quickType").value=btn.dataset.type;document.querySelectorAll(".typeBtn").forEach(b=>b.classList.toggle("active",b===btn));const isExpense=btn.dataset.type==="expense";$("quickExpenseNature").hidden=!isExpense;$(isExpense?"quickExpenseName":"quickAmount").focus()}));
+$("closeQuick").addEventListener("click",()=>{
+ $("quickEditor").hidden=true;
+ const active=document.querySelector(".taxi-costs .typeBtn.active");
+ active.classList.remove("active");
+ active.setAttribute("aria-expanded","false");
+ active.focus();
+});
+document.querySelectorAll(".typeBtn").forEach(btn=>btn.addEventListener("click",()=>{$("quickEditor").hidden=false;$("quickType").value=btn.dataset.type;document.querySelectorAll(".typeBtn").forEach(b=>{b.classList.toggle("active",b===btn);b.setAttribute("aria-expanded",String(b===btn))});const isExpense=btn.dataset.type==="expense";$("quickExpenseNature").hidden=!isExpense;$(isExpense?"quickExpenseName":"quickAmount").focus()}));
 $("validateQuick").addEventListener("click",()=>{const raw=$("quickAmount").value,field=$("quickType").value,day=quickDay.value;if(raw===""||!Number.isFinite(Number(raw))||Number(raw)<0){toast("Entre un montant valide, y compris 0");return}const m=ensure();if(field==="expense"){
  const name=$("quickExpenseName").value.trim();
  if(!name){toast("Indique la nature de la dépense");$("quickExpenseName").focus();return}
