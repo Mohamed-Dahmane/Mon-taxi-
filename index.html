@@ -25,18 +25,21 @@ header{gap:10px}header>div{min-width:0}header .v11-refresh{margin:0;align-self:f
 .receipts-table tfoot th{letter-spacing:0}
 @media(max-width:380px){.receipts-table{font-size:10px}.receipts-table th:first-child{width:60px;font-size:9px}.receipts-table thead th{font-size:9px}}
 
+html { overscroll-behavior-y: none; }
+main { padding-top: max(10px, env(safe-area-inset-top)); }
+
 /* Tableaux de la fiche Détails */
 #receiptBreakdown h2, #daily h2 { margin-bottom: 8px; }
-.receipts-table th, .receipts-table td { padding-block: 6px; }
+.receipts-table th, .receipts-table td { padding-block: 5px; }
 #daily .hint { margin-block: 7px; }
 #daily .rowhead { margin-bottom: 6px; }
-#daily .dayrow { margin-bottom: 3px; }
-#daily .dayrow input { padding-block: 6px; min-height: 34px; }
+#daily .dayrow { margin-bottom: 2px; }
+#daily .dayrow input { padding-block: 5px; min-height: 32px; }
 #daily .daytotals { padding-block: 8px; }
 </style></head><body><main hidden><header><div><div class="eyebrow">GESTION QUOTIDIENNE</div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11 · Historique mensuel conservé</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
-<section class="page active" id="home"><div class="payment-total daily-cashbox" style="margin-top:0"><div><span>RECETTE DU JOUR</span><small>cartes nettes + cash réel + appli</small></div><strong id="paymentNetToday">—</strong></div><div class="status" id="cashboxStatus"></div>
+<section class="page active" id="home"><div class="payment-total daily-cashbox" style="margin-top:0"><div><span>RECETTE DU JOUR</span><small>cartes nettes + cash réel + appli</small></div><strong id="paymentNetToday">—</strong></div>
 <section class="card" id="paymentSplit" aria-label="Encaissements du jour">
 <div class="eyebrow">ENCAISSEMENTS · <span id="paymentDate"></span></div>
 <div class="payment-grid">
@@ -236,20 +239,32 @@ function renderAnnual(){const root=$("annualRows");root.replaceChildren();let to
 function render(){ensure();save();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.tab))}));document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".pageBtn").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.page));window.scrollTo(0,0)}));
-// Navigation tactile horizontale entre Accueil, Détails et Archives.
+// Navigation horizontale et actualisation tactile depuis le haut de la page.
 (function(){
  const pages=["home","details","archive"];
- let startX=0,startY=0,tracking=false;
+ let startX=0,startY=0,tracking=false,pullFromTop=false;
  document.addEventListener("touchstart",e=>{
+  tracking=false;
   if(e.touches.length!==1)return;
   const t=e.target;
   if(t.closest("input,textarea,select,[contenteditable],.scrollable")){tracking=false;return;}
   startX=e.touches[0].clientX;startY=e.touches[0].clientY;tracking=true;
+  pullFromTop=window.scrollY<=0&&!document.querySelector("main").hidden;
  },{passive:true});
+ document.addEventListener("touchmove",e=>{
+  if(!tracking||!pullFromTop||e.touches.length!==1)return;
+  const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;
+  if(dy>0&&dy>Math.abs(dx)*1.5&&e.cancelable)e.preventDefault();
+ },{passive:false});
+ document.addEventListener("touchcancel",()=>{tracking=false;},{passive:true});
  document.addEventListener("touchend",e=>{
   if(!tracking||!e.changedTouches.length)return;
   tracking=false;
   const dx=e.changedTouches[0].clientX-startX,dy=e.changedTouches[0].clientY-startY;
+  if(pullFromTop&&window.scrollY<=0&&dy>=75&&dy>Math.abs(dx)*1.5){
+   $("refreshLocal").click();
+   return;
+  }
   if(Math.abs(dx)<75||Math.abs(dx)<Math.abs(dy)*1.5)return;
   const active=document.querySelector(".page.active");
   const index=pages.indexOf(active?.id);
@@ -414,7 +429,7 @@ function automaticCaisse(day,m,monthKey){
 // Manual daily caisse is an explicit total override, never added to card totals.
 function paymentData(){const m=ensure();m.payments??={};return m.payments}
 function paymentTotals(){const m=current(),p=m.payments||{},d=p[selectedDay]||{};const rows=Object.values(p);return {cash:number(d.cash),commission:number(d.commission),appele:number(d.appele),cashMonth:rows.reduce((n,x)=>n+number(x.cash),0),commissionMonth:rows.reduce((n,x)=>n+number(x.commission),0),appeleMonth:rows.reduce((n,x)=>n+number(x.appele),0)}}
-function renderPayments(){const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonthPrefix=yearSel.value+"-"+String(Number(monthSel.value)+1).padStart(2,"0")+"-";$("cardMonthLabel").textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;const cardMonthRows=sumupRows.filter(r=>r.status==="SUCCESSFUL"&&String(r.local_day).startsWith(cardMonthPrefix));$("cardMonthTotal").textContent=sumupReady?money(cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0)/100):"—";const cardMonthTotalCents=cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0);const cardMonthFeeCents=cardMonthRows.reduce((total,r)=>total+sumupFeeCents(r),0);$("cardMonthNetIndicative").textContent=sumupReady?money((cardMonthTotalCents-cardMonthFeeCents)/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonthFeeCents/100):"—";$("paymentDate").textContent=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(sumupNetForDay(selectedDay)+(t.cash-t.commission)+t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";$("sumupStatus").textContent=sumupReady?"Synchronisation serveur horaire · lecture toutes les minutes":"Connexion privée requise";$("cashboxStatus").textContent=sumupReady?"cartes nettes + cash réel + appli":"Total partiel · connexion privée requise";}
+function renderPayments(){const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonthPrefix=yearSel.value+"-"+String(Number(monthSel.value)+1).padStart(2,"0")+"-";$("cardMonthLabel").textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;const cardMonthRows=sumupRows.filter(r=>r.status==="SUCCESSFUL"&&String(r.local_day).startsWith(cardMonthPrefix));$("cardMonthTotal").textContent=sumupReady?money(cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0)/100):"—";const cardMonthTotalCents=cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0);const cardMonthFeeCents=cardMonthRows.reduce((total,r)=>total+sumupFeeCents(r),0);$("cardMonthNetIndicative").textContent=sumupReady?money((cardMonthTotalCents-cardMonthFeeCents)/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonthFeeCents/100):"—";$("paymentDate").textContent=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(sumupNetForDay(selectedDay)+(t.cash-t.commission)+t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";$("sumupStatus").textContent=sumupReady?"Synchronisation serveur horaire · lecture toutes les minutes":"Connexion privée requise";}
 function addPayment(field,inputId){const input=$(inputId),raw=input.value.trim(),value=Number(raw);if(!raw||!Number.isFinite(value)||value<=0){toast("Entre un montant supérieur à zéro");return}const p=paymentData();p[selectedDay]??={};p[selectedDay][field]=String(Math.round((number(p[selectedDay][field])+value)*100)/100);input.value="";save();refreshMetrics();renderDays();renderAnnual();toast("Montant ajouté et enregistré")}
 function correctPayment(field,label){
  const p=paymentData(),entry=p[selectedDay]||{},previous=number(entry[field]);

@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.InputType;
 import android.webkit.*;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.graphics.Color;
 import android.widget.*;
@@ -59,6 +60,7 @@ public class MainActivity extends Activity {
   LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);layout.setPadding(36,80,36,36);
   TextView title=new TextView(this);title.setText("Mon Taxi · accès privé");title.setTextSize(24);layout.addView(title);
   TextView hint=new TextView(this);hint.setText("Authentification par empreinte ou code Samsung.");layout.addView(hint);
+  if(Build.VERSION.SDK_INT>=30)getWindow().setDecorFitsSystemWindows(true);
   setContentView(layout);
   // La boîte biométrique système s'ouvre directement, sans écran de choix préalable.
   layout.post(()->{if(!unlocked&&!prompting)authenticate();});
@@ -165,7 +167,26 @@ public class MainActivity extends Activity {
   // Toujours charger la dernière version en ligne après déverrouillage.
   if(web.getUrl()==null)web.loadUrl(APP_URL);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
-  setContentView(web);web.onResume();
+  if(Build.VERSION.SDK_INT>=30){
+   // Réserver les barres système et la découpe en mode bord à bord.
+   getWindow().setDecorFitsSystemWindows(false);
+   android.view.WindowInsetsController controller=getWindow().getInsetsController();
+   if(controller!=null)controller.show(WindowInsets.Type.statusBars());
+   FrameLayout content=new FrameLayout(this);
+   content.setBackgroundColor(Color.rgb(11,16,32));
+   content.setOnApplyWindowInsetsListener((view,insets)->{
+    android.graphics.Insets safe=insets.getInsets(
+     WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());
+    view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+    return WindowInsets.CONSUMED;
+   });
+   content.addView(web,new FrameLayout.LayoutParams(-1,-1));
+   setContentView(content);
+   content.requestApplyInsets();
+  }else{
+   setContentView(web);
+  }
+  web.onResume();
  }
  @Override protected void onPause(){
   super.onPause();
