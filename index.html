@@ -365,9 +365,32 @@ let privateSession=null;
 try{privateSession=JSON.parse(localStorage.getItem("taxi-private-session")||"null")}catch{}
 const privateGate=document.createElement("section");
 privateGate.style.cssText="position:fixed;inset:0;z-index:100;background:#0b1020;overflow:auto;padding:30px 18px";
-privateGate.innerHTML='<div class="card" style="max-width:430px;margin:6vh auto"><h1>Mon Taxi · accès privé</h1><p class="hint">Connecte-toi avec ton adresse autorisée pour consulter tes paiements.</p><label class="label" for="privateEmail">Adresse e-mail</label><input id="privateEmail" type="email" autocomplete="email"><button id="privateSend" class="button" style="margin:12px 0">Recevoir un accès par e-mail</button><p class="hint">Colle ici le lien de connexion reçu par e-mail, ou son code si le message en contient un.</p><input id="privateCode" type="text" autocomplete="one-time-code" placeholder="Lien ou code reçu"><button id="privateVerify" class="button" style="margin:12px 0">Ouvrir Mon Taxi</button><p id="privateMessage" class="hint" role="status"></p></div>';
+privateGate.innerHTML='<div id="privateResume" class="card" style="max-width:430px;margin:6vh auto" hidden><h1>Mon Taxi</h1><p id="privateResumeStatus" class="hint" role="status"></p><div class="toolbar"><button id="privateRetry" class="button" type="button" hidden>Réessayer</button><button id="privateReconnect" class="button secondary" type="button" hidden>Se reconnecter</button></div></div><div id="privateForm" class="card" style="max-width:430px;margin:6vh auto"><h1>Mon Taxi · accès privé</h1><p class="hint">Connecte-toi avec ton adresse autorisée pour consulter tes paiements.</p><label class="label" for="privateEmail">Adresse e-mail</label><input id="privateEmail" type="email" autocomplete="email"><button id="privateSend" class="button" style="margin:12px 0">Recevoir un accès par e-mail</button><p class="hint">Colle ici le lien de connexion reçu par e-mail, ou son code si le message en contient un.</p><input id="privateCode" type="text" autocomplete="one-time-code" placeholder="Lien ou code reçu"><button id="privateVerify" class="button" style="margin:12px 0">Ouvrir Mon Taxi</button><p id="privateMessage" class="hint" role="status"></p></div>';
 document.body.append(privateGate);
 function privateMessage(text){$("privateMessage").textContent=text}
+function showPrivateResume(message,{retry=false,reconnect=false}={}){
+ privateGate.hidden=false;
+ $("privateForm").hidden=true;
+ $("privateResume").hidden=false;
+ $("privateResumeStatus").textContent=message;
+ $("privateRetry").hidden=!retry;
+ $("privateReconnect").hidden=!reconnect;
+}
+function showPrivateForm(){
+ privateGate.hidden=false;
+ $("privateResume").hidden=true;
+ $("privateForm").hidden=false;
+}
+$("privateReconnect").onclick=showPrivateForm;
+$("privateRetry").onclick=()=>{
+ showPrivateResume("Ouverture de ta session…");
+ loadPrivatePayments();
+};
+if(privateSession?.access_token||new URLSearchParams(location.hash.slice(1)).has("access_token")){
+ showPrivateResume("Ouverture de ta session…");
+}else if(window.TaxiDownload){
+ showPrivateResume("Une connexion est nécessaire pour ouvrir Mon Taxi.",{reconnect:true});
+}
 async function authRequest(path,body){
  const response=await fetch(privateApi+"/auth/v1/"+path,{method:"POST",headers:{apikey:privateKey,"Content-Type":"application/json"},body:JSON.stringify(body)});
  const result=await response.json();
@@ -441,7 +464,11 @@ async function loadPrivatePayments(){
   if(!rows.length)throw Error("Aucun paiement accessible pour ce compte.");
   sumupRows=rows;sumupReady=true;renderArchive();privateGate.hidden=true;
   document.querySelector("main").hidden=false;render();markRefreshed();
- }catch(e){sumupRows=[];sumupReady=false;privateGate.hidden=false;document.querySelector("main").hidden=true;privateMessage(e.message)}
+ }catch(e){
+  sumupRows=[];sumupReady=false;
+  document.querySelector("main").hidden=true;
+  showPrivateResume(e instanceof TypeError?"Connexion indisponible. Réessaie dans un instant.":e.message,{retry:true,reconnect:true});
+ }
  finally{sumupLoading=false}
 }
 function automaticCaisse(day,m,monthKey){
@@ -492,7 +519,7 @@ function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).
 save();render();markRefreshed();
 document.querySelector("main").hidden=true;
 const logout=document.createElement("button");logout.className="button secondary";logout.textContent="Déconnexion";
-logout.onclick=async()=>{const session=privateSession;privateSession=null;sumupRows=[];sumupReady=false;localStorage.removeItem("taxi-private-session");privateGate.hidden=false;document.querySelector("main").hidden=true;if(session)fetch(privateApi+"/auth/v1/logout",{method:"POST",headers:{apikey:privateKey,Authorization:"Bearer "+session.access_token}}).catch(()=>{});};
+logout.onclick=async()=>{const session=privateSession;privateSession=null;sumupRows=[];sumupReady=false;localStorage.removeItem("taxi-private-session");showPrivateForm();document.querySelector("main").hidden=true;if(session)fetch(privateApi+"/auth/v1/logout",{method:"POST",headers:{apikey:privateKey,Authorization:"Bearer "+session.access_token}}).catch(()=>{});};
 document.querySelector("main").append(logout);
 const formulaNote=document.createElement("p");formulaNote.className="hint";formulaNote.textContent="La caisse automatique inclut cartes nettes + cash réel + appli. Une caisse saisie dans Détails remplace le total automatique de ce jour.";document.querySelector("main").append(formulaNote);
 const callback=new URLSearchParams(location.hash.slice(1));
@@ -502,7 +529,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v11-compact-receipt-table-20261105x";
+const siteBuild="taxi-v6-11-session-resume";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;

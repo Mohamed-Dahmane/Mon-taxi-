@@ -10,6 +10,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.os.Build;
 import android.os.CancellationSignal;
+import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.app.KeyguardManager;
 import android.content.Context;
@@ -28,6 +29,7 @@ import android.util.Base64;
 
 public class MainActivity extends Activity {
  private WebView web;
+ private Button retryUnlock;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
  private static final long IDLE_TIMEOUT_MS=60000L;
@@ -49,7 +51,6 @@ public class MainActivity extends Activity {
   getWindow().getDecorView().setSystemUiVisibility(0);
   getWindow().setStatusBarColor(Color.rgb(17,24,39));
   showLock();
-  getWindow().getDecorView().post(()->authenticate());
  }
  private byte[] derive(char[] pin,byte[] salt) throws Exception {
   PBEKeySpec spec=new PBEKeySpec(pin,salt,210000,256);
@@ -57,34 +58,80 @@ public class MainActivity extends Activity {
   finally{spec.clearPassword();java.util.Arrays.fill(pin,'\0');}
  }
  private void showLock() {
-  LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);layout.setPadding(36,80,36,36);
-  TextView title=new TextView(this);title.setText("Mon Taxi · accès privé");title.setTextSize(24);layout.addView(title);
-  TextView hint=new TextView(this);hint.setText("Authentification par empreinte ou code Samsung.");layout.addView(hint);
+  FrameLayout layout=new FrameLayout(this);
+  layout.setBackgroundColor(Color.rgb(11,16,32));
+  retryUnlock=new Button(this);
+  retryUnlock.setText("Déverrouiller Mon Taxi");
+  retryUnlock.setVisibility(View.GONE);
+  retryUnlock.setOnClickListener(v->authenticate());
+  layout.addView(retryUnlock,new FrameLayout.LayoutParams(-2,-2,android.view.Gravity.CENTER));
   if(Build.VERSION.SDK_INT>=30)getWindow().setDecorFitsSystemWindows(true);
   setContentView(layout);
-  // La boîte biométrique système s'ouvre directement, sans écran de choix préalable.
   layout.post(()->{if(!unlocked&&!prompting)authenticate();});
  }
  private void authenticate() {
+  if(prompting||unlocked)return;
+  retryUnlock.setVisibility(View.GONE);
   if(Build.VERSION.SDK_INT<30){deviceCredential();return;}
-  if(prompting)return;prompting=true;
-  biometric=new CancellationSignal();
-  new BiometricPrompt.Builder(this).setTitle("Ouvrir Mon Taxi").setSubtitle("Empreinte ou code de déverrouillage Samsung")
-   .setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG | android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-   .build().authenticate(biometric,getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){
-    @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r){prompting=false;openTaxi();}
-    @Override public void onAuthenticationError(int code,CharSequence message){prompting=false;if(code!=BiometricPrompt.BIOMETRIC_ERROR_CANCELED&&code!=BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED)Toast.makeText(MainActivity.this,"Déverrouillage indisponible : vérifie la sécurité du téléphone.",Toast.LENGTH_LONG).show();}
+  int strength=BiometricManager.Authenticators.BIOMETRIC_STRONG;
+  BiometricManager manager=getSystemService(BiometricManager.class);
+  if(manager==null||manager.canAuthenticate(strength)!=BiometricManager.BIOMETRIC_SUCCESS){
+   deviceCredential();
+   return;
+  }
+  prompting=true;
+  CancellationSignal attempt=new CancellationSignal();
+  biometric=attempt;
+  new BiometricPrompt.Builder(this).setTitle("Ouvrir Mon Taxi").setSubtitle("Utilise ton empreinte")
+   .setAllowedAuthenticators(strength)
+   .setNegativeButton("Code Samsung",getMainExecutor(),(dialog,which)->fallbackToCredential(attempt))
+   .build().authenticate(attempt,getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){
+    private int failedScans;
+    @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result){
+     if(biometric!=attempt)return;
+     biometric=null;
+     prompting=false;
+     openTaxi();
+    }
+    @Override public void onAuthenticationFailed(){
+     if(biometric==attempt&&++failedScans>=3)fallbackToCredential(attempt);
+    }
+    @Override public void onAuthenticationError(int code,CharSequence message){
+     if(biometric!=attempt)return;
+     if(code==BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED||code==BiometricPrompt.BIOMETRIC_ERROR_CANCELED){
+      biometric=null;
+      prompting=false;
+      retryUnlock.setVisibility(View.VISIBLE);
+     }else{
+      fallbackToCredential(attempt);
+     }
+    }
    });
+ }
+ private void fallbackToCredential(CancellationSignal attempt){
+  if(biometric!=attempt)return;
+  biometric=null;
+  prompting=false;
+  attempt.cancel();
+  deviceCredential();
  }
  private void deviceCredential(){
   KeyguardManager km=(KeyguardManager)getSystemService(Context.KEYGUARD_SERVICE);
-  if(km==null||!km.isDeviceSecure()){Toast.makeText(this,"Configure d'abord le verrouillage sécurisé Samsung.",Toast.LENGTH_LONG).show();return;}
+  if(km==null||!km.isDeviceSecure()){retryUnlock.setVisibility(View.VISIBLE);Toast.makeText(this,"Configure d'abord le verrouillage sécurisé Samsung.",Toast.LENGTH_LONG).show();return;}
   android.content.Intent intent=km.createConfirmDeviceCredentialIntent("Ouvrir Mon Taxi","Confirme avec ton code Samsung");
-  if(intent!=null)startActivityForResult(intent,91);
+  if(intent!=null){
+   prompting=true;
+   startActivityForResult(intent,91);
+  }
+  else retryUnlock.setVisibility(View.VISIBLE);
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
   super.onActivityResult(requestCode,resultCode,data);
-  if(requestCode==91&&resultCode==RESULT_OK)openTaxi();
+  if(requestCode==91){
+   prompting=false;
+   if(resultCode==RESULT_OK)openTaxi();
+   else retryUnlock.setVisibility(View.VISIBLE);
+  }
  }
  private void pinDialog(boolean setup) {
   long remaining=vault.getLong("blockedUntil",0)-System.currentTimeMillis();
@@ -203,7 +250,13 @@ public class MainActivity extends Activity {
  @Override protected void onStop(){
   super.onStop();
   // Une courte sortie de l'application ne ferme plus la session.
-  if(!unlocked&&biometric!=null){biometric.cancel();biometric=null;prompting=false;}
+  if(!unlocked&&biometric!=null){
+   CancellationSignal attempt=biometric;
+   biometric=null;
+   prompting=false;
+   attempt.cancel();
+   retryUnlock.setVisibility(View.VISIBLE);
+  }
  }
  @Override public void onBackPressed(){if(unlocked&&web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
 }
