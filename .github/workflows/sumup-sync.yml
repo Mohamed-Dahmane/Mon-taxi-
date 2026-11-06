@@ -35,8 +35,12 @@ jobs:
           from urllib.parse import urlparse
           key = os.environ['SUPABASE_SERVICE_ROLE_KEY'].strip()
           expected = 'uenyvsiturkihectolxp'
-          if urlparse(os.environ['SUPABASE_URL'].strip()).hostname != expected + '.supabase.co':
-              raise SystemExit('Configuration error: SUPABASE_URL targets a different project or is malformed.')
+          parsed = urlparse(os.environ['SUPABASE_URL'].strip())
+          if (parsed.scheme != 'https' or parsed.hostname != expected + '.supabase.co'
+                  or parsed.port is not None or parsed.username is not None
+                  or parsed.password is not None or parsed.path not in ('', '/')
+                  or parsed.query or parsed.fragment):
+              raise SystemExit('Configuration error: SUPABASE_URL must be the expected HTTPS project origin.')
           if key.startswith('sb_secret_'):
               raise SystemExit('Configuration error: this protected Edge Function requires a service_role JWT; a modern sb_secret_ key cannot be used as its Bearer token. Configure a service_role JWT in the existing GitHub secret, without printing it.')
           elif key.startswith('sb_publishable_'):
