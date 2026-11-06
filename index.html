@@ -55,7 +55,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #home .card-payments .card-month-total{margin-top:5px;padding-top:4px}
 #home .card-payments .hint{margin:2px 0;font-size:10px}
 #home .cash-breakdown .payment-entry button{min-height:44px;font-size:12px}
-#daily :is(.rowhead,.dayrow,.daytotals){grid-template-columns:minmax(61px,.95fr) repeat(3,minmax(0,1fr)) minmax(58px,1.2fr);gap:4px}
+#daily :is(.rowhead,.dayrow,.daytotals){grid-template-columns:minmax(61px,.95fr) repeat(2,minmax(0,1fr)) minmax(48px,1fr) minmax(86px,1.7fr);gap:4px}
 #daily .rowhead,#daily .day-expense-nature{overflow-wrap:anywhere}
 #daily .day-expense-nature,#daily .day-expense-total{font-size:12px}
 #daily .day-expense-total{text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -592,7 +592,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-daily-expense-nature";
+const siteBuild="taxi-v6-11-wide-daily-expense-nature";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
