@@ -100,6 +100,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-costs .typeBtn{display:inline-flex;font-size:12px;min-height:40px;padding:4px 9px;margin-top:2px}
 #quickEditor .amount-row input{font-size:16px;padding:8px}
 #quickEditor .button{font-size:12px}
+.day-expense-editor{grid-column:1/-1}
+.day-expense-edit{width:100%;min-height:38px;border:1px solid #52698a;border-radius:8px;background:#253650;color:inherit;font:inherit;font-size:11px;padding:4px 2px}
+.day-expense-editor .button,.expense-actions .button{width:auto;padding:6px 8px;font-size:12px}
+.expense-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
@@ -348,8 +352,21 @@ function renderReceiptBreakdown(){
 function renderDays(){const month=current();const root=$("dayRows");root.replaceChildren();const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();for(let i=1;i<=n;i++){const row=document.createElement("div");row.className="dayrow";row.dataset.day=String(i);if(i===selectedDay){row.style.background="#223b55";row.style.borderRadius="9px";row.style.outline="1px solid #5286ad"}const day=document.createElement("span");day.className="day";day.textContent=String(i).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const d=month.days?.[i]||{};const expenses=(month.extra||[]).filter(e=>Number(e.day)===i);
 const nature=document.createElement("span");nature.className="day-expense-nature";nature.textContent=expenses.map(e=>e.name).join(" · ")||"—";
 const expense=expenses.length?document.createElement("span"):field(d.expense,"Vide",v=>{ensure().days[i]??={};ensure().days[i].expense=v});
-if(expenses.length){expense.className="day-expense-total";expense.textContent=money(expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense)));}
-row.append(day,field(d.caisse,sumupReady?automaticCaisse(i,current(),key()).toFixed(2):"Vide",v=>{ensure().days[i]??={};ensure().days[i].caisse=v}),field(d.fuel,"Vide",v=>{ensure().days[i]??={};ensure().days[i].fuel=v}),expense,nature);root.append(row)}}
+
+row.append(day,field(d.caisse,sumupReady?automaticCaisse(i,current(),key()).toFixed(2):"Vide",v=>{ensure().days[i]??={};ensure().days[i].caisse=v}),field(d.fuel,"Vide",v=>{ensure().days[i]??={};ensure().days[i].fuel=v}),expense,nature);
+if(expenses.length){
+ const toggle=document.createElement("button");toggle.type="button";toggle.className="day-expense-edit";
+ toggle.textContent=money(expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense)))+" ✎";
+ toggle.setAttribute("aria-label","Corriger les dépenses du "+costDate(i));toggle.setAttribute("aria-expanded","false");
+ const editor=document.createElement("div");editor.className="day-expense-editor";editor.hidden=true;
+ toggle.addEventListener("click",()=>{
+  editor.hidden=!editor.hidden;
+  toggle.setAttribute("aria-expanded",String(!editor.hidden));
+  if(!editor.hidden)renderExpenseCorrections(editor,i);
+ });
+ expense.append(toggle);row.append(editor);
+}
+root.append(row)}}
 function renderFixed(){const root=$("fixedRows");root.replaceChildren();fixedEntries(current().fixed).forEach(([name,value])=>{const row=document.createElement("div");row.className="fixedrow";row.style.gridTemplateColumns="minmax(0,1fr) 100px 32px";const label=document.createElement("input");label.type="text";label.value=name;label.setAttribute("aria-label","Intitulé de la charge fixe");label.addEventListener("change",()=>{const next=label.value.trim();if(!next||next===name){label.value=name;return}if(isSumUpFixed(next)){toast("Les frais SumUp sont calculés à 1,69 %");label.value=name;return}const fixed=ensure().fixed;if(Object.prototype.hasOwnProperty.call(fixed,next)){toast("Cet intitulé existe déjà");label.value=name;return}const updated={};Object.entries(fixed).forEach(([k,v])=>updated[k===name?next:k]=v);ensure().fixed=updated;ensure().fixedCustomized=true;save();renderFixed();refreshMetrics()});const amount=document.createElement("input");amount.type="text";amount.inputMode="decimal";amount.setAttribute("aria-label","Montant en euros pour "+name);const euroDisplay=v=>Number(String(v??"0").replace(/\\s/g,"").replace("€","").replace(",","." )||0).toLocaleString("fr-BE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";amount.value=euroDisplay(value);amount.addEventListener("focus",()=>{amount.value=String(value??"0").replace(".",",");amount.select()});amount.addEventListener("input",()=>{const raw=amount.value.replace(/\\s/g,"").replace("€","").replace(",",".");if(raw!==""&&!/^[-]?[0-9]*([.][0-9]*)?$/.test(raw))return;ensure().fixed[name]=raw;ensure().fixedCustomized=true;save();refreshMetrics();renderAnnual();renderArchive()});amount.addEventListener("blur",()=>{value=ensure().fixed[name];amount.value=euroDisplay(value)});const remove=document.createElement("button");remove.type="button";remove.className="button danger";remove.textContent="×";remove.title="Supprimer cette charge";remove.style.padding="10px 4px";remove.addEventListener("click",()=>{if(!confirm("Supprimer « "+name+" » pour ce mois ?"))return;delete ensure().fixed[name];ensure().fixedCustomized=true;save();renderFixed();refreshMetrics();renderAnnual();renderArchive()});row.append(label,amount,remove);root.append(row)})}
 $("addFixed").addEventListener("click",()=>{const fixed=ensure().fixed;let i=1;while(Object.prototype.hasOwnProperty.call(fixed,"Nouvelle charge "+i))i++;fixed["Nouvelle charge "+i]="0";ensure().fixedCustomized=true;save();renderFixed();refreshMetrics();toast("Modifie le nom et le montant")});
 function renderArchive(){const start="2026-9";const cardPeriods=sumupRows.filter(r=>r.status==="SUCCESSFUL").map(r=>{const [y,m]=r.local_day.split("-");return y+"-"+(Number(m)-1)});const periods=[...new Set([...Object.keys(data.months),...cardPeriods])].filter(k=>{const [y,m]=k.split("-").map(Number);return y>2026||(y===2026&&m>=9)}).sort((a,b)=>{const [ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return by*12+bm-(ay*12+am)});let revenue=0,charges=0,net=0;const monthRoot=$("archiveMonths"),dayRoot=$("archiveDays");monthRoot.replaceChildren();dayRoot.replaceChildren();for(const k of periods){const [y,m]=k.split("-").map(Number),entry=data.months[k]||{},st=stats({...entry,fixed:entry.fixed||{}},k);revenue+=st.revenue;charges+=st.costs;net+=st.balance;const row=document.createElement("div");row.className="annualrow";row.style.gridTemplateColumns="1fr 1fr 1fr";const label=document.createElement("span");label.textContent=months[m]+" "+y;const amount=document.createElement("strong");amount.textContent=money(st.revenue);const result=document.createElement("strong");result.textContent=money(st.balance);row.append(label,amount,result);monthRoot.append(row);const count=new Date(y,m+1,0).getDate();for(let d=count;d>=1;d--){const v=entry.days?.[d]||{},p=entry.payments?.[d]||{};const manual=v.caisse!==undefined&&v.caisse!==null&&String(v.caisse)!=="";const hasPayment=Object.values(p).some(x=>x!==""&&x!==null&&x!==undefined);const auto=sumupReady?automaticCaisse(d,entry,k):0;if(!manual&&!hasPayment&&!auto)continue;const amountValue=manual?number(v.caisse):(sumupReady?auto:null);const item=document.createElement("div");item.className="annualrow";item.style.gridTemplateColumns="1fr 1fr";const date=document.createElement("span");date.textContent=String(d).padStart(2,"0")+"."+String(m+1).padStart(2,"0")+"."+y;const value=document.createElement("strong");value.textContent=amountValue===null?"—":money(amountValue);item.append(date,value);dayRoot.append(item)}}if(!periods.length)monthRoot.textContent="Aucun mois enregistré depuis le 01.10.2026.";if(!dayRoot.children.length)dayRoot.textContent="Aucun encaissement daté enregistré."; $("archiveTotal").textContent=money(revenue);$("archiveCharges").textContent=money(charges);$("archiveNet").textContent=money(net)}
@@ -370,8 +387,7 @@ function correctCost(label,previous,apply){
  save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();
  toast("Montant corrigé et enregistré");
 }
-function renderExpenseCorrections(){
- const root=$("expenseCorrections");
+function renderExpenseCorrections(root=$("expenseCorrections"),dayFilter){
  if(root.hidden)return;
  root.replaceChildren();
  const month=current();
@@ -383,14 +399,15 @@ function renderExpenseCorrections(){
   row.append(text,button);root.append(row);
  };
  (month.extra||[]).forEach((entry,index)=>{
+  if(dayFilter!==undefined&&Number(entry.day)!==dayFilter)return;
   const label=(entry.day?costDate(entry.day)+" · ":"")+entry.name;
   addRow(label,entry.amount,value=>{ensure().extra[index].amount=value});
  });
  for(const [day,entry] of Object.entries(month.days||{})){
-  if(!number(entry.expense))continue;
+  if((dayFilter!==undefined&&Number(day)!==dayFilter)||entry.expense===undefined||entry.expense==="")continue;
   addRow(costDate(day)+" · Dépense",entry.expense,value=>{ensure().days[day].expense=value});
  }
- if(!root.childElementCount)root.textContent="Aucune dépense à corriger ce mois-ci.";
+ if(!root.childElementCount)root.textContent="Aucune dépense à corriger.";
 }
 $("editFuel").addEventListener("click",()=>{
  const day=selectedDay;
@@ -405,7 +422,10 @@ $("editExpenses").addEventListener("click",()=>{
  $("editExpenses").setAttribute("aria-expanded",String(!root.hidden));
  renderExpenseCorrections();
 });
-function renderExpenses(){renderExpenseCorrections();const root=$("expenseRows");root.replaceChildren();(current().extra||[]).forEach((e,i)=>{const row=document.createElement("div");row.className="expense";const label=document.createElement("span");label.textContent=(e.day?String(e.day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" · ":"")+e.name+" · "+(e.amount===""?"montant non renseigné":money(number(e.amount)));const b=document.createElement("button");b.className="button danger";b.textContent="Supprimer";b.addEventListener("click",()=>{ensure().extra.splice(i,1);save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive()});row.append(label,b);root.append(row)})}
+function renderExpenses(){renderExpenseCorrections();const root=$("expenseRows");root.replaceChildren();(current().extra||[]).forEach((e,i)=>{const row=document.createElement("div");row.className="expense";const label=document.createElement("span");label.textContent=(e.day?String(e.day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" · ":"")+e.name+" · "+(e.amount===""?"montant non renseigné":money(number(e.amount)));const b=document.createElement("button");b.className="button danger";b.textContent="Supprimer";b.addEventListener("click",()=>{ensure().extra.splice(i,1);save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive()});const edit=document.createElement("button");edit.type="button";edit.className="button secondary";edit.textContent="Corriger";
+edit.addEventListener("click",()=>correctCost((e.day?costDate(e.day)+" · ":"")+e.name,e.amount,value=>{ensure().extra[i].amount=value}));
+const actions=document.createElement("div");actions.className="expense-actions";actions.append(edit,b);
+row.append(label,actions);root.append(row)})}
 function renderAnnual(){const root=$("annualRows");root.replaceChildren();let total=0;months.forEach((m,i)=>{const monthData=data.months[yearSel.value+"-"+i]||{days:{},extra:[]};const s=stats({...monthData,fixed:monthData.fixed||defaultFixed()},yearSel.value+"-"+i);total+=s.revenue;const row=document.createElement("div");row.className="annualrow";const label=document.createElement("span");label.textContent=m;const rev=document.createElement("strong");rev.textContent=money(s.revenue);const balance=document.createElement("strong");balance.textContent=money(s.balance);balance.className=s.balance<0?"red":"green";row.append(label,rev,balance);root.append(row)});$("annualTotal").textContent=money(total)}
 function render(){ensure();save();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});
