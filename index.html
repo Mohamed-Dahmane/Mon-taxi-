@@ -530,7 +530,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-session-resume-full-pull";
+const siteBuild="taxi-v6-11-quick-entry-without-caisse";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
