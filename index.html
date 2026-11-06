@@ -46,6 +46,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .payment-day-total{text-align:right;min-width:0}
 .payment-day-total span{display:block;color:#b6e6db;font-size:11px;font-weight:750}
 .payment-day-total strong{display:block;color:#77ecc2;font-size:clamp(23px,6vw,30px);line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#home .cash-daily-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid #354a6b;text-align:center}
+#home .cash-daily-totals .label{min-height:2.4em;display:grid;align-items:end;line-height:1.2}
+#home .cash-daily-totals strong{font-size:clamp(11px,3.3vw,16px);overflow-wrap:anywhere}
+#home .cash-daily-totals .card-month-total{padding-inline:1px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
@@ -59,8 +63,19 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 </div>
 <div class="payment-grid">
 <div class="payment-box"><div class="label">cartes</div><div class="card-comparison"><div><div class="label">Brut du jour</div><strong id="sumupToday">—</strong></div><div class="card-net"><div class="label">Cartes réel</div><strong id="cardNetToday">—</strong></div></div><div class="hint">Frais SumUp 1,69 % : <span id="cardFeeToday">—</span></div><small id="sumupStatus">Connexion non configurée</small><div class="card-month-total"><div id="cardMonthLabel">Total du mois</div><div class="card-comparison"><div><div>Brut cartes</div><strong id="cardMonthTotal">—</strong></div><div class="card-net"><div>Cartes réel</div><strong id="cardMonthNetIndicative">—</strong></div></div><div class="hint">Frais SumUp 1,69 % : <span id="cardMonthFeeEstimate">—</span></div></div></div>
-<div class="payment-box cash-with-commission"><div class="cash-breakdown"><div class="cash-component"><div class="label">cash</div><strong id="cashToday">0,00 €</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="cashMonthCard">—</strong></div><div class="payment-entry"><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter du cash"><button type="button" class="button" id="addCash">+ Ajouter</button><button type="button" class="button" id="editCash">✎ Corriger</button></div></div><div class="cash-component"><div class="label">− Com</div><strong id="commissionToday">0,00 €</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="commissionMonthCard">—</strong></div><div class="payment-entry"><input id="commissionInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter une commission"><button type="button" class="button" id="addCommission">+ Ajouter</button><button type="button" class="button" id="editCommission">✎ Corriger</button></div></div><div class="cash-component cash-real"><div class="label">Cash réel</div><strong id="cashRealToday">—</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="cashRealMonth">—</strong></div></div></div></div>
-<div class="payment-box"><div class="label">appli</div><strong id="appeleToday">0,00 €</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="appeleMonthCard">—</strong></div><div class="payment-entry"><input id="appeleInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter un revenu appli"><button type="button" class="button" id="addAppele">+ Ajouter</button><button type="button" class="button" id="editAppele">✎ Corriger</button></div></div>
+<div class="payment-box cash-with-commission">
+<div class="cash-breakdown" role="group" aria-label="Montants à encoder">
+<div class="cash-component"><div class="label">Cash</div><div class="payment-entry"><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter du cash"><button type="button" class="button" id="addCash">+ Ajouter</button><button type="button" class="button" id="editCash">✎ Corriger</button></div></div>
+<div class="cash-component"><div class="label">Com</div><div class="payment-entry"><input id="commissionInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter une commission"><button type="button" class="button" id="addCommission">+ Ajouter</button><button type="button" class="button" id="editCommission">✎ Corriger</button></div></div>
+<div class="cash-component"><div class="label">Appli</div><div class="payment-entry"><input id="appeleInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter un revenu appli"><button type="button" class="button" id="addAppele">+ Ajouter</button><button type="button" class="button" id="editAppele">✎ Corriger</button></div></div>
+</div>
+<div class="cash-daily-totals" role="group" aria-label="Totaux du jour et du mois">
+<div class="cash-component"><div class="label">Cash</div><strong id="cashToday">—</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="cashMonthCard">—</strong></div></div>
+<div class="cash-component"><div class="label">Com</div><strong id="commissionToday">—</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="commissionMonthCard">—</strong></div></div>
+<div class="cash-component"><div class="label">Appli</div><strong id="appeleToday">—</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="appeleMonthCard">—</strong></div></div>
+<div class="cash-component cash-real"><div class="label">Cash réel</div><strong id="cashRealToday">—</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="cashRealMonth">—</strong></div></div>
+</div>
+</div>
 </div>
 <div class="payment-month" hidden style="display:none"><span>Cash du mois <b id="cashMonth">0,00 €</b></span><span>Appli du mois <b id="appeleMonth">0,00 €</b></span><span>Commissions du mois <b id="commissionMonth">0,00 €</b></span></div>
 </section>
@@ -564,7 +579,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-clean-pages";
+const siteBuild="taxi-v6-11-payment-inputs-and-totals";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
