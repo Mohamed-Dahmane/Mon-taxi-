@@ -37,9 +37,16 @@ Deno.serve(async (req) => {
     endpoint.searchParams.set("limit","100");
     endpoint.searchParams.set("offset",String(cursor));
     endpoint.searchParams.set("oldest_time","2026-10-31T23:00:00Z");
-    const response=await fetch(endpoint,{headers:{Authorization:"Bearer "+key,Accept:"application/json"}});
+    let response: Response;
+    try {
+      response=await fetch(endpoint,{headers:{Authorization:"Bearer "+key,Accept:"application/json"},signal:AbortSignal.timeout(20000),redirect:"error"});
+    } catch {
+      return Response.json({ok:false,reason:"sumup_network_error"},{status:502});
+    }
     if(!response.ok) return Response.json({ok:false,reason:"sumup_http_"+response.status},{status:502});
-    const data=await response.json();
+    let data: unknown;
+    try { data=await response.json(); }
+    catch { return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502}); }
     const entries=Array.isArray(data)?data:(data && typeof data==="object" ? (data.items??data.transactions) : undefined);
     // A 200 response containing an error object or an unknown shape is not an empty history.
     if(!Array.isArray(entries)) return Response.json({ok:false,reason:"unexpected_sumup_response"},{status:502});
