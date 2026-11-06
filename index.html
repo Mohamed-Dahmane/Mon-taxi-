@@ -39,8 +39,13 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #daily .dayrow { margin-bottom: 2px; }
 #daily .dayrow input { padding-block: 5px; min-height: 32px; }
 #daily .daytotals { padding-block: 8px; }
+.selectors{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:6px}
+.selectors select,.selectors .calendar-trigger{min-width:0;padding:8px 6px;font-size:14px}
+.selectors .calendar-trigger{width:100%;margin:0;text-align:center}
 </style></head><body><main hidden><header><div><div class="eyebrow">GESTION QUOTIDIENNE</div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11 · Historique mensuel conservé</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
-<div class="selectors"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
+<div class="selectors"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">Jour</button></div>
+<select id="quickDay" hidden aria-label="Jour sélectionné"></select>
+<div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home"><div class="payment-total daily-cashbox" style="margin-top:0"><div><span>RECETTE DU JOUR</span><small>cartes nettes + cash réel + appli</small></div><strong id="paymentNetToday">—</strong></div>
 <section class="card" id="paymentSplit" aria-label="Encaissements du jour">
@@ -54,8 +59,6 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 </section>
 <section class="card quick-card" style="margin-bottom:10px">
 <div class="eyebrow" style="margin-bottom:9px">ENCODER UN MONTANT</div>
-<div class="quick-top" style="grid-template-columns:minmax(0,1fr)"><div><label class="label" for="quickDay">Journée</label><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">Choisir une date</button><select id="quickDay" hidden aria-label="Jour sélectionné"></select></div></div>
-<div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="quick-types" role="group" aria-label="Type de montant">
 <button class="typeBtn active" type="button" data-type="fuel">⛽<span>Carburant</span></button>
 <button class="typeBtn" type="button" data-type="expense">🧾<span>Dépenses</span></button>
@@ -498,16 +501,29 @@ $("addAppele").addEventListener("click",()=>addPayment("appele","appeleInput"));
 $("addCash").addEventListener("click",()=>addPayment("cash","cashInput"));
 $("addCommission").addEventListener("click",()=>addPayment("commission","commissionInput"));
 const quickDay=$("quickDay");
-let selectedDay=new Date().getDate();
+let selectedDay=initialToday.getDate();
+let lastToday=initialToday;
 let lastEntry=null;
 function renderQuick(){const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();selectedDay=Math.max(1,Math.min(selectedDay,n));quickDay.replaceChildren();for(let i=1;i<=n;i++)quickDay.add(new Option(String(i),String(i)));quickDay.value=String(selectedDay);showQuickDay();renderCalendar()}
-function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=fullDate.charAt(0).toUpperCase()+fullDate.slice(1);$("v11SelectedDetailsDate").textContent=date;document.querySelectorAll("#dayRows .dayrow").forEach(row=>{const active=Number(row.dataset.day)===selectedDay;row.style.background=active?"#223b55":"";row.style.borderRadius=active?"9px":"";row.style.outline=active?"1px solid #5286ad":""});const d=current().days?.[selectedDay]||{};const caisse=d.caisse!==undefined&&String(d.caisse)!==""?number(d.caisse):automaticCaisse(selectedDay,current(),key()),fuel=number(d.fuel),expense=number(d.expense)+(current().extra||[]).reduce((sum,e)=>sum+(Number(e.day)===selectedDay?number(e.amount):0),0);$("dailyFuel").textContent=money(fuel);$("dailyExpense").textContent=money(expense);$("dailyBalance").textContent=money(caisse-fuel-expense);$("quickDayTotal").textContent="Montants enregistrés pour le "+date;}
+function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent="Jour "+selectedDay;$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);$("v11SelectedDetailsDate").textContent=date;document.querySelectorAll("#dayRows .dayrow").forEach(row=>{const active=Number(row.dataset.day)===selectedDay;row.style.background=active?"#223b55":"";row.style.borderRadius=active?"9px":"";row.style.outline=active?"1px solid #5286ad":""});const d=current().days?.[selectedDay]||{};const caisse=d.caisse!==undefined&&String(d.caisse)!==""?number(d.caisse):automaticCaisse(selectedDay,current(),key()),fuel=number(d.fuel),expense=number(d.expense)+(current().extra||[]).reduce((sum,e)=>sum+(Number(e.day)===selectedDay?number(e.amount):0),0);$("dailyFuel").textContent=money(fuel);$("dailyExpense").textContent=money(expense);$("dailyBalance").textContent=money(caisse-fuel-expense);$("quickDayTotal").textContent="Montants enregistrés pour le "+date;}
 const calendarDialog=$("calendarDialog");
 function renderCalendar(){const y=Number(yearSel.value),m=Number(monthSel.value),n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,today=new Date(),root=$("calendarGrid");$("calendarTitle").textContent=months[m]+" "+y;root.replaceChildren();["L","M","M","J","V","S","D"].forEach(label=>{const e=document.createElement("span");e.className="calendar-weekday";e.textContent=label;root.append(e)});for(let i=0;i<offset;i++)root.append(document.createElement("span"));for(let d=1;d<=n;d++){const b=document.createElement("button");b.type="button";b.className="calendar-day"+(String(d)===quickDay.value?" selected":"")+(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d?" today":"");b.textContent=d;b.setAttribute("aria-label",d+" "+months[m]+" "+y);b.setAttribute("aria-pressed",String(d)===quickDay.value?"true":"false");b.addEventListener("click",()=>{selectedDay=d;quickDay.value=String(d);calendarDialog.hidden=true;showQuickDay();renderCalendar()});root.append(b)}}
 
 $("calendarTrigger").addEventListener("click",()=>{calendarDialog.hidden=!calendarDialog.hidden;if(!calendarDialog.hidden)renderCalendar()});
 $("calendarClose").addEventListener("click",()=>calendarDialog.hidden=true);
-$("calendarToday").addEventListener("click",()=>{const t=new Date();yearSel.value=String(t.getFullYear());monthSel.value=String(t.getMonth());selectedDay=t.getDate();render();quickDay.value=String(selectedDay);showQuickDay();renderCalendar();calendarDialog.hidden=true});
+function selectToday(today){
+ lastToday=today;
+ yearSel.value=String(today.getFullYear());monthSel.value=String(today.getMonth());selectedDay=today.getDate();
+ calendarDialog.hidden=true;render();
+}
+function followToday(){
+ const today=new Date();
+ if(today.toDateString()===lastToday.toDateString()||!safeToReload())return;
+ const wasFollowing=Number(yearSel.value)===lastToday.getFullYear()&&Number(monthSel.value)===lastToday.getMonth()&&selectedDay===lastToday.getDate();
+ lastToday=today;
+ if(wasFollowing)selectToday(today);
+}
+$("calendarToday").addEventListener("click",()=>selectToday(new Date()));
 quickDay.addEventListener("change",()=>{selectedDay=Number(quickDay.value);showQuickDay()});
 document.querySelectorAll(".typeBtn").forEach(btn=>btn.addEventListener("click",()=>{$("quickType").value=btn.dataset.type;document.querySelectorAll(".typeBtn").forEach(b=>b.classList.toggle("active",b===btn));const isExpense=btn.dataset.type==="expense";$("quickExpenseNature").hidden=!isExpense;$(isExpense?"quickExpenseName":"quickAmount").focus()}));
 $("validateQuick").addEventListener("click",()=>{const raw=$("quickAmount").value,field=$("quickType").value,day=quickDay.value;if(raw===""||!Number.isFinite(Number(raw))||Number(raw)<0){toast("Entre un montant valide, y compris 0");return}const m=ensure();if(field==="expense"){
@@ -541,7 +557,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-manual-reset-expense-nature";
+const siteBuild="taxi-v6-11-global-day-picker";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
@@ -559,7 +575,7 @@ async function checkPublishedBuild(){
   if(newBuildPending&&safeToReload())location.reload();
  }catch(e){}
 }
-setInterval(checkPublishedBuild,10000);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkPublishedBuild()});
+setInterval(()=>{followToday();checkPublishedBuild()},10000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){followToday();checkPublishedBuild()}});
 })();
 </script></body></html>
