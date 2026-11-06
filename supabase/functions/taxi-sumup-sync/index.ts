@@ -40,7 +40,8 @@ Deno.serve(async (req) => {
     const response=await fetch(endpoint,{headers:{Authorization:"Bearer "+key,Accept:"application/json"}});
     if(!response.ok) return Response.json({ok:false,reason:"sumup_http_"+response.status},{status:502});
     const data=await response.json();
-    const entries=Array.isArray(data)?data:(data.items??data.transactions??[]);
+    const entries=Array.isArray(data)?data:(data && typeof data==="object" ? (data.items??data.transactions) : undefined);
+    // A 200 response containing an error object or an unknown shape is not an empty history.
     if(!Array.isArray(entries)) return Response.json({ok:false,reason:"unexpected_sumup_response"},{status:502});
     const rows=[];
     for(const tx of entries){
