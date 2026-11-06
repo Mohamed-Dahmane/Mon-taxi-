@@ -23,9 +23,14 @@ Deno.serve(async (req) => {
     const projectRef=new URL(url).hostname.split(".")[0];
     if(claims.role!=="service_role" || claims.ref!==projectRef)
       return Response.json({ok:false},{status:403});
-    const verification=await fetch(url+"/rest/v1/taxi_sumup_transactions?select=transaction_id&limit=0",{
-      headers:{apikey:service,Authorization:"Bearer "+token}
-    });
+    // Bound credential verification and never forward privileged headers on redirects.
+    let verification: Response;
+    try {
+      verification=await fetch(url+"/rest/v1/taxi_sumup_transactions?select=transaction_id&limit=0",{
+        headers:{apikey:service,Authorization:"Bearer "+token},
+        signal:AbortSignal.timeout(10000),redirect:"error"
+      });
+    } catch { return Response.json({ok:false},{status:403}); }
     if(!verification.ok) return Response.json({ok:false},{status:403});
     await verification.body?.cancel();
   }
