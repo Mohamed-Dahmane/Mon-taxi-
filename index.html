@@ -26,9 +26,9 @@ header{gap:10px}header>div{min-width:0}header .v11-refresh{margin:0;align-self:f
 @media(max-width:380px){.receipts-table{font-size:10px}.receipts-table th:first-child{width:60px;font-size:9px}.receipts-table thead th{font-size:9px}}
 
 html { overscroll-behavior-y: none; }
-.page { translate: var(--pull-offset, none); transition: translate 180ms ease-out; }
-.page.is-pulling { transition: none; }
-@media (prefers-reduced-motion: reduce) { .page { transition: none; } }
+main { translate: var(--pull-offset, none); transition: translate 180ms ease-out; }
+main.is-pulling { transition: none; }
+@media (prefers-reduced-motion: reduce) { main { transition: none; } }
 main { padding-top: max(10px, env(safe-area-inset-top)); }
 
 /* Tableaux de la fiche Détails */
@@ -245,12 +245,12 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
 // Navigation horizontale et actualisation tactile depuis le haut de la page.
 (function(){
  const pages=["home","details","archive"];
- let startX=0,startY=0,tracking=false,pullFromTop=false,pulledPage=null;
+ let startX=0,startY=0,tracking=false,pullFromTop=false,pulledMain=null;
  function releasePull(){
-  if(!pulledPage)return;
-  pulledPage.classList.remove("is-pulling");
-  pulledPage.style.removeProperty("--pull-offset");
-  pulledPage=null;
+  if(!pulledMain)return;
+  pulledMain.classList.remove("is-pulling");
+  pulledMain.style.removeProperty("--pull-offset");
+  pulledMain=null;
  }
  document.addEventListener("touchstart",e=>{
   releasePull();
@@ -269,10 +269,10 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
    return;
   }
   if(e.cancelable)e.preventDefault();
-  pulledPage??=document.querySelector(".page.active");
-  if(pulledPage){
-   pulledPage.classList.add("is-pulling");
-   pulledPage.style.setProperty("--pull-offset","0 "+Math.min(dy*0.55,72)+"px");
+  pulledMain??=document.querySelector("main");
+  if(pulledMain){
+   pulledMain.classList.add("is-pulling");
+   pulledMain.style.setProperty("--pull-offset","0 "+Math.min(dy*0.55,72)+"px");
   }
  },{passive:false});
  document.addEventListener("touchcancel",()=>{
@@ -529,7 +529,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-session-resume";
+const siteBuild="taxi-v6-11-session-resume-full-pull";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
