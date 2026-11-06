@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     let data: unknown;
     try { data=await response.json(); }
     catch { return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502}); }
-    const entries=Array.isArray(data)?data:(data && typeof data==="object" ? (data.items??data.transactions) : undefined);
+    const entries=Array.isArray(data)?data:(data && typeof data==="object" ? (("items" in data ? data.items : undefined) ?? ("transactions" in data ? data.transactions : undefined)) : undefined);
     // A 200 response containing an error object or an unknown shape is not an empty history.
     if(!Array.isArray(entries)) return Response.json({ok:false,reason:"unexpected_sumup_response"},{status:502});
     // The requested page size is 100; a larger page makes offset pagination unsafe.
