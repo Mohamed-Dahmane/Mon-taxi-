@@ -70,12 +70,15 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #daily .day-expense-total{text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .button.add-action{background:#16784a;color:#fff;border-color:#36a975}
 .button.add-action:hover{background:#12653e}
+#home .workday-average{margin-bottom:10px}
+#daily .workday-average{margin-top:16px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
+<div class="work-reference workday-average"><div class="label">Revenu moyen par jour travaillé<span class="average-period"></span></div><div class="value green reference-amount">—</div><div class="reference-days"><strong>0</strong> <span>jour travaillé</span></div></div>
 <section class="card" id="paymentSplit" aria-label="Encaissements du jour">
 <div class="payment-heading">
 <div class="eyebrow">ENCAISSEMENTS · <span id="paymentDate"></span></div>
@@ -115,7 +118,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <p class="hint">Recette du jour = cartes nettes + cash réel + appli. Dans Détails, une caisse saisie manuellement remplace le total automatique du jour.</p>
 </section>
 <section class="page" id="archive"><div class="card"><h2>Archives des encaissements</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Encaissements par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details"><div class="card" style="border:2px solid #5378a8;background:#17283e"><div class="eyebrow">TOTAUX DU MOIS · <span id="v11DetailsPeriod"></span></div><div class="v11-summary"><div><span class="label">Caisse cumulée</span><strong class="green" id="v11DetailsCaisse">0,00 €</strong></div><div><span class="label">⛽ Total carburant</span><strong id="v11DetailsFuel">0,00 €</strong></div><div><span class="label">🧾 Total dépenses</span><strong id="v11DetailsExpenses">0,00 €</strong></div><div><span class="label">📋 Total frais fixes</span><strong id="v11DetailsFixed">0,00 €</strong></div><div><span class="label">Charges déduites</span><strong id="v11DetailsCosts">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="v11DetailsNet">0,00 €</strong></div></div></div><section class="card" id="receiptBreakdown"><h2>Recettes journalières · <span id="receiptBreakdownPeriod"></span></h2><div class="receipts-scroll"><table class="receipts-table"><thead><tr><th scope="col">Date</th><th scope="col">Cartes nettes</th><th scope="col">Cash réel</th><th scope="col">Appli</th><th scope="col">Recette totale</th></tr></thead><tbody id="receiptBreakdownRows"></tbody><tfoot><tr><th scope="row">Total du mois</th><td id="receiptCardsTotal">—</td><td id="receiptCashTotal">—</td><td id="receiptAppTotal">—</td><td id="receiptGrandTotal">—</td></tr></tfoot></table></div></section><div class="tabs"><button class="tab active" data-tab="daily">Tableau du mois</button><button class="tab" data-tab="fixed">Frais fixes</button><button class="tab" data-tab="extra">Autres dépenses</button><button class="tab" data-tab="annual">Année</button><button class="tab" data-tab="backup">Sauvegarde</button></div>
-<section class="panel active card" id="daily"><h2>Tableau complet du mois</h2><div class="rowhead"><span>Jour</span><span>Caisse</span><span>Carbur.</span><span>Dépenses</span><span>Nature de la dépense</span></div><div id="dayRows"></div><div class="daytotals" aria-label="Totaux des colonnes du mois"><span class="daytotals-label">Total</span><strong class="green" id="caisseSum">0,00 €</strong><strong id="fuelSum">0,00 €</strong><strong id="monthlyExpenseSum">0,00 €</strong></div><div class="work-reference" style="margin-top:16px"><div class="label">Moyenne par jour<span class="average-period"></span></div><div class="value green reference-amount" id="detailsAverage">—</div><div class="reference-days"><strong id="detailsWorked">0</strong> <span id="detailsWorkedLabel">jour travaillé</span></div></div></section>
+<section class="panel active card" id="daily"><h2>Tableau complet du mois</h2><div class="rowhead"><span>Jour</span><span>Caisse</span><span>Carbur.</span><span>Dépenses</span><span>Nature de la dépense</span></div><div id="dayRows"></div><div class="daytotals" aria-label="Totaux des colonnes du mois"><span class="daytotals-label">Total</span><strong class="green" id="caisseSum">0,00 €</strong><strong id="fuelSum">0,00 €</strong><strong id="monthlyExpenseSum">0,00 €</strong></div><div class="work-reference workday-average"><div class="label">Revenu moyen par jour travaillé<span class="average-period"></span></div><div class="value green reference-amount">—</div><div class="reference-days"><strong>0</strong> <span>jour travaillé</span></div></div></section>
 <section class="panel card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section>
 <section class="panel card" id="extra"><h2>Dépenses ponctuelles détaillées</h2><div class="formgrid"><input id="extraName" placeholder="Ex. Réparation, amende" aria-label="Nature de la dépense"><input id="extraAmount" type="number" step="0.01" inputmode="decimal" placeholder="Montant €" aria-label="Montant de la dépense"></div><button class="button add-action" id="addExpense">+ Ajouter une dépense</button><div id="expenseRows" style="margin-top:15px"></div><div class="sumrow"><span>Toutes les dépenses hors carburant</span><span id="extraSum">0,00 €</span></div><p class="hint">Les dépenses saisies ici ou depuis l’accueil sont regroupées dans ce tableau à la date sélectionnée.</p></section>
 <section class="panel card" id="annual"><h2>Vue annuelle</h2><div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div><div id="annualRows"></div><div class="sumrow"><span>Total annuel caisse</span><span id="annualTotal">0,00 €</span></div></section>
@@ -236,13 +239,40 @@ async function checkCloudSync(){
 }
 setInterval(()=>checkCloudSync(),4000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkCloudSync()});
+function workedDayAverage(days,year,month,today){
+ const first=new Date(year,month,1);
+ const end=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+ const lastDay=first>=end?0:
+  new Date(year,month+1,1)<=end?new Date(year,month+1,0).getDate():today.getDate()-1;
+ let cents=0,worked=0;
+ for(let day=1;day<=lastDay;day++){
+  const amount=number(days?.[day]?.caisse);
+  if(amount===0)continue;
+  cents+=Math.round(amount*100);
+  worked++;
+ }
+ return {lastDay,worked,average:worked?cents/(100*worked):null};
+}
+function renderWorkedDayAverage(){
+ const year=Number(yearSel.value),month=Number(monthSel.value);
+ const {lastDay,worked,average}=workedDayAverage(current().days,year,month,new Date());
+ const period=lastDay
+  ? (lastDay>1?"Du 1 au ":"")+new Intl.DateTimeFormat("fr-BE",{day:"numeric",month:"short",year:"numeric"}).format(new Date(year,month,lastDay,12))
+  : "Aucun jour clôturé pour ce mois";
+ for(const box of document.querySelectorAll(".workday-average")){
+  box.querySelector(".average-period").textContent=period;
+  box.querySelector(".reference-amount").textContent=average===null?"—":money(average);
+  box.querySelector(".reference-days strong").textContent=String(worked);
+  box.querySelector(".reference-days span").textContent=worked>1?"jours travaillés":"jour travaillé";
+ }
+}
 function stats(m,monthKey=key()){
  const count=new Date(Number(monthKey.split("-")[0]),Number(monthKey.split("-")[1])+1,0).getDate();
  const days=Array.from({length:count},(_,i)=>{const day=i+1,d=m.days?.[day]||{};const manual=d.caisse!==undefined&&d.caisse!==null&&String(d.caisse)!=="";return {...d,caisse:manual?d.caisse:(sumupReady?automaticCaisse(day,m,monthKey):undefined)}});
- const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),worked=days.filter(d=>number(d.caisse)>0).length,fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,worked,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
+ const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
 }
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function refreshMetrics(){renderReceiptBreakdown();renderPayments();const s=stats(current());const period=months[Number(monthSel.value)]+" "+yearSel.value;const shortPeriod=new Intl.DateTimeFormat("fr-BE",{month:"short",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),1,12));document.querySelectorAll(".average-period").forEach(el=>el.textContent=shortPeriod);$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("detailsAverage").textContent=s.worked?money(s.revenue/s.worked):"—";$("detailsWorked").textContent=String(s.worked);$("detailsWorkedLabel").textContent=s.worked===1?"jour travaillé":"jours travaillés";$("fuelSum").textContent=money(s.fuel);$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("extraSum").textContent=money(s.extra);$("fuelSum").textContent=money(s.fuel);$("caisseSum").textContent=money(s.revenue);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
+function refreshMetrics(){renderReceiptBreakdown();renderPayments();const s=stats(current());const period=months[Number(monthSel.value)]+" "+yearSel.value;renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("fuelSum").textContent=money(s.fuel);$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("extraSum").textContent=money(s.extra);$("fuelSum").textContent=money(s.fuel);$("caisseSum").textContent=money(s.revenue);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
 function field(value,placeholder,callback){const input=document.createElement("input");input.type="number";input.inputMode="decimal";input.step="0.01";input.placeholder=placeholder;input.value=value??"";input.addEventListener("input",()=>{callback(input.value);save();refreshMetrics();renderAnnual();renderArchive();showQuickDay()});return input}
 
 function dailyReceiptBreakdown(day,m,monthKey){
@@ -642,6 +672,7 @@ function followToday(){
  const wasFollowing=Number(yearSel.value)===lastToday.getFullYear()&&Number(monthSel.value)===lastToday.getMonth()&&selectedDay===lastToday.getDate();
  lastToday=today;
  if(wasFollowing)selectToday(today);
+ else renderWorkedDayAverage();
 }
 $("calendarToday").addEventListener("click",()=>selectToday(new Date()));
 quickDay.addEventListener("change",()=>{selectedDay=Number(quickDay.value);showQuickDay()});
