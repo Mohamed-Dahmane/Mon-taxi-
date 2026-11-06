@@ -55,14 +55,14 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #home .card-payments .card-month-total{margin-top:5px;padding-top:4px}
 #home .card-payments .hint{margin:2px 0;font-size:10px}
 #home .cash-breakdown .payment-entry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;margin-top:4px}
-#home .cash-breakdown .payment-entry input{grid-column:1/-1}
+#home .cash-breakdown .payment-entry input{grid-column:1/-1;padding-block:calc(10.7px + 0.15lh)}
 #home .cash-breakdown .payment-entry button{min-width:0;min-height:41.6px;padding:3px 0;font-size:10px;line-height:1.1}
 #daily :is(.rowhead,.dayrow,.daytotals){grid-template-columns:minmax(61px,.95fr) repeat(2,minmax(0,1fr)) minmax(48px,1fr) minmax(86px,1.7fr);gap:4px}
 #daily .rowhead,#daily .day-expense-nature{overflow-wrap:anywhere}
 #daily .day-expense-nature,#daily .day-expense-total{font-size:12px}
 #daily .day-expense-total{text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.button.add-action{background:#16784a;color:#fff;border-color:#36a975}
-.button.add-action:hover{background:#12653e}
+.button.add-action{background:#22c55e;color:#062514}
+.button.add-action:hover{background:#4ade80}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
@@ -596,7 +596,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-quick-amount-plus-50-percent";
+const siteBuild="taxi-v6-11-taller-payment-fields-green-add";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
