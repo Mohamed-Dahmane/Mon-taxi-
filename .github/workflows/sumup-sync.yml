@@ -5,7 +5,7 @@ on:
     paths:
       - .github/workflows/sumup-sync.yml
   schedule:
-    - cron: '17 * * * *'
+    - cron: '2-57/5 * * * *'
 permissions:
   contents: read
 concurrency:
