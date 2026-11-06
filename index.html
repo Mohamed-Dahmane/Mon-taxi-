@@ -93,6 +93,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-month>.taxi-line{padding:2px 0}
 .taxi-costs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;border-top:1px solid #354a6b;padding-top:7px}
 .taxi-costs>div{min-width:0}
+#expenseCorrections:not([hidden]){margin-top:8px;border-top:1px solid #354a6b}
+#expenseCorrections .expense{gap:6px}
+#expenseCorrections .button{width:auto;padding:6px 9px;font-size:12px}
 .taxi-costs .taxi-line{flex-wrap:wrap;font-size:13px}
 .taxi-costs .typeBtn{display:inline-flex;font-size:12px;min-height:40px;padding:4px 9px;margin-top:2px}
 #quickEditor .amount-row input{font-size:16px;padding:8px}
@@ -123,9 +126,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div class="taxi-line"><span>Appli</span><div class="taxi-amount"><strong><span id="appeleMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editAppeleMonth" aria-label="Corriger le total mensuel Appli" title="Corriger le total mensuel Appli"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealMonth">—</span></strong></div>
 <div class="taxi-costs" role="group" aria-label="Carburant et dépenses du mois">
-<div><div class="taxi-line"><span>Carburant</span><strong><span id="homeFuel">—</span></strong></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button></div>
-<div><div class="taxi-line"><span>Dépenses</span><strong><span id="homeExtra">—</span></strong></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button></div>
+<div><div class="taxi-line"><span>Carburant</span><strong><span id="homeFuel">—</span></strong></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button> <button class="typeBtn" type="button" id="editFuel" aria-label="Corriger le carburant du jour sélectionné">Corriger</button></div>
+<div><div class="taxi-line"><span>Dépenses</span><strong><span id="homeExtra">—</span></strong></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button> <button class="typeBtn" type="button" id="editExpenses" aria-controls="expenseCorrections" aria-expanded="false">Corriger</button></div>
 </div>
+<div id="expenseCorrections" hidden aria-label="Dépenses du mois à corriger"></div>
 <div id="quickEditor" hidden>
 <p class="hint">Ajout au jour sélectionné, inclus dans le total du mois.</p>
 <select id="quickType" hidden aria-label="Rubrique"><option value="fuel" selected>Carburant</option><option value="expense">Dépenses</option></select>
@@ -350,7 +354,58 @@ function renderFixed(){const root=$("fixedRows");root.replaceChildren();fixedEnt
 $("addFixed").addEventListener("click",()=>{const fixed=ensure().fixed;let i=1;while(Object.prototype.hasOwnProperty.call(fixed,"Nouvelle charge "+i))i++;fixed["Nouvelle charge "+i]="0";ensure().fixedCustomized=true;save();renderFixed();refreshMetrics();toast("Modifie le nom et le montant")});
 function renderArchive(){const start="2026-9";const cardPeriods=sumupRows.filter(r=>r.status==="SUCCESSFUL").map(r=>{const [y,m]=r.local_day.split("-");return y+"-"+(Number(m)-1)});const periods=[...new Set([...Object.keys(data.months),...cardPeriods])].filter(k=>{const [y,m]=k.split("-").map(Number);return y>2026||(y===2026&&m>=9)}).sort((a,b)=>{const [ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return by*12+bm-(ay*12+am)});let revenue=0,charges=0,net=0;const monthRoot=$("archiveMonths"),dayRoot=$("archiveDays");monthRoot.replaceChildren();dayRoot.replaceChildren();for(const k of periods){const [y,m]=k.split("-").map(Number),entry=data.months[k]||{},st=stats({...entry,fixed:entry.fixed||{}},k);revenue+=st.revenue;charges+=st.costs;net+=st.balance;const row=document.createElement("div");row.className="annualrow";row.style.gridTemplateColumns="1fr 1fr 1fr";const label=document.createElement("span");label.textContent=months[m]+" "+y;const amount=document.createElement("strong");amount.textContent=money(st.revenue);const result=document.createElement("strong");result.textContent=money(st.balance);row.append(label,amount,result);monthRoot.append(row);const count=new Date(y,m+1,0).getDate();for(let d=count;d>=1;d--){const v=entry.days?.[d]||{},p=entry.payments?.[d]||{};const manual=v.caisse!==undefined&&v.caisse!==null&&String(v.caisse)!=="";const hasPayment=Object.values(p).some(x=>x!==""&&x!==null&&x!==undefined);const auto=sumupReady?automaticCaisse(d,entry,k):0;if(!manual&&!hasPayment&&!auto)continue;const amountValue=manual?number(v.caisse):(sumupReady?auto:null);const item=document.createElement("div");item.className="annualrow";item.style.gridTemplateColumns="1fr 1fr";const date=document.createElement("span");date.textContent=String(d).padStart(2,"0")+"."+String(m+1).padStart(2,"0")+"."+y;const value=document.createElement("strong");value.textContent=amountValue===null?"—":money(amountValue);item.append(date,value);dayRoot.append(item)}}if(!periods.length)monthRoot.textContent="Aucun mois enregistré depuis le 01.10.2026.";if(!dayRoot.children.length)dayRoot.textContent="Aucun encaissement daté enregistré."; $("archiveTotal").textContent=money(revenue);$("archiveCharges").textContent=money(charges);$("archiveNet").textContent=money(net)}
 
-function renderExpenses(){const root=$("expenseRows");root.replaceChildren();(current().extra||[]).forEach((e,i)=>{const row=document.createElement("div");row.className="expense";const label=document.createElement("span");label.textContent=(e.day?String(e.day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" · ":"")+e.name+" · "+(e.amount===""?"montant non renseigné":money(number(e.amount)));const b=document.createElement("button");b.className="button danger";b.textContent="Supprimer";b.addEventListener("click",()=>{ensure().extra.splice(i,1);save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive()});row.append(label,b);root.append(row)})}
+function costDate(day){
+ return String(day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;
+}
+function correctCost(label,previous,apply){
+ const raw=window.prompt("Corriger "+label+" (€). Saisis le montant exact.",number(previous).toFixed(2));
+ if(raw===null)return;
+ const normalized=raw.trim().replace(",",".");
+ const cents=Math.round(Number(normalized)*100);
+ if(!/^\d*\.?\d+$/.test(normalized)||!Number.isSafeInteger(cents)||cents<0){
+  toast("Montant invalide");return;
+ }
+ apply(String(cents/100));
+ lastEntry=null;
+ save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();
+ toast("Montant corrigé et enregistré");
+}
+function renderExpenseCorrections(){
+ const root=$("expenseCorrections");
+ if(root.hidden)return;
+ root.replaceChildren();
+ const month=current();
+ const addRow=(label,value,apply)=>{
+  const row=document.createElement("div");row.className="expense";
+  const text=document.createElement("span");text.textContent=label+" · "+money(number(value));
+  const button=document.createElement("button");button.type="button";button.className="button secondary";button.textContent="Corriger";
+  button.addEventListener("click",()=>correctCost(label,value,apply));
+  row.append(text,button);root.append(row);
+ };
+ (month.extra||[]).forEach((entry,index)=>{
+  const label=(entry.day?costDate(entry.day)+" · ":"")+entry.name;
+  addRow(label,entry.amount,value=>{ensure().extra[index].amount=value});
+ });
+ for(const [day,entry] of Object.entries(month.days||{})){
+  if(!number(entry.expense))continue;
+  addRow(costDate(day)+" · Dépense",entry.expense,value=>{ensure().days[day].expense=value});
+ }
+ if(!root.childElementCount)root.textContent="Aucune dépense à corriger ce mois-ci.";
+}
+$("editFuel").addEventListener("click",()=>{
+ const day=selectedDay;
+ correctCost("Carburant du "+costDate(day),current().days?.[day]?.fuel,value=>{
+  ensure().days[day]??={};
+  ensure().days[day].fuel=value;
+ });
+});
+$("editExpenses").addEventListener("click",()=>{
+ const root=$("expenseCorrections");
+ root.hidden=!root.hidden;
+ $("editExpenses").setAttribute("aria-expanded",String(!root.hidden));
+ renderExpenseCorrections();
+});
+function renderExpenses(){renderExpenseCorrections();const root=$("expenseRows");root.replaceChildren();(current().extra||[]).forEach((e,i)=>{const row=document.createElement("div");row.className="expense";const label=document.createElement("span");label.textContent=(e.day?String(e.day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" · ":"")+e.name+" · "+(e.amount===""?"montant non renseigné":money(number(e.amount)));const b=document.createElement("button");b.className="button danger";b.textContent="Supprimer";b.addEventListener("click",()=>{ensure().extra.splice(i,1);save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive()});row.append(label,b);root.append(row)})}
 function renderAnnual(){const root=$("annualRows");root.replaceChildren();let total=0;months.forEach((m,i)=>{const monthData=data.months[yearSel.value+"-"+i]||{days:{},extra:[]};const s=stats({...monthData,fixed:monthData.fixed||defaultFixed()},yearSel.value+"-"+i);total+=s.revenue;const row=document.createElement("div");row.className="annualrow";const label=document.createElement("span");label.textContent=m;const rev=document.createElement("strong");rev.textContent=money(s.revenue);const balance=document.createElement("strong");balance.textContent=money(s.balance);balance.className=s.balance<0?"red":"green";row.append(label,rev,balance);root.append(row)});$("annualTotal").textContent=money(total)}
 function render(){ensure();save();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});
