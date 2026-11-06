@@ -50,6 +50,8 @@ Deno.serve(async (req) => {
   let count=0, cursor=0, reachedEnd=false;
   // Stage pages until pagination completes: never write an incomplete history window.
   const pendingRows: Array<Record<string, string | number>> = [];
+  // Offset pagination can shift while new transactions arrive; reject repeated IDs before any write.
+  const seenTransactionIds = new Set<string>();
   for(let page=0;page<20;page++){
     const endpoint=new URL("https://api.sumup.com/v0.1/me/transactions/history");
     endpoint.searchParams.set("limit","100");
@@ -73,6 +75,10 @@ Deno.serve(async (req) => {
     const rows=[];
     for(const tx of entries){
       if(!tx || !tx.id || !tx.timestamp || tx.currency!=="EUR")continue;
+      const transactionId=String(tx.id);
+      if(seenTransactionIds.has(transactionId))
+        return Response.json({ok:false,reason:"duplicate_sumup_transaction_in_pages"},{status:502});
+      seenTransactionIds.add(transactionId);
       const t=Date.parse(tx.timestamp);
       if(!Number.isFinite(t)||t<START)continue;
       const cents=Math.round(Number(tx.amount)*100);
