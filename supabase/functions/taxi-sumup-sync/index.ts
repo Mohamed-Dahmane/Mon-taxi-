@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
   if (!key) return Response.json({ok:false,reason:"sumup_secret_missing"},{status:503});
   const db = createClient(url,service,{auth:{persistSession:false}});
   let count=0, cursor=0, reachedEnd=false;
+  // Stage pages until pagination completes: never write an incomplete history window.
+  const pendingRows: Array<Record<string, string | number>> = [];
   for(let page=0;page<20;page++){
     const endpoint=new URL("https://api.sumup.com/v0.1/me/transactions/history");
     endpoint.searchParams.set("limit","100");
@@ -79,14 +81,18 @@ Deno.serve(async (req) => {
       if(day<"2026-11-01")continue;
       rows.push({transaction_id:String(tx.id),transaction_time:new Date(t).toISOString(),local_day:day,amount_cents:cents,currency:"EUR",status:String(tx.status??"UNKNOWN"),updated_at:new Date().toISOString()});
     }
-    if(rows.length){
-      const {error}=await db.from("taxi_sumup_transactions").upsert(rows,{onConflict:"transaction_id"});
-      if(error)return Response.json({ok:false,reason:"database_write_failed"},{status:500});
-      count+=rows.length;
-    }
+    pendingRows.push(...rows);
     if(entries.length<100){reachedEnd=true;break;}
     cursor+=entries.length;
   }
   if(!reachedEnd) return Response.json({ok:false,reason:"pagination_limit_reached"},{status:503});
+  // Upsert only after every SumUp page has passed validation.
+  // Individual database batches can still fail after earlier batches succeeded.
+  for(let i=0;i<pendingRows.length;i+=100){
+    const batch=pendingRows.slice(i,i+100);
+    const {error}=await db.from("taxi_sumup_transactions").upsert(batch,{onConflict:"transaction_id"});
+    if(error)return Response.json({ok:false,reason:"database_write_failed"},{status:500});
+    count+=batch.length;
+  }
   return Response.json({ok:true,processed:count,window_start:"2026-11-01",note:"No transaction details returned"});
 });
