@@ -54,7 +54,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #home .card-payments strong{margin:2px 0;line-height:1.15}
 #home .card-payments .card-month-total{margin-top:5px;padding-top:4px}
 #home .card-payments .hint{margin:2px 0;font-size:10px}
-#home .cash-breakdown .payment-entry button{min-height:44px;font-size:12px}
+#home .cash-breakdown .payment-entry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;margin-top:4px}
+#home .cash-breakdown .payment-entry input{grid-column:1/-1}
+#home .cash-breakdown .payment-entry button{min-width:0;min-height:22px;padding:3px 0;font-size:10px;line-height:1.1}
 #daily :is(.rowhead,.dayrow,.daytotals){grid-template-columns:minmax(61px,.95fr) repeat(2,minmax(0,1fr)) minmax(48px,1fr) minmax(86px,1.7fr);gap:4px}
 #daily .rowhead,#daily .day-expense-nature{overflow-wrap:anywhere}
 #daily .day-expense-nature,#daily .day-expense-total{font-size:12px}
@@ -74,9 +76,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div class="payment-box card-payments"><div class="card-comparison"><div><div class="label">Carte (brute)</div><strong id="sumupToday">—</strong></div><div class="card-net"><div class="label">Carte (nette)</div><strong id="cardNetToday">—</strong></div></div><div class="hint">Frais SumUp 1,69 % : <span id="cardFeeToday">—</span></div><div class="card-month-total"><div id="cardMonthLabel">Total du mois</div><div class="card-comparison"><div><div>Carte (brute)</div><strong id="cardMonthTotal">—</strong></div><div class="card-net"><div>Carte (nette)</div><strong id="cardMonthNetIndicative">—</strong></div></div><div class="hint">Frais SumUp 1,69 % : <span id="cardMonthFeeEstimate">—</span></div></div></div>
 <div class="payment-box cash-with-commission">
 <div class="cash-breakdown" role="group" aria-label="Montants à encoder">
-<div class="cash-component"><div class="label">Cash</div><div class="payment-entry"><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter du cash"><button type="button" class="button" id="addCash">+ Ajouter</button><button type="button" class="button" id="editCash">✎ Corriger</button></div></div>
-<div class="cash-component"><div class="label">Com</div><div class="payment-entry"><input id="commissionInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter une commission"><button type="button" class="button" id="addCommission">+ Ajouter</button><button type="button" class="button" id="editCommission">✎ Corriger</button></div></div>
-<div class="cash-component"><div class="label">Appli</div><div class="payment-entry"><input id="appeleInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter un revenu appli"><button type="button" class="button" id="addAppele">+ Ajouter</button><button type="button" class="button" id="editAppele">✎ Corriger</button></div></div>
+<div class="cash-component"><div class="label">Cash</div><div class="payment-entry"><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter du cash"><button type="button" class="button" id="addCash">Ajouter</button><button type="button" class="button" id="editCash">Corriger</button></div></div>
+<div class="cash-component"><div class="label">Com</div><div class="payment-entry"><input id="commissionInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter une commission"><button type="button" class="button" id="addCommission">Ajouter</button><button type="button" class="button" id="editCommission">Corriger</button></div></div>
+<div class="cash-component"><div class="label">Appli</div><div class="payment-entry"><input id="appeleInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Montant €" aria-label="Ajouter un revenu appli"><button type="button" class="button" id="addAppele">Ajouter</button><button type="button" class="button" id="editAppele">Corriger</button></div></div>
 </div>
 <div class="cash-daily-totals" role="group" aria-label="Totaux du jour et du mois">
 <div class="cash-component"><div class="label">Cash</div><strong id="cashToday">—</strong><div class="card-month-total"><div class="payment-month-label">Total du mois</div><strong id="cashMonthCard">—</strong></div></div>
@@ -592,7 +594,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-wide-daily-expense-nature";
+const siteBuild="taxi-v6-11-compact-payment-actions";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
