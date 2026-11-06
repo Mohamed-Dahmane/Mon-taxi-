@@ -7,7 +7,7 @@
 main{padding-top:10px}header{margin-bottom:8px}h1{font-size:23px}.selectors{margin-bottom:8px}.pagebar{margin:8px 0 10px}.pageBtn{padding:9px}
 .quick-card{padding:13px}.quick-top{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick-top select{margin-top:5px;padding:9px}
 .quick-types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0}.typeBtn{background:#263450;color:#e3ebfc;border:1px solid #425476;border-radius:12px;padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:750;font-size:20px;cursor:pointer}.typeBtn span{font-size:12px}.typeBtn.active{background:#4268dd;border-color:#a5b8ff;color:#fff;box-shadow:0 0 0 1px #8aa6ff}
-.amount-row{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:end}.amount-row input{margin-top:5px;font-size:22px;font-weight:800;padding:11px 8px}#quickAmount{padding-block:23px}.amount-row .button{height:50px;padding:9px 4px}.compact-toolbar .button{font-size:12px;padding:8px 10px}
+.amount-row{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:end}.amount-row input{margin-top:5px;font-size:22px;font-weight:800;padding:11px 8px}#quickAmount{padding-block:28px}.amount-row .button{height:50px;padding:9px 4px}.compact-toolbar .button{font-size:12px;padding:8px 10px}
 .compact-overview{display:grid;grid-template-columns:1fr 1fr;gap:9px}.compact-overview .card{padding:12px;margin-bottom:9px}.compact-overview .big,.compact-overview .hero-number{font-size:22px;margin:7px 0}.compact-overview .label{font-size:11px}.compact-overview .status{font-size:11px}.homegrid .card{padding:11px}.homegrid .value{font-size:18px}.homegrid .label{font-size:11px}.total-mini{margin-top:9px;padding:12px}.total-mini .value{font-size:20px}
 @media(max-width:370px){.amount-row{grid-template-columns:minmax(0,1fr) 95px}.compact-overview .big,.compact-overview .hero-number{font-size:20px}.typeBtn span{font-size:11px}}
 </style><style>
@@ -594,7 +594,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-quick-amount-plus-24";
+const siteBuild="taxi-v6-11-quick-amount-plus-34";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
