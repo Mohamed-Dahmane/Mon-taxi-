@@ -9,6 +9,17 @@ Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL");
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !service) return Response.json({ok:false,reason:"server_configuration_pending"},{status:503});
+  // Fail closed before sending privileged credentials to a misconfigured origin.
+  // Keep this aligned with the fixed project checked by the GitHub Actions workflow.
+  let origin: URL;
+  try {
+    origin = new URL(url);
+    if (origin.protocol !== "https:" || origin.hostname !== "uenyvsiturkihectolxp.supabase.co" ||
+        origin.port || origin.username || origin.password || origin.pathname !== "/" ||
+        origin.search || origin.hash) throw new Error("unexpected Supabase origin");
+  } catch {
+    return Response.json({ok:false,reason:"invalid_supabase_origin"},{status:503});
+  }
   // Even when verify_jwt is enabled, restrict writes to the service-role JWT.
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i,"") ?? "";
   if (!token) return Response.json({ok:false},{status:403});
