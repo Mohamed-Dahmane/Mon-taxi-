@@ -186,7 +186,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-brand{text-align:left;justify-self:start}
 .taxi-brand h1{white-space:nowrap;font-size:clamp(15px,5vw,23px)}
 .taxi-header .date-bar{justify-self:center;min-width:0}
-.taxi-header .calendar-trigger{width:clamp(120px,37.5vw,150px);justify-content:center;font-size:clamp(13px,3.8vw,16px);gap:5px;min-height:39px;padding-inline:9px;white-space:nowrap}
+.taxi-header .calendar-trigger{width:clamp(120px,37.5vw,150px);justify-content:center;font-size:clamp(10px,3.2vw,14px);gap:4px;min-height:39px;padding-inline:9px;white-space:nowrap}
 .date-bar .calendar-trigger::after{content:"▾";font-size:11px;color:#b9c6d8}
 .calendar-period{display:grid;grid-template-columns:minmax(0,1fr) minmax(72px,.55fr);gap:6px;margin-bottom:5px}
 .calendar-period select{padding:7px}
@@ -1205,7 +1205,7 @@ function renderEntryCosts(){
  $("homeExtra").textContent=money(expenses);
  $("undoQuick").hidden=!lastEntry;
 }
-function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=costDate(selectedDay);$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);renderEntryCosts();}
+function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0")+" "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);renderEntryCosts();}
 const calendarDialog=$("calendarDialog");
 function setCalendarOpen(open){
  calendarDialog.hidden=!open;
@@ -1325,7 +1325,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-cash-real-symbol";
+const siteBuild="taxi-v6-11-date-month-in-words";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
