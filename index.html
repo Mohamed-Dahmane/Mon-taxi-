@@ -177,6 +177,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .monthly-overview-values .monthly-result{grid-column:1/-1;background:#19354f}
 .monthly-overview-values .monthly-result dt{font-weight:750}
 .monthly-overview-values .monthly-result dd{font-size:clamp(21px,6.3vw,26px);font-weight:800}
+.monthly-overview-values .monthly-result dd.green{color:#a3ff79}
 .monthly-overview>.home-disclosure{border-top:1px solid #354a6b;border-radius:0}
 .monthly-overview>.home-disclosure>summary{padding-inline:0}
 .monthly-overview>.home-disclosure>summary::after{margin-left:auto}
@@ -1283,7 +1284,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-monthly-result-emphasis";
+const siteBuild="taxi-v6-11-bright-monthly-result";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
