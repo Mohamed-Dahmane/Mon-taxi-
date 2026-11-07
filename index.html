@@ -64,10 +64,16 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #home .payment-pencil:hover,#home .payment-pencil:focus-visible{color:#fff;background:#354a6b}
 .payment-month-amount{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;column-gap:1px}
 #home .payment-month-amount strong{margin-block:0}
-#daily :is(.rowhead,.dayrow){grid-template-columns:minmax(56px,.85fr) repeat(3,minmax(0,1fr));gap:4px}
-#daily .rowhead,#daily .day-expense-nature{overflow-wrap:anywhere}
-#daily .day-expense-nature,#daily .day-expense-total{font-size:12px}
-#daily .day-expense-total{text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+#daily{padding-inline:clamp(9px,3vw,17px)}
+#daily :is(.rowhead,.dayrow){grid-template-columns:36px repeat(3,minmax(0,1fr));gap:4px}
+#daily .rowhead{padding:5px 2px;border-bottom:1px solid #34435e;text-align:center;font-size:clamp(10px,3vw,12px);font-weight:750}
+#daily .dayrow{padding:3px 2px;border-bottom:1px solid #2d3b55}
+#daily .day{font-weight:700;font-variant-numeric:tabular-nums}
+#daily :is(.dayrow>input,.day-expense-edit){min-height:38px;font-size:clamp(12px,3.6vw,16px);font-weight:700;font-variant-numeric:tabular-nums}
+#daily .day-expense-edit{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;column-gap:3px}
+#daily .day-expense-edit span:first-child{min-width:0;overflow-wrap:anywhere}
+#daily .day-expense-edit span[aria-hidden]{color:#b7c9df;font-size:11px}
+#daily .day-expense-nature{font-size:11px;overflow-wrap:anywhere}
 .button.add-action{background:#16784a;color:#fff;border-color:#36a975}
 .button.add-action:hover{background:#12653e}
 #home .workday-average{margin-bottom:10px}
@@ -78,11 +84,11 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #daily .dayrow input{padding-inline:5px}
 .details-overview h2 span{display:block;font-size:12px;color:#b7c9df;margin-top:3px}
 .details-result,.details-metric,.details-charges summary{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.details-result{padding:10px 12px;margin-bottom:5px;background:#1e3049;border-radius:9px}
-.details-result strong{font-size:22px;text-align:right}
-.details-metric,.details-charges summary{min-height:38px;font-size:13px}
-.details-charges{border-top:1px solid #34435e}
+.details-total{min-height:46px;padding:8px 12px;margin-bottom:5px;background:#1e3049;border-radius:9px;font-size:14px;font-weight:700}
+.details-total strong{font-size:22px;line-height:1.15;text-align:right;font-variant-numeric:tabular-nums}
+.details-metric{min-height:34px;font-size:13px}
 .details-charges summary{cursor:pointer;list-style:none}
+.details-charges summary:focus-visible{outline:2px solid #8cbef3;outline-offset:2px}
 .details-charges summary::-webkit-details-marker{display:none}
 .details-charges summary span::before{content:"▸";display:inline-block;margin-right:6px}
 .details-charges[open] summary span::before{transform:rotate(90deg)}
@@ -178,10 +184,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <section class="page" id="archive"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section><div class="card"><h2>Archives des encaissements</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Encaissements par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
 <section class="card details-overview" aria-labelledby="detailsHeading">
  <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
- <div class="details-result"><span>Résultat net</span><strong id="v11DetailsNet">0,00 €</strong></div>
- <div class="details-metric"><span>Caisse cumulée</span><strong id="v11DetailsCaisse">0,00 €</strong></div>
+ <div class="details-result details-total"><span>Revenu net</span><strong id="v11DetailsNet">0,00 €</strong></div>
+ <div class="details-result details-total"><span>Caisse cumulée</span><strong id="v11DetailsCaisse">0,00 €</strong></div>
  <details class="details-charges">
-  <summary><span>Total des charges</span><strong id="v11DetailsCosts">0,00 €</strong></summary>
+  <summary class="details-total"><span>Total des frais</span><strong id="v11DetailsCosts">0,00 €</strong></summary>
   <div class="details-metric"><span>Carburant</span><strong id="v11DetailsFuel">0,00 €</strong></div>
   <div class="details-metric"><span>Dépenses</span><strong id="v11DetailsExpenses">0,00 €</strong></div>
   <div class="details-metric" id="datedExpenseSubtotal" hidden><span>Dont dépenses datées</span><strong id="monthlyExpenseSum">0,00 €</strong></div>
@@ -406,22 +412,35 @@ function renderReceiptBreakdown(){
  }
 }
 
+function setDayCostAmount(button,amount){
+ const value=document.createElement("span");
+ value.textContent=money(amount);
+ const pencil=document.createElement("span");
+ pencil.setAttribute("aria-hidden","true");
+ pencil.textContent="✎";
+ button.append(value,pencil);
+}
+
 function renderDays(){const month=current();const root=$("dayRows");root.replaceChildren();const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();for(let i=1;i<=n;i++){const row=document.createElement("div");row.className="dayrow";row.dataset.day=String(i);if(i===selectedDay){row.style.background="#223b55";row.style.borderRadius="9px";row.style.outline="1px solid #5286ad"}const day=document.createElement("span");day.className="day";day.textContent=costDate(i).slice(0,5);const d=month.days?.[i]||{};const expenses=(month.extra||[]).filter(e=>Number(e.day)===i);
 const hasExpenses=expenses.length||hasCost(d.expense);
 const fuel=hasCost(d.fuel)?document.createElement("button"):field(d.fuel,"Vide",v=>{ensure().days[i]??={};ensure().days[i].fuel=v});
 if(hasCost(d.fuel)){
  fuel.type="button";
  fuel.className="day-expense-edit";
- fuel.textContent=money(number(d.fuel))+" ✎";
+ setDayCostAmount(fuel,number(d.fuel));
  fuel.setAttribute("aria-label","Corriger le carburant du "+costDate(i));
  fuel.addEventListener("click",()=>editFuelCost(i,key()));
 }
 const expense=hasExpenses?document.createElement("span"):field(d.expense,"Vide",v=>{ensure().days[i]??={};ensure().days[i].expense=v});
 
-row.append(day,field(d.caisse,sumupReady?automaticCaisse(i,current(),key()).toFixed(2):"Vide",v=>{ensure().days[i]??={};ensure().days[i].caisse=v}),fuel,expense);
+const caisse=field(d.caisse,sumupReady?automaticCaisse(i,month,key()).toFixed(2):"Vide",v=>{ensure().days[i]??={};ensure().days[i].caisse=v});
+caisse.setAttribute("aria-label","Caisse du "+costDate(i));
+if(!hasCost(d.fuel))fuel.setAttribute("aria-label","Carburant du "+costDate(i));
+if(!hasExpenses)expense.setAttribute("aria-label","Dépenses du "+costDate(i));
+row.append(day,caisse,fuel,expense);
 if(hasExpenses){
  const toggle=document.createElement("button");toggle.type="button";toggle.className="day-expense-edit";
- toggle.textContent=money(expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense)))+" ✎";
+ setDayCostAmount(toggle,expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense)));
  toggle.setAttribute("aria-label","Corriger les dépenses du "+costDate(i));toggle.setAttribute("aria-expanded","false");
  const editor=document.createElement("div");editor.className="day-expense-editor";editor.hidden=true;
  toggle.addEventListener("click",()=>{
@@ -980,7 +999,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-compact-details";
+const siteBuild="taxi-v6-11-monthly-balance";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
