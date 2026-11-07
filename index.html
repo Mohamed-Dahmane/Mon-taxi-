@@ -184,8 +184,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .date-bar .calendar-trigger::after{content:"▾";font-size:11px;color:#b9c6d8}
 .calendar-period{display:grid;grid-template-columns:minmax(0,1fr) minmax(72px,.55fr);gap:6px;margin-bottom:5px}
 .calendar-period select{padding:7px}
-#home .taxi-summary .average-heading,.details-heading .average-heading{display:flex;justify-content:center;align-items:baseline;gap:4px;flex-wrap:wrap}
-.average-heading .reference-days{white-space:nowrap;font-weight:500;opacity:.85}
+#home .taxi-summary .average-heading,.details-heading .average-heading{display:flex;justify-content:center;align-items:baseline;gap:4px;flex-wrap:nowrap;white-space:nowrap}
+#home .taxi-summary .work-reference .label{min-height:1.2em}
+#home .taxi-summary .average-heading .reference-days,.details-heading .average-heading .reference-days{font-size:9px;white-space:nowrap;font-weight:500;opacity:.85}
 .invoice-entry small{display:block;color:#b9c6d8;font-size:10px;font-weight:500;line-height:1.15}
 .invoice-entry .taxi-amount small{text-align:right}
 #paymentDate{color:#b9c6d8;font-size:12px;font-weight:500}
@@ -196,7 +197,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong>Choisir une date</strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-period"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
-<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">0 jour</span></div><div class="value green reference-amount">—</div></div></div>
+<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">(0 jour)</span></div><div class="value green reference-amount">—</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><p class="hint">Saisis un montant pour l’ajouter. ✎ pour corriger.</p><div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
 <div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="commissionInput">Commissions</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
@@ -246,7 +247,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <section class="card details-overview" aria-labelledby="detailsHeading">
  <div class="details-heading">
   <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
-  <div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">0 jour</span></div><div class="value green reference-amount">—</div></div>
+  <div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">(0 jour)</span></div><div class="value green reference-amount">—</div></div>
  </div>
  <div class="details-result details-total"><span>Revenu net</span><strong id="v11DetailsNet">0,00 €</strong></div>
  <div class="details-result details-total"><span>Caisse cumulée</span><strong id="v11DetailsCaisse">0,00 €</strong></div>
@@ -444,7 +445,7 @@ function renderWorkedDayAverage(){
  for(const box of document.querySelectorAll(".workday-average")){
   box.querySelector(".reference-amount").textContent=average===null?"—":money(average);
   const daysLabel=worked>1?"jours":"jour";
-  box.querySelector(".reference-days").textContent=`${worked} ${daysLabel}`;
+  box.querySelector(".reference-days").textContent=`(${worked} ${daysLabel})`;
  }
 }
 function stats(m,monthKey=key()){
@@ -1308,7 +1309,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-invoice-ht-ttc";
+const siteBuild="taxi-v6-11-aligned-average";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
