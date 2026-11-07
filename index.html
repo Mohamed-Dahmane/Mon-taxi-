@@ -148,35 +148,27 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #costPickerRows{margin:10px 0}
 .cost-total{display:inline-flex;align-items:center;justify-content:center;max-width:100%;flex-wrap:wrap}
 .cost-total .cost-pencil{height:28px}
-.entry-hub{border-color:#4b6d9c;background:#18253a}.entry-hub .taxi-entry{grid-template-columns:68px minmax(0,1fr) minmax(0,1fr)}.entry-hub .entry-costs{border-top:1px solid #394c68;margin-top:12px;padding-top:12px}.entry-hub .taxi-costs{margin-top:8px}.entry-hub .hint{margin:5px 0 12px}.entry-hub #editHomeCosts{margin-top:10px;width:100%}</style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
+.entry-hub{border-color:#4b6d9c;background:#18253a}.entry-hub .taxi-entry{grid-template-columns:68px minmax(0,1fr) minmax(0,1fr)}.entry-hub .entry-costs{border-top:1px solid #394c68;margin-top:9px;padding-top:4px}.entry-hub .hint{margin:5px 0 12px}.entry-hub #quickExpenseNature{padding:6px 0}.entry-hub #validateExpense,.entry-hub #undoQuick{margin-top:6px}</style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
+<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label">Moyenne</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><p class="hint">Ajouter un montant ou utiliser le crayon pour le corriger.</p><div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
 <div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="commissionInput">Com</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="appeleInput">Appli</label><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="entry-costs"><div class="eyebrow">CARBURANT ET DÉPENSES</div><div class="taxi-costs" role="group" aria-label="Carburant et dépenses du mois">
-<div><div class="taxi-line"><span>Carburant</span><span class="cost-amount"><strong><span id="homeFuel">—</span></strong></span></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button></div>
-<div><div class="taxi-line"><span>Dépenses</span><span class="cost-amount"><strong><span id="homeExtra">—</span></strong></span></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button></div>
+<div class="entry-costs" role="group" aria-label="Carburant et dépenses du jour">
+<div class="taxi-entry"><label for="FuelInput">Carburant</label><input id="FuelInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter carburant"><div class="taxi-amount"><strong><span id="homeFuel">—</span></strong><button type="button" class="payment-pencil" id="editEntryFuel" aria-label="Corriger carburant du jour" title="Corriger carburant du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry"><label for="ExpenseInput">Dépenses</label><input id="ExpenseInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter dépenses"><div class="taxi-amount"><strong><span id="homeExtra">—</span></strong><button type="button" class="payment-pencil" id="editEntryExpense" aria-label="Corriger dépenses du jour" title="Corriger dépenses du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div id="quickExpenseNature" hidden><label class="label" for="quickExpenseName">Nature de la dépense</label><input id="quickExpenseName" type="text" placeholder="Ex. Réparation, parking"><button type="button" class="button" id="validateExpense">Ajouter la dépense</button></div>
 </div>
-
-<div id="quickEditor" hidden>
-<p class="hint">Ajout au jour sélectionné, inclus dans le total du mois.</p>
-<select id="quickType" hidden aria-label="Rubrique"><option value="fuel" selected>Carburant</option><option value="expense">Dépenses</option></select>
-<div id="quickExpenseNature" hidden><label class="label" for="quickExpenseName">Nature de la dépense</label><input id="quickExpenseName" type="text" placeholder="Ex. Réparation, parking"></div>
-<div class="amount-row"><div><label class="label" for="quickAmount">Montant à ajouter (€)</label><input id="quickAmount" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></div><button class="button" id="validateQuick">✓ Valider</button></div>
-<div hidden><span id="dailyFuel"></span><span id="dailyExpense"></span><span id="dailyBalance"></span><span id="quickDayTotal"></span></div>
-<div class="toolbar compact-toolbar"><button class="button secondary" id="undoQuick">↶ Annuler saisie</button></div>
-<button type="button" class="button secondary" id="closeQuick">Fermer</button>
-</div>
-<button class="button secondary" type="button" id="editHomeCosts">✎ Corriger carburant / dépenses</button></div></section>
+<div class="toolbar compact-toolbar"><button type="button" class="button secondary" id="undoQuick">↶ Annuler saisie</button></div>
+</section>
 
 <section class="card" id="paymentSplit" aria-label="Encaissements du jour">
 <div class="eyebrow">ENCAISSEMENTS · <span id="paymentDate"></span></div>
-<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label">Moyenne</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div></div>
 <div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardNetToday">—</span></strong> <small>(brut <span id="sumupToday">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardFeeToday">—</span></div>
 <div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealToday">—</span></strong></div>
 <div class="payment-month" hidden style="display:none"><span>Cash du mois <b id="cashMonth">0,00 €</b></span><span>Appli du mois <b id="appeleMonth">0,00 €</b></span><span>Commissions du mois <b id="commissionMonth">0,00 €</b></span></div>
@@ -408,7 +400,7 @@ function stats(m,monthKey=key()){
  const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
 }
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
+function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";renderEntryCosts();$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
 function renderJournalTotals(s){
  const adjustment=monthlyReceiptAdjustment(current()).total/100;
  $("journalCaisseTotal").textContent=money(s.revenue-adjustment);
@@ -712,7 +704,7 @@ function openCostPicker(period=key(),day){
  renderCostPicker();
  costPicker.showModal();
 }
-$("editHomeCosts").addEventListener("click",()=>openCostPicker());
+
 function renderExpenses(){
  const root=$("expenseRows");
  root.replaceChildren();
@@ -875,7 +867,7 @@ $("importFile").addEventListener("change",async e=>{
    data=next;lastEntry=null;
    yearSel.value=String(item.year);monthSel.value=String(item.month-1);
    const today=new Date();selectedDay=today.getFullYear()===item.year&&today.getMonth()===item.month-1?today.getDate():1;
-   $("quickAmount").value="";$("extraName").value="";$("extraAmount").value="";
+   $("FuelInput").value="";clearExpenseDraft();$("extraName").value="";$("extraAmount").value="";
    render();markRefreshed();toast(months[item.month-1]+" "+item.year+" importé · autres mois conservés");
   }else{
    if(!["gestion-taxi-test-v1","gestion-taxi-test-v2","gestion-taxi-test-v3"].includes(parsed.format)||!parsed.data?.months)throw Error("Fichier de sauvegarde non valide");
@@ -898,7 +890,7 @@ $("undoMonthImport").addEventListener("click",()=>{
   yearSel.value=String(previous.year);monthSel.value=String(previous.month-1);render();markRefreshed();toast("Import mensuel annulé · autres mois conservés");
  }catch(err){alert("Restauration impossible : "+(err?.message||"sauvegarde indisponible"))}
 });
-$("reset").addEventListener("click",()=>{if(!confirm("Remettre toutes les saisies et tous les montants à zéro, pour tous les mois ?"))return;localStorage.setItem("gestion-taxi-before-last-reset",JSON.stringify(data));data=emptyData();lastEntry=null;$("quickAmount").value="";$("extraName").value="";$("extraAmount").value="";save();const t=new Date();monthSel.value=String(t.getMonth());yearSel.value=String(t.getFullYear());selectedDay=t.getDate();render();markRefreshed();toast("Tous les montants sont à zéro")});
+$("reset").addEventListener("click",()=>{if(!confirm("Remettre toutes les saisies et tous les montants à zéro, pour tous les mois ?"))return;localStorage.setItem("gestion-taxi-before-last-reset",JSON.stringify(data));data=emptyData();lastEntry=null;$("FuelInput").value="";clearExpenseDraft();$("extraName").value="";$("extraAmount").value="";save();const t=new Date();monthSel.value=String(t.getMonth());yearSel.value=String(t.getFullYear());selectedDay=t.getDate();render();markRefreshed();toast("Tous les montants sont à zéro")});
 
 
 const privateApi="https://uenyvsiturkihectolxp.supabase.co";
@@ -1127,7 +1119,13 @@ let selectedDay=initialToday.getDate();
 let lastToday=initialToday;
 let lastEntry=null;
 function renderQuick(){const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();selectedDay=Math.max(1,Math.min(selectedDay,n));quickDay.replaceChildren();for(let i=1;i<=n;i++)quickDay.add(new Option(String(i),String(i)));quickDay.value=String(selectedDay);renderJournalDays();showQuickDay();renderCalendar()}
-function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0");$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);const d=current().days?.[selectedDay]||{};const caisse=d.caisse!==undefined&&String(d.caisse)!==""?number(d.caisse):automaticCaisse(selectedDay,current(),key()),fuel=number(d.fuel),expense=number(d.expense)+(current().extra||[]).reduce((sum,e)=>sum+(Number(e.day)===selectedDay?number(e.amount):0),0);$("dailyFuel").textContent=money(fuel);$("dailyExpense").textContent=money(expense);$("dailyBalance").textContent=money(caisse-fuel-expense);$("quickDayTotal").textContent="Montants enregistrés pour le "+date;}
+function renderEntryCosts(){
+ const month=current(),day=month.days?.[selectedDay]||{};
+ const expenses=(month.extra||[]).reduce((sum,entry)=>Number(entry.day)===selectedDay?sum+number(entry.amount):sum,number(day.expense));
+ $("homeFuel").textContent=money(number(day.fuel));
+ $("homeExtra").textContent=money(expenses);
+}
+function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0");$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);renderEntryCosts();}
 const calendarDialog=$("calendarDialog");
 function renderCalendar(){const y=Number(yearSel.value),m=Number(monthSel.value),n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,today=new Date(),root=$("calendarGrid");$("calendarTitle").textContent=months[m]+" "+y;root.replaceChildren();["L","M","M","J","V","S","D"].forEach(label=>{const e=document.createElement("span");e.className="calendar-weekday";e.textContent=label;root.append(e)});for(let i=0;i<offset;i++)root.append(document.createElement("span"));for(let d=1;d<=n;d++){const b=document.createElement("button");b.type="button";b.className="calendar-day"+(String(d)===quickDay.value?" selected":"")+(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d?" today":"");b.textContent=d;b.setAttribute("aria-label",d+" "+months[m]+" "+y);b.setAttribute("aria-pressed",String(d)===quickDay.value?"true":"false");b.addEventListener("click",()=>{selectedDay=d;quickDay.value=String(d);calendarDialog.hidden=true;showQuickDay();renderCalendar()});root.append(b)}}
 
@@ -1149,14 +1147,6 @@ function followToday(){
 $("calendarToday").addEventListener("click",()=>selectToday(new Date()));
 const entryDate=$("entryDate"); if(entryDate){const syncEntryDate=()=>entryDate.textContent=$("calendarTrigger").textContent;new MutationObserver(syncEntryDate).observe($("calendarTrigger"),{childList:true,subtree:true,characterData:true});syncEntryDate();}
 quickDay.addEventListener("change",()=>{selectedDay=Number(quickDay.value);showQuickDay()});
-$("closeQuick").addEventListener("click",()=>{
- $("quickEditor").hidden=true;
- const active=document.querySelector(".taxi-costs .typeBtn.active");
- active.classList.remove("active");
- active.setAttribute("aria-expanded","false");
- active.focus();
-});
-document.querySelectorAll(".typeBtn").forEach(btn=>btn.addEventListener("click",()=>{$("quickEditor").hidden=false;$("quickType").value=btn.dataset.type;document.querySelectorAll(".typeBtn").forEach(b=>{b.classList.toggle("active",b===btn);b.setAttribute("aria-expanded",String(b===btn))});const isExpense=btn.dataset.type==="expense";$("quickExpenseNature").hidden=!isExpense;$(isExpense?"quickExpenseName":"quickAmount").focus()}));
 function addDailyCost(type,day,amount,name){
  const month=ensure();
  let undo;
@@ -1173,16 +1163,59 @@ function addDailyCost(type,day,amount,name){
  save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();
  return undo;
 }
-$("validateQuick").addEventListener("click",()=>{
- const raw=$("quickAmount").value,type=$("quickType").value,day=Number(quickDay.value);
- if(raw===""||!Number.isFinite(Number(raw))||Number(raw)<0){toast("Entre un montant valide, y compris 0");return}
+function saveEntryCost(type,input){
+ const raw=input.value.trim().replace(",",".");
+ if(!raw)return;
+ const cents=Math.round(Number(raw)*100);
+ if(!/^\d*\.?\d+$/.test(raw)||!Number.isSafeInteger(cents)||cents<0){
+  toast("Entre un montant valide, y compris 0");
+  return;
+ }
  const name=$("quickExpenseName").value.trim();
- if(type==="expense"&&!name){toast("Indique la nature de la dépense");$("quickExpenseName").focus();return}
- lastEntry=addDailyCost(type,day,number(raw),name);
- $("quickAmount").value="";
- if(type==="expense")$("quickExpenseName").value="";
- toast("Ajout du "+costDate(day)+" · "+money(number(raw)));
+ if(type==="expense"&&input.dataset.date!==costDate(selectedDay)){
+  toast("Reviens au "+input.dataset.date+" pour valider cette dépense");
+  return;
+ }
+ if(type==="expense"&&!name){
+  toast("Indique la nature de la dépense");
+  $("quickExpenseName").focus();
+  return;
+ }
+ const day=selectedDay;
+ lastEntry=addDailyCost(type,day,cents/100,name);
+ input.value="";
+ if(type==="expense")clearExpenseDraft();
+ toast("Ajout du "+costDate(day)+" · "+money(cents/100));
+}
+const fuelInput=$("FuelInput"),expenseInput=$("ExpenseInput");
+fuelInput.addEventListener("blur",()=>saveEntryCost("fuel",fuelInput));
+fuelInput.addEventListener("keydown",event=>{
+ if(event.key==="Enter"&&!event.isComposing){event.preventDefault();fuelInput.blur();}
 });
+function clearExpenseDraft(){
+ const input=$("ExpenseInput");
+ input.value="";
+ delete input.dataset.date;
+ $("quickExpenseName").value="";
+ $("quickExpenseNature").hidden=true;
+}
+expenseInput.addEventListener("input",()=>{
+ if(!expenseInput.value.trim()){clearExpenseDraft();return;}
+ expenseInput.dataset.date ||= costDate(selectedDay);
+ $("quickExpenseNature").hidden=false;
+});
+expenseInput.addEventListener("keydown",event=>{
+ if(event.key==="Enter"&&!event.isComposing&&expenseInput.value.trim()){
+  event.preventDefault();
+  $("quickExpenseName").focus();
+ }
+});
+$("quickExpenseName").addEventListener("keydown",event=>{
+ if(event.key==="Enter"&&!event.isComposing){event.preventDefault();saveEntryCost("expense",expenseInput);}
+});
+$("validateExpense").addEventListener("click",()=>saveEntryCost("expense",expenseInput));
+$("editEntryFuel").addEventListener("click",()=>editFuelCost(selectedDay,key()));
+$("editEntryExpense").addEventListener("click",()=>openCostPicker(key(),selectedDay));
 $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie à annuler");return}const l=lastEntry;if(l.entry){
  const entries=data.months[l.key]?.extra;
  const index=entries?.lastIndexOf(l.entry)??-1;
@@ -1206,12 +1239,12 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-entry-hub";
+const siteBuild="taxi-v6-11-entry-table-overview";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
  const typing=a&&["INPUT","TEXTAREA","SELECT"].includes(a.tagName);
- const pending=$("quickAmount").value.trim()||(!$("quickExpenseNature").hidden&&$("quickExpenseName").value.trim())||$("extraName").value.trim()||$("extraAmount").value.trim();
+ const pending=fuelInput.value.trim()||expenseInput.value.trim()||(!$("quickExpenseNature").hidden&&$("quickExpenseName").value.trim())||$("extraName").value.trim()||$("extraAmount").value.trim();
  return document.visibilityState==="visible"&&!typing&&!pending&&calendarDialog.hidden&&!costDialog.open&&!costPicker.open;
 }
 async function checkPublishedBuild(){
