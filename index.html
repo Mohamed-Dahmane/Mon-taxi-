@@ -182,11 +182,11 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .monthly-overview>.home-disclosure>summary::after{margin-left:auto}
 .date-bar .calendar-trigger{display:inline-flex;align-items:center;gap:8px;min-height:36px;margin-top:0;padding:5px 10px}
 .taxi-header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:4px;align-items:center}
-.taxi-header .v11-refresh{justify-self:start;align-self:center}
-.taxi-brand{text-align:center}
+.taxi-header .v11-refresh{justify-self:end;align-self:center}
+.taxi-brand{text-align:left;justify-self:start}
 .taxi-brand h1{white-space:nowrap;font-size:clamp(15px,5vw,23px)}
-.taxi-header .date-bar{justify-self:end;min-width:0}
-.taxi-header .calendar-trigger{font-size:clamp(10px,3vw,14px);gap:3px;padding-inline:5px;white-space:nowrap}
+.taxi-header .date-bar{justify-self:center;min-width:0}
+.taxi-header .calendar-trigger{font-size:clamp(10px,3vw,14px);gap:4px;min-height:39px;padding-inline:9px;white-space:nowrap}
 .date-bar .calendar-trigger::after{content:"▾";font-size:11px;color:#b9c6d8}
 .calendar-period{display:grid;grid-template-columns:minmax(0,1fr) minmax(72px,.55fr);gap:6px;margin-bottom:5px}
 .calendar-period select{padding:7px}
@@ -204,7 +204,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .invoice-total small{flex:none}
 #paymentDate{color:#b9c6d8;font-size:12px;font-weight:500}
 #daily .journal-day-toggle{min-height:36px}
-</style></head><body><main hidden><header class="taxi-header"><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button><div class="taxi-brand"><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><div class="date-bar"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog" aria-expanded="false">—</button></div></header>
+</style></head><body><main hidden><header class="taxi-header"><div class="taxi-brand"><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><div class="date-bar"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog" aria-expanded="false">—</button></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong>Choisir une date</strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-period"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
@@ -1325,7 +1325,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-centered-header-date";
+const siteBuild="taxi-v6-11-center-date-header";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
