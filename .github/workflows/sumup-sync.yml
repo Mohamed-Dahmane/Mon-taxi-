@@ -1,9 +1,6 @@
 name: Synchroniser SumUp vers Mon Taxi V11
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/sumup-sync.yml
   schedule:
     - cron: '2-57/5 * * * *'
 permissions:
