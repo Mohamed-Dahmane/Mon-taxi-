@@ -56,7 +56,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .payment-month-amount{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;column-gap:1px}
 #home .payment-month-amount strong{margin-block:0}
 #daily{padding-inline:clamp(9px,3vw,17px)}
-#daily :is(.rowhead,.dayrow){grid-template-columns:36px repeat(3,minmax(0,1fr));gap:4px}
+#daily :is(.rowhead,.dayrow,.journal-totals){grid-template-columns:36px repeat(3,minmax(0,1fr));gap:4px}
 #daily .rowhead{padding:5px 2px;border-bottom:1px solid #34435e;text-align:center;font-size:clamp(10px,3vw,12px);font-weight:750}
 #daily .dayrow{padding:3px 2px;border-bottom:1px solid #2d3b55}
 #daily .day{font-weight:700;font-variant-numeric:tabular-nums}
@@ -203,11 +203,27 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  <button class="tab" data-tab="backup" aria-controls="backup" aria-pressed="false">Sauvegarde</button>
 </div>
 <section class="panel active card" id="daily">
- <h2>Journal du mois</h2>
- <details class="journal-option" id="addExpensePanel"><summary>Ajouter une dépense</summary><form id="journalExpenseForm"><p class="hint">Date sélectionnée <strong id="journalExpenseDate"></strong></p><div class="formgrid"><input id="extraName" placeholder="Ex. Réparation, amende" aria-label="Nature de la dépense"><input id="extraAmount" type="number" step="0.01" inputmode="decimal" placeholder="Montant €" aria-label="Montant de la dépense"></div><button class="button add-action" type="submit">Enregistrer</button></form></details>
+ <div class="journal-heading">
+  <h2>Journal du mois</h2>
+  <div class="journal-actions" role="group" aria-label="Ajouter un frais">
+   <button type="button" class="button secondary" data-journal-add="fuel" aria-expanded="false" aria-controls="journalAddForm">+ Carburant</button>
+   <button type="button" class="button secondary" data-journal-add="expense" aria-expanded="false" aria-controls="journalAddForm">+ Dépense</button>
+  </div>
+ </div>
+ <p class="hint journal-guide">Les dates avec une flèche ouvrent le détail des paiements et des dépenses.</p>
+ <form class="journal-option" id="journalAddForm" hidden>
+  <div class="journal-fields">
+   <label>Jour<select id="journalAddDay"></select></label>
+   <label>Montant (€)<input id="extraAmount" type="text" inputmode="decimal" enterkeyhint="done" placeholder="0,00" required></label>
+   <label id="journalNameLabel">Nature de la dépense<input id="extraName" placeholder="Ex. Parking, réparation"></label>
+  </div>
+  <div class="toolbar"><button class="button add-action" type="submit">Enregistrer</button><button class="button secondary" type="button" id="cancelJournalAdd">Annuler</button></div>
+ </form>
  <div id="undatedExpenses" hidden><h2>Dépenses sans date</h2><div id="expenseRows"></div></div>
  <div class="rowhead"><span>Jour</span><span>Caisse</span><span>Carburant</span><span>Dépenses</span></div>
  <div id="dayRows"></div>
+ <div class="journal-totals" aria-label="Totaux du journal"><span>Total</span><strong id="journalCaisseTotal">—</strong><strong id="journalFuelTotal">—</strong><strong id="journalExpenseTotal">—</strong></div>
+ <p class="hint" id="journalTotalsNote" hidden>Ces totaux reprennent les lignes du journal. Les ajustements du mois et les dépenses sans date figurent dans le bilan.</p>
 </section>
 <section class="panel card" id="annual"><h2>Vue annuelle</h2><div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div><div id="annualRows"></div><div class="sumrow"><span>Total annuel caisse</span><span id="annualTotal">0,00 €</span></div></section>
 <section class="panel card" id="backup"><h2>Sauvegarde</h2><div class="toolbar"><button class="button" id="export">Exporter une sauvegarde</button><button class="button secondary" id="importBtn">Importer une sauvegarde ou un mois</button><input id="importFile" type="file" accept=".json,application/json" hidden></div><button class="button secondary" id="undoMonthImport">Annuler le dernier import de mois</button><hr style="border:0;border-top:1px solid #33405a;margin:20px 0"><button class="button danger" id="reset">Remettre les montants à zéro</button><p class="hint">Un import de mois remplace uniquement la période indiquée, sans additionner les montants. Les autres mois sont conservés. Une sauvegarde complète remplace toutes les périodes.</p></section>
@@ -365,7 +381,14 @@ function stats(m,monthKey=key()){
  const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
 }
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
+function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
+function renderJournalTotals(s){
+ const adjustment=monthlyReceiptAdjustment(current()).total/100;
+ $("journalCaisseTotal").textContent=money(s.revenue-adjustment);
+ $("journalFuelTotal").textContent=money(s.fuel);
+ $("journalExpenseTotal").textContent=money(s.dailyExtra);
+ $("journalTotalsNote").hidden=!adjustment&&Math.round(s.extra*100)===Math.round(s.dailyExtra*100);
+}
 function field(value,placeholder,callback){
  const input=document.createElement("input");
  input.type="text";
@@ -455,7 +478,7 @@ function renderDays(){
   const row=document.createElement("div");
   row.className="dayrow";
   row.dataset.day=String(i);
-  if(i===selectedDay){row.style.background="#223b55";row.style.borderRadius="9px";row.style.outline="1px solid #5286ad"}
+  row.classList.toggle("journal-selected",i===selectedDay);
   const date=costDate(i),day=document.createElement("span");
   day.className="day";
   day.textContent=date.slice(0,5);
@@ -740,7 +763,56 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
   if(btn)btn.click();
  },{passive:true});
 })();
-$("journalExpenseForm").addEventListener("submit",event=>{event.preventDefault();const name=$("extraName").value.trim(),amount=$("extraAmount").value;if(!name||amount===""){toast("Renseigne le nom et le montant");return}(ensure().extra??=[]).push({name,amount,day:selectedDay});$("extraName").value="";$("extraAmount").value="";save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();$("addExpensePanel").open=false;toast("Dépense ajoutée")});
+const journalAddForm=$("journalAddForm"),journalAddDay=$("journalAddDay");
+const journalAddButtons=[...document.querySelectorAll("[data-journal-add]")];
+let journalAddType="";
+function renderJournalDays(){
+ const month=key();
+ if(journalAddDay.dataset.month===month)return;
+ if(journalAddDay.dataset.month)closeJournalAdd();
+ journalAddDay.dataset.month=month;
+ journalAddDay.replaceChildren(...Array.from(quickDay.options,option=>new Option(costDate(Number(option.value)).slice(0,5),option.value)));
+ journalAddDay.value=String(selectedDay);
+}
+function closeJournalAdd(){
+ journalAddType="";
+ journalAddForm.hidden=true;
+ journalAddForm.reset();
+ for(const button of journalAddButtons)button.setAttribute("aria-expanded","false");
+}
+journalAddButtons.forEach(button=>button.addEventListener("click",()=>{
+ const type=button.dataset.journalAdd;
+ if(type===journalAddType){closeJournalAdd();return}
+ closeJournalAdd();
+ journalAddType=type;
+ button.setAttribute("aria-expanded","true");
+ journalAddForm.hidden=false;
+ journalAddDay.value=String(selectedDay);
+ $("journalNameLabel").hidden=type==="fuel";
+ $("extraName").required=type==="expense";
+ $(type==="fuel"?"extraAmount":"extraName").focus();
+}));
+$("cancelJournalAdd").addEventListener("click",()=>{
+ const button=journalAddButtons.find(button=>button.dataset.journalAdd===journalAddType);
+ closeJournalAdd();
+ button?.focus();
+});
+journalAddForm.addEventListener("submit",event=>{
+ event.preventDefault();
+ const raw=$("extraAmount").value.trim().replace(",",".");
+ const cents=Math.round(Number(raw)*100);
+ if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)||!Number.isSafeInteger(cents)){
+  toast("Entre un montant valide");return;
+ }
+ if(!journalAddType||!journalAddDay.value)return;
+ const name=$("extraName").value.trim(),day=Number(journalAddDay.value);
+ if(journalAddType==="expense"&&!name){toast("Indique la nature de la dépense");return}
+ const button=journalAddButtons.find(button=>button.dataset.journalAdd===journalAddType);
+ lastEntry=addDailyCost(journalAddType,day,cents/100,name);
+ closeJournalAdd();
+ button?.focus();
+ toast("Ajout du "+costDate(day)+" · "+money(cents/100));
+});
 $("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify({format:"gestion-taxi-test-v3",exportedAt:new Date().toISOString(),data},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sauvegarde_gestion_taxi_"+new Date().toISOString().slice(0,10)+".json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 $("importBtn").addEventListener("click",()=>$("importFile").click());
 function prepareMonthlyImport(parsed){
@@ -1025,8 +1097,8 @@ const quickDay=$("quickDay");
 let selectedDay=initialToday.getDate();
 let lastToday=initialToday;
 let lastEntry=null;
-function renderQuick(){const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();selectedDay=Math.max(1,Math.min(selectedDay,n));quickDay.replaceChildren();for(let i=1;i<=n;i++)quickDay.add(new Option(String(i),String(i)));quickDay.value=String(selectedDay);showQuickDay();renderCalendar()}
-function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("journalExpenseDate").textContent=date;$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0");$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);document.querySelectorAll("#dayRows .dayrow").forEach(row=>{const active=Number(row.dataset.day)===selectedDay;row.style.background=active?"#223b55":"";row.style.borderRadius=active?"9px":"";row.style.outline=active?"1px solid #5286ad":""});const d=current().days?.[selectedDay]||{};const caisse=d.caisse!==undefined&&String(d.caisse)!==""?number(d.caisse):automaticCaisse(selectedDay,current(),key()),fuel=number(d.fuel),expense=number(d.expense)+(current().extra||[]).reduce((sum,e)=>sum+(Number(e.day)===selectedDay?number(e.amount):0),0);$("dailyFuel").textContent=money(fuel);$("dailyExpense").textContent=money(expense);$("dailyBalance").textContent=money(caisse-fuel-expense);$("quickDayTotal").textContent="Montants enregistrés pour le "+date;}
+function renderQuick(){const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();selectedDay=Math.max(1,Math.min(selectedDay,n));quickDay.replaceChildren();for(let i=1;i<=n;i++)quickDay.add(new Option(String(i),String(i)));quickDay.value=String(selectedDay);renderJournalDays();showQuickDay();renderCalendar()}
+function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0");$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);document.querySelectorAll("#dayRows .dayrow").forEach(row=>{row.classList.toggle("journal-selected",Number(row.dataset.day)===selectedDay)});const d=current().days?.[selectedDay]||{};const caisse=d.caisse!==undefined&&String(d.caisse)!==""?number(d.caisse):automaticCaisse(selectedDay,current(),key()),fuel=number(d.fuel),expense=number(d.expense)+(current().extra||[]).reduce((sum,e)=>sum+(Number(e.day)===selectedDay?number(e.amount):0),0);$("dailyFuel").textContent=money(fuel);$("dailyExpense").textContent=money(expense);$("dailyBalance").textContent=money(caisse-fuel-expense);$("quickDayTotal").textContent="Montants enregistrés pour le "+date;}
 const calendarDialog=$("calendarDialog");
 function renderCalendar(){const y=Number(yearSel.value),m=Number(monthSel.value),n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,today=new Date(),root=$("calendarGrid");$("calendarTitle").textContent=months[m]+" "+y;root.replaceChildren();["L","M","M","J","V","S","D"].forEach(label=>{const e=document.createElement("span");e.className="calendar-weekday";e.textContent=label;root.append(e)});for(let i=0;i<offset;i++)root.append(document.createElement("span"));for(let d=1;d<=n;d++){const b=document.createElement("button");b.type="button";b.className="calendar-day"+(String(d)===quickDay.value?" selected":"")+(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d?" today":"");b.textContent=d;b.setAttribute("aria-label",d+" "+months[m]+" "+y);b.setAttribute("aria-pressed",String(d)===quickDay.value?"true":"false");b.addEventListener("click",()=>{selectedDay=d;quickDay.value=String(d);calendarDialog.hidden=true;showQuickDay();renderCalendar()});root.append(b)}}
 
@@ -1055,13 +1127,32 @@ $("closeQuick").addEventListener("click",()=>{
  active.focus();
 });
 document.querySelectorAll(".typeBtn").forEach(btn=>btn.addEventListener("click",()=>{$("quickEditor").hidden=false;$("quickType").value=btn.dataset.type;document.querySelectorAll(".typeBtn").forEach(b=>{b.classList.toggle("active",b===btn);b.setAttribute("aria-expanded",String(b===btn))});const isExpense=btn.dataset.type==="expense";$("quickExpenseNature").hidden=!isExpense;$(isExpense?"quickExpenseName":"quickAmount").focus()}));
-$("validateQuick").addEventListener("click",()=>{const raw=$("quickAmount").value,field=$("quickType").value,day=quickDay.value;if(raw===""||!Number.isFinite(Number(raw))||Number(raw)<0){toast("Entre un montant valide, y compris 0");return}const m=ensure();if(field==="expense"){
- const name=$("quickExpenseName").value.trim();
- if(!name){toast("Indique la nature de la dépense");$("quickExpenseName").focus();return}
- const entry={name,amount:String(Math.round(number(raw)*100)/100),day:Number(day)};
- (m.extra??=[]).push(entry);lastEntry={key:key(),entry};$("quickExpenseName").value="";
+function addDailyCost(type,day,amount,name){
+ const month=ensure();
+ let undo;
+ if(type==="expense"){
+  const entry={name,amount:String(Math.round(amount*100)/100),day};
+  (month.extra??=[]).push(entry);
+  undo={key:key(),entry};
  }else{
- m.days[day]??={};const old=m.days[day][field];const next=number(old)+number(raw);m.days[day][field]=String(Math.round(next*100)/100);lastEntry={key:key(),day,field,old};}$("quickAmount").value="";save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();showQuickDay();toast("Ajout du "+String(day).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value+" : "+money(number(raw))) });
+  const entry=month.days[day]??={};
+  const old=entry.fuel;
+  entry.fuel=String(Math.round((number(old)+amount)*100)/100);
+  undo={key:key(),day,field:"fuel",old};
+ }
+ save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();
+ return undo;
+}
+$("validateQuick").addEventListener("click",()=>{
+ const raw=$("quickAmount").value,type=$("quickType").value,day=Number(quickDay.value);
+ if(raw===""||!Number.isFinite(Number(raw))||Number(raw)<0){toast("Entre un montant valide, y compris 0");return}
+ const name=$("quickExpenseName").value.trim();
+ if(type==="expense"&&!name){toast("Indique la nature de la dépense");$("quickExpenseName").focus();return}
+ lastEntry=addDailyCost(type,day,number(raw),name);
+ $("quickAmount").value="";
+ if(type==="expense")$("quickExpenseName").value="";
+ toast("Ajout du "+costDate(day)+" · "+money(number(raw)));
+});
 $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie à annuler");return}const l=lastEntry;if(l.entry){
  const entries=data.months[l.key]?.extra;
  const index=entries?.lastIndexOf(l.entry)??-1;
@@ -1085,7 +1176,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-unified-journal";
+const siteBuild="taxi-v6-11-journal-totals";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
