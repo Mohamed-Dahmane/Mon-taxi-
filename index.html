@@ -235,7 +235,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div><dt>Frais totaux</dt><dd id="homeCosts">—</dd></div>
 <div class="monthly-result"><dt id="homeResultLabel">Résultat</dt><dd id="homeBalance">—</dd></div>
 </dl>
-<details class="taxi-month home-disclosure"><summary>Détail des encaissements du mois</summary>
+<details class="taxi-month home-disclosure"><summary>Détail des recettes du mois</summary>
 <div class="home-disclosure-body">
 <div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardMonthNetIndicative">—</span></strong> <small>(brut <span id="cardMonthTotal">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardMonthFeeEstimate">—</span></div>
 <div class="taxi-line"><span>Cash</span><div class="taxi-amount"><strong><span id="cashMonthCard">—</span></strong></div></div>
@@ -251,7 +251,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 </div></details>
 </section>
 <details class="card home-disclosure" id="paymentSplit">
-<summary><span>Détail des encaissements</span><span id="paymentDate"></span></summary>
+<summary><span>Détail des recettes</span><span id="paymentDate"></span></summary>
 <div class="home-disclosure-body">
 <div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardNetToday">—</span></strong> <small>(brut <span id="sumupToday">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardFeeToday">—</span></div>
 <div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealToday">—</span></strong></div>
@@ -260,7 +260,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <p class="hint">Recette = cartes nettes + cash réel + applis + facturation TTC.</p>
 </div></details>
 </section>
-<section class="page" id="archive"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section><div class="card"><h2>Archives des encaissements</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Encaissements par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
+<section class="page" id="archive"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section><div class="card"><h2>Archives des recettes</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Recettes par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
 <section class="card details-overview" aria-labelledby="detailsHeading">
  <div class="details-heading">
   <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
@@ -268,7 +268,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  </div>
  <div class="details-result details-total"><span>Revenu net</span><strong id="v11DetailsNet">0,00 €</strong></div>
  <div class="details-result details-total"><span>Caisse cumulée</span><strong id="v11DetailsCaisse">0,00 €</strong></div>
- <div class="monthly-payment-summary" aria-label="Encaissements et commissions">
+ <div class="monthly-payment-summary" aria-label="Recettes et commissions">
   <div class="details-total details-total-compact">
    <div class="details-result"><span>Cartes nettes</span><strong id="detailsCardsNet" class="green">—</strong></div>
    <div class="card-payment-info"><span>Brut carte <strong id="detailsCardsGross">—</strong></span><span>Frais SumUp <strong id="detailsCardsFees">—</strong></span></div>
@@ -648,7 +648,7 @@ if(entry.extra?.length||Object.values(entry.days||{}).some(day=>hasCost(day.fuel
  editCosts.addEventListener("click",()=>openCostPicker(k));
  label.append(editCosts);
 }
-row.append(label,amount,balance);monthRoot.append(row);const count=new Date(y,m+1,0).getDate();for(let d=count;d>=1;d--){const v=entry.days?.[d]||{},p=entry.payments?.[d]||{};const manual=v.caisse!==undefined&&v.caisse!==null&&String(v.caisse)!=="";const hasPayment=Object.values(p).some(x=>x!==""&&x!==null&&x!==undefined);const auto=sumupReady?automaticCaisse(d,entry,k):0;if(!manual&&!hasPayment&&!auto)continue;const invoice=invoiceTtcCents(p.invoiceHt)/100;const amountValue=manual?number(v.caisse)+invoice:(sumupReady?auto:invoice||null);const item=document.createElement("div");item.className="annualrow";item.style.gridTemplateColumns="1fr 1fr";const date=document.createElement("span");date.textContent=String(d).padStart(2,"0")+"."+String(m+1).padStart(2,"0")+"."+y;const value=document.createElement("strong");value.textContent=amountValue===null?"—":money(amountValue);item.append(date,value);dayRoot.append(item)}}if(!periods.length)monthRoot.textContent="Aucun mois enregistré depuis le 01.10.2026.";if(!dayRoot.children.length)dayRoot.textContent="Aucun encaissement daté enregistré."; $("archiveTotal").textContent=money(revenue);$("archiveCharges").textContent=money(charges);$("archiveNet").textContent=money(net)}
+row.append(label,amount,balance);monthRoot.append(row);const count=new Date(y,m+1,0).getDate();for(let d=count;d>=1;d--){const v=entry.days?.[d]||{},p=entry.payments?.[d]||{};const manual=v.caisse!==undefined&&v.caisse!==null&&String(v.caisse)!=="";const hasPayment=Object.values(p).some(x=>x!==""&&x!==null&&x!==undefined);const auto=sumupReady?automaticCaisse(d,entry,k):0;if(!manual&&!hasPayment&&!auto)continue;const invoice=invoiceTtcCents(p.invoiceHt)/100;const amountValue=manual?number(v.caisse)+invoice:(sumupReady?auto:invoice||null);const item=document.createElement("div");item.className="annualrow";item.style.gridTemplateColumns="1fr 1fr";const date=document.createElement("span");date.textContent=String(d).padStart(2,"0")+"."+String(m+1).padStart(2,"0")+"."+y;const value=document.createElement("strong");value.textContent=amountValue===null?"—":money(amountValue);item.append(date,value);dayRoot.append(item)}}if(!periods.length)monthRoot.textContent="Aucun mois enregistré depuis le 01.10.2026.";if(!dayRoot.children.length)dayRoot.textContent="Aucune recette datée enregistrée."; $("archiveTotal").textContent=money(revenue);$("archiveCharges").textContent=money(charges);$("archiveNet").textContent=money(net)}
 
 function costDate(day,monthKey=key()){
  const [year,month]=monthKey.split("-").map(Number);
@@ -1326,7 +1326,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-inline-brand-version";
+const siteBuild="taxi-v6-11-receipt-labels";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
