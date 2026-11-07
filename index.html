@@ -98,7 +98,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .details-metric[hidden]{display:none}
 .details-charges .details-metric,.monthly-payment-summary .details-metric{padding-inline:12px;color:#d6e1f1}
 .monthly-payment-summary{margin-block:8px;padding-block:8px 3px;border-block:1px solid #34435e}
-.card-payment-info{display:flex;flex-wrap:wrap;justify-content:space-between;gap:3px 10px;padding:0 12px 5px;color:#b7c9df;font-size:11px}
+.details-total-compact{min-height:38px;padding-block:6px;font-size:13px}
+.details-total-compact strong{font-size:17px}
+.card-payment-info{display:flex;flex-wrap:wrap;justify-content:space-between;gap:3px 10px;margin-top:4px;color:#b7c9df;font-size:11px;font-weight:500}
+.card-payment-info strong{font-size:inherit}
 .journal-day-toggle::after{content:"▸";margin-left:1px;font-size:9px}
 .journal-day-toggle[aria-expanded="true"]::after{content:"▾"}
 .details-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
@@ -204,15 +207,17 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  <div class="details-result details-total"><span>Revenu net</span><strong id="v11DetailsNet">0,00 €</strong></div>
  <div class="details-result details-total"><span>Caisse cumulée</span><strong id="v11DetailsCaisse">0,00 €</strong></div>
  <div class="monthly-payment-summary" aria-label="Encaissements et commissions">
-  <div class="details-result details-total"><span>Cartes nettes</span><strong id="detailsCardsNet" class="green">—</strong></div>
-  <div class="card-payment-info"><span>Brut carte <strong id="detailsCardsGross">—</strong></span><span>Frais SumUp <strong id="detailsCardsFees">—</strong></span></div>
-  <div class="details-result details-total"><span>Cash réel</span><strong id="detailsCashReal" class="green">—</strong></div>
-  <div class="details-result details-total"><span>Applis</span><strong id="detailsAppIncome" class="green">—</strong></div>
-  <div class="details-result details-total"><span>Commissions payées</span><strong id="detailsCommission" class="green">—</strong></div>
+  <div class="details-total details-total-compact">
+   <div class="details-result"><span>Cartes nettes</span><strong id="detailsCardsNet" class="green">—</strong></div>
+   <div class="card-payment-info"><span>Brut carte <strong id="detailsCardsGross">—</strong></span><span>Frais SumUp <strong id="detailsCardsFees">—</strong></span></div>
+  </div>
+  <div class="details-result details-total details-total-compact"><span>Cash réel</span><strong id="detailsCashReal" class="green">—</strong></div>
+  <div class="details-result details-total details-total-compact"><span>Applis</span><strong id="detailsAppIncome" class="green">—</strong></div>
+  <div class="details-result details-total details-total-compact"><span>Commissions payées</span><strong id="detailsCommission" class="green">—</strong></div>
   <div class="details-metric" id="detailsPaymentsDifference" hidden><span>Total des paiements nets</span><strong id="detailsPaymentsNet">—</strong></div>
  </div>
  <div class="details-charges">
-  <div class="details-result details-total"><span>Total des frais</span><strong id="v11DetailsCosts">0,00 €</strong></div>
+  <div class="details-result details-total details-total-compact"><span>Total des frais</span><strong id="v11DetailsCosts">0,00 €</strong></div>
   <div class="details-metric"><span>Carburant</span><strong id="v11DetailsFuel">0,00 €</strong></div>
   <div class="details-metric"><span>Dépenses</span><strong id="v11DetailsExpenses">0,00 €</strong></div>
   <div class="details-metric" id="datedExpenseSubtotal" hidden><span>Dont dépenses datées</span><strong id="monthlyExpenseSum">0,00 €</strong></div>
@@ -1199,7 +1204,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-payment-style";
+const siteBuild="taxi-v6-11-balance-hierarchy";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
