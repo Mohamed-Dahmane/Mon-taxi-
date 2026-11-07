@@ -45,3 +45,10 @@ Deno.test("rejects impossible calendar dates and malformed UTC offsets", () => {
   assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-11-07T12:00:00+25:00"}));
   assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-11-07T12:00:00+01:99"}));
 });
+
+Deno.test("rejects ambiguous identifiers and offsets beyond UTC+14", () => {
+  assertThrows(() => toUberStagingRow({...base, driverId:" driver-1"}));
+  assertThrows(() => toUberStagingRow({...base, paymentId:"payment-1 "}));
+  assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-11-07T12:00:00+14:01"}));
+  assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-11-07T12:00:00-15:00"}));
+});
