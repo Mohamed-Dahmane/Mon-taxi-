@@ -206,9 +206,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  <div class="monthly-payment-summary" aria-label="Encaissements et commissions">
   <div class="details-result details-total"><span>Cartes nettes</span><strong id="detailsCardsNet" class="green">—</strong></div>
   <div class="card-payment-info"><span>Brut carte <strong id="detailsCardsGross">—</strong></span><span>Frais SumUp <strong id="detailsCardsFees">—</strong></span></div>
-  <div class="details-metric"><span>Cash réel</span><strong id="detailsCashReal">—</strong></div>
-  <div class="details-metric"><span>Applis</span><strong id="detailsAppIncome">—</strong></div>
-  <div class="details-metric"><span>Commissions payées</span><strong id="detailsCommission">—</strong></div>
+  <div class="details-result details-total"><span>Cash réel</span><strong id="detailsCashReal" class="green">—</strong></div>
+  <div class="details-result details-total"><span>Applis</span><strong id="detailsAppIncome" class="green">—</strong></div>
+  <div class="details-result details-total"><span>Commissions payées</span><strong id="detailsCommission" class="green">—</strong></div>
   <div class="details-metric" id="detailsPaymentsDifference" hidden><span>Total des paiements nets</span><strong id="detailsPaymentsNet">—</strong></div>
  </div>
  <div class="details-charges">
@@ -1199,7 +1199,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-journal-worked-marker";
+const siteBuild="taxi-v6-11-payment-style";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
