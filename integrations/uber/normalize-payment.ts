@@ -15,8 +15,8 @@ export function normalizeUberPayment(input: unknown): UberDriverPayment {
   if (!input || typeof input !== "object") throw Error("Invalid payment");
   const p = input as Record<string, unknown>;
   const driverId = p.driverId, paymentId = p.paymentId;
-  if (typeof driverId !== "string" || !driverId.trim() ||
-      typeof paymentId !== "string" || !paymentId.trim()) throw Error("Stable driver/payment IDs required");
+  if (typeof driverId !== "string" || !driverId.trim() || driverId !== driverId.trim() ||
+      typeof paymentId !== "string" || !paymentId.trim() || paymentId !== paymentId.trim()) throw Error("Stable driver/payment IDs required");
   if (p.currency !== "EUR") throw Error("Unexpected currency");
   if (typeof p.amountCents !== "number" || !Number.isSafeInteger(p.amountCents))
     throw Error("Amount must be exact integer cents");
@@ -27,10 +27,12 @@ export function normalizeUberPayment(input: unknown): UberDriverPayment {
   const match = p.occurredAt.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/);
   if (!match) throw Error("Invalid timestamp");
   const [, year, month, day, hour, minute, second, zone, , offsetHour, offsetMinute] = match;
-  const utcCalendar = new Date(Date.UTC(+year, +month - 1, +day));
+  const utcCalendar = new Date(0);
+  utcCalendar.setUTCHours(0, 0, 0, 0);
+  utcCalendar.setUTCFullYear(+year, +month - 1, +day);
   if (utcCalendar.getUTCFullYear() !== +year || utcCalendar.getUTCMonth() + 1 !== +month ||
       utcCalendar.getUTCDate() !== +day || +hour > 23 || +minute > 59 || +second > 59 ||
-      (zone !== "Z" && (+offsetHour > 23 || +offsetMinute > 59))) throw Error("Invalid timestamp components");
+      (zone !== "Z" && (+offsetHour > 14 || +offsetMinute > 59 || (+offsetHour === 14 && +offsetMinute !== 0)))) throw Error("Invalid timestamp components");
   if (p.status !== "pending" && p.status !== "settled" && p.status !== "reversed")
     throw Error("Unknown payment status");
   return { provider:"uber", driverId, paymentId, occurredAt:p.occurredAt,
