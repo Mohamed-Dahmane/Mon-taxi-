@@ -190,10 +190,11 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .entry-group-heading{margin:5px 0 2px;color:#c2d0e5;font-size:11px;font-weight:750;letter-spacing:.04em}
 .entry-hub .invoice-entry label{white-space:nowrap}
 .invoice-entry small{display:block;color:#b9c6d8;font-size:10px;font-weight:500;line-height:1.15}
-.invoice-input{display:flex;align-items:center;gap:3px;min-width:0}
-.invoice-input input{flex:1}
-.invoice-input small,.invoice-total small{flex:none;white-space:nowrap}
-.invoice-total small{display:inline}
+.entry-hub .taxi-entry>input,.entry-hub .invoice-input input{width:calc(100% - 18px)}
+.invoice-input{position:relative;min-width:0}
+.invoice-input small{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+.invoice-input small,.invoice-total small{font-size:8px;white-space:nowrap}
+.invoice-total small{display:inline;margin-left:2px}
 #paymentDate{color:#b9c6d8;font-size:12px;font-weight:500}
 #daily .journal-day-toggle{min-height:36px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
@@ -1318,7 +1319,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-invoice-labels";
+const siteBuild="taxi-v6-11-aligned-invoice-fields";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
