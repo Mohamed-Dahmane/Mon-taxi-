@@ -150,15 +150,14 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .cost-total .cost-pencil{height:28px}
 .entry-hub{border-color:#4b6d9c;background:#18253a}.entry-hub .taxi-entry{grid-template-columns:68px minmax(0,1fr) minmax(0,1fr)}.entry-hub .entry-costs{border-top:1px solid #394c68;margin-top:9px;padding-top:4px}.entry-hub .hint{margin:5px 0 12px}.entry-hub #quickExpenseNature{padding:6px 0}.entry-hub #validateExpense,.entry-hub #undoQuick{margin-top:6px}
 #home .taxi-summary .work-reference{padding:9px 6px;display:grid;align-content:start;gap:3px}
-#home .taxi-summary .work-reference .label{min-height:2.4em;display:grid;place-items:center}
+#home .taxi-summary .work-reference .label{display:grid;place-items:center}
 .entry-hub .taxi-entry>label{font-size:clamp(11px,3.3vw,14px);font-weight:650;overflow-wrap:anywhere}
 .entry-hub .taxi-entry input{text-align:right}
 .entry-hub .taxi-amount strong{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:right;font-size:clamp(12px,3.6vw,16px)}
 #home .taxi-summary{gap:8px;margin:10px 0}
-#home .taxi-summary .work-reference{padding:10px 7px;border-radius:14px}
+#home .taxi-summary .work-reference{padding:6px 7px;gap:2px;border-radius:14px}
 #home .taxi-summary .workday-average{background:#14532d;border-color:#22c55e}
 #home .taxi-summary .reference-amount{font-size:clamp(20px,6.2vw,30px);letter-spacing:-.035em}
-.average-scope{font-size:10px;color:#c2d0e5;line-height:1.25}
 .entry-hub{border-radius:14px}
 .entry-hub .taxi-entry input{background:#111d30}
 .entry-hub .taxi-entry input:focus-visible{border-color:#82a8f6}
@@ -189,7 +188,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
-<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label">Moyenne par jour travaillé</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div><div class="average-scope">La moyenne inclut la date du jour</div></div></div>
+<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label">Moyenne par jour travaillé</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><p class="hint">Saisis un montant pour l’ajouter. ✎ pour corriger.</p><div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
 <div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="commissionInput">Commissions</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
@@ -1284,7 +1283,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-bright-monthly-result";
+const siteBuild="taxi-v6-11-compact-summary";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
