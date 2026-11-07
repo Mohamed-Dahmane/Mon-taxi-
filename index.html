@@ -173,9 +173,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .monthly-overview-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 8px;font-variant-numeric:tabular-nums}
 .monthly-overview-values>div{min-width:0;padding:7px 9px;background:#18283d;border-radius:9px}
 .monthly-overview-values dt{font-size:12px;color:#c2d0e5}
-.monthly-overview-values dd{margin:3px 0 0;font-size:clamp(16px,5vw,21px);font-weight:750;overflow-wrap:anywhere}
-.monthly-overview-values .monthly-revenue{grid-column:1/-1;background:#19354f}
-.monthly-overview-values .monthly-revenue dd{font-size:clamp(23px,7vw,32px)}
+.monthly-overview-values dd{margin:3px 0 0;font-size:clamp(18px,5.5vw,23px);font-weight:650;overflow-wrap:anywhere}
+.monthly-overview-values .monthly-result{grid-column:1/-1;background:#19354f}
+.monthly-overview-values .monthly-result dt{font-weight:750}
+.monthly-overview-values .monthly-result dd{font-size:clamp(21px,6.3vw,26px);font-weight:800}
 .monthly-overview>.home-disclosure{border-top:1px solid #354a6b;border-radius:0}
 .monthly-overview>.home-disclosure>summary{padding-inline:0}
 .monthly-overview>.home-disclosure>summary::after{margin-left:auto}
@@ -203,9 +204,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <section class="card monthly-overview" aria-labelledby="cardMonthLabel">
 <h2 id="cardMonthLabel">Bilan du mois</h2>
 <dl class="monthly-overview-values">
-<div class="monthly-revenue"><dt>Revenu total</dt><dd id="homeMonthlyRevenue">—</dd></div>
+<div><dt>Revenu total</dt><dd id="homeMonthlyRevenue">—</dd></div>
 <div><dt>Frais totaux</dt><dd id="homeCosts">—</dd></div>
-<div><dt id="homeResultLabel">Résultat</dt><dd id="homeBalance">—</dd></div>
+<div class="monthly-result"><dt id="homeResultLabel">Résultat</dt><dd id="homeBalance">—</dd></div>
 </dl>
 <details class="taxi-month home-disclosure"><summary>Détail des encaissements du mois</summary>
 <div class="home-disclosure-body">
@@ -440,7 +441,7 @@ function stats(m,monthKey=key()){
  const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
 }
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";renderEntryCosts();$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className=s.balance<0?"red":"green";$("homeResultLabel").textContent=s.balance<0?"Perte":s.balance>0?"Bénéfice":"Résultat";$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
+function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";renderEntryCosts();$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className=s.balance<0?"red":s.balance>0?"green":"";$("homeResultLabel").textContent=s.balance<0?"Perte":s.balance>0?"Bénéfice":"Résultat";$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
 function renderJournalTotals(s){
  const adjustment=monthlyReceiptAdjustment(current()).total/100;
  $("journalCaisseTotal").textContent=money(s.revenue-adjustment);
@@ -1282,7 +1283,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-original-summary-colors";
+const siteBuild="taxi-v6-11-monthly-result-emphasis";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
