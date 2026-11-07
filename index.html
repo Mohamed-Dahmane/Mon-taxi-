@@ -148,7 +148,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #costPickerRows{margin:10px 0}
 .cost-total{display:inline-flex;align-items:center;justify-content:center;max-width:100%;flex-wrap:wrap}
 .cost-total .cost-pencil{height:28px}
-.entry-hub{border-color:#4b6d9c;background:#18253a}.entry-hub .taxi-entry{grid-template-columns:68px minmax(0,1fr) minmax(0,1fr)}.entry-hub .entry-costs{border-top:1px solid #394c68;margin-top:9px;padding-top:4px}.entry-hub .hint{margin:5px 0 12px}.entry-hub #quickExpenseNature{padding:6px 0}.entry-hub #validateExpense,.entry-hub #undoQuick{margin-top:6px}
+.entry-hub{border-color:#4b6d9c;background:#18253a}.entry-hub .taxi-entry{grid-template-columns:94px minmax(0,1fr) minmax(0,1.2fr)}.entry-hub .entry-costs{border-top:1px solid #394c68;margin-top:9px;padding-top:4px}.entry-hub .hint{margin:5px 0 12px}.entry-hub #quickExpenseNature{padding:6px 0}.entry-hub #validateExpense,.entry-hub #undoQuick{margin-top:6px}
 #home .taxi-summary .work-reference{padding:9px 6px;display:grid;align-content:start;gap:3px}
 #home .taxi-summary .work-reference .label{display:grid;place-items:center}
 .entry-hub .taxi-entry>label{font-size:clamp(11px,3.3vw,14px);font-weight:650;overflow-wrap:anywhere}
@@ -187,6 +187,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #home .taxi-summary .average-heading,.details-heading .average-heading{display:flex;justify-content:center;align-items:baseline;gap:4px;flex-wrap:nowrap;white-space:nowrap}
 #home .taxi-summary .work-reference .label{min-height:1.2em}
 #home .taxi-summary .average-heading .reference-days,.details-heading .average-heading .reference-days{font-size:9px;white-space:nowrap;font-weight:500;opacity:.85}
+.entry-group-heading{margin:5px 0 2px;color:#c2d0e5;font-size:11px;font-weight:750;letter-spacing:.04em}
+.entry-hub .invoice-entry label{white-space:nowrap}
 .invoice-entry small{display:block;color:#b9c6d8;font-size:10px;font-weight:500;line-height:1.15}
 .invoice-entry .taxi-amount small{text-align:right}
 #paymentDate{color:#b9c6d8;font-size:12px;font-weight:500}
@@ -199,11 +201,15 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <section class="page active" id="home">
 <div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">(0 jour)</span></div><div class="value green reference-amount">—</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><p class="hint">Saisis un montant pour l’ajouter. ✎ pour corriger.</p><div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
+<div role="group" aria-labelledby="entryIncomeHeading">
+<h3 class="entry-group-heading" id="entryIncomeHeading">Entrées</h3>
 <div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry"><label for="appeleInput">Applis</label><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry invoice-entry"><label for="invoiceInput">Facturation <small>TVA 6 %</small></label><input id="invoiceInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00 HT" aria-label="Ajouter un montant facturé hors TVA"><div class="taxi-amount"><strong><span id="invoiceToday">—</span><small>TTC</small></strong><button type="button" class="payment-pencil" id="editInvoice" aria-label="Corriger le montant facturé hors TVA" title="Corriger la facturation HT"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+</div>
+<div class="entry-costs" role="group" aria-labelledby="entryOutflowHeading">
+<h3 class="entry-group-heading" id="entryOutflowHeading">Sorties</h3>
 <div class="taxi-entry"><label for="commissionInput">Commissions</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-entry"><label for="appeleInput">Applis</label><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-entry invoice-entry"><label for="invoiceInput">Facturation <small>TVA 6 %</small></label><input id="invoiceInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00 HT" aria-label="Ajouter un montant facturé hors TVA"><div class="taxi-amount"><strong><span id="invoiceToday">—</span><small>TTC</small></strong><button type="button" class="payment-pencil" id="editInvoice" aria-label="Corriger le montant facturé hors TVA" title="Corriger la facturation HT"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="entry-costs" role="group" aria-label="Carburant et dépenses du jour">
 <div class="taxi-entry"><label for="FuelInput">Carburant</label><input id="FuelInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter carburant"><div class="taxi-amount"><strong><span id="homeFuel">—</span></strong><button type="button" class="payment-pencil" id="editEntryFuel" aria-label="Corriger carburant du jour" title="Corriger carburant du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="ExpenseInput">Dépenses</label><input id="ExpenseInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter dépenses"><div class="taxi-amount"><strong><span id="homeExtra">—</span></strong><button type="button" class="payment-pencil" id="editEntryExpense" aria-label="Corriger dépenses du jour" title="Corriger dépenses du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div id="quickExpenseNature" hidden><label class="label" for="quickExpenseName">Nature de la dépense</label><input id="quickExpenseName" type="text" placeholder="Ex. Réparation, parking"><button type="button" class="button" id="validateExpense">Ajouter la dépense</button></div>
@@ -1160,9 +1166,9 @@ function correctPayment(field,label,adjustment=false){
 }
 const paymentInputs=[
  {field:"cash",label:"Cash",input:$("cashInput"),editId:"editCash"},
- {field:"commission",label:"Com",input:$("commissionInput"),editId:"editCommission"},
  {field:"appele",label:"Appli",input:$("appeleInput"),editId:"editAppele"},
- {field:"invoiceHt",label:"Facturation HT",input:$("invoiceInput"),editId:"editInvoice",adjustable:false}
+ {field:"invoiceHt",label:"Facturation HT",input:$("invoiceInput"),editId:"editInvoice",adjustable:false},
+ {field:"commission",label:"Com",input:$("commissionInput"),editId:"editCommission"}
 ];
 paymentInputs.forEach(({field,label,input,editId,adjustable=true},index)=>{
  $(editId).addEventListener("click",()=>correctPayment(field,label));
@@ -1172,7 +1178,7 @@ paymentInputs.forEach(({field,label,input,editId,adjustable=true},index)=>{
   if(event.key!=="Enter"||event.isComposing) return;
   event.preventDefault();
   if(!event.repeat&&addPayment(field,input)){
-   const next=paymentInputs[index+1]?.input??input;
+   const next=paymentInputs[index+1]?.input??$("FuelInput");
    next.focus();
   }
  });
@@ -1309,7 +1315,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-aligned-average";
+const siteBuild="taxi-v6-11-entry-outflow-groups";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
