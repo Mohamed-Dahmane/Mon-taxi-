@@ -95,7 +95,11 @@ Deno.serve(async (req) => {
       const cents=Math.round(Number(tx.amount)*100);
       if(!Number.isSafeInteger(cents)||cents<0)
         return Response.json({ok:false,reason:"invalid_sumup_amount"},{status:502});
-      const day=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Brussels",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(t));
+      const dateParts=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Brussels",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(t));
+      const dateField=(type: string)=>dateParts.find(part=>part.type===type)?.value;
+      const year=dateField("year"), month=dateField("month"), dayOfMonth=dateField("day");
+      if(!year || !month || !dayOfMonth) return Response.json({ok:false,reason:"invalid_local_date"},{status:502});
+      const day=`${year}-${month}-${dayOfMonth}`;
       if(day<"2026-11-01")continue;
       rows.push({transaction_id:String(tx.id),transaction_time:new Date(t).toISOString(),local_day:day,amount_cents:cents,currency:"EUR",status:String(tx.status??"UNKNOWN"),updated_at:new Date().toISOString()});
     }
