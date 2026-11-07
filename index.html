@@ -150,12 +150,12 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .cost-total .cost-pencil{height:28px}
 .entry-hub{border-color:#4b6d9c;background:#18253a}.entry-hub .taxi-entry{grid-template-columns:94px minmax(0,1fr) minmax(0,1.2fr)}.entry-hub .entry-costs{border-top:1px solid #394c68;margin-top:9px;padding-top:4px}.entry-hub .hint{margin:5px 0 12px}.entry-hub #quickExpenseNature{padding:6px 0}.entry-hub #validateExpense,.entry-hub #undoQuick{margin-top:6px}
 #home .taxi-summary .work-reference{padding:9px 6px;display:grid;align-content:start;gap:3px}
-#home .taxi-summary .work-reference .label{display:grid;place-items:center}
+#home .taxi-summary .work-reference .label{display:flex;justify-content:center;align-items:baseline;gap:3px;white-space:nowrap;font-size:clamp(9px,2.8vw,11px)}
 .entry-hub .taxi-entry>label{font-size:clamp(11px,3.3vw,14px);font-weight:650;overflow-wrap:anywhere}
 .entry-hub .taxi-entry input{text-align:right}
 .entry-hub .taxi-amount strong{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:right;font-size:clamp(12px,3.6vw,16px)}
 #home .taxi-summary{gap:8px;margin:10px 0}
-#home .taxi-summary .work-reference{padding:5px 7px;gap:1px;border-radius:14px}
+#home .taxi-summary .work-reference{padding:4px 5px;gap:0;border-radius:14px}
 #home .taxi-summary .workday-average{background:#14532d;border-color:#22c55e}
 #home .taxi-summary .reference-amount{font-size:clamp(20px,6.2vw,30px);letter-spacing:-.035em}
 .entry-hub{border-radius:14px}
@@ -184,9 +184,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .date-bar .calendar-trigger::after{content:"▾";font-size:11px;color:#b9c6d8}
 .calendar-period{display:grid;grid-template-columns:minmax(0,1fr) minmax(72px,.55fr);gap:6px;margin-bottom:5px}
 .calendar-period select{padding:7px}
-#home .taxi-summary .average-heading,.details-heading .average-heading{display:flex;justify-content:center;align-items:baseline;gap:4px;flex-wrap:nowrap;white-space:nowrap}
-#home .taxi-summary .work-reference .label{min-height:1.2em}
-#home .taxi-summary .average-heading .reference-days,.details-heading .average-heading .reference-days{font-size:9px;white-space:nowrap;font-weight:500;opacity:.85}
+.details-heading .average-heading{display:flex;justify-content:center;align-items:baseline;gap:4px;white-space:nowrap}
+#home .taxi-summary .work-reference .label{line-height:14px}
+#home .taxi-summary .average-heading .reference-days,.details-heading .average-heading .reference-days{font-size:8px;line-height:inherit;white-space:nowrap;font-weight:500;opacity:.85}
 .entry-group-heading{margin:5px 0 2px;color:#c2d0e5;font-size:11px;font-weight:750;letter-spacing:.04em}
 .entry-hub .invoice-entry label{white-space:nowrap}
 .invoice-entry small{display:block;color:#b9c6d8;font-size:10px;font-weight:500;line-height:1.15}
@@ -1320,7 +1320,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-invoice-ttc-left";
+const siteBuild="taxi-v6-11-compact-aligned-receipts";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
