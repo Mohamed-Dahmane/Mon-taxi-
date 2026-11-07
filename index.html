@@ -272,7 +272,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
    <div class="details-result"><span>Cartes nettes</span><strong id="detailsCardsNet" class="green">—</strong></div>
    <div class="card-payment-info"><span>Brut carte <strong id="detailsCardsGross">—</strong></span><span>Frais SumUp <strong id="detailsCardsFees">—</strong></span></div>
   </div>
-  <div class="details-result details-total details-total-compact"><span>Cash réel (cash moins commission)</span><strong id="detailsCashReal" class="green">—</strong></div>
+  <div class="details-result details-total details-total-compact"><span>Cash réel (cash − commission)</span><strong id="detailsCashReal" class="green">—</strong></div>
   <div class="details-result details-total details-total-compact"><span>Applis</span><strong id="detailsAppIncome" class="green">—</strong></div>
   <div class="details-result details-total details-total-compact"><span>Facturation TTC</span><strong id="detailsInvoiceIncome" class="green">—</strong></div>
   <div class="details-result details-total details-total-compact"><span>Commissions payées</span><strong id="detailsCommission" class="green">—</strong></div>
@@ -1325,7 +1325,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-cash-real-label";
+const siteBuild="taxi-v6-11-cash-real-symbol";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
