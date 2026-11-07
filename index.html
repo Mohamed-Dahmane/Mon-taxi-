@@ -59,7 +59,29 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #daily :is(.rowhead,.dayrow,.journal-totals){grid-template-columns:36px repeat(3,minmax(0,1fr));gap:4px}
 #daily .rowhead{padding:5px 2px;border-bottom:1px solid #34435e;text-align:center;font-size:clamp(10px,3vw,12px);font-weight:750}
 #daily .dayrow{padding:3px 2px;border-bottom:1px solid #2d3b55}
-#daily .day{font-weight:700;font-variant-numeric:tabular-nums}
+#daily .day{position:relative;color:#c1cedf;font-weight:650;font-variant-numeric:tabular-nums}
+#daily .journal-worked .day::before,.journal-worked-key::before{content:"";display:inline-block;width:2px;height:12px;border-radius:2px;background:#75b5a7}
+#daily .journal-worked .day::before{position:absolute;left:-3px;top:50%;transform:translateY(-50%)}
+.journal-worked-key::before{margin-right:5px;vertical-align:middle}
+.journal-heading{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+#daily .journal-heading h2{margin:0}
+.journal-actions{display:flex;gap:4px;flex-wrap:wrap}
+.journal-actions .button{font-size:12px;padding:6px 8px}
+.journal-actions [aria-expanded="true"]{border-color:#75b5a7}
+.journal-guide{font-size:11px;color:#b7c9df}
+.journal-option{margin-block:8px;padding:7px 0;border-bottom:1px solid #34435e}
+.journal-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:12px}
+.journal-fields label{min-width:0}
+.journal-fields :is(select,input){width:100%;min-width:0;margin-top:3px}
+#journalNameLabel{grid-column:1/-1}
+.journal-totals{display:grid;align-items:center;margin-top:6px;padding:8px 2px;border-top:2px solid #506480;color:#d4e9e4;font-size:11px;font-variant-numeric:tabular-nums}
+.journal-totals strong{text-align:right;overflow-wrap:anywhere;padding-right:5px}
+.journal-day-detail{grid-column:1/-1;padding:6px 4px;border-top:1px solid #34435e}
+.journal-day-toggle{width:100%;padding:5px 0;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.journal-day-toggle:focus-visible{outline:2px solid #8cbef3}
+.journal-payments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0;font-size:12px}
+.journal-payments dt{color:#b7c9df}
+.journal-payments dd{margin:2px 0 0;font-weight:700;overflow-wrap:anywhere}
 #daily :is(.dayrow>input,.day-calculated){min-height:38px;font-size:clamp(12px,3.6vw,16px);font-weight:700;font-variant-numeric:tabular-nums}
 #daily .day-calculated{display:grid;align-content:center;text-align:right;padding:4px 5px;overflow-wrap:anywhere}
 .button.add-action{background:#16784a;color:#fff;border-color:#36a975}
@@ -210,7 +232,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
    <button type="button" class="button secondary" data-journal-add="expense" aria-expanded="false" aria-controls="journalAddForm">+ Dépense</button>
   </div>
  </div>
- <p class="hint journal-guide">Les dates avec une flèche ouvrent le détail des paiements et des dépenses.</p>
+ <p class="hint journal-guide"><span class="journal-worked-key">Jour travaillé</span> · Flèche pour ouvrir le détail.</p>
  <form class="journal-option" id="journalAddForm" hidden>
   <div class="journal-fields">
    <label>Jour<select id="journalAddDay"></select></label>
@@ -478,7 +500,6 @@ function renderDays(){
   const row=document.createElement("div");
   row.className="dayrow";
   row.dataset.day=String(i);
-  row.classList.toggle("journal-selected",i===selectedDay);
   const date=costDate(i),day=document.createElement("span");
   day.className="day";
   day.textContent=date.slice(0,5);
@@ -503,13 +524,15 @@ function renderDays(){
   row.append(day,caisse,fuel,expense);
   if(expenses.length)expense.append(dayCalculatedAmount(expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense))));
   const payments=dailyReceiptBreakdown(i,month,monthKey);
+  const worked=dailyNetReceipt(payments)!==null;
+  row.classList.toggle("journal-worked",worked);
   const hasPayments=Object.values(payments).some(Boolean)||Object.values(month.payments?.[i]||{}).some(value=>number(value)!==0);
   if(hasPayments||expenses.length){
    const toggle=document.createElement("button"),detail=document.createElement("div");
    toggle.type="button";
    toggle.className="journal-day-toggle";
    toggle.textContent=date.slice(0,5);
-   toggle.setAttribute("aria-label","Détail du "+date);
+   toggle.setAttribute("aria-label","Détail du "+date+(worked?" · jour travaillé":""));
    toggle.setAttribute("aria-controls","journalDay"+i);
    toggle.setAttribute("aria-expanded","false");
    day.replaceChildren(toggle);
@@ -1098,7 +1121,7 @@ let selectedDay=initialToday.getDate();
 let lastToday=initialToday;
 let lastEntry=null;
 function renderQuick(){const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();selectedDay=Math.max(1,Math.min(selectedDay,n));quickDay.replaceChildren();for(let i=1;i<=n;i++)quickDay.add(new Option(String(i),String(i)));quickDay.value=String(selectedDay);renderJournalDays();showQuickDay();renderCalendar()}
-function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0");$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);document.querySelectorAll("#dayRows .dayrow").forEach(row=>{row.classList.toggle("journal-selected",Number(row.dataset.day)===selectedDay)});const d=current().days?.[selectedDay]||{};const caisse=d.caisse!==undefined&&String(d.caisse)!==""?number(d.caisse):automaticCaisse(selectedDay,current(),key()),fuel=number(d.fuel),expense=number(d.expense)+(current().extra||[]).reduce((sum,e)=>sum+(Number(e.day)===selectedDay?number(e.amount):0),0);$("dailyFuel").textContent=money(fuel);$("dailyExpense").textContent=money(expense);$("dailyBalance").textContent=money(caisse-fuel-expense);$("quickDayTotal").textContent="Montants enregistrés pour le "+date;}
+function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const date=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0");$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);const d=current().days?.[selectedDay]||{};const caisse=d.caisse!==undefined&&String(d.caisse)!==""?number(d.caisse):automaticCaisse(selectedDay,current(),key()),fuel=number(d.fuel),expense=number(d.expense)+(current().extra||[]).reduce((sum,e)=>sum+(Number(e.day)===selectedDay?number(e.amount):0),0);$("dailyFuel").textContent=money(fuel);$("dailyExpense").textContent=money(expense);$("dailyBalance").textContent=money(caisse-fuel-expense);$("quickDayTotal").textContent="Montants enregistrés pour le "+date;}
 const calendarDialog=$("calendarDialog");
 function renderCalendar(){const y=Number(yearSel.value),m=Number(monthSel.value),n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,today=new Date(),root=$("calendarGrid");$("calendarTitle").textContent=months[m]+" "+y;root.replaceChildren();["L","M","M","J","V","S","D"].forEach(label=>{const e=document.createElement("span");e.className="calendar-weekday";e.textContent=label;root.append(e)});for(let i=0;i<offset;i++)root.append(document.createElement("span"));for(let d=1;d<=n;d++){const b=document.createElement("button");b.type="button";b.className="calendar-day"+(String(d)===quickDay.value?" selected":"")+(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d?" today":"");b.textContent=d;b.setAttribute("aria-label",d+" "+months[m]+" "+y);b.setAttribute("aria-pressed",String(d)===quickDay.value?"true":"false");b.addEventListener("click",()=>{selectedDay=d;quickDay.value=String(d);calendarDialog.hidden=true;showQuickDay();renderCalendar()});root.append(b)}}
 
@@ -1176,7 +1199,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-journal-totals";
+const siteBuild="taxi-v6-11-journal-worked-marker";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
