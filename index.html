@@ -53,7 +53,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .payment-month-amount{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;column-gap:1px}
 #home .payment-month-amount strong{margin-block:0}
 #daily{padding-inline:clamp(9px,3vw,17px)}
-#daily :is(.rowhead,.dayrow,.journal-totals){grid-template-columns:36px repeat(3,minmax(0,1fr));gap:4px}
+#daily :is(.rowhead,.dayrow,.journal-totals){grid-template-columns:36px repeat(4,minmax(0,1fr));gap:4px}
+#daily .journal-appli{font-size:clamp(11px,3vw,15px);text-align:right;overflow-wrap:anywhere}
 #daily .rowhead{padding:5px 2px;border-bottom:1px solid #34435e;text-align:center;font-size:clamp(10px,3vw,12px);font-weight:750}
 #daily .dayrow{padding:3px 2px;border-bottom:1px solid #2d3b55}
 #daily .day{position:relative;color:#c1cedf;font-weight:650;font-variant-numeric:tabular-nums}
@@ -245,9 +246,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
   <div class="toolbar"><button class="button add-action" type="submit">Enregistrer</button><button class="button secondary" type="button" id="cancelJournalAdd">Annuler</button></div>
  </form>
  <div id="undatedExpenses" hidden><h2>Dépenses sans date</h2><div id="expenseRows"></div></div>
- <div class="rowhead"><span>Jour</span><span>Caisse</span><span>Carburant</span><span>Dépenses</span></div>
+ <div class="rowhead"><span>Jour</span><span>Caisse</span><span>Appli</span><span>Carburant</span><span>Dépenses</span></div>
  <div id="dayRows"></div>
- <div class="journal-totals" aria-label="Totaux du journal"><span>Total</span><strong id="journalCaisseTotal">—</strong><strong id="journalFuelTotal">—</strong><strong id="journalExpenseTotal">—</strong></div>
+ <div class="journal-totals" aria-label="Totaux du journal"><span>Total</span><strong id="journalCaisseTotal">—</strong><strong id="journalAppliTotal">—</strong><strong id="journalFuelTotal">—</strong><strong id="journalExpenseTotal">—</strong></div>
  <p class="hint" id="journalTotalsNote" hidden>Ces totaux reprennent les lignes du journal. Les ajustements du mois et les dépenses sans date figurent dans le bilan.</p>
 </section>
 <section class="panel card" id="annual"><h2>Vue annuelle</h2><div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div><div id="annualRows"></div><div class="sumrow"><span>Total annuel caisse</span><span id="annualTotal">0,00 €</span></div></section>
@@ -408,8 +409,11 @@ function stats(m,monthKey=key()){
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
 function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
 function renderJournalTotals(s){
- const adjustment=monthlyReceiptAdjustment(current()).total/100;
+ const month=current();
+ const adjustment=monthlyReceiptAdjustment(month).total/100;
  $("journalCaisseTotal").textContent=money(s.revenue-adjustment);
+ const appliCents=paymentMonthCents(month,"appele")-number(month.paymentAdjustments?.appele);
+ $("journalAppliTotal").textContent=money(appliCents/100);
  $("journalFuelTotal").textContent=money(s.fuel);
  $("journalExpenseTotal").textContent=money(s.dailyExtra);
  $("journalTotalsNote").hidden=!adjustment&&Math.round(s.extra*100)===Math.round(s.dailyExtra*100);
@@ -524,9 +528,11 @@ function renderDays(){
   });
   const fuel=entryField("fuel","Carburant");
   const expense=expenses.length?document.createElement("div"):entryField("expense","Dépenses");
-  row.append(day,caisse,fuel,expense);
-  if(expenses.length)expense.append(dayCalculatedAmount(expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense))));
   const payments=dailyReceiptBreakdown(i,month,monthKey);
+  const appli=dayCalculatedAmount(hasCost(month.payments?.[i]?.appele)?payments.appli/100:null);
+  appli.classList.add("journal-appli");
+  row.append(day,caisse,appli,fuel,expense);
+  if(expenses.length)expense.append(dayCalculatedAmount(expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense))));
   const worked=dailyNetReceipt(payments)!==null;
   row.classList.toggle("journal-worked",worked);
   const hasPayments=Object.values(payments).some(Boolean)||Object.values(month.payments?.[i]||{}).some(value=>number(value)!==0);
