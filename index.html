@@ -69,10 +69,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #daily .rowhead{padding:5px 2px;border-bottom:1px solid #34435e;text-align:center;font-size:clamp(10px,3vw,12px);font-weight:750}
 #daily .dayrow{padding:3px 2px;border-bottom:1px solid #2d3b55}
 #daily .day{font-weight:700;font-variant-numeric:tabular-nums}
-#daily :is(.dayrow>input,.day-expense-edit){min-height:38px;font-size:clamp(12px,3.6vw,16px);font-weight:700;font-variant-numeric:tabular-nums}
-#daily .day-expense-edit{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;column-gap:3px}
-#daily .day-expense-edit span:first-child{min-width:0;overflow-wrap:anywhere}
-#daily .day-expense-edit span[aria-hidden]{color:#b7c9df;font-size:11px}
+#daily :is(.dayrow>input,.day-calculated){min-height:38px;font-size:clamp(12px,3.6vw,16px);font-weight:700;font-variant-numeric:tabular-nums}
+#daily .day-calculated{display:grid;align-content:center;text-align:right;padding:4px 5px;overflow-wrap:anywhere}
+#daily .day-expense-edit{display:block;margin-left:auto;width:auto;min-height:28px;padding:2px 5px}
 #daily .day-expense-nature{font-size:11px;overflow-wrap:anywhere}
 .button.add-action{background:#16784a;color:#fff;border-color:#36a975}
 .button.add-action:hover{background:#12653e}
@@ -94,7 +93,11 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .details-charges[open] summary span::before{transform:rotate(90deg)}
 .details-metric[hidden]{display:none}
 .details-charges .details-metric{padding-left:14px;color:#b7c9df}
-.details-overview .workday-average{margin-top:8px;max-width:none}
+.details-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.details-heading h2{margin:0}
+.details-heading .workday-average{width:auto;min-width:106px;margin:0;padding:4px 7px}
+.details-heading .reference-amount{font-size:17px!important;margin:1px 0;overflow-wrap:anywhere}
+.details-heading .reference-days{font-size:10px}
 #details .details-tabs{display:flex;flex-wrap:wrap;gap:6px}
 #details .details-tabs .tab{flex:1 0 auto;min-height:40px;padding:7px 9px}
 
@@ -104,6 +107,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #home .taxi-summary .payment-day-total strong,#home .taxi-summary .reference-amount{display:block;font-size:19px;line-height:1.2;margin:2px 0;color:#77ecc2}
 #home .taxi-summary .reference-days{font-size:10px;line-height:1.2}
 .taxi-line{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0}
+#paymentAdjustments [hidden]{display:none}
 .taxi-cards{border-top:1px solid #354a6b;align-items:baseline}
 .taxi-cards>div{text-align:right}
 .taxi-cards .green{font-size:clamp(15px,4vw,21px);white-space:nowrap}
@@ -158,10 +162,15 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div class="eyebrow" id="cardMonthLabel">Total du mois</div>
 <div class="taxi-line"><b>Caisse cumulée</b><strong class="green"><span id="homeMonthlyRevenue">—</span></strong></div>
 <div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardMonthNetIndicative">—</span></strong> <small>(brut <span id="cardMonthTotal">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardMonthFeeEstimate">—</span></div>
-<div class="taxi-line"><span>Cash</span><div class="taxi-amount"><strong><span id="cashMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editCashMonth" aria-label="Corriger le total mensuel Cash" title="Corriger le total mensuel Cash"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-line"><span>Com</span><div class="taxi-amount"><strong><span id="commissionMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editCommissionMonth" aria-label="Corriger le total mensuel Com" title="Corriger le total mensuel Com"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-line"><span>Appli</span><div class="taxi-amount"><strong><span id="appeleMonthCard">—</span></strong><button type="button" class="payment-pencil" id="editAppeleMonth" aria-label="Corriger le total mensuel Appli" title="Corriger le total mensuel Appli"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-line"><span>Cash</span><div class="taxi-amount"><strong><span id="cashMonthCard">—</span></strong></div></div>
+<div class="taxi-line"><span>Com</span><div class="taxi-amount"><strong><span id="commissionMonthCard">—</span></strong></div></div>
+<div class="taxi-line"><span>Appli</span><div class="taxi-amount"><strong><span id="appeleMonthCard">—</span></strong></div></div>
 <div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealMonth">—</span></strong></div>
+<details id="paymentAdjustments" hidden><summary>Ajustements saisis</summary>
+<div class="taxi-line" id="cashAdjustmentRow" hidden><span>Cash</span><button type="button" class="button secondary" id="editCashAdjustment" aria-label="Corriger l’ajustement Cash"></button></div>
+<div class="taxi-line" id="commissionAdjustmentRow" hidden><span>Com</span><button type="button" class="button secondary" id="editCommissionAdjustment" aria-label="Corriger l’ajustement Com"></button></div>
+<div class="taxi-line" id="appeleAdjustmentRow" hidden><span>Appli</span><button type="button" class="button secondary" id="editAppeleAdjustment" aria-label="Corriger l’ajustement Appli"></button></div>
+</details>
 <div class="taxi-costs" role="group" aria-label="Carburant et dépenses du mois">
 <div><div class="taxi-line"><span>Carburant</span><span class="cost-amount"><strong><span id="homeFuel">—</span></strong></span></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button></div>
 <div><div class="taxi-line"><span>Dépenses</span><span class="cost-amount"><strong><span id="homeExtra">—</span></strong></span></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button></div>
@@ -178,11 +187,14 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 </div>
 <div hidden><span id="homeBalance"></span><span id="homeStatus"></span><span id="homeFixed"></span><span id="homeCosts"></span></div>
 </section>
-<p class="hint">Recette du jour = cartes nettes + cash réel + appli. Dans Détails, une caisse saisie manuellement remplace le total automatique du jour.</p>
+<p class="hint">Recette du jour = cartes nettes + cash réel + appli.</p>
 </section>
 <section class="page" id="archive"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section><div class="card"><h2>Archives des encaissements</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Encaissements par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
 <section class="card details-overview" aria-labelledby="detailsHeading">
- <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
+ <div class="details-heading">
+  <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
+  <div class="work-reference workday-average"><div class="label">Moyenne</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div>
+ </div>
  <div class="details-result details-total"><span>Revenu net</span><strong id="v11DetailsNet">0,00 €</strong></div>
  <div class="details-result details-total"><span>Caisse cumulée</span><strong id="v11DetailsCaisse">0,00 €</strong></div>
  <details class="details-charges">
@@ -192,7 +204,6 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
   <div class="details-metric" id="datedExpenseSubtotal" hidden><span>Dont dépenses datées</span><strong id="monthlyExpenseSum">0,00 €</strong></div>
   <div class="details-metric"><span>Frais fixes</span><strong id="v11DetailsFixed">0,00 €</strong></div>
  </details>
- <div class="work-reference workday-average"><div class="label">Moyenne</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div>
 </section>
 <div class="tabs details-tabs" aria-label="Rubriques de la page Détails">
  <button class="tab active" data-tab="daily" aria-controls="daily" aria-pressed="true">Caisse et frais</button>
@@ -361,7 +372,38 @@ function stats(m,monthKey=key()){
 }
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
 function refreshMetrics(){renderReceiptBreakdown();renderPayments();const s=stats(current());const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";$("homeFuel").textContent=money(s.fuel);$("homeExtra").textContent=money(s.extra);$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
-function field(value,placeholder,callback){const input=document.createElement("input");input.type="number";input.inputMode="decimal";input.step="0.01";input.placeholder=placeholder;input.value=value??"";input.addEventListener("input",()=>{callback(input.value);save();refreshMetrics();renderAnnual();renderArchive();showQuickDay()});return input}
+function field(value,placeholder,callback){
+ const input=document.createElement("input");
+ input.type="text";
+ input.inputMode="decimal";
+ input.enterKeyHint="done";
+ input.placeholder=placeholder;
+ const display=amount=>hasCost(amount)?number(amount).toFixed(2).replace(".",","):"";
+ let formatted=display(value);
+ input.value=formatted;
+ input.addEventListener("blur",()=>{
+  const raw=input.value.trim().replace(",",".");
+  if(input.value!==formatted){
+   const cents=Math.round(Number(raw)*100);
+   if(raw===""||(/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)&&Number.isSafeInteger(cents))){
+    const amount=raw===""?"":String(cents/100);
+    formatted=display(amount);
+    callback(amount);
+    save();refreshMetrics();renderAnnual();renderArchive();
+   }else{
+    toast("Montant invalide");
+   }
+  }
+  input.value=formatted;
+ });
+ input.addEventListener("keydown",event=>{
+  if(event.key==="Enter"&&!event.isComposing){
+   event.preventDefault();
+   input.blur();
+  }
+ });
+ return input;
+}
 
 function dailyReceiptBreakdown(day,m,monthKey){
  const p=m.payments?.[day]||{};
@@ -410,53 +452,68 @@ function renderReceiptBreakdown(){
  }
 }
 
-function setDayCostAmount(button,amount){
+function dayCalculatedAmount(amount){
  const value=document.createElement("span");
- value.textContent=money(amount);
- const pencil=document.createElement("span");
- pencil.setAttribute("aria-hidden","true");
- pencil.textContent="✎";
- button.append(value,pencil);
+ value.className="day-calculated";
+ value.textContent=amount===null?"—":money(amount);
+ return value;
 }
 
-function renderDays(){const month=current();const root=$("dayRows");root.replaceChildren();const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();for(let i=1;i<=n;i++){const row=document.createElement("div");row.className="dayrow";row.dataset.day=String(i);if(i===selectedDay){row.style.background="#223b55";row.style.borderRadius="9px";row.style.outline="1px solid #5286ad"}const day=document.createElement("span");day.className="day";day.textContent=costDate(i).slice(0,5);const d=month.days?.[i]||{};const expenses=(month.extra||[]).filter(e=>Number(e.day)===i);
-const hasExpenses=expenses.length||hasCost(d.expense);
-const fuel=hasCost(d.fuel)?document.createElement("button"):field(d.fuel,"Vide",v=>{ensure().days[i]??={};ensure().days[i].fuel=v});
-if(hasCost(d.fuel)){
- fuel.type="button";
- fuel.className="day-expense-edit";
- setDayCostAmount(fuel,number(d.fuel));
- fuel.setAttribute("aria-label","Corriger le carburant du "+costDate(i));
- fuel.addEventListener("click",()=>editFuelCost(i,key()));
-}
-const expense=hasExpenses?document.createElement("span"):field(d.expense,"Vide",v=>{ensure().days[i]??={};ensure().days[i].expense=v});
-
-const caisse=field(d.caisse,sumupReady?automaticCaisse(i,month,key()).toFixed(2):"Vide",v=>{ensure().days[i]??={};ensure().days[i].caisse=v});
-caisse.setAttribute("aria-label","Caisse du "+costDate(i));
-if(!hasCost(d.fuel))fuel.setAttribute("aria-label","Carburant du "+costDate(i));
-if(!hasExpenses)expense.setAttribute("aria-label","Dépenses du "+costDate(i));
-row.append(day,caisse,fuel,expense);
-if(hasExpenses){
- const toggle=document.createElement("button");toggle.type="button";toggle.className="day-expense-edit";
- setDayCostAmount(toggle,expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense)));
- toggle.setAttribute("aria-label","Corriger les dépenses du "+costDate(i));toggle.setAttribute("aria-expanded","false");
- const editor=document.createElement("div");editor.className="day-expense-editor";editor.hidden=true;
- toggle.addEventListener("click",()=>{
-  editor.hidden=!editor.hidden;
-  toggle.setAttribute("aria-expanded",String(!editor.hidden));
-  if(!editor.hidden)renderCostRows(editor,key(),{dayFilter:i});
- });
- expense.append(toggle);
- if(expenses.length){
-  const nature=document.createElement("span");
-  nature.className="day-expense-nature";
-  nature.textContent=expenses.map(e=>e.name).join(" · ");
-  expense.append(nature);
+function renderDays(){
+ const month=current(),monthKey=key(),root=$("dayRows");
+ root.replaceChildren();
+ const n=new Date(Number(yearSel.value),Number(monthSel.value)+1,0).getDate();
+ for(let i=1;i<=n;i++){
+  const row=document.createElement("div");
+  row.className="dayrow";
+  row.dataset.day=String(i);
+  if(i===selectedDay){row.style.background="#223b55";row.style.borderRadius="9px";row.style.outline="1px solid #5286ad"}
+  const date=costDate(i),day=document.createElement("span");
+  day.className="day";
+  day.textContent=date.slice(0,5);
+  const d=month.days?.[i]||{};
+  const expenses=(month.extra||[]).filter(e=>Number(e.day)===i);
+  const entryField=(name,label)=>{
+   const input=field(d[name],"Vide",value=>{
+    (ensure().days[i]??={})[name]=value;
+   });
+   input.setAttribute("aria-label",label+" du "+date);
+   return input;
+  };
+  const calculatedCaisse=()=>dayCalculatedAmount(sumupReady?automaticCaisse(i,month,monthKey):null);
+  const caisse=hasCost(d.caisse)?entryField("caisse","Caisse saisie"):calculatedCaisse();
+  if(hasCost(d.caisse))caisse.addEventListener("blur",()=>{
+   if(!hasCost(month.days?.[i]?.caisse))caisse.replaceWith(calculatedCaisse());
+  });
+  const fuel=entryField("fuel","Carburant");
+  const expense=expenses.length?document.createElement("div"):entryField("expense","Dépenses");
+  row.append(day,caisse,fuel,expense);
+  if(expenses.length){
+   const total=expenses.reduce((sum,e)=>sum+number(e.amount),number(d.expense));
+   const toggle=document.createElement("button");
+   toggle.type="button";
+   toggle.className="day-expense-edit";
+   toggle.textContent="Détail";
+   toggle.setAttribute("aria-label","Voir les dépenses du "+date);
+   toggle.setAttribute("aria-expanded","false");
+   const editor=document.createElement("div");
+   editor.className="day-expense-editor";
+   editor.hidden=true;
+   toggle.addEventListener("click",()=>{
+    editor.hidden=!editor.hidden;
+    toggle.setAttribute("aria-expanded",String(!editor.hidden));
+    if(!editor.hidden)renderCostRows(editor,monthKey,{dayFilter:i});
+   });
+   const nature=document.createElement("span");
+   nature.className="day-expense-nature";
+   nature.textContent=expenses.map(e=>e.name).join(" · ");
+   expense.append(dayCalculatedAmount(total),toggle,nature);
+   row.append(editor);
+  }
+  root.append(row);
  }
- row.append(editor);
 }
-root.append(row)}}
-function renderFixed(){const root=$("fixedRows");root.replaceChildren();fixedEntries(current().fixed).forEach(([name,value])=>{const row=document.createElement("div");row.className="fixedrow";row.style.gridTemplateColumns="minmax(0,1fr) 100px 32px";const label=document.createElement("input");label.type="text";label.value=name;label.setAttribute("aria-label","Intitulé de la charge fixe");label.addEventListener("change",()=>{const next=label.value.trim();if(!next||next===name){label.value=name;return}if(isSumUpFixed(next)){toast("Les frais SumUp sont calculés à 1,69 %");label.value=name;return}const fixed=ensure().fixed;if(Object.prototype.hasOwnProperty.call(fixed,next)){toast("Cet intitulé existe déjà");label.value=name;return}const updated={};Object.entries(fixed).forEach(([k,v])=>updated[k===name?next:k]=v);ensure().fixed=updated;ensure().fixedCustomized=true;save();renderFixed();refreshMetrics()});const amount=document.createElement("input");amount.type="text";amount.inputMode="decimal";amount.setAttribute("aria-label","Montant en euros pour "+name);const euroDisplay=v=>Number(String(v??"0").replace(/\\s/g,"").replace("€","").replace(",","." )||0).toLocaleString("fr-BE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";amount.value=euroDisplay(value);amount.addEventListener("focus",()=>{amount.value=String(value??"0").replace(".",",");amount.select()});amount.addEventListener("input",()=>{const raw=amount.value.replace(/\\s/g,"").replace("€","").replace(",",".");if(raw!==""&&!/^[-]?[0-9]*([.][0-9]*)?$/.test(raw))return;ensure().fixed[name]=raw;ensure().fixedCustomized=true;save();refreshMetrics();renderAnnual();renderArchive()});amount.addEventListener("blur",()=>{value=ensure().fixed[name];amount.value=euroDisplay(value)});const remove=document.createElement("button");remove.type="button";remove.className="button danger";remove.textContent="×";remove.title="Supprimer cette charge";remove.style.padding="10px 4px";remove.addEventListener("click",()=>{if(!confirm("Supprimer « "+name+" » pour ce mois ?"))return;delete ensure().fixed[name];ensure().fixedCustomized=true;save();renderFixed();refreshMetrics();renderAnnual();renderArchive()});row.append(label,amount,remove);root.append(row)})}
+function renderFixed(){const root=$("fixedRows");root.replaceChildren();fixedEntries(current().fixed).forEach(([name,value])=>{const row=document.createElement("div");row.className="fixedrow";row.style.gridTemplateColumns="minmax(0,1fr) 100px 32px";const label=document.createElement("input");label.type="text";label.value=name;label.setAttribute("aria-label","Intitulé de la charge fixe");label.addEventListener("change",()=>{const next=label.value.trim();if(!next||next===name){label.value=name;return}if(isSumUpFixed(next)){toast("Les frais SumUp sont calculés à 1,69 %");label.value=name;return}const fixed=ensure().fixed;if(Object.prototype.hasOwnProperty.call(fixed,next)){toast("Cet intitulé existe déjà");label.value=name;return}const updated={};Object.entries(fixed).forEach(([k,v])=>updated[k===name?next:k]=v);ensure().fixed=updated;ensure().fixedCustomized=true;save();renderFixed();refreshMetrics()});const amount=document.createElement("input");amount.type="text";amount.inputMode="decimal";amount.setAttribute("aria-label","Montant en euros pour "+name);const euroDisplay=v=>Number(String(v??"0").replace(/\\s/g,"").replace("€","").replace(",","." )||0).toLocaleString("fr-BE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";amount.value=euroDisplay(value);amount.addEventListener("focus",()=>{amount.value=number(value).toFixed(2).replace(".",",");amount.select()});amount.addEventListener("input",()=>{const raw=amount.value.replace(/\\s/g,"").replace("€","").replace(",",".");if(raw!==""&&!/^[-]?[0-9]*([.][0-9]*)?$/.test(raw))return;ensure().fixed[name]=raw;ensure().fixedCustomized=true;save();refreshMetrics();renderAnnual();renderArchive()});amount.addEventListener("blur",()=>{value=ensure().fixed[name];amount.value=euroDisplay(value)});const remove=document.createElement("button");remove.type="button";remove.className="button danger";remove.textContent="×";remove.title="Supprimer cette charge";remove.style.padding="10px 4px";remove.addEventListener("click",()=>{if(!confirm("Supprimer « "+name+" » pour ce mois ?"))return;delete ensure().fixed[name];ensure().fixedCustomized=true;save();renderFixed();refreshMetrics();renderAnnual();renderArchive()});row.append(label,amount,remove);root.append(row)})}
 $("addFixed").addEventListener("click",()=>{const fixed=ensure().fixed;let i=1;while(Object.prototype.hasOwnProperty.call(fixed,"Nouvelle charge "+i))i++;fixed["Nouvelle charge "+i]="0";ensure().fixedCustomized=true;save();renderFixed();refreshMetrics();toast("Modifie le nom et le montant")});
 function renderArchive(){const start="2026-9";const cardPeriods=sumupRows.filter(r=>r.status==="SUCCESSFUL").map(r=>{const [y,m]=r.local_day.split("-");return y+"-"+(Number(m)-1)});const periods=[...new Set([...Object.keys(data.months),...cardPeriods])].filter(k=>{const [y,m]=k.split("-").map(Number);return y>2026||(y===2026&&m>=9)}).sort((a,b)=>{const [ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return by*12+bm-(ay*12+am)});let revenue=0,charges=0,net=0;const monthRoot=$("archiveMonths"),dayRoot=$("archiveDays");monthRoot.replaceChildren();dayRoot.replaceChildren();for(const k of periods){const [y,m]=k.split("-").map(Number),entry=data.months[k]||{},st=stats({...entry,fixed:entry.fixed||{}},k);revenue+=st.revenue;charges+=st.costs;net+=st.balance;const row=document.createElement("div");row.className="annualrow";row.style.gridTemplateColumns="1fr 1fr 1fr";const label=document.createElement("span");label.textContent=months[m]+" "+y;const amount=document.createElement("strong");amount.textContent=money(st.revenue);const result=document.createElement("strong");result.textContent=money(st.balance);const balance=document.createElement("span");
 balance.className="cost-total";
@@ -464,7 +521,7 @@ balance.append(result);
 if(entry.extra?.length||Object.values(entry.days||{}).some(day=>hasCost(day.fuel)||hasCost(day.expense))){
  const editCosts=costPencil("Corriger le carburant et les dépenses de "+months[m]+" "+y);
  editCosts.addEventListener("click",()=>openCostPicker(k));
- balance.append(editCosts);
+ label.append(editCosts);
 }
 row.append(label,amount,balance);monthRoot.append(row);const count=new Date(y,m+1,0).getDate();for(let d=count;d>=1;d--){const v=entry.days?.[d]||{},p=entry.payments?.[d]||{};const manual=v.caisse!==undefined&&v.caisse!==null&&String(v.caisse)!=="";const hasPayment=Object.values(p).some(x=>x!==""&&x!==null&&x!==undefined);const auto=sumupReady?automaticCaisse(d,entry,k):0;if(!manual&&!hasPayment&&!auto)continue;const amountValue=manual?number(v.caisse):(sumupReady?auto:null);const item=document.createElement("div");item.className="annualrow";item.style.gridTemplateColumns="1fr 1fr";const date=document.createElement("span");date.textContent=String(d).padStart(2,"0")+"."+String(m+1).padStart(2,"0")+"."+y;const value=document.createElement("strong");value.textContent=amountValue===null?"—":money(amountValue);item.append(date,value);dayRoot.append(item)}}if(!periods.length)monthRoot.textContent="Aucun mois enregistré depuis le 01.10.2026.";if(!dayRoot.children.length)dayRoot.textContent="Aucun encaissement daté enregistré."; $("archiveTotal").textContent=money(revenue);$("archiveCharges").textContent=money(charges);$("archiveNet").textContent=money(net)}
 
@@ -873,7 +930,18 @@ function paymentTotals(){
   appeleMonth:paymentMonthCents(m,"appele")/100
  };
 }
-function renderPayments(){const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonthPrefix=yearSel.value+"-"+String(Number(monthSel.value)+1).padStart(2,"0")+"-";$("cardMonthLabel").textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;const cardMonthRows=sumupRows.filter(r=>r.status==="SUCCESSFUL"&&String(r.local_day).startsWith(cardMonthPrefix));$("cardMonthTotal").textContent=sumupReady?money(cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0)/100):"—";const cardMonthTotalCents=cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0);const cardMonthFeeCents=cardMonthRows.reduce((total,r)=>total+sumupFeeCents(r),0);$("cardMonthNetIndicative").textContent=sumupReady?money((cardMonthTotalCents-cardMonthFeeCents)/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonthFeeCents/100):"—";$("paymentDate").textContent=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(sumupNetForDay(selectedDay)+(t.cash-t.commission)+t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";}
+function renderPaymentAdjustments(){
+ const entries=current().paymentAdjustments??{};
+ let visible=false;
+ for(const {field,editId} of paymentInputs){
+  const cents=number(entries[field]);
+  $(field+"AdjustmentRow").hidden=cents===0;
+  $(editId+"Adjustment").textContent=money(cents/100)+" ✎";
+  visible ||= cents!==0;
+ }
+ $("paymentAdjustments").hidden=!visible;
+}
+function renderPayments(){renderPaymentAdjustments();const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonthPrefix=yearSel.value+"-"+String(Number(monthSel.value)+1).padStart(2,"0")+"-";$("cardMonthLabel").textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;const cardMonthRows=sumupRows.filter(r=>r.status==="SUCCESSFUL"&&String(r.local_day).startsWith(cardMonthPrefix));$("cardMonthTotal").textContent=sumupReady?money(cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0)/100):"—";const cardMonthTotalCents=cardMonthRows.reduce((total,r)=>total+Number(r.amount_cents),0);const cardMonthFeeCents=cardMonthRows.reduce((total,r)=>total+sumupFeeCents(r),0);$("cardMonthNetIndicative").textContent=sumupReady?money((cardMonthTotalCents-cardMonthFeeCents)/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonthFeeCents/100):"—";$("paymentDate").textContent=String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(sumupNetForDay(selectedDay)+(t.cash-t.commission)+t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";}
 function addPayment(field,input){
  const raw=input.value.trim().replace(",",".");
  if(!raw){input.value="";return true}
@@ -890,31 +958,31 @@ function addPayment(field,input){
  toast("Montant ajouté et enregistré");
  return true;
 }
-function correctPayment(field,label,monthly=false){
+function correctPayment(field,label,adjustment=false){
  const month=current();
- const previous=monthly?paymentMonthCents(month,field)/100:number(month.payments?.[selectedDay]?.[field]);
- const period=monthly
+ const previous=adjustment?number(month.paymentAdjustments?.[field])/100:number(month.payments?.[selectedDay]?.[field]);
+ const period=adjustment
   ? months[Number(monthSel.value)]+" "+yearSel.value
-  : String(selectedDay).padStart(2,"0")+"."+String(Number(monthSel.value)+1).padStart(2,"0")+"."+yearSel.value;
- const raw=window.prompt("Corriger le total "+label+" · "+period+" (€)\nSaisis le total exact, ou 0 pour le ramener à zéro.",previous.toFixed(2));
+  : costDate(selectedDay);
+ const caption=(adjustment?"Ajustement ":"")+label;
+ const raw=window.prompt("Corriger · "+caption+" · "+period+" (€)",previous.toFixed(2).replace(".",","));
  if(raw===null)return;
  const normalized=raw.trim().replace(",",".");
  const cents=Math.round(Number(normalized)*100);
- if(!/^\d*\.?\d+$/.test(normalized)||!Number.isSafeInteger(cents)||cents<0){
+ const format=adjustment?/^-?\d*\.?\d+$/:/^\d*\.?\d+$/;
+ if(!format.test(normalized)||!Number.isSafeInteger(cents)){
   toast("Montant invalide : correction annulée");return;
  }
- const note=monthly?"\nL’écart est enregistré comme ajustement du mois.":"";
- if(!window.confirm("Confirmer "+label+" · "+period+" : "+money(previous)+" → "+money(cents/100)+" ?"+note))return;
- if(monthly){
+ if(!window.confirm("Confirmer "+caption+" · "+period+" : "+money(previous)+" → "+money(cents/100)+" ?"))return;
+ if(adjustment){
   const adjustments=ensure().paymentAdjustments??={};
-  const change=cents-Math.round(previous*100);
-  adjustments[field]=number(adjustments[field])+change;
+  adjustments[field]=cents;
  }else{
   const p=paymentData();
   p[selectedDay]??={};p[selectedDay][field]=String(cents/100);
  }
  save();refreshMetrics();renderDays();renderAnnual();renderArchive();
- toast(label+" corrigé et enregistré");
+ toast(caption+" corrigé et enregistré");
 }
 const paymentInputs=[
  {field:"cash",label:"Cash",input:$("cashInput"),editId:"editCash"},
@@ -923,7 +991,7 @@ const paymentInputs=[
 ];
 paymentInputs.forEach(({field,label,input,editId},index)=>{
  $(editId).addEventListener("click",()=>correctPayment(field,label));
- $(editId+"Month").addEventListener("click",()=>correctPayment(field,label,true));
+ $(editId+"Adjustment").addEventListener("click",()=>correctPayment(field,label,true));
  input.addEventListener("blur",()=>addPayment(field,input));
  input.addEventListener("keydown",event=>{
   if(event.key!=="Enter"||event.isComposing) return;
@@ -998,7 +1066,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-average-label";
+const siteBuild="taxi-v6-11-edit-inputs-only";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
