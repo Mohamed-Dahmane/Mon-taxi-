@@ -1,4 +1,4 @@
-name: Construire APK Mon Taxi - relance
+name: Construire APK Mon Taxi - icone mise a jour
 on:
   workflow_dispatch:
   push:
