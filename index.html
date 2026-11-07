@@ -114,6 +114,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 
 .taxi-summary{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
 #home .taxi-summary .payment-day-total,#home .taxi-summary .workday-average{margin:0;max-width:none;min-width:0;padding:5px 4px;text-align:center;border:1px solid #354a6b;border-radius:8px}
+#home .taxi-summary .payment-day-total{background:#123363;border-color:#416da5}
 #home .taxi-summary .payment-day-total span,#home .taxi-summary .workday-average .label{font-size:11px;line-height:1.2}
 #home .taxi-summary .payment-day-total strong,#home .taxi-summary .reference-amount{display:block;font-size:19px;line-height:1.2;margin:2px 0;color:#77ecc2}
 #home .taxi-summary .reference-days{font-size:10px;line-height:1.2}
@@ -1204,7 +1205,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-balance-hierarchy";
+const siteBuild="taxi-v6-11-blue-daily-revenue";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
