@@ -38,3 +38,10 @@ Deno.test("invalid payment data fails closed", () => {
   assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-10-25"}));
   assertThrows(() => toUberStagingRow({...base, paymentId:""}));
 });
+
+Deno.test("rejects impossible calendar dates and malformed UTC offsets", () => {
+  assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-02-30T12:00:00Z"}));
+  assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-11-07T25:00:00Z"}));
+  assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-11-07T12:00:00+25:00"}));
+  assertThrows(() => toUberStagingRow({...base, occurredAt:"2026-11-07T12:00:00+01:99"}));
+});
