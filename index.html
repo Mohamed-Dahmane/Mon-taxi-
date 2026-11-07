@@ -148,20 +148,36 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #costPickerRows{margin:10px 0}
 .cost-total{display:inline-flex;align-items:center;justify-content:center;max-width:100%;flex-wrap:wrap}
 .cost-total .cost-pencil{height:28px}
-</style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
+.entry-hub{border-color:#4b6d9c;background:#18253a}.entry-hub .taxi-entry{grid-template-columns:68px minmax(0,1fr) minmax(0,1fr)}.entry-hub .entry-costs{border-top:1px solid #394c68;margin-top:12px;padding-top:12px}.entry-hub .taxi-costs{margin-top:8px}.entry-hub .hint{margin:5px 0 12px}.entry-hub #editHomeCosts{margin-top:10px;width:100%}</style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
+<section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><p class="hint">Ajouter un montant ou utiliser le crayon pour le corriger.</p><div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
+<div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry"><label for="commissionInput">Com</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry"><label for="appeleInput">Appli</label><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="entry-costs"><div class="eyebrow">CARBURANT ET DÉPENSES</div><div class="taxi-costs" role="group" aria-label="Carburant et dépenses du mois">
+<div><div class="taxi-line"><span>Carburant</span><span class="cost-amount"><strong><span id="homeFuel">—</span></strong></span></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button></div>
+<div><div class="taxi-line"><span>Dépenses</span><span class="cost-amount"><strong><span id="homeExtra">—</span></strong></span></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button></div>
+</div>
+
+<div id="quickEditor" hidden>
+<p class="hint">Ajout au jour sélectionné, inclus dans le total du mois.</p>
+<select id="quickType" hidden aria-label="Rubrique"><option value="fuel" selected>Carburant</option><option value="expense">Dépenses</option></select>
+<div id="quickExpenseNature" hidden><label class="label" for="quickExpenseName">Nature de la dépense</label><input id="quickExpenseName" type="text" placeholder="Ex. Réparation, parking"></div>
+<div class="amount-row"><div><label class="label" for="quickAmount">Montant à ajouter (€)</label><input id="quickAmount" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></div><button class="button" id="validateQuick">✓ Valider</button></div>
+<div hidden><span id="dailyFuel"></span><span id="dailyExpense"></span><span id="dailyBalance"></span><span id="quickDayTotal"></span></div>
+<div class="toolbar compact-toolbar"><button class="button secondary" id="undoQuick">↶ Annuler saisie</button></div>
+<button type="button" class="button secondary" id="closeQuick">Fermer</button>
+</div>
+<button class="button secondary" type="button" id="editHomeCosts">✎ Corriger carburant / dépenses</button></div></section>
+
 <section class="card" id="paymentSplit" aria-label="Encaissements du jour">
 <div class="eyebrow">ENCAISSEMENTS · <span id="paymentDate"></span></div>
 <div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label">Moyenne</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div></div>
 <div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardNetToday">—</span></strong> <small>(brut <span id="sumupToday">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardFeeToday">—</span></div>
-<div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
-<div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-entry"><label for="commissionInput">Com</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-entry"><label for="appeleInput">Appli</label><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealToday">—</span></strong></div>
 <div class="payment-month" hidden style="display:none"><span>Cash du mois <b id="cashMonth">0,00 €</b></span><span>Appli du mois <b id="appeleMonth">0,00 €</b></span><span>Commissions du mois <b id="commissionMonth">0,00 €</b></span></div>
 </section>
@@ -178,20 +194,6 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div class="taxi-line" id="commissionAdjustmentRow" hidden><span>Com</span><button type="button" class="button secondary" id="editCommissionAdjustment" aria-label="Corriger l’ajustement Com"></button></div>
 <div class="taxi-line" id="appeleAdjustmentRow" hidden><span>Appli</span><button type="button" class="button secondary" id="editAppeleAdjustment" aria-label="Corriger l’ajustement Appli"></button></div>
 </details>
-<div class="taxi-costs" role="group" aria-label="Carburant et dépenses du mois">
-<div><div class="taxi-line"><span>Carburant</span><span class="cost-amount"><strong><span id="homeFuel">—</span></strong></span></div><button class="typeBtn" type="button" data-type="fuel" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter du carburant">+ Ajouter</button></div>
-<div><div class="taxi-line"><span>Dépenses</span><span class="cost-amount"><strong><span id="homeExtra">—</span></strong></span></div><button class="typeBtn" type="button" data-type="expense" aria-controls="quickEditor" aria-expanded="false" aria-label="Ajouter une dépense">+ Ajouter</button></div>
-</div>
-<button class="button secondary" type="button" id="editHomeCosts">Corriger les frais du mois</button>
-<div id="quickEditor" hidden>
-<p class="hint">Ajout au jour sélectionné, inclus dans le total du mois.</p>
-<select id="quickType" hidden aria-label="Rubrique"><option value="fuel" selected>Carburant</option><option value="expense">Dépenses</option></select>
-<div id="quickExpenseNature" hidden><label class="label" for="quickExpenseName">Nature de la dépense</label><input id="quickExpenseName" type="text" placeholder="Ex. Réparation, parking"></div>
-<div class="amount-row"><div><label class="label" for="quickAmount">Montant à ajouter (€)</label><input id="quickAmount" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></div><button class="button" id="validateQuick">✓ Valider</button></div>
-<div hidden><span id="dailyFuel"></span><span id="dailyExpense"></span><span id="dailyBalance"></span><span id="quickDayTotal"></span></div>
-<div class="toolbar compact-toolbar"><button class="button secondary" id="undoQuick">↶ Annuler saisie</button></div>
-<button type="button" class="button secondary" id="closeQuick">Fermer</button>
-</div>
 <div hidden><span id="homeBalance"></span><span id="homeStatus"></span><span id="homeFixed"></span><span id="homeCosts"></span></div>
 </section>
 <p class="hint">Recette du jour = cartes nettes + cash réel + appli.</p>
@@ -1145,6 +1147,7 @@ function followToday(){
  else renderWorkedDayAverage();
 }
 $("calendarToday").addEventListener("click",()=>selectToday(new Date()));
+const entryDate=$("entryDate"); if(entryDate){const syncEntryDate=()=>entryDate.textContent=$("calendarTrigger").textContent;new MutationObserver(syncEntryDate).observe($("calendarTrigger"),{childList:true,subtree:true,characterData:true});syncEntryDate();}
 quickDay.addEventListener("change",()=>{selectedDay=Number(quickDay.value);showQuickDay()});
 $("closeQuick").addEventListener("click",()=>{
  $("quickEditor").hidden=true;
@@ -1203,7 +1206,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-live-average";
+const siteBuild="taxi-v6-11-entry-hub";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
