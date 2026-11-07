@@ -190,7 +190,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .entry-group-heading{margin:5px 0 2px;color:#c2d0e5;font-size:11px;font-weight:750;letter-spacing:.04em}
 .entry-hub .invoice-entry label{white-space:nowrap}
 .invoice-entry small{display:block;color:#b9c6d8;font-size:10px;font-weight:500;line-height:1.15}
-.invoice-entry .taxi-amount small{text-align:right}
+.invoice-input{display:flex;align-items:center;gap:3px;min-width:0}
+.invoice-input input{flex:1}
+.invoice-input small,.invoice-total small{flex:none;white-space:nowrap}
+.invoice-total small{display:inline}
 #paymentDate{color:#b9c6d8;font-size:12px;font-weight:500}
 #daily .journal-day-toggle{min-height:36px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
@@ -205,7 +208,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <h3 class="entry-group-heading" id="entryIncomeHeading">Entrées</h3>
 <div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="appeleInput">Applis</label><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-entry invoice-entry"><label for="invoiceInput">Facturation <small>TVA 6 %</small></label><input id="invoiceInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00 HT" aria-label="Ajouter un montant facturé hors TVA"><div class="taxi-amount"><strong><span id="invoiceToday">—</span><small>TTC</small></strong><button type="button" class="payment-pencil" id="editInvoice" aria-label="Corriger le montant facturé hors TVA" title="Corriger la facturation HT"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry invoice-entry"><label for="invoiceInput">Facturation <small>TVA 6 %</small></label><div class="invoice-input"><input id="invoiceInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un montant facturé hors TVA"><small aria-hidden="true">HT</small></div><div class="taxi-amount"><strong class="invoice-total"><span id="invoiceToday">—</span> <small>TTC</small></strong><button type="button" class="payment-pencil" id="editInvoice" aria-label="Corriger le montant facturé hors TVA" title="Corriger la facturation HT"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 </div>
 <div class="entry-costs" role="group" aria-labelledby="entryOutflowHeading">
 <h3 class="entry-group-heading" id="entryOutflowHeading">Sorties</h3>
@@ -1315,7 +1318,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-entry-outflow-groups";
+const siteBuild="taxi-v6-11-invoice-labels";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
