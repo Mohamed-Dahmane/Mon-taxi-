@@ -169,6 +169,16 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .home-disclosure[open]>summary::after{transform:rotate(90deg)}
 .home-disclosure>summary>:nth-child(2){margin-left:auto;text-align:right;font-variant-numeric:tabular-nums}
 .home-disclosure-body{padding:3px 12px 10px;border-top:1px solid #354a6b}
+.monthly-overview h2{margin-bottom:8px}
+.monthly-overview-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 8px;font-variant-numeric:tabular-nums}
+.monthly-overview-values>div{min-width:0;padding:7px 9px;background:#18283d;border-radius:9px}
+.monthly-overview-values dt{font-size:12px;color:#c2d0e5}
+.monthly-overview-values dd{margin:3px 0 0;font-size:clamp(16px,5vw,21px);font-weight:750;overflow-wrap:anywhere}
+.monthly-overview-values .monthly-revenue{grid-column:1/-1;background:#19354f}
+.monthly-overview-values .monthly-revenue dd{font-size:clamp(23px,7vw,32px)}
+.monthly-overview>.home-disclosure{border-top:1px solid #354a6b;border-radius:0}
+.monthly-overview>.home-disclosure>summary{padding-inline:0}
+.monthly-overview>.home-disclosure>summary::after{margin-left:auto}
 #paymentDate{color:#b9c6d8;font-size:12px;font-weight:500}
 #daily .journal-day-toggle{min-height:36px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
@@ -190,16 +200,14 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div class="toolbar compact-toolbar"><button type="button" class="button secondary" id="undoQuick" hidden>↶ Annuler la dernière saisie</button></div>
 </section>
 
-<details class="card home-disclosure" id="paymentSplit">
-<summary><span>Détail des encaissements</span><span id="paymentDate"></span></summary>
-<div class="home-disclosure-body">
-<div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardNetToday">—</span></strong> <small>(brut <span id="sumupToday">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardFeeToday">—</span></div>
-<div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealToday">—</span></strong></div>
-<div class="payment-month" hidden style="display:none"><span>Cash du mois <b id="cashMonth">0,00 €</b></span><span>Appli du mois <b id="appeleMonth">0,00 €</b></span><span>Commissions du mois <b id="commissionMonth">0,00 €</b></span></div>
-<p class="hint">Recette = cartes nettes + cash réel + applis.</p>
-</div></details>
-<details class="card taxi-month home-disclosure">
-<summary><span id="cardMonthLabel">Total du mois</span><strong class="green" id="homeMonthlyRevenue">—</strong></summary>
+<section class="card monthly-overview" aria-labelledby="cardMonthLabel">
+<h2 id="cardMonthLabel">Bilan du mois</h2>
+<dl class="monthly-overview-values">
+<div class="monthly-revenue"><dt>Revenu total</dt><dd id="homeMonthlyRevenue">—</dd></div>
+<div><dt>Frais totaux</dt><dd id="homeCosts">—</dd></div>
+<div><dt id="homeResultLabel">Résultat</dt><dd id="homeBalance">—</dd></div>
+</dl>
+<details class="taxi-month home-disclosure"><summary>Détail des encaissements du mois</summary>
 <div class="home-disclosure-body">
 <div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardMonthNetIndicative">—</span></strong> <small>(brut <span id="cardMonthTotal">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardMonthFeeEstimate">—</span></div>
 <div class="taxi-line"><span>Cash</span><div class="taxi-amount"><strong><span id="cashMonthCard">—</span></strong></div></div>
@@ -211,7 +219,15 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <div class="taxi-line" id="commissionAdjustmentRow" hidden><span>Com</span><button type="button" class="button secondary" id="editCommissionAdjustment" aria-label="Corriger l’ajustement Com"></button></div>
 <div class="taxi-line" id="appeleAdjustmentRow" hidden><span>Appli</span><button type="button" class="button secondary" id="editAppeleAdjustment" aria-label="Corriger l’ajustement Appli"></button></div>
 </details>
-<div hidden><span id="homeBalance"></span><span id="homeStatus"></span><span id="homeFixed"></span><span id="homeCosts"></span></div>
+</div></details>
+</section>
+<details class="card home-disclosure" id="paymentSplit">
+<summary><span>Détail des encaissements</span><span id="paymentDate"></span></summary>
+<div class="home-disclosure-body">
+<div class="taxi-line taxi-cards"><b>Cartes nettes</b><div><strong class="green"><span id="cardNetToday">—</span></strong> <small>(brut <span id="sumupToday">—</span>)</small></div></div><div class="taxi-fee">Frais SumUp (1,69 %) · <span id="cardFeeToday">—</span></div>
+<div class="taxi-line"><b>Cash réel</b><strong class="green"><span id="cashRealToday">—</span></strong></div>
+<div class="payment-month" hidden style="display:none"><span>Cash du mois <b id="cashMonth">0,00 €</b></span><span>Appli du mois <b id="appeleMonth">0,00 €</b></span><span>Commissions du mois <b id="commissionMonth">0,00 €</b></span></div>
+<p class="hint">Recette = cartes nettes + cash réel + applis.</p>
 </div></details>
 </section>
 <section class="page" id="archive"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section><div class="card"><h2>Archives des encaissements</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Encaissements par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
@@ -424,7 +440,7 @@ function stats(m,monthKey=key()){
  const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
 }
 function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";renderEntryCosts();$("homeFixed").textContent=money(s.fixed);$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className="hero-number "+(s.balance<0?"red":"green");$("homeStatus").textContent=s.balance<0?"Encore "+money(-s.balance)+" à couvrir":"Bénéfice de "+money(s.balance);$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
+function refreshMetrics(){renderPayments();const s=stats(current());renderMonthlyPayments(s.revenue);renderJournalTotals(s);const period=months[Number(monthSel.value)]+" "+yearSel.value;$("homeMonthlyRevenue").textContent=money(s.revenue);renderWorkedDayAverage();$("v11DetailsPeriod").textContent=period;$("v11DetailsCaisse").textContent=money(s.revenue);$("v11DetailsFuel").textContent=money(s.fuel);$("v11DetailsExpenses").textContent=money(s.extra);$("v11DetailsFixed").textContent=money(s.fixed);$("v11DetailsCosts").textContent=money(s.costs);$("v11DetailsNet").textContent=money(s.balance);$("v11DetailsNet").className=s.balance<0?"red":"green";renderEntryCosts();$("homeCosts").textContent=money(s.costs);$("homeBalance").textContent=money(s.balance);$("homeBalance").className=s.balance<0?"red":"green";$("homeResultLabel").textContent=s.balance<0?"Perte":s.balance>0?"Bénéfice":"Résultat";$("fixedSum").textContent=money(s.fixed);$("datedExpenseSubtotal").hidden=Math.round(s.dailyExtra*100)===Math.round(s.extra*100);$("monthlyExpenseSum").textContent=money(s.dailyExtra);if(typeof quickDay!=="undefined"&&quickDay.value)showQuickDay()}
 function renderJournalTotals(s){
  const adjustment=monthlyReceiptAdjustment(current()).total/100;
  $("journalCaisseTotal").textContent=money(s.revenue-adjustment);
@@ -1078,7 +1094,7 @@ function renderPaymentAdjustments(){
  }
  $("paymentAdjustments").hidden=!visible;
 }
-function renderPayments(){renderPaymentAdjustments();const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonth=sumupMonthAmounts();$("cardMonthLabel").textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;$("cardMonthTotal").textContent=sumupReady?money(cardMonth.gross/100):"—";$("cardMonthNetIndicative").textContent=sumupReady?money(cardMonth.net/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonth.fee/100):"—";const date=costDate(selectedDay),today=new Date();const isToday=selectedDay===today.getDate()&&Number(monthSel.value)===today.getMonth()&&Number(yearSel.value)===today.getFullYear();$("entryDate").textContent=date;$("paymentDate").textContent=date;$("selectedReceiptLabel").textContent=isToday?"Recette du jour":"Recette du "+date;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(sumupNetForDay(selectedDay)+(t.cash-t.commission)+t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";}
+function renderPayments(){renderPaymentAdjustments();const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonth=sumupMonthAmounts();$("cardMonthLabel").textContent="Bilan · "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;$("cardMonthTotal").textContent=sumupReady?money(cardMonth.gross/100):"—";$("cardMonthNetIndicative").textContent=sumupReady?money(cardMonth.net/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonth.fee/100):"—";const date=costDate(selectedDay),today=new Date();const isToday=selectedDay===today.getDate()&&Number(monthSel.value)===today.getMonth()&&Number(yearSel.value)===today.getFullYear();$("entryDate").textContent=date;$("paymentDate").textContent=date;$("selectedReceiptLabel").textContent=isToday?"Recette du jour":"Recette du "+date;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("appeleMonth").textContent=money(t.appeleMonth);$("commissionToday").textContent=money(t.commission);$("cashMonth").textContent=money(t.cashMonth);$("commissionMonth").textContent=money(t.commissionMonth);$("paymentNetToday").textContent=money(sumupNetForDay(selectedDay)+(t.cash-t.commission)+t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";}
 function addPayment(field,input){
  const raw=input.value.trim().replace(",",".");
  if(!raw){input.value="";return true}
@@ -1266,7 +1282,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-clean-dashboard";
+const siteBuild="taxi-v6-11-monthly-overview";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
