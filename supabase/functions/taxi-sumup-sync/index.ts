@@ -80,14 +80,17 @@ Deno.serve(async (req) => {
       // Missing or malformed currency must not silently discard a possible EUR payment.
       if(typeof tx.currency!=="string" || !/^[A-Z]{3}$/.test(tx.currency))
         return Response.json({ok:false,reason:"invalid_sumup_currency"},{status:502});
+      // Detect shifting offset pages across all currencies, not just EUR rows.
+      // A repeated non-EUR ID also means the pagination snapshot may be incomplete.
+      if(typeof tx.id!=="string" || !tx.id)
+        return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
+      if(seenTransactionIds.has(tx.id))
+        return Response.json({ok:false,reason:"duplicate_sumup_transaction_in_pages"},{status:502});
+      seenTransactionIds.add(tx.id);
       if(tx.currency!=="EUR")continue;
       if(typeof tx.id!=="string" || !tx.id || typeof tx.timestamp!=="string" ||
          typeof tx.amount!=="number" || !Number.isFinite(tx.amount))
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
-      const transactionId=String(tx.id);
-      if(seenTransactionIds.has(transactionId))
-        return Response.json({ok:false,reason:"duplicate_sumup_transaction_in_pages"},{status:502});
-      seenTransactionIds.add(transactionId);
       const t=Date.parse(tx.timestamp);
       if(!Number.isFinite(t))
         return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
