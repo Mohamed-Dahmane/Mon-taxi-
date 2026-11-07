@@ -155,7 +155,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .entry-hub .taxi-entry input{text-align:right}
 .entry-hub .taxi-amount strong{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:right;font-size:clamp(12px,3.6vw,16px)}
 #home .taxi-summary{gap:8px;margin:10px 0}
-#home .taxi-summary .work-reference{padding:6px 7px;gap:2px;border-radius:14px}
+#home .taxi-summary .work-reference{padding:5px 7px;gap:1px;border-radius:14px}
 #home .taxi-summary .workday-average{background:#14532d;border-color:#22c55e}
 #home .taxi-summary .reference-amount{font-size:clamp(20px,6.2vw,30px);letter-spacing:-.035em}
 .entry-hub{border-radius:14px}
@@ -180,15 +180,21 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .monthly-overview>.home-disclosure{border-top:1px solid #354a6b;border-radius:0}
 .monthly-overview>.home-disclosure>summary{padding-inline:0}
 .monthly-overview>.home-disclosure>summary::after{margin-left:auto}
+.date-bar .calendar-trigger{display:inline-flex;align-items:center;gap:8px;min-height:36px;margin-top:0;padding:5px 10px}
+.date-bar .calendar-trigger::after{content:"▾";font-size:11px;color:#b9c6d8}
+.calendar-period{display:grid;grid-template-columns:minmax(0,1fr) minmax(72px,.55fr);gap:6px;margin-bottom:5px}
+.calendar-period select{padding:7px}
+#home .taxi-summary .average-heading,.details-heading .average-heading{display:flex;justify-content:center;align-items:baseline;gap:4px;flex-wrap:wrap}
+.average-heading .reference-days{white-space:nowrap;font-weight:500;opacity:.85}
 #paymentDate{color:#b9c6d8;font-size:12px;font-weight:500}
 #daily .journal-day-toggle{min-height:36px}
 </style></head><body><main hidden><header><div><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
-<div class="selectors"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog">—</button><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div>
+<div class="date-bar"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog" aria-expanded="false">—</button></div>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
-<div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong id="calendarTitle"></strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
+<div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong>Choisir une date</strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-period"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
-<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label">Moyenne par jour travaillé</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div></div>
+<div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">0 jour</span></div><div class="value green reference-amount">—</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><p class="hint">Saisis un montant pour l’ajouter. ✎ pour corriger.</p><div class="taxi-entry taxi-head"><span>Poste</span><span>Ajouter (€)</span><span>Total du jour</span></div>
 <div class="taxi-entry"><label for="cashInput">Cash</label><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="commissionInput">Commissions</label><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
@@ -235,7 +241,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <section class="card details-overview" aria-labelledby="detailsHeading">
  <div class="details-heading">
   <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
-  <div class="work-reference workday-average"><div class="label">Moyenne</div><div class="value green reference-amount">—</div><div class="reference-days">(0 jour travaillé)</div></div>
+  <div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">0 jour</span></div><div class="value green reference-amount">—</div></div>
  </div>
  <div class="details-result details-total"><span>Revenu net</span><strong id="v11DetailsNet">0,00 €</strong></div>
  <div class="details-result details-total"><span>Caisse cumulée</span><strong id="v11DetailsCaisse">0,00 €</strong></div>
@@ -431,8 +437,8 @@ function renderWorkedDayAverage(){
  const {worked,average}=workedDayAverage(current(),year,month);
  for(const box of document.querySelectorAll(".workday-average")){
   box.querySelector(".reference-amount").textContent=average===null?"—":money(average);
-  const daysLabel=worked>1?"jours travaillés":"jour travaillé";
-  box.querySelector(".reference-days").textContent=`(${worked} ${daysLabel})`;
+  const daysLabel=worked>1?"jours":"jour";
+  box.querySelector(".reference-days").textContent=`${worked} ${daysLabel}`;
  }
 }
 function stats(m,monthKey=key()){
@@ -767,7 +773,7 @@ function renderExpenses(){
 }
 function renderAnnual(){const root=$("annualRows");root.replaceChildren();let total=0;months.forEach((m,i)=>{const monthData=data.months[yearSel.value+"-"+i]||{days:{},extra:[]};const s=stats({...monthData,fixed:monthData.fixed||defaultFixed()},yearSel.value+"-"+i);total+=s.revenue;const row=document.createElement("div");row.className="annualrow";const label=document.createElement("span");label.textContent=m;const rev=document.createElement("strong");rev.textContent=money(s.revenue);const balance=document.createElement("strong");balance.textContent=money(s.balance);balance.className=s.balance<0?"red":"green";row.append(label,rev,balance);root.append(row)});$("annualTotal").textContent=money(total)}
 function render(){ensure();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
-monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render()});
+monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===btn);x.setAttribute("aria-pressed",String(x===btn))});document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.tab))}));document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".pageBtn").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.page));window.scrollTo(0,0)}));
 // Navigation horizontale et actualisation tactile depuis le haut de la page.
 (function(){
@@ -1168,16 +1174,21 @@ function renderEntryCosts(){
  $("homeExtra").textContent=money(expenses);
  $("undoQuick").hidden=!lastEntry;
 }
-function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=String(selectedDay).padStart(2,"0");$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);renderEntryCosts();}
+function showQuickDay(){selectedDay=Math.max(1,Number(quickDay.value)||selectedDay);renderPayments();quickDay.value=String(selectedDay);const fullDate=new Intl.DateTimeFormat("fr-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(yearSel.value),Number(monthSel.value),selectedDay,12));$("calendarTrigger").textContent=costDate(selectedDay);$("calendarTrigger").setAttribute("aria-label","Changer la date · "+fullDate);renderEntryCosts();}
 const calendarDialog=$("calendarDialog");
-function renderCalendar(){const y=Number(yearSel.value),m=Number(monthSel.value),n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,today=new Date(),root=$("calendarGrid");$("calendarTitle").textContent=months[m]+" "+y;root.replaceChildren();["L","M","M","J","V","S","D"].forEach(label=>{const e=document.createElement("span");e.className="calendar-weekday";e.textContent=label;root.append(e)});for(let i=0;i<offset;i++)root.append(document.createElement("span"));for(let d=1;d<=n;d++){const b=document.createElement("button");b.type="button";b.className="calendar-day"+(String(d)===quickDay.value?" selected":"")+(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d?" today":"");b.textContent=d;b.setAttribute("aria-label",d+" "+months[m]+" "+y);b.setAttribute("aria-pressed",String(d)===quickDay.value?"true":"false");b.addEventListener("click",()=>{selectedDay=d;quickDay.value=String(d);calendarDialog.hidden=true;showQuickDay();renderCalendar()});root.append(b)}}
+function setCalendarOpen(open){
+ calendarDialog.hidden=!open;
+ $("calendarTrigger").setAttribute("aria-expanded",String(open));
+ if(open)renderCalendar();
+}
+function renderCalendar(){const y=Number(yearSel.value),m=Number(monthSel.value),n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,today=new Date(),root=$("calendarGrid");root.replaceChildren();["L","M","M","J","V","S","D"].forEach(label=>{const e=document.createElement("span");e.className="calendar-weekday";e.textContent=label;root.append(e)});for(let i=0;i<offset;i++)root.append(document.createElement("span"));for(let d=1;d<=n;d++){const b=document.createElement("button");b.type="button";b.className="calendar-day"+(String(d)===quickDay.value?" selected":"")+(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d?" today":"");b.textContent=d;b.setAttribute("aria-label",d+" "+months[m]+" "+y);b.setAttribute("aria-pressed",String(d)===quickDay.value?"true":"false");b.addEventListener("click",()=>{selectedDay=d;quickDay.value=String(d);setCalendarOpen(false);showQuickDay();renderCalendar()});root.append(b)}}
 
-$("calendarTrigger").addEventListener("click",()=>{calendarDialog.hidden=!calendarDialog.hidden;if(!calendarDialog.hidden)renderCalendar()});
-$("calendarClose").addEventListener("click",()=>calendarDialog.hidden=true);
+$("calendarTrigger").addEventListener("click",()=>setCalendarOpen(calendarDialog.hidden));
+$("calendarClose").addEventListener("click",()=>setCalendarOpen(false));
 function selectToday(today){
  lastToday=today;
  yearSel.value=String(today.getFullYear());monthSel.value=String(today.getMonth());selectedDay=today.getDate();
- calendarDialog.hidden=true;render();
+ setCalendarOpen(false);render();
 }
 function followToday(){
  const today=new Date();
@@ -1283,7 +1294,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-compact-summary";
+const siteBuild="taxi-v6-11-compact-date-picker";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
