@@ -38,6 +38,10 @@ jobs:
         run: |
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/index.html
+      - name: Prepare launcher icon
+        run: |
+          mkdir -p app/src/main/res/drawable-nodpi
+          base64 -d app/icon/mon_taxi.jpg.base64 > app/src/main/res/drawable-nodpi/mon_taxi_icon.jpg
       - name: Build debug APK with diagnostic logs
         run: |
           set -o pipefail
