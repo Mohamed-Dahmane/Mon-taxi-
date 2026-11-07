@@ -381,7 +381,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 function workedDayAverage(m,year,month,today=new Date()){
  const monthKey=year+"-"+month;
  const period=year*12+month,currentPeriod=today.getFullYear()*12+today.getMonth();
- const lastDay=period===currentPeriod?today.getDate()-1:period<currentPeriod?new Date(year,month+1,0).getDate():0;
+ const lastDay=period===currentPeriod?today.getDate():period<currentPeriod?new Date(year,month+1,0).getDate():0;
  let cents=0,worked=0;
  for(let day=1;day<=lastDay;day++){
   const amount=dailyNetReceipt(dailyReceiptBreakdown(day,m,monthKey));
@@ -1203,7 +1203,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-align-daily-revenue";
+const siteBuild="taxi-v6-11-live-average";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
