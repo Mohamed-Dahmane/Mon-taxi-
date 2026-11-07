@@ -1225,7 +1225,7 @@ $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie
  const day=data.months[l.key]?.days?.[l.day];if(!day)return;
  if(l.old===undefined)delete day[l.field];else day[l.field]=l.old;
  }lastEntry=null;save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();showQuickDay();toast("Dernière saisie annulée")});
-$("refreshLocal").addEventListener("click",()=>{render();markRefreshed();checkPublishedBuild();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
+$("refreshLocal").addEventListener("click",()=>{selectToday(new Date());markRefreshed();checkPublishedBuild();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
 save();render();markRefreshed();
 document.querySelector("main").hidden=true;
@@ -1239,7 +1239,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-entry-table-overview";
+const siteBuild="taxi-v6-11-refresh-today";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
