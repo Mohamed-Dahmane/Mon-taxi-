@@ -204,7 +204,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .invoice-input small,.invoice-total small{font-size:8px;white-space:nowrap}
 .invoice-total{display:flex;align-items:baseline;justify-content:flex-end;gap:3px}
 .invoice-total small{flex:none}
-#paymentDate{color:#d4e0f2;font-size:14px;font-weight:650;white-space:nowrap}
+#paymentDate{color:#d4e0f2;font-size:16px;font-weight:650;white-space:nowrap}
 #daily .journal-day-toggle{min-height:36px}
 </style></head><body><main hidden><header class="taxi-header"><div class="taxi-brand"><h1>🚕 Mon Taxi</h1><div class="muted small">V 6/11</div></div><div class="date-bar"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog" aria-expanded="false">—</button></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
@@ -1327,7 +1327,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-receipt-periods";
+const siteBuild="taxi-v6-11-larger-receipt-date";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
