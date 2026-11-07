@@ -181,10 +181,11 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .monthly-overview>.home-disclosure>summary{padding-inline:0}
 .monthly-overview>.home-disclosure>summary::after{margin-left:auto}
 .date-bar .calendar-trigger{display:inline-flex;align-items:center;gap:8px;min-height:36px;margin-top:0;padding:5px 10px}
-.taxi-header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:4px;align-items:center}
+.taxi-header{display:grid;grid-template-columns:minmax(max-content,1fr) auto minmax(0,1fr);gap:4px;align-items:center}
 .taxi-header .v11-refresh{justify-self:end;align-self:center}
-.taxi-brand{text-align:left;justify-self:start}
-.taxi-brand h1{white-space:nowrap;font-size:clamp(15px,5vw,23px)}
+.taxi-brand{display:flex;align-items:baseline;gap:4px;justify-self:start;white-space:nowrap}
+.taxi-brand h1{margin:0;font-size:clamp(13px,4vw,20px)}
+.taxi-brand .small{font-size:clamp(8px,2.3vw,11px)}
 .taxi-header .date-bar{justify-self:center;min-width:0}
 .taxi-header .calendar-trigger{width:clamp(120px,37.5vw,150px);justify-content:center;font-size:clamp(10px,3.2vw,14px);gap:4px;min-height:39px;padding-inline:9px;white-space:nowrap}
 .date-bar .calendar-trigger::after{content:"▾";font-size:11px;color:#b9c6d8}
@@ -1325,7 +1326,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-date-month-in-words";
+const siteBuild="taxi-v6-11-inline-brand-version";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
