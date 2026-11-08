@@ -45,6 +45,24 @@ import android.util.Base64;
 
 public class MainActivity extends Activity {
  private WebView web;
+ private boolean recoveryShown=false;
+ private final Handler webHealthHandler=new Handler(Looper.getMainLooper());
+ private void verifyWebContent(){
+  if(!unlocked||web==null||recoveryShown)return;
+  web.evaluateJavascript("(function(){try{var m=document.querySelector('main');var g=document.querySelector('.taxi-access');return document.readyState==='complete'&&!!((m&&!m.hidden)||(g&&!g.hidden))}catch(e){return false}})()",value->{
+   if(!unlocked||web==null||recoveryShown)return;
+   if(!"true".equals(value))showWebRecovery();
+  });
+ }
+ private void showWebRecovery(){
+  if(recoveryShown||!unlocked)return;
+  recoveryShown=true;
+  new AlertDialog.Builder(this).setTitle("Mon Taxi ne s'affiche pas")
+   .setMessage("L'empreinte a fonctionne, mais le tableau n'a pas pu se charger. Aucune donnee ne sera effacee.")
+   .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL+"?retry="+SystemClock.elapsedRealtime());webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
+   .setNegativeButton("Ouvrir dans Chrome",(dialog,which)->{recoveryShown=false;startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(APP_URL)));})
+   .setOnCancelListener(dialog->recoveryShown=false).show();
+ }
  private FrameLayout unlockContent;
  private Runnable revealHome;
  private Bitmap splashPhoto;
@@ -303,7 +321,8 @@ public class MainActivity extends Activity {
    WebSettings settings=web.getSettings();
    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
-    @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame())view.loadUrl("file:///android_asset/index.html");}
+    @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
+    @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame()){view.loadUrl("file:///android_asset/index.html");webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);}}
     @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith(APP_URL);}
    });
    web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
@@ -342,7 +361,8 @@ public class MainActivity extends Activity {
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // Toujours charger la dernière version en ligne après déverrouillage.
-  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=5");
+  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=6");
+  webHealthHandler.postDelayed(this::verifyWebContent,15000L);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
   web.setAlpha(covered?0f:1f);
