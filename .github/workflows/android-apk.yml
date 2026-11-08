@@ -36,8 +36,9 @@ jobs:
           test -f index.html
       - name: Prepare embedded interface
         run: |
-          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/assets/app
           cp index.html app/src/main/assets/index.html
+          cp app/mercedes-splash.webp app/src/main/assets/app/mercedes-splash.webp
       - name: Prepare launcher icon
         run: |
           mkdir -p app/src/main/res/drawable-nodpi
