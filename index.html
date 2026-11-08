@@ -974,7 +974,7 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
   if(axis!=="horizontal"||Math.abs(dx)<60||Math.abs(dx)<=Math.abs(dy)*1.25)return;
   const index=pages.indexOf(document.querySelector(".page.active")?.id);
   if(index<0)return;
-  const next=pages[index+(dx<0?1:-1)];
+  const next=pages[(index+(dx<0?1:-1)+pages.length)%pages.length];
   if(next)document.querySelector('.pageBtn[data-page="'+next+'"]')?.click();
  },{passive:true});
 })();
@@ -1480,7 +1480,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-swipe";
+const siteBuild="taxi-v6-11-circular-swipe";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
