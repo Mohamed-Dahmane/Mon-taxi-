@@ -359,6 +359,7 @@ public class MainActivity extends Activity {
   int labelHeight=dp(58)+dp(26);
   LinearLayout signature=new LinearLayout(this);
   signature.setOrientation(LinearLayout.VERTICAL);
+  signature.setAlpha(0f);
   LinearLayout.LayoutParams signatureSize=new LinearLayout.LayoutParams(-2,labelHeight);
   signatureSize.gravity=Gravity.CENTER_HORIZONTAL;
   art.addView(signature,signatureSize);
@@ -373,7 +374,6 @@ public class MainActivity extends Activity {
   catch(PackageManager.NameNotFoundException ignored){}
   LinearLayout versionRow=new LinearLayout(this);
   versionRow.setGravity(Gravity.CENTER_VERTICAL);
-  versionRow.setAlpha(0f);
   signature.addView(versionRow,new LinearLayout.LayoutParams(-1,dp(26)));
   View rule=new View(this);
   rule.setBackgroundColor(0xff695638);
@@ -403,7 +403,6 @@ public class MainActivity extends Activity {
   art.setAlpha(0f);
   cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
-  cover.postOnAnimation(()->versionRow.animate().alpha(1f).setDuration(450L).start());
   Runnable exit=()->{
    if(!cover.isAttachedToWindow())return;
    if(web==null){
@@ -456,7 +455,12 @@ public class MainActivity extends Activity {
    art.setAlpha(.8f);
    art.animate().translationY(0f).scaleX(1f).scaleY(1f).alpha(1f)
     .setDuration(SPLASH_ENTRANCE_MS).setInterpolator(new AccelerateDecelerateInterpolator())
-    .withEndAction(()->cover.postDelayed(exit,SPLASH_HOLD_MS)).start();
+    .withEndAction(()->{
+     signature.setTranslationX(-.65f*signature.getWidth());
+     signature.animate().translationX(0f).alpha(1f).setDuration(550L)
+      .setInterpolator(new AccelerateDecelerateInterpolator()).start();
+     cover.postDelayed(exit,SPLASH_HOLD_MS);
+    }).start();
   });
  }
  private float smoothStartupPhase(float progress,float start,float end){

@@ -222,9 +222,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 @media(prefers-reduced-motion:reduce){.taxi-splash{display:none}}
 .taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(calc(100vw - 24px),calc(100vh - 108px));width:min(calc(100vw - 24px),calc(100dvh - 108px))}
 .taxi-splash img{display:block;width:100%;aspect-ratio:1;object-fit:contain;border-radius:15%;outline:1px solid #94add032;outline-offset:-1px}
-.taxi-splash-lockup{display:grid;width:max-content;max-width:100%}
+.taxi-splash-lockup{display:grid;width:max-content;max-width:100%;opacity:0}
+.taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.15s both}
 .taxi-splash-wordmark{height:58px;display:flex;align-items:center;color:#e7d2a6;background:linear-gradient(180deg,#fff3d7 32%,#c3a16b 78%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font:400 clamp(32px,10vw,46px)/1 Georgia,"Times New Roman",serif;letter-spacing:.21em;padding-inline-start:.21em}
-.taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#bca98c;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap;animation:taxiVersionIn .45s ease-out both}
+.taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#bca98c;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap}
 .taxi-splash-version::before{content:"";flex:1;height:1px;background:#695638}
 .taxi-intro-pending:not(.taxi-opening) :is(main,.taxi-access){visibility:hidden}
 .taxi-intro-pending .taxi-splash-art{opacity:0}
@@ -236,7 +237,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  from{transform:translateY(48vh) scale(.025);opacity:.8}
  to{transform:translateY(0) scale(1);opacity:1}
 }
-@keyframes taxiVersionIn{from{opacity:0}to{opacity:1}}
+@keyframes taxiTitleIn{from{transform:translateX(-65%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes taxiSplashShrink{
  0%{transform:scale(1);filter:blur(0);opacity:1}
  42%{filter:blur(0);opacity:1}
@@ -1416,7 +1417,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-rise";
+const siteBuild="taxi-v6-11-taximo-title-slide";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
