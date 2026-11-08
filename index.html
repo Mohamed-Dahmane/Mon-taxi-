@@ -217,21 +217,31 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-brand-icon{display:inline-block;flex:none;width:38px;height:38px;object-fit:cover;object-position:center;vertical-align:middle;border:0;border-radius:50%;-webkit-mask-image:radial-gradient(ellipse at center,#000 42%,rgba(0,0,0,.92) 58%,rgba(0,0,0,.36) 78%,transparent 99%);mask-image:radial-gradient(ellipse at center,#000 42%,rgba(0,0,0,.92) 58%,rgba(0,0,0,.36) 78%,transparent 99%);filter:drop-shadow(0 0 4px rgba(58,154,255,.4)) drop-shadow(0 0 8px rgba(48,128,235,.19));}
 
 /* La photo reste immobile avant le passage à Mon Taxi. */
-.taxi-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#101114;touch-action:none}
+.taxi-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;touch-action:none}
+.taxi-splash::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0a0d14,#151d2b 48%,#0a0d14)}
 @media(prefers-reduced-motion:reduce){.taxi-splash{display:none}}
-.taxi-splash-art{display:grid;justify-items:center;width:min(100vw,calc(100vh - 84px));width:min(100vw,calc(100dvh - 84px))}
-.taxi-splash img{display:block;width:100%;aspect-ratio:1;object-fit:contain}
+.taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(calc(100vw - 24px),calc(100vh - 108px));width:min(calc(100vw - 24px),calc(100dvh - 108px))}
+.taxi-splash img{display:block;width:100%;aspect-ratio:1;object-fit:contain;border-radius:18px;outline:1px solid #94add032;outline-offset:-1px}
 .taxi-splash-lockup{display:grid;width:max-content;max-width:100%}
 .taxi-splash-wordmark{height:58px;display:flex;align-items:center;color:#e4edf9;background:linear-gradient(180deg,#f7faff 32%,#b8cbe4 78%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font:650 clamp(32px,10vw,46px)/1 system-ui,sans-serif;letter-spacing:.21em;padding-inline-start:.21em}
 .taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#96adca;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap;animation:taxiVersionIn .45s ease-out both}
 .taxi-splash-version::before{content:"";flex:1;height:1px;background:#35465e}
-.taxi-opening .taxi-splash{animation:taxiSplashFade 1.7s ease-in-out both}
-.taxi-opening .taxi-splash-art{animation:taxiSplashShrink 1.7s cubic-bezier(.4,0,.2,1) both}
-.taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.7s cubic-bezier(.4,0,.2,1) both;pointer-events:none}
+.taxi-opening .taxi-splash::before{animation:taxiSplashFade 1.7s linear both}
+.taxi-opening .taxi-splash-art{animation:taxiSplashShrink 1.7s cubic-bezier(.36,0,.2,1) both}
+.taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.7s cubic-bezier(.36,0,.2,1) both;pointer-events:none}
 @keyframes taxiVersionIn{from{opacity:0}to{opacity:1}}
-@keyframes taxiSplashShrink{0%{transform:scale(1);filter:blur(0)}35%{filter:blur(0)}100%{transform:scale(.08);filter:blur(14px)}}
-@keyframes taxiSplashFade{0%,20%{opacity:1}95%,100%{opacity:0}}
-@keyframes taxiAppGrow{from{transform:scale(.12);filter:blur(10px)}75%{filter:blur(0)}to{transform:scale(1);filter:blur(0)}}
+@keyframes taxiSplashShrink{
+ 0%{transform:scale(1);filter:blur(0);opacity:1}
+ 42%{transform:scale(.76);filter:blur(0);opacity:1}
+ 88%,100%{transform:scale(.08);filter:blur(12px);opacity:0}
+}
+@keyframes taxiSplashFade{0%,15%{opacity:1}35%{opacity:.82}65%{opacity:.22}85%,100%{opacity:0}}
+@keyframes taxiAppGrow{
+ 0%,10%{transform:scale(.12);filter:blur(9px);opacity:0}
+ 36%{transform:scale(.31);filter:blur(6px);opacity:1}
+ 76%{transform:scale(.94);filter:blur(0);opacity:1}
+ 100%{transform:scale(1);filter:blur(0);opacity:1}
+}
 </style></head><body><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><img src="app/mercedes-splash.webp" alt="" fetchpriority="high"><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
 <script>
 (()=>{
@@ -253,7 +263,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
   clearTimeout(timeout);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
    setTimeout(()=>{
-    splash.addEventListener("animationend",event=>{if(event.target===splash)finish()});
+    splash.addEventListener("animationend",event=>{if(event.target===splash&&event.animationName==="taxiSplashFade")finish()});
     document.body.classList.add("taxi-opening");
     timeout=setTimeout(finish,1850);
    },2600);
@@ -1397,7 +1407,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-2600";
+const siteBuild="taxi-v6-11-taximo-cinematic";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;

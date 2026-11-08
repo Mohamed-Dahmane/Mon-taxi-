@@ -339,6 +339,15 @@ public class MainActivity extends Activity {
   ImageView photo=new ImageView(this);
   photo.setImageBitmap(splashPhoto);
   photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+  GradientDrawable photoFrame=new GradientDrawable();
+  photoFrame.setColor(SPLASH_BACKGROUND);
+  photoFrame.setCornerRadius(dp(18));
+  photo.setBackground(photoFrame);
+  photo.setClipToOutline(true);
+  GradientDrawable photoBorder=new GradientDrawable();
+  photoBorder.setCornerRadius(dp(18));
+  photoBorder.setStroke(dp(1),0x3294add0);
+  photo.setForeground(photoBorder);
   art.addView(photo,new LinearLayout.LayoutParams(-1,0,1f));
   int labelHeight=dp(58)+dp(26);
   LinearLayout signature=new LinearLayout(this);
@@ -370,14 +379,17 @@ public class MainActivity extends Activity {
   versionRow.addView(version,new LinearLayout.LayoutParams(-2,-2));
   FrameLayout cover=new FrameLayout(this){
    @Override protected void onMeasure(int widthSpec,int heightSpec){
-    int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight));
+    int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight)-dp(24));
     FrameLayout.LayoutParams size=(FrameLayout.LayoutParams)art.getLayoutParams();
     size.width=side;
     size.height=side+labelHeight;
     super.onMeasure(widthSpec,heightSpec);
    }
   };
-  cover.setBackgroundColor(SPLASH_BACKGROUND);
+  View backdrop=new View(this);
+  backdrop.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+   new int[]{0xff0a0d14,0xff151d2b,0xff0a0d14}));
+  cover.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
   cover.setClickable(true);
   cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
@@ -396,16 +408,18 @@ public class MainActivity extends Activity {
     private int appBlur=-1;
     @Override public void onAnimationUpdate(ValueAnimator frame){
      float progress=(float)frame.getAnimatedValue();
-     float photoScale=1f-.92f*progress;
-     float appScale=.12f+.88f*progress;
+     float photoScale=1f-.92f*smoothStartupPhase(progress,0f,.88f);
+     float appScale=.12f+.88f*smoothStartupPhase(progress,.1f,1f);
      art.setScaleX(photoScale);
      art.setScaleY(photoScale);
      web.setScaleX(appScale);
      web.setScaleY(appScale);
-     cover.setAlpha(1f-Math.min(1f,Math.max(0f,(progress-.2f)/.75f)));
+     backdrop.setAlpha(1f-smoothStartupPhase(progress,.12f,.85f));
+     art.setAlpha(1f-smoothStartupPhase(progress,.42f,.88f));
+     web.setAlpha(smoothStartupPhase(progress,.1f,.38f));
      if(Build.VERSION.SDK_INT>=31){
-      int nextPhotoBlur=Math.round(14f*Math.max(0f,(progress-.35f)/.65f));
-      int nextAppBlur=Math.round(10f*Math.max(0f,1f-progress/.75f));
+      int nextPhotoBlur=Math.round(12f*smoothStartupPhase(progress,.42f,.88f));
+      int nextAppBlur=Math.round(9f*(1f-smoothStartupPhase(progress,.1f,.76f)));
       if(nextPhotoBlur!=photoBlur){
        photoBlur=nextPhotoBlur;
        setStartupBlur(art,dp(photoBlur));
@@ -424,6 +438,10 @@ public class MainActivity extends Activity {
    });
    transition.start();
   },SPLASH_HOLD_MS));
+ }
+ private float smoothStartupPhase(float progress,float start,float end){
+  float fraction=Math.max(0f,Math.min(1f,(progress-start)/(end-start)));
+  return fraction*fraction*(3f-2f*fraction);
  }
  private void setStartupBlur(View view,float radius){
   view.setRenderEffect(radius>0f?RenderEffect.createBlurEffect(radius,radius,Shader.TileMode.CLAMP):null);
