@@ -218,7 +218,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 
 /* La photo reste immobile avant le passage à Mon Taxi. */
 .taxi-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;touch-action:none;overflow:hidden}
-.taxi-splash-studio{position:absolute;left:0;bottom:0;width:100%;height:200%;object-fit:fill;pointer-events:none}
+.taxi-splash-studio{position:absolute;left:0;bottom:0;width:100%;height:218%;object-fit:fill;filter:brightness(.9) saturate(.82);pointer-events:none}
 .taxi-splash::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0a0d14,#151d2b 48%,#0a0d14)}
 @media(prefers-reduced-motion:reduce){
  .taxi-splash::before,.taxi-splash *,.taxi-opening main,.taxi-opening .taxi-access{animation-duration:0s!important;animation-delay:0s!important}
@@ -226,13 +226,14 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash-continue{height:28px;padding:0 10px;justify-self:center;border:0;background:none;color:#bca98c;font:500 12px/1 system-ui,sans-serif;cursor:pointer;visibility:hidden}
 .taxi-ready .taxi-splash-continue{visibility:visible}
 .taxi-ready .taxi-splash{cursor:pointer}
-.taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(100vw,calc(100vh - 137px));width:min(100vw,calc(100dvh - 137px))}
+.taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(100vw,calc(100vh - 146px));width:min(100vw,calc(100dvh - 146px))}
 .taxi-splash-scene{position:relative;width:100%;aspect-ratio:1}
 .taxi-splash-city{display:flex;justify-content:center;height:27px;align-items:center;gap:5px;color:#e7d2a6;font:500 13px/1 system-ui,sans-serif;letter-spacing:.08em;text-shadow:0 1px 3px #000}
 .taxi-splash-scene img,.taxi-splash-vehicle{position:absolute;inset:0;width:100%;height:100%}
 .taxi-splash-vehicle{transform:translateY(-1%) scale(.84)}
-.taxi-splash-vehicle::before{content:"";position:absolute;left:10%;right:10%;top:84%;height:13%;background:radial-gradient(ellipse,#000b 0%,#0005 38%,transparent 72%)}
+.taxi-splash-vehicle::before{content:"";position:absolute;left:10%;right:10%;top:86%;height:10%;background:radial-gradient(ellipse,#000c 0%,#0006 39%,transparent 72%)}
 .taxi-splash-lockup{display:grid;width:max-content;max-width:100%;opacity:0}
+.taxi-splash-separator{width:82px;height:1px;justify-self:center;margin-bottom:8px;background:#8a7249}
 .taxi-entering .taxi-splash-vehicle{animation:taxiCarRoll 1.15s ease-in-out both}
 .taxi-wheel-treads{position:absolute;top:84.9%;width:7.3%;height:5.2%;opacity:0;pointer-events:none;background:linear-gradient(176deg,transparent 40%,#96969620 48% 55%,transparent 64%);background-size:100% 24%;mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
 .taxi-wheel-treads.left{left:10.3%}
@@ -270,7 +271,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  76%{transform:scale(.94);filter:blur(0);opacity:1}
  100%{transform:scale(1);filter:blur(0);opacity:1}
 }
-</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
+</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-separator" aria-hidden="true"></div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), pictures=splash.querySelectorAll("img");
@@ -1449,7 +1450,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-fullscreen";
+const siteBuild="taxi-v6-11-taximo-studio-lock";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;

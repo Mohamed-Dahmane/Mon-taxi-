@@ -98,56 +98,12 @@ public class MainActivity extends Activity {
   view.setGravity(Gravity.CENTER);
   return view;
  }
- private Button lockButton(String label,int background,int foreground){
-  Button button=new Button(this);
-  GradientDrawable shape=new GradientDrawable();
-  shape.setColor(background);
-  shape.setCornerRadius(dp(14));
-  button.setBackground(new android.graphics.drawable.RippleDrawable(
-   android.content.res.ColorStateList.valueOf(0x408da7cb),shape,null));
-  button.setText(label);
-  button.setTextColor(foreground);
-  button.setTextSize(16);
-  button.setAllCaps(false);
-  button.setMinHeight(dp(54));
-  return button;
- }
  private void showLock() {
-  if(splashPhoto!=null){
-   FrameLayout content=createTaxiContent();
-   unlockContent=content;
-   revealHome=showStartupPhoto(content);
-   setContentView(content);
-   content.requestApplyInsets();
-   return;
-  }
-  ScrollView layout=new ScrollView(this);
-  layout.setFillViewport(true);
-  layout.setBackgroundColor(0xff0b1020);
-  LinearLayout card=new LinearLayout(this);
-  card.setOrientation(LinearLayout.VERTICAL);
-  card.setGravity(Gravity.CENTER);
-  card.setPadding(dp(24),dp(28),dp(24),dp(28));
-  layout.addView(card);
-
-  TextView title=lockText("🚕  Mon Taxi",30,Color.WHITE);
-  title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-  card.addView(title);
-  TextView subtitle=lockText("Déverrouille ton espace de travail",16,0xffb7c9df);
-  subtitle.setPadding(0,dp(8),0,dp(26));
-  card.addView(subtitle);
-
-  Button fingerprint=lockButton("Utiliser mon empreinte",0xfffacc15,0xff171b25);
-  fingerprint.setOnClickListener(v->authenticate());
-  card.addView(fingerprint,new LinearLayout.LayoutParams(dp(270),-2));
-  Button code=lockButton("Utiliser le code Samsung",0xff263851,Color.WHITE);
-  code.setOnClickListener(v->deviceCredential());
-  LinearLayout.LayoutParams codeLayout=new LinearLayout.LayoutParams(dp(270),-2);
-  codeLayout.topMargin=dp(10);
-  card.addView(code,codeLayout);
-  if(Build.VERSION.SDK_INT>=30)getWindow().setDecorFitsSystemWindows(true);
-  setContentView(layout);
-  layout.post(()->{if(layout.isAttachedToWindow()&&canUseFingerprint())authenticate();});
+  FrameLayout content=createTaxiContent();
+  unlockContent=content;
+  revealHome=showStartupPhoto(content);
+  setContentView(content);
+  content.requestApplyInsets();
  }
  private boolean canUseFingerprint(){
   if(Build.VERSION.SDK_INT<30)return false;
@@ -304,10 +260,8 @@ public class MainActivity extends Activity {
   if(web==null){
    web=new WebView(this);
    web.setBackgroundColor(SPLASH_BACKGROUND);
-   if(splashPhoto!=null){
-    WebSettings settings=web.getSettings();
-    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
-   }
+   WebSettings settings=web.getSettings();
+   settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame())view.loadUrl("file:///android_asset/index.html");}
     @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith(APP_URL);}
@@ -366,11 +320,11 @@ public class MainActivity extends Activity {
   vehicle.setScaleY(.84f);
   scene.addView(vehicle,new FrameLayout.LayoutParams(-1,-1));
   GradientDrawable shadowFill=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-   new int[]{0xb0000000,0x50000000,0x00000000});
+   new int[]{0xc0000000,0x5c000000,0x00000000});
   shadowFill.setGradientType(GradientDrawable.RADIAL_GRADIENT);
   View shadow=new View(this);
   shadow.setBackground(shadowFill);
-  shadow.setScaleY(.16f);
+  shadow.setScaleY(.11f);
   vehicle.addView(shadow,new FrameLayout.LayoutParams(-1,-1));
   ImageView photo=new ImageView(this);
   photo.setImageBitmap(splashPhoto);
@@ -382,10 +336,10 @@ public class MainActivity extends Activity {
   scene.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
    int side=Math.min(right-left,bottom-top);
    shadowFill.setGradientRadius(Math.max(1f,.4f*side));
-   shadow.setTranslationY(.405f*side);
+   shadow.setTranslationY(.41f*side);
   });
   art.addView(scene,new LinearLayout.LayoutParams(-1,0,1f));
-  int labelHeight=dp(58)+dp(27)+dp(28);
+  int labelHeight=dp(58)+dp(9)+dp(27)+dp(28);
   LinearLayout signature=new LinearLayout(this);
   signature.setOrientation(LinearLayout.VERTICAL);
   signature.setAlpha(0f);
@@ -398,6 +352,12 @@ public class MainActivity extends Activity {
   title.getPaint().setShader(new LinearGradient(0f,0f,0f,title.getTextSize(),
    0xfffff3d7,0xffc3a16b,Shader.TileMode.CLAMP));
   signature.addView(title,new LinearLayout.LayoutParams(-2,dp(58)));
+  View separator=new View(this);
+  separator.setBackgroundColor(0xff8a7249);
+  LinearLayout.LayoutParams separatorSize=new LinearLayout.LayoutParams(dp(82),dp(1));
+  separatorSize.gravity=Gravity.CENTER_HORIZONTAL;
+  separatorSize.bottomMargin=dp(8);
+  signature.addView(separator,separatorSize);
   TextView city=lockText("Bruxelles Mobility",13,0xffe7d2a6);
   city.setLetterSpacing(.08f);
   signature.addView(city,new LinearLayout.LayoutParams(-1,dp(27)));
@@ -421,9 +381,11 @@ public class MainActivity extends Activity {
    }
   };
   ImageView backdrop=new ImageView(this);
+  backdrop.setBackgroundColor(SPLASH_BACKGROUND);
   backdrop.setImageBitmap(splashStudio);
+  backdrop.setColorFilter(0x20101927,android.graphics.PorterDuff.Mode.SRC_ATOP);
   backdrop.setScaleType(ImageView.ScaleType.FIT_XY);
-  backdrop.setScaleY(2f);
+  backdrop.setScaleY(2.18f);
   backdrop.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->
    backdrop.setPivotY(bottom-top));
   cover.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
