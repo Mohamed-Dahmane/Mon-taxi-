@@ -1,0 +1,59 @@
+/**
+ * Isolated Uber earnings event normalizer. NOT connected to production or Appli.
+ * Accept only records obtained through an authorized Uber API/export.
+ * Caller MUST verify user-to-driver/fleet ownership server-side before using.
+ */
+export type UberEventInput = {
+  source: "uber_fleet_supplier" | "uber_authorized_export";
+  externalEventId: string;
+  tripId?: string;
+  driverId: string;
+  occurredAt: string;
+  currency: string;
+  amountCents: number;
+  eventKind: "trip_earning" | "adjustment" | "reversal";
+  originalEventId?: string;
+};
+export type NormalizedUberEvent = UberEventInput & {
+  eventKey: string;
+  serviceDateBrussels: string;
+};
+const ID = /^[A-Za-z0-9._:-]{1,180}$/;
+const money = (n: number) => Number.isSafeInteger(n) && Math.abs(n) <= 100_000_000;
+export function normalizeUberEvent(input: UberEventInput): NormalizedUberEvent {
+  if (!["uber_fleet_supplier", "uber_authorized_export"].includes(input.source))
+    throw new Error("Unsupported source");
+  if (![input.externalEventId, input.driverId].every(x => typeof x === "string" && ID.test(x)))
+    throw new Error("Missing/invalid stable event or driver identifier");
+  if (input.tripId !== undefined && !ID.test(input.tripId))
+    throw new Error("Invalid trip ID");
+  if (input.currency !== "EUR" || !money(input.amountCents))
+    throw new Error("Invalid EUR integer-cent amount");
+  if (!["trip_earning", "adjustment", "reversal"].includes(input.eventKind))
+    throw new Error("Unsupported event kind");
+  if (input.eventKind === "trip_earning" && !input.tripId)
+    throw new Error("Trip earnings require trip ID");
+  if (input.eventKind !== "trip_earning" && (!input.originalEventId || !ID.test(input.originalEventId)))
+    throw new Error("Corrections require original event ID");
+  if (input.eventKind === "reversal" && input.amountCents > 0)
+    throw new Error("Reversal must not be positive");
+  if (typeof input.occurredAt !== "string" || !/^\\d{4}-\\d{2}-\\d{2}T.*(?:Z|[+-]\\d{2}:\\d{2})$/.test(input.occurredAt))
+    throw new Error("Timestamp must include timezone");
+  const d = new Date(input.occurredAt);
+  if (Number.isNaN(d.getTime())) throw new Error("Invalid timestamp");
+  const serviceDateBrussels = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Brussels", year: "numeric", month: "2-digit", day: "2-digit"
+  }).format(d);
+  return { ...input, eventKey: input.source + ":" + input.externalEventId, serviceDateBrussels };
+}
+/** Pure in-memory replay filter for tests/previews, NOT a database uniqueness guarantee. */
+export function uniqueEvents(events: NormalizedUberEvent[]): NormalizedUberEvent[] {
+  const seen = new Map<string, NormalizedUberEvent>();
+  for (const event of events) {
+    const old = seen.get(event.eventKey);
+    if (old && JSON.stringify(old) !== JSON.stringify(event))
+      throw new Error("Conflicting replay: " + event.eventKey);
+    seen.set(event.eventKey, event);
+  }
+  return [...seen.values()];
+}
