@@ -1101,13 +1101,17 @@ async function loadPrivatePayments(){
   // RLS returns no rows for any unapproved account.
   const userResponse=await fetch(privateApi+"/auth/v1/user",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token}});
   if(!userResponse.ok)throw Error("Session expirée. Reconnecte-toi.");
-  if(!rows.length)throw Error("Aucun paiement accessible pour ce compte.");
+  // Aucun encaissement est un résultat valide : ne pas bloquer l’ouverture.
   sumupRows=rows;sumupReady=true;renderArchive();privateGate.hidden=true;
   document.querySelector("main").hidden=false;render();markRefreshed();
  }catch(e){
   sumupRows=[];sumupReady=false;
-  document.querySelector("main").hidden=true;
-  showPrivateResume(e instanceof TypeError?"Connexion indisponible. Réessaie dans un instant.":e.message,{retry:true,reconnect:true});
+  // La comptabilité locale reste utilisable si SumUp est indisponible.
+  document.querySelector("main").hidden=false;
+  privateGate.hidden=true;
+  render();markRefreshed();
+  console.warn("SumUp indisponible, ouverture locale maintenue",e);
+  toast("SumUp momentanément indisponible · données locales accessibles");
  }
  finally{sumupLoading=false}
 }
@@ -1343,7 +1347,11 @@ logout.onclick=async()=>{const session=privateSession;privateSession=null;sumupR
 document.querySelector("main").append(logout);
 const callback=new URLSearchParams(location.hash.slice(1));
 if(callback.get("access_token")){const session={access_token:callback.get("access_token"),refresh_token:callback.get("refresh_token"),expires_at:Math.floor(Date.now()/1000)+Number(callback.get("expires_in")||3600)};history.replaceState(null,"",location.pathname+location.search);acceptSession(session);}
-else if(privateSession){checkCloudSync().then(()=>loadPrivatePayments());}
+else if(privateSession){
+ // Afficher immédiatement les données locales; la synchronisation est asynchrone.
+ document.querySelector("main").hidden=false;privateGate.hidden=true;
+ checkCloudSync().finally(()=>loadPrivatePayments());
+}
 setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
