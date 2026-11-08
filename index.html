@@ -916,57 +916,66 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
 // Navigation horizontale et actualisation tactile depuis le haut de la page.
 (function(){
  const pages=["home","details","archive"];
- let startX=0,startY=0,tracking=false,pullFromTop=false,pulledMain=null;
- function releasePull(){
-  if(!pulledMain)return;
-  pulledMain.classList.remove("is-pulling");
-  pulledMain.style.removeProperty("--pull-offset");
-  pulledMain=null;
+ const main=document.querySelector("main");
+ let gesture=null,pulled=false;
+ function resetGesture(){
+  gesture=null;
+  if(!pulled)return;
+  main.classList.remove("is-pulling");
+  main.style.removeProperty("--pull-offset");
+  pulled=false;
+ }
+ function direction(dx,dy){
+  const x=Math.abs(dx),y=Math.abs(dy);
+  if(x>=12&&x>y*1.25)return "horizontal";
+  if(y>=12&&y>x*1.25)return "vertical";
+  return null;
  }
  document.addEventListener("touchstart",e=>{
-  releasePull();
-  tracking=false;
-  if(e.touches.length!==1)return;
-  const t=e.target;
-  if(t.closest("input,textarea,select,[contenteditable],.scrollable")){tracking=false;return;}
-  startX=e.touches[0].clientX;startY=e.touches[0].clientY;tracking=true;
-  pullFromTop=window.scrollY<=0&&!document.querySelector("main").hidden;
+  resetGesture();
+  if(e.touches.length!==1||main.hidden||!main.contains(e.target)||
+   document.body.classList.contains("taxi-intro-pending")||
+   document.querySelector("dialog[open]")||$("calendarDialog")?.hidden===false||
+   e.target.closest("input,textarea,select,[contenteditable],.scrollable"))return;
+  const touch=e.touches[0];
+  gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,axis:null,fromTop:window.scrollY<=0};
  },{passive:true});
  document.addEventListener("touchmove",e=>{
-  if(!tracking||!pullFromTop||e.touches.length!==1)return;
-  const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;
-  if(window.scrollY>0||dy<=0||dy<=Math.abs(dx)*1.5){
-   releasePull();
+  if(!gesture)return;
+  if(e.touches.length!==1||e.touches[0].identifier!==gesture.id){resetGesture();return}
+  const dx=e.touches[0].clientX-gesture.x,dy=e.touches[0].clientY-gesture.y;
+  gesture.axis??=direction(dx,dy);
+  if(gesture.axis==="horizontal"){
+   if(e.cancelable)e.preventDefault();
+   return;
+  }
+  if(gesture.axis!=="vertical"||!gesture.fromTop||window.scrollY>0||dy<=0){
+   if(pulled)main.style.setProperty("--pull-offset","0 0px");
    return;
   }
   if(e.cancelable)e.preventDefault();
-  pulledMain??=document.querySelector("main");
-  if(pulledMain){
-   pulledMain.classList.add("is-pulling");
-   pulledMain.style.setProperty("--pull-offset","0 "+Math.min(dy*0.55,72)+"px");
-  }
+  pulled=true;
+  main.classList.add("is-pulling");
+  main.style.setProperty("--pull-offset","0 "+Math.min(dy*.55,72)+"px");
  },{passive:false});
- document.addEventListener("touchcancel",()=>{
-  tracking=false;
-  releasePull();
- },{passive:true});
+ document.addEventListener("touchcancel",resetGesture,{passive:true});
  document.addEventListener("touchend",e=>{
-  releasePull();
-  if(!tracking||!e.changedTouches.length)return;
-  tracking=false;
-  const dx=e.changedTouches[0].clientX-startX,dy=e.changedTouches[0].clientY-startY;
-  if(pullFromTop&&window.scrollY<=0&&dy>=75&&dy>Math.abs(dx)*1.5){
-   $("refreshLocal").click();
+  const current=gesture;
+  resetGesture();
+  if(!current||e.touches.length)return;
+  const touch=Array.from(e.changedTouches).find(item=>item.identifier===current.id);
+  if(!touch)return;
+  const dx=touch.clientX-current.x,dy=touch.clientY-current.y;
+  const axis=current.axis??direction(dx,dy);
+  if(axis==="vertical"){
+   if(current.fromTop&&window.scrollY<=0&&dy>=75&&dy>Math.abs(dx)*1.25)$("refreshLocal").click();
    return;
   }
-  if(Math.abs(dx)<75||Math.abs(dx)<Math.abs(dy)*1.5)return;
-  const active=document.querySelector(".page.active");
-  const index=pages.indexOf(active?.id);
+  if(axis!=="horizontal"||Math.abs(dx)<60||Math.abs(dx)<=Math.abs(dy)*1.25)return;
+  const index=pages.indexOf(document.querySelector(".page.active")?.id);
   if(index<0)return;
-  const next=index+(dx<0?1:-1);
-  if(next<0||next>=pages.length)return;
-  const btn=document.querySelector('.pageBtn[data-page="'+pages[next]+'"]');
-  if(btn)btn.click();
+  const next=pages[index+(dx<0?1:-1)];
+  if(next)document.querySelector('.pageBtn[data-page="'+next+'"]')?.click();
  },{passive:true});
 })();
 const journalAddForm=$("journalAddForm"),journalAddDay=$("journalAddDay");
@@ -1471,7 +1480,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-backup-export";
+const siteBuild="taxi-v6-11-taximo-swipe";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
