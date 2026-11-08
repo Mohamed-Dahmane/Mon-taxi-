@@ -16,7 +16,6 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.text.InputType;
 import android.webkit.*;
 import android.view.WindowInsets;
@@ -360,15 +359,7 @@ public class MainActivity extends Activity {
   LinearLayout art=new LinearLayout(this);
   art.setOrientation(LinearLayout.VERTICAL);
   FrameLayout scene=new FrameLayout(this);
-  GradientDrawable photoFrame=new GradientDrawable();
-  photoFrame.setColor(SPLASH_BACKGROUND);
-  scene.setBackground(photoFrame);
-  scene.setClipToOutline(true);
 
-  ImageView studio=new ImageView(this);
-  studio.setImageBitmap(splashStudio);
-  studio.setScaleType(ImageView.ScaleType.FIT_CENTER);
-  scene.addView(studio,new FrameLayout.LayoutParams(-1,-1));
 
   FrameLayout vehicle=new FrameLayout(this);
   vehicle.setScaleX(.84f);
@@ -390,13 +381,11 @@ public class MainActivity extends Activity {
 
   scene.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
    int side=Math.min(right-left,bottom-top);
-   photoFrame.setCornerRadius(.15f*side);
-   scene.invalidateOutline();
    shadowFill.setGradientRadius(Math.max(1f,.4f*side));
    shadow.setTranslationY(.405f*side);
   });
   art.addView(scene,new LinearLayout.LayoutParams(-1,0,1f));
-  int labelHeight=dp(58)+dp(26)+dp(27)+dp(28);
+  int labelHeight=dp(58)+dp(27)+dp(28);
   LinearLayout signature=new LinearLayout(this);
   signature.setOrientation(LinearLayout.VERTICAL);
   signature.setAlpha(0f);
@@ -409,21 +398,6 @@ public class MainActivity extends Activity {
   title.getPaint().setShader(new LinearGradient(0f,0f,0f,title.getTextSize(),
    0xfffff3d7,0xffc3a16b,Shader.TileMode.CLAMP));
   signature.addView(title,new LinearLayout.LayoutParams(-2,dp(58)));
-  String versionName="";
-  try{versionName=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
-  catch(PackageManager.NameNotFoundException ignored){}
-  LinearLayout versionRow=new LinearLayout(this);
-  versionRow.setGravity(Gravity.CENTER_VERTICAL);
-  signature.addView(versionRow,new LinearLayout.LayoutParams(-1,dp(26)));
-  View rule=new View(this);
-  rule.setBackgroundColor(0xff695638);
-  LinearLayout.LayoutParams ruleSize=new LinearLayout.LayoutParams(0,dp(1),1f);
-  ruleSize.setMarginEnd(dp(12));
-  versionRow.addView(rule,ruleSize);
-  TextView version=lockText(versionName,11,0xffbca98c);
-  version.setLetterSpacing(.15f);
-  version.setSingleLine(true);
-  versionRow.addView(version,new LinearLayout.LayoutParams(-2,-2));
   TextView city=lockText("Bruxelles Mobility",13,0xffe7d2a6);
   city.setLetterSpacing(.08f);
   signature.addView(city,new LinearLayout.LayoutParams(-1,dp(27)));
@@ -439,16 +413,19 @@ public class MainActivity extends Activity {
   signature.addView(continueHint,hintSize);
   FrameLayout cover=new FrameLayout(this){
    @Override protected void onMeasure(int widthSpec,int heightSpec){
-    int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight)-dp(24));
+    int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight-dp(24)));
     FrameLayout.LayoutParams size=(FrameLayout.LayoutParams)art.getLayoutParams();
     size.width=side;
     size.height=side+labelHeight;
     super.onMeasure(widthSpec,heightSpec);
    }
   };
-  View backdrop=new View(this);
-  backdrop.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-   new int[]{0xff0a0d14,0xff151d2b,0xff0a0d14}));
+  ImageView backdrop=new ImageView(this);
+  backdrop.setImageBitmap(splashStudio);
+  backdrop.setScaleType(ImageView.ScaleType.FIT_XY);
+  backdrop.setScaleY(2f);
+  backdrop.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->
+   backdrop.setPivotY(bottom-top));
   cover.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
   cover.setClickable(true);
   art.setScaleX(.025f);

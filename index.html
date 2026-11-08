@@ -217,7 +217,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-brand-icon{display:inline-block;flex:none;width:38px;height:38px;object-fit:cover;object-position:center;vertical-align:middle;border:0;border-radius:50%;-webkit-mask-image:radial-gradient(ellipse at center,#000 42%,rgba(0,0,0,.92) 58%,rgba(0,0,0,.36) 78%,transparent 99%);mask-image:radial-gradient(ellipse at center,#000 42%,rgba(0,0,0,.92) 58%,rgba(0,0,0,.36) 78%,transparent 99%);filter:drop-shadow(0 0 4px rgba(58,154,255,.4)) drop-shadow(0 0 8px rgba(48,128,235,.19));}
 
 /* La photo reste immobile avant le passage à Mon Taxi. */
-.taxi-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;touch-action:none}
+.taxi-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;touch-action:none;overflow:hidden}
+.taxi-splash-studio{position:absolute;left:0;bottom:0;width:100%;height:200%;object-fit:fill;pointer-events:none}
 .taxi-splash::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0a0d14,#151d2b 48%,#0a0d14)}
 @media(prefers-reduced-motion:reduce){
  .taxi-splash::before,.taxi-splash *,.taxi-opening main,.taxi-opening .taxi-access{animation-duration:0s!important;animation-delay:0s!important}
@@ -225,8 +226,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash-continue{height:28px;padding:0 10px;justify-self:center;border:0;background:none;color:#bca98c;font:500 12px/1 system-ui,sans-serif;cursor:pointer;visibility:hidden}
 .taxi-ready .taxi-splash-continue{visibility:visible}
 .taxi-ready .taxi-splash{cursor:pointer}
-.taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(calc(100vw - 24px),calc(100vh - 163px));width:min(calc(100vw - 24px),calc(100dvh - 163px))}
-.taxi-splash-scene{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:15%}
+.taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(100vw,calc(100vh - 137px));width:min(100vw,calc(100dvh - 137px))}
+.taxi-splash-scene{position:relative;width:100%;aspect-ratio:1}
 .taxi-splash-city{display:flex;justify-content:center;height:27px;align-items:center;gap:5px;color:#e7d2a6;font:500 13px/1 system-ui,sans-serif;letter-spacing:.08em;text-shadow:0 1px 3px #000}
 .taxi-splash-scene img,.taxi-splash-vehicle{position:absolute;inset:0;width:100%;height:100%}
 .taxi-splash-vehicle{transform:translateY(-1%) scale(.84)}
@@ -241,12 +242,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.15s both}
 .taxi-entering .taxi-splash-wordmark{animation:taxiTitleShine .65s ease-in-out 1.7s}
 .taxi-splash-wordmark{height:58px;display:flex;align-items:center;color:#e7d2a6;background:linear-gradient(180deg,#fff3d7 32%,#c3a16b 78%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font:400 clamp(32px,10vw,46px)/1 Georgia,"Times New Roman",serif;letter-spacing:.21em;padding-inline-start:.21em}
-.taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#bca98c;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap}
-.taxi-splash-version::before{content:"";flex:1;height:1px;background:#695638}
 .taxi-intro-pending:not(.taxi-opening) :is(main,.taxi-access){visibility:hidden}
 .taxi-intro-pending .taxi-splash-art{opacity:0}
 .taxi-entering .taxi-splash-art{animation:taxiSplashEntrance 1.15s ease-in-out both}
-.taxi-opening .taxi-splash::before{animation:taxiSplashFade 1.7s linear both}
+.taxi-opening .taxi-splash::before,.taxi-opening .taxi-splash-studio{animation:taxiSplashFade 1.7s linear both}
 .taxi-opening .taxi-splash-art{animation:taxiSplashEvaporate 1.7s cubic-bezier(.36,0,.2,1) both}
 .taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.7s cubic-bezier(.36,0,.2,1) both;pointer-events:none}
 @keyframes taxiSplashEntrance{
@@ -271,7 +270,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  76%{transform:scale(.94);filter:blur(0);opacity:1}
  100%{transform:scale(1);filter:blur(0);opacity:1}
 }
-</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash"><div class="taxi-splash-art"><div class="taxi-splash-scene"><img src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
+</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), pictures=splash.querySelectorAll("img");
@@ -1450,7 +1449,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-mobility-tap";
+const siteBuild="taxi-v6-11-taximo-fullscreen";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
