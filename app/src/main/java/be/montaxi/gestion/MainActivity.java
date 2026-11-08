@@ -45,6 +45,7 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
+ private Bitmap splashStudio;
  private static final long SPLASH_ENTRANCE_MS=1150L;
  private static final long SPLASH_HOLD_MS=2100L;
  private static final long SPLASH_TRANSITION_MS=1700L;
@@ -71,8 +72,10 @@ public class MainActivity extends Activity {
   getWindow().getDecorView().setSystemUiVisibility(0);
   getWindow().setStatusBarColor(Color.rgb(17,24,39));
   showLock();
-  try(InputStream image=getAssets().open("app/mercedes-splash.webp")){
-   splashPhoto=BitmapFactory.decodeStream(image);
+  try(InputStream image=getAssets().open("app/mercedes-foreground.webp");
+      InputStream studio=getAssets().open("app/mercedes-studio.webp")){
+   splashStudio=BitmapFactory.decodeStream(studio);
+   if(splashStudio!=null)splashPhoto=BitmapFactory.decodeStream(image);
   }catch(IOException ignored){
    // L'interface web conserve son propre écran de démarrage.
   }
@@ -339,23 +342,45 @@ public class MainActivity extends Activity {
  private void showStartupPhoto(FrameLayout content){
   LinearLayout art=new LinearLayout(this);
   art.setOrientation(LinearLayout.VERTICAL);
+  FrameLayout scene=new FrameLayout(this);
+  GradientDrawable photoFrame=new GradientDrawable();
+  photoFrame.setColor(SPLASH_BACKGROUND);
+  scene.setBackground(photoFrame);
+  scene.setClipToOutline(true);
+  GradientDrawable photoBorder=new GradientDrawable();
+  photoBorder.setStroke(dp(1),0x3294add0);
+  scene.setForeground(photoBorder);
+
+  ImageView studio=new ImageView(this);
+  studio.setImageBitmap(splashStudio);
+  studio.setScaleType(ImageView.ScaleType.FIT_CENTER);
+  scene.addView(studio,new FrameLayout.LayoutParams(-1,-1));
+
+  FrameLayout vehicle=new FrameLayout(this);
+  vehicle.setScaleX(.76f);
+  vehicle.setScaleY(.76f);
+  scene.addView(vehicle,new FrameLayout.LayoutParams(-1,-1));
+  GradientDrawable shadowFill=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+   new int[]{0xcc000000,0x00000000});
+  shadowFill.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+  View shadow=new View(this);
+  shadow.setBackground(shadowFill);
+  shadow.setScaleY(.19f);
+  vehicle.addView(shadow,new FrameLayout.LayoutParams(-1,-1));
   ImageView photo=new ImageView(this);
   photo.setImageBitmap(splashPhoto);
   photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-  GradientDrawable photoFrame=new GradientDrawable();
-  photoFrame.setColor(SPLASH_BACKGROUND);
-  photo.setBackground(photoFrame);
-  photo.setClipToOutline(true);
-  GradientDrawable photoBorder=new GradientDrawable();
-  photoBorder.setStroke(dp(1),0x3294add0);
-  photo.setForeground(photoBorder);
-  photo.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
-   float radius=.15f*Math.min(right-left,bottom-top);
-   photoFrame.setCornerRadius(radius);
-   photoBorder.setCornerRadius(radius);
-   photo.invalidateOutline();
+  vehicle.addView(photo,new FrameLayout.LayoutParams(-1,-1));
+
+  scene.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
+   int side=Math.min(right-left,bottom-top);
+   photoFrame.setCornerRadius(.15f*side);
+   photoBorder.setCornerRadius(.15f*side);
+   scene.invalidateOutline();
+   shadowFill.setGradientRadius(Math.max(1f,.4f*side));
+   shadow.setTranslationY(.405f*side);
   });
-  art.addView(photo,new LinearLayout.LayoutParams(-1,0,1f));
+  art.addView(scene,new LinearLayout.LayoutParams(-1,0,1f));
   int labelHeight=dp(58)+dp(26);
   LinearLayout signature=new LinearLayout(this);
   signature.setOrientation(LinearLayout.VERTICAL);
@@ -449,11 +474,12 @@ public class MainActivity extends Activity {
   };
   cover.postOnAnimation(()->{
    art.setTranslationY(cover.getHeight()*.48f);
+   vehicle.setTranslationY(-.015f*scene.getHeight());
    art.setAlpha(.8f);
    art.animate().translationY(0f).scaleX(1f).scaleY(1f).alpha(1f)
     .setDuration(SPLASH_ENTRANCE_MS).setInterpolator(new AccelerateDecelerateInterpolator())
     .withEndAction(()->{
-     photo.animate().scaleX(1.045f).scaleY(1.045f).setDuration(420L)
+     vehicle.animate().translationY(0f).scaleX(1f).scaleY(1f).setDuration(620L)
       .setInterpolator(new AccelerateDecelerateInterpolator())
       .withEndAction(()->{
        signature.setTranslationX(-.65f*signature.getWidth());

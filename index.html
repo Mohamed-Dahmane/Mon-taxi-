@@ -221,11 +221,14 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0a0d14,#151d2b 48%,#0a0d14)}
 @media(prefers-reduced-motion:reduce){.taxi-splash{display:none}}
 .taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(calc(100vw - 24px),calc(100vh - 108px));width:min(calc(100vw - 24px),calc(100dvh - 108px))}
-.taxi-splash img{display:block;width:100%;aspect-ratio:1;object-fit:contain;border-radius:15%;outline:1px solid #94add032;outline-offset:-1px}
+.taxi-splash-scene{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:15%;outline:1px solid #94add032;outline-offset:-1px}
+.taxi-splash-scene img,.taxi-splash-vehicle{position:absolute;inset:0;width:100%;height:100%}
+.taxi-splash-vehicle{transform:translateY(-1.5%) scale(.76)}
+.taxi-splash-vehicle::before{content:"";position:absolute;left:10%;right:10%;top:83%;height:15%;background:radial-gradient(ellipse,#000c 12%,transparent 71%)}
 .taxi-splash-lockup{display:grid;width:max-content;max-width:100%;opacity:0}
-.taxi-entering .taxi-splash-art img{animation:taxiPhotoApproach .42s ease-in-out 1.15s both}
-.taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.57s both}
-.taxi-entering .taxi-splash-wordmark{animation:taxiTitleShine .65s ease-in-out 2.12s}
+.taxi-entering .taxi-splash-vehicle{animation:taxiCarRoll .62s ease-in-out 1.15s both}
+.taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.77s both}
+.taxi-entering .taxi-splash-wordmark{animation:taxiTitleShine .65s ease-in-out 2.32s}
 .taxi-splash-wordmark{height:58px;display:flex;align-items:center;color:#e7d2a6;background:linear-gradient(180deg,#fff3d7 32%,#c3a16b 78%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font:400 clamp(32px,10vw,46px)/1 Georgia,"Times New Roman",serif;letter-spacing:.21em;padding-inline-start:.21em}
 .taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#bca98c;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap}
 .taxi-splash-version::before{content:"";flex:1;height:1px;background:#695638}
@@ -239,7 +242,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  from{transform:translateY(48vh) scale(.025);opacity:.8}
  to{transform:translateY(0) scale(1);opacity:1}
 }
-@keyframes taxiPhotoApproach{from{transform:scale(1)}to{transform:scale(1.045)}}
+@keyframes taxiCarRoll{from{transform:translateY(-1.5%) scale(.76)}to{transform:translateY(0) scale(1)}}
 @keyframes taxiTitleShine{
  0%,100%{filter:drop-shadow(0 0 0 transparent)}
  48%{filter:drop-shadow(0 0 8px #ffe2aab4)}
@@ -257,10 +260,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  76%{transform:scale(.94);filter:blur(0);opacity:1}
  100%{transform:scale(1);filter:blur(0);opacity:1}
 }
-</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><img src="app/mercedes-splash.webp?v=class" alt="" fetchpriority="high"><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
+</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><div class="taxi-splash-scene"><img src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
 <script>
 (()=>{
- const splash=document.getElementById("taxiSplash"), picture=splash.querySelector("img");
+ const splash=document.getElementById("taxiSplash"), pictures=splash.querySelectorAll("img");
  if(navigator.userAgent.includes("MonTaxiNativeSplash")||matchMedia("(prefers-reduced-motion: reduce)").matches){
   document.body.classList.remove("taxi-intro-pending");
   splash.remove();
@@ -274,7 +277,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
   splash.remove();
  };
  timeout=setTimeout(finish,1800);
- picture.decode().then(()=>{
+ Promise.all(Array.from(pictures,picture=>picture.decode())).then(()=>{
   if(finished)return;
   clearTimeout(timeout);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -1424,7 +1427,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-approach";
+const siteBuild="taxi-v6-11-taximo-car-roll";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;

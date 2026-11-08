@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir -p app/src/main/assets/app
           cp index.html app/src/main/assets/index.html
-          cp app/mercedes-splash.webp app/src/main/assets/app/mercedes-splash.webp
+          cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
       - name: Prepare launcher icon
         run: |
           mkdir -p app/src/main/res/drawable-nodpi
