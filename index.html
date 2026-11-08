@@ -2,6 +2,8 @@
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f3f5fa;background:#0b1020}*{box-sizing:border-box}body{margin:0}main{max-width:780px;margin:auto;padding:20px 14px 80px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}h1{margin:2px 0;font-size:27px;letter-spacing:-.8px}h2{font-size:17px;margin:0 0 14px}.muted{color:#9daac1}.eyebrow{font-size:11px;letter-spacing:2px;color:#8d9fc3;font-weight:800}.pill{border:1px solid #3d4b68;border-radius:99px;padding:7px 11px;font-size:12px;color:#a9b9d6}.selectors,.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.selectors{margin-bottom:14px}select,input{background:#141e32;border:1px solid #34435e;color:#f5f7ff;border-radius:11px;padding:12px;min-width:0;width:100%;font-size:16px}input:focus,select:focus{outline:2px solid #6183fa;outline-offset:0}.card{background:#151e30;border:1px solid #2d3b55;border-radius:18px;padding:17px;margin-bottom:11px}.hero{background:linear-gradient(125deg,#182d36,#142239);border-color:#365f63}.label{font-size:13px;color:#aebbd0}.big{font-size:34px;font-weight:800;letter-spacing:-1.4px;margin:9px 0}.value{font-size:22px;font-weight:750;margin:7px 0}.green{color:#65e6af}.red{color:#ff8f99}.small{font-size:12px}.tabs{display:flex;gap:5px;overflow:auto;margin:20px 0 13px;padding-bottom:4px}.tab{white-space:nowrap;border:1px solid #35435d;background:#182239;color:#c9d4e6;border-radius:12px;padding:11px 13px;font-weight:650}.tab.active{background:#4569e5;color:white;border-color:#4569e5}.panel{display:none}.panel.active{display:block}.rowhead,.dayrow{display:grid;grid-template-columns:50px 1fr 1fr;gap:9px;align-items:center}.rowhead{font-size:12px;color:#9faec8;margin:0 0 10px}.dayrow{margin-bottom:9px}.dayrow input{padding:11px 8px;text-align:right}.day{font-weight:650;font-size:13px;color:#b8c7de}.fixedrow{display:grid;grid-template-columns:1fr 128px;gap:12px;align-items:center;margin-bottom:10px}.fixedrow label{font-size:14px}.fixedrow input{text-align:right}.sumrow{display:flex;justify-content:space-between;gap:10px;padding-top:15px;border-top:1px solid #33405a;font-weight:750}.button{border:0;background:#5478f2;color:#fff;padding:12px 16px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}.button.secondary{background:#273653}.button.danger{background:#5b2a39}.button:disabled{opacity:.5}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.expense{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #303d55}.expense button{padding:7px 10px}.formgrid{display:grid;grid-template-columns:1fr 130px;gap:9px;margin-bottom:10px}.annualrow{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:7px;padding:11px 0;border-bottom:1px solid #303d55;font-size:13px}.annualrow strong{text-align:right}.hint{font-size:12px;color:#a5b4cb;line-height:1.6}.footer{margin-top:20px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#e5f7ee;color:#123526;border-radius:12px;padding:12px 18px;display:none;box-shadow:0 6px 24px #0008;font-size:13px;z-index:5}@media(max-width:380px){main{padding:15px 10px 70px}.big{font-size:29px}.fixedrow{grid-template-columns:1fr 110px}}@media(min-width:600px){.metrics{display:grid;grid-template-columns:1fr 1fr;gap:11px}.metrics .card{margin-bottom:0}}
 
 .page{display:none}.page.active{display:block}.pagebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:15px 0}.pageBtn{border:1px solid #3b4b6b;background:#1a253b;color:#aebedb;padding:13px;border-radius:13px;font-size:15px;font-weight:750}.pageBtn.active{background:#486ee8;border-color:#486ee8;color:white}.hero-number{font-size:36px;letter-spacing:-1px;font-weight:850;margin:8px 0}.homegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.homegrid .card{margin-bottom:0}.inputline{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.inputline label{display:block;font-size:12px;color:#b9c6d8;margin-bottom:6px}.inputline input{padding:13px 6px;text-align:center;font-weight:700}.quick-card{border:1px solid #52669b;background:#18253d}.status{font-size:13px;color:#b6c8df}.dayrow,.rowhead{grid-template-columns:38px repeat(3,minmax(0,1fr));gap:5px}.dayrow input{padding:9px 3px;font-size:14px}.balancebox{background:linear-gradient(125deg,#252039,#182237)}
+
+.carousel-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 13px}.carousel-controls button{background:#182b4b;border:1px solid #4569e5;border-radius:11px;color:#f3f5fa;padding:11px 15px;font-size:14px;font-weight:700;min-height:44px}.carousel-controls span{font-size:13px;color:#b7c8e8;white-space:nowrap}.page{touch-action:pan-y}
 </style><style>
 /* Écran extérieur du Fold : la saisie passe avant les statistiques */
 main{padding-top:10px}header{margin-bottom:8px}h1{font-size:23px}.selectors{margin-bottom:8px}.pagebar{margin:8px 0 10px}.pageBtn{padding:9px}
@@ -318,7 +320,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 </script><main hidden><header class="taxi-header"><div class="taxi-brand"><h1><img src="data:image/jpeg;base64,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" alt="Taxi" class="taxi-brand-icon">Mon Taxi</h1><div class="muted small">V 6/11</div></div><div class="date-bar"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog" aria-expanded="false">—</button></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong>Choisir une date</strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-period"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
-<div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
+<div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div><nav class="carousel-controls" aria-label="Navigation circulaire"><button type="button" id="carouselPrev" aria-label="Page précédente">‹ Précédent</button><span id="carouselPosition" aria-live="polite">1 / 3</span><button type="button" id="carouselNext" aria-label="Page suivante">Suivant ›</button></nav>
 <section class="page active" id="home">
 <div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">(0 jour)</span></div><div class="value green reference-amount">—</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><div class="taxi-entry taxi-head"><span></span><span></span><span>Total du jour <small class="total-ttc">TTC</small></span></div>
@@ -913,11 +915,23 @@ function renderAnnual(){const root=$("annualRows");root.replaceChildren();let to
 function render(){ensure();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===btn);x.setAttribute("aria-pressed",String(x===btn))});document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.tab))}));document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".pageBtn").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.page));window.scrollTo(0,0)}));
-// Navigation horizontale et actualisation tactile depuis le haut de la page.
+// Carrousel circulaire : geste horizontal dans les deux sens, avec commandes accessibles.
 (function(){
  const pages=["home","details","archive"];
  const main=document.querySelector("main");
+ const position=document.getElementById("carouselPosition");
  let gesture=null,pulled=false;
+ function currentIndex(){return Math.max(0,pages.indexOf(document.querySelector(".page.active")?.id));}
+ function updatePosition(){if(position)position.textContent=(currentIndex()+1)+" / "+pages.length;}
+ function navigate(step){
+  const next=pages[(currentIndex()+step+pages.length)%pages.length];
+  document.querySelector('.pageBtn[data-page="'+next+'"]')?.click();
+  updatePosition();
+ }
+ document.getElementById("carouselPrev")?.addEventListener("click",()=>navigate(-1));
+ document.getElementById("carouselNext")?.addEventListener("click",()=>navigate(1));
+ document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",updatePosition));
+ updatePosition();
  function resetGesture(){
   gesture=null;
   if(!pulled)return;
@@ -927,32 +941,30 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
  }
  function direction(dx,dy){
   const x=Math.abs(dx),y=Math.abs(dy);
-  if(x>=12&&x>y*1.25)return "horizontal";
-  if(y>=12&&y>x*1.25)return "vertical";
+  if(x>=10&&x>y*1.2)return "horizontal";
+  if(y>=10&&y>x*1.2)return "vertical";
   return null;
  }
  document.addEventListener("touchstart",e=>{
   resetGesture();
   if(e.touches.length!==1||main.hidden||!main.contains(e.target)||
    document.body.classList.contains("taxi-intro-pending")||
-   document.querySelector("dialog[open]")||$("calendarDialog")?.hidden===false||
-   e.target.closest("input,textarea,select,[contenteditable],.scrollable"))return;
+   document.querySelector("dialog[open]")||document.getElementById("calendarDialog")?.hidden===false||
+   e.target.closest("input,textarea,select,[contenteditable],button,a,[role=slider]"))return;
   const touch=e.touches[0];
   gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,axis:null,fromTop:window.scrollY<=0};
  },{passive:true});
  document.addEventListener("touchmove",e=>{
   if(!gesture)return;
-  if(e.touches.length!==1||e.touches[0].identifier!==gesture.id){resetGesture();return}
-  const dx=e.touches[0].clientX-gesture.x,dy=e.touches[0].clientY-gesture.y;
+  const touch=Array.from(e.touches).find(t=>t.identifier===gesture.id);
+  if(!touch||e.touches.length!==1){resetGesture();return;}
+  const dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;
   gesture.axis??=direction(dx,dy);
   if(gesture.axis==="horizontal"){
    if(e.cancelable)e.preventDefault();
    return;
   }
-  if(gesture.axis!=="vertical"||!gesture.fromTop||window.scrollY>0||dy<=0){
-   if(pulled)main.style.setProperty("--pull-offset","0 0px");
-   return;
-  }
+  if(gesture.axis!=="vertical"||!gesture.fromTop||window.scrollY>0||dy<=0)return;
   if(e.cancelable)e.preventDefault();
   pulled=true;
   main.classList.add("is-pulling");
@@ -963,19 +975,15 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
   const current=gesture;
   resetGesture();
   if(!current||e.touches.length)return;
-  const touch=Array.from(e.changedTouches).find(item=>item.identifier===current.id);
+  const touch=Array.from(e.changedTouches).find(t=>t.identifier===current.id);
   if(!touch)return;
   const dx=touch.clientX-current.x,dy=touch.clientY-current.y;
   const axis=current.axis??direction(dx,dy);
   if(axis==="vertical"){
-   if(current.fromTop&&window.scrollY<=0&&dy>=75&&dy>Math.abs(dx)*1.25)$("refreshLocal").click();
+   if(current.fromTop&&window.scrollY<=0&&dy>=75&&dy>Math.abs(dx)*1.25)document.getElementById("refreshLocal")?.click();
    return;
   }
-  if(axis!=="horizontal"||Math.abs(dx)<60||Math.abs(dx)<=Math.abs(dy)*1.25)return;
-  const index=pages.indexOf(document.querySelector(".page.active")?.id);
-  if(index<0)return;
-  const next=pages[(index+(dx<0?1:-1)+pages.length)%pages.length];
-  if(next)document.querySelector('.pageBtn[data-page="'+next+'"]')?.click();
+  if(axis==="horizontal"&&Math.abs(dx)>=45&&Math.abs(dx)>Math.abs(dy)*1.2)navigate(dx<0?1:-1);
  },{passive:true});
 })();
 const journalAddForm=$("journalAddForm"),journalAddDay=$("journalAddDay");
@@ -1480,7 +1488,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-circular-swipe";
+const siteBuild="taxi-v6-11-carousel-controls-20261108";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
