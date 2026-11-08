@@ -45,7 +45,8 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
- private static final long SPLASH_HOLD_MS=1700L;
+ private static final long SPLASH_ENTRANCE_MS=1150L;
+ private static final long SPLASH_HOLD_MS=1800L;
  private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
@@ -393,10 +394,14 @@ public class MainActivity extends Activity {
    new int[]{0xff0a0d14,0xff151d2b,0xff0a0d14}));
   cover.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
   cover.setClickable(true);
+  art.setRotation(-360f);
+  art.setScaleX(.3f);
+  art.setScaleY(.3f);
+  art.setAlpha(0f);
   cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
   cover.postOnAnimation(()->versionRow.animate().alpha(1f).setDuration(450L).start());
-  cover.postOnAnimation(()->cover.postDelayed(()->{
+  Runnable exit=()->{
    if(!cover.isAttachedToWindow())return;
    if(web==null){
     content.removeView(cover);
@@ -442,7 +447,10 @@ public class MainActivity extends Activity {
     }
    });
    transition.start();
-  },SPLASH_HOLD_MS));
+  };
+  cover.postOnAnimation(()->art.animate().rotation(0f).scaleX(1f).scaleY(1f).alpha(1f)
+   .setDuration(SPLASH_ENTRANCE_MS).setInterpolator(new AccelerateDecelerateInterpolator())
+   .withEndAction(()->cover.postDelayed(exit,SPLASH_HOLD_MS)).start());
  }
  private float smoothStartupPhase(float progress,float start,float end){
   float fraction=Math.max(0f,Math.min(1f,(progress-start)/(end-start)));

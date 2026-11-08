@@ -227,9 +227,15 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#bca98c;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap;animation:taxiVersionIn .45s ease-out both}
 .taxi-splash-version::before{content:"";flex:1;height:1px;background:#695638}
 .taxi-intro-pending:not(.taxi-opening) :is(main,.taxi-access){visibility:hidden}
+.taxi-intro-pending .taxi-splash-art{opacity:0}
+.taxi-entering .taxi-splash-art{animation:taxiSplashEntrance 1.15s ease-in-out both}
 .taxi-opening .taxi-splash::before{animation:taxiSplashFade 1.7s linear both}
 .taxi-opening .taxi-splash-art{animation:taxiSplashShrink 1.7s cubic-bezier(.36,0,.2,1) both}
 .taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.7s cubic-bezier(.36,0,.2,1) both;pointer-events:none}
+@keyframes taxiSplashEntrance{
+ from{transform:rotate(-360deg) scale(.3);opacity:0}
+ to{transform:rotate(0deg) scale(1);opacity:1}
+}
 @keyframes taxiVersionIn{from{opacity:0}to{opacity:1}}
 @keyframes taxiSplashShrink{
  0%{transform:scale(1);filter:blur(0);opacity:1}
@@ -256,7 +262,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  const finish=()=>{
   finished=true;
   clearTimeout(timeout);
-  document.body.classList.remove("taxi-opening","taxi-intro-pending");
+  document.body.classList.remove("taxi-entering","taxi-opening","taxi-intro-pending");
   splash.remove();
  };
  timeout=setTimeout(finish,1800);
@@ -264,11 +270,12 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
   if(finished)return;
   clearTimeout(timeout);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-   setTimeout(()=>{
+   document.body.classList.add("taxi-entering");
+   timeout=setTimeout(()=>{
     splash.addEventListener("animationend",event=>{if(event.target===splash&&event.animationName==="taxiSplashFade")finish()});
     document.body.classList.add("taxi-opening");
     timeout=setTimeout(finish,1850);
-   },1700);
+   },1150+1800);
   }));
  },finish);
 })();
@@ -1409,7 +1416,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-v-class";
+const siteBuild="taxi-v6-11-taximo-rotation-1800";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
