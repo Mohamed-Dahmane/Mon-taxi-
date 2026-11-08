@@ -349,9 +349,6 @@ public class MainActivity extends Activity {
   photoFrame.setColor(SPLASH_BACKGROUND);
   scene.setBackground(photoFrame);
   scene.setClipToOutline(true);
-  GradientDrawable photoBorder=new GradientDrawable();
-  photoBorder.setStroke(dp(1),0x1594add0);
-  scene.setForeground(photoBorder);
 
   ImageView studio=new ImageView(this);
   studio.setImageBitmap(splashStudio);
@@ -379,7 +376,6 @@ public class MainActivity extends Activity {
   scene.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
    int side=Math.min(right-left,bottom-top);
    photoFrame.setCornerRadius(.15f*side);
-   photoBorder.setCornerRadius(.15f*side);
    scene.invalidateOutline();
    shadowFill.setGradientRadius(Math.max(1f,.4f*side));
    shadow.setTranslationY(.405f*side);
@@ -480,7 +476,6 @@ public class MainActivity extends Activity {
    art.setTranslationY(cover.getHeight()*.48f);
    float approachOffset=-.01f*scene.getHeight();
    vehicle.setTranslationY(approachOffset);
-   art.setAlpha(.8f);
    ValueAnimator approach=ValueAnimator.ofFloat(0f,1f);
    approach.setDuration(SPLASH_ENTRANCE_MS);
    approach.setInterpolator(new AccelerateDecelerateInterpolator());

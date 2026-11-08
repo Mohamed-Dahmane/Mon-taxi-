@@ -221,7 +221,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0a0d14,#151d2b 48%,#0a0d14)}
 @media(prefers-reduced-motion:reduce){.taxi-splash{display:none}}
 .taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(calc(100vw - 24px),calc(100vh - 108px));width:min(calc(100vw - 24px),calc(100dvh - 108px))}
-.taxi-splash-scene{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:15%;outline:1px solid #94add015;outline-offset:-1px}
+.taxi-splash-scene{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:15%}
 .taxi-splash-scene img,.taxi-splash-vehicle{position:absolute;inset:0;width:100%;height:100%}
 .taxi-splash-vehicle{transform:translateY(-1%) scale(.84)}
 .taxi-splash-vehicle::before{content:"";position:absolute;left:10%;right:10%;top:84%;height:13%;background:radial-gradient(ellipse,#000b 0%,#0005 38%,transparent 72%)}
@@ -244,7 +244,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-opening .taxi-splash-art{animation:taxiSplashEvaporate 1.7s cubic-bezier(.36,0,.2,1) both}
 .taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.7s cubic-bezier(.36,0,.2,1) both;pointer-events:none}
 @keyframes taxiSplashEntrance{
- from{transform:translateY(48vh) scale(.025);opacity:.8}
+ from{transform:translateY(48vh) scale(.025);opacity:0}
  to{transform:translateY(0) scale(1);opacity:1}
 }
 @keyframes taxiCarRoll{from{transform:translateY(-1%) scale(.84)}to{transform:translateY(0) scale(1)}}
@@ -1432,7 +1432,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-sync-approach";
+const siteBuild="taxi-v6-11-taximo-soft-entrance";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
