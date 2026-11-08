@@ -37,13 +37,15 @@ export function normalizeUberEvent(input: UberEventInput): NormalizedUberEvent {
     throw new Error("Corrections require original event ID");
   if (input.eventKind === "reversal" && input.amountCents > 0)
     throw new Error("Reversal must not be positive");
-  if (typeof input.occurredAt !== "string" || !/^\\d{4}-\\d{2}-\\d{2}T.*(?:Z|[+-]\\d{2}:\\d{2})$/.test(input.occurredAt))
+  if (typeof input.occurredAt !== "string" || !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(input.occurredAt))
     throw new Error("Timestamp must include timezone");
   const d = new Date(input.occurredAt);
   if (Number.isNaN(d.getTime())) throw new Error("Invalid timestamp");
-  const serviceDateBrussels = new Intl.DateTimeFormat("en-CA", {
+  const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Brussels", year: "numeric", month: "2-digit", day: "2-digit"
-  }).format(d);
+  }).formatToParts(d);
+  const part = (type: string) => parts.find(p => p.type === type)?.value;
+  const serviceDateBrussels = `${part("year")}-${part("month")}-${part("day")}`;
   return { ...input, eventKey: input.source + ":" + input.externalEventId, serviceDateBrussels };
 }
 /** Pure in-memory replay filter for tests/previews, NOT a database uniqueness guarantee. */
