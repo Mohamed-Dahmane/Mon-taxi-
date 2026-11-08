@@ -40,3 +40,10 @@ test("fractional cents and unsafe integers are rejected", () => {
   assert.throws(() => normalizeUberEvent({...base,amountCents:12.5}), /integer-cent/);
   assert.throws(() => normalizeUberEvent({...base,amountCents:Number.MAX_SAFE_INTEGER+1}), /integer-cent/);
 });
+
+test("identical event IDs for different drivers remain distinct", () => {
+  const a = normalizeUberEvent(base);
+  const b = normalizeUberEvent({...base,driverId:"driver-002"});
+  assert.notEqual(a.eventKey,b.eventKey);
+  assert.equal(uniqueEvents([a,b]).length,2);
+});
