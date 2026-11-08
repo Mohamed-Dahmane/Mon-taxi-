@@ -111,13 +111,12 @@ Deno.serve(async (req) => {
     cursor+=entries.length;
   }
   if(!reachedEnd) return Response.json({ok:false,reason:"pagination_limit_reached"},{status:503});
-  // Upsert only after every SumUp page has passed validation.
-  // Individual database batches can still fail after earlier batches succeeded.
-  for(let i=0;i<pendingRows.length;i+=100){
-    const batch=pendingRows.slice(i,i+100);
-    const {error}=await db.from("taxi_sumup_transactions").upsert(batch,{onConflict:"transaction_id"});
+  // One PostgREST upsert is one PostgreSQL statement: all rows commit or none do.
+  // Never split into independently committed batches, even for large histories.
+  if(pendingRows.length){
+    const {error}=await db.from("taxi_sumup_transactions").upsert(pendingRows,{onConflict:"transaction_id"});
     if(error)return Response.json({ok:false,reason:"database_write_failed"},{status:500});
-    count+=batch.length;
   }
+  count=pendingRows.length;
   return Response.json({ok:true,processed:count,window_start:"2026-11-01",note:"No transaction details returned"});
 });
