@@ -45,7 +45,7 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
- private static final long SPLASH_HOLD_MS=2300L;
+ private static final long SPLASH_HOLD_MS=1900L;
  private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
@@ -357,11 +357,11 @@ public class MainActivity extends Activity {
   LinearLayout.LayoutParams signatureSize=new LinearLayout.LayoutParams(-2,labelHeight);
   signatureSize.gravity=Gravity.CENTER_HORIZONTAL;
   art.addView(signature,signatureSize);
-  TextView title=lockText("TAXIMO",44,0xffe4edf9);
-  title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+  TextView title=lockText("TAXIMO",46,0xffe7d2a6);
+  title.setTypeface(Typeface.create("serif",Typeface.NORMAL));
   title.setLetterSpacing(.21f);
   title.getPaint().setShader(new LinearGradient(0f,0f,0f,title.getTextSize(),
-   0xfff7faff,0xffb8cbe4,Shader.TileMode.CLAMP));
+   0xfffff3d7,0xffc3a16b,Shader.TileMode.CLAMP));
   signature.addView(title,new LinearLayout.LayoutParams(-2,dp(58)));
   String versionName="";
   try{versionName=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
@@ -371,11 +371,11 @@ public class MainActivity extends Activity {
   versionRow.setAlpha(0f);
   signature.addView(versionRow,new LinearLayout.LayoutParams(-1,dp(26)));
   View rule=new View(this);
-  rule.setBackgroundColor(0xff35465e);
+  rule.setBackgroundColor(0xff695638);
   LinearLayout.LayoutParams ruleSize=new LinearLayout.LayoutParams(0,dp(1),1f);
   ruleSize.setMarginEnd(dp(12));
   versionRow.addView(rule,ruleSize);
-  TextView version=lockText(versionName,11,0xff96adca);
+  TextView version=lockText(versionName,11,0xffbca98c);
   version.setLetterSpacing(.15f);
   version.setSingleLine(true);
   versionRow.addView(version,new LinearLayout.LayoutParams(-2,-2));
