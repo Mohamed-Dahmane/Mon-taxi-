@@ -56,12 +56,21 @@ public class MainActivity extends Activity {
  private TextView lockAction;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
- private static final long IDLE_TIMEOUT_MS=60000L;
+ private static final long IDLE_TIMEOUT_MS=20000L;
  private long lastInteraction=SystemClock.elapsedRealtime();
- private long backgroundAt=-1L;
  private final Handler idleHandler=new Handler(Looper.getMainLooper());
- private final Runnable idleCheck=new Runnable(){@Override public void run(){if(unlocked){if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS){lockTaxi();}else idleHandler.postDelayed(this,Math.max(1000L,IDLE_TIMEOUT_MS-(SystemClock.elapsedRealtime()-lastInteraction)));}}};
- private void touchSession(){lastInteraction=SystemClock.elapsedRealtime();if(unlocked){idleHandler.removeCallbacks(idleCheck);idleHandler.postDelayed(idleCheck,IDLE_TIMEOUT_MS);}}
+ private final Runnable idleCheck=this::checkIdleTimeout;
+ private void checkIdleTimeout(){
+  idleHandler.removeCallbacks(idleCheck);
+  if(!unlocked)return;
+  long remaining=IDLE_TIMEOUT_MS-(SystemClock.elapsedRealtime()-lastInteraction);
+  if(remaining<=0L)lockTaxi();
+  else if(resumed)idleHandler.postDelayed(idleCheck,remaining);
+ }
+ private void touchSession(){
+  lastInteraction=SystemClock.elapsedRealtime();
+  checkIdleTimeout();
+ }
  private void lockTaxi(){idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null){web.setVisibility(View.INVISIBLE);web.onPause();}showLock();}
  @Override public boolean dispatchTouchEvent(MotionEvent event){if(unlocked)touchSession();return super.dispatchTouchEvent(event);}
  @Override public boolean dispatchKeyEvent(KeyEvent event){if(unlocked)touchSession();return super.dispatchKeyEvent(event);}
@@ -544,18 +553,13 @@ public class MainActivity extends Activity {
  @Override protected void onPause(){
   super.onPause();
   resumed=false;
-  backgroundAt=SystemClock.elapsedRealtime();
   idleHandler.removeCallbacks(idleCheck);
  }
  @Override protected void onResume(){
   super.onResume();
   resumed=true;
-  long timeAway=backgroundAt<0L?0L:SystemClock.elapsedRealtime()-backgroundAt;
-  backgroundAt=-1L;
-  if(unlocked){
-   if(timeAway>=IDLE_TIMEOUT_MS)lockTaxi();
-   else touchSession();
-  }else scheduleFingerprint();
+  if(unlocked)checkIdleTimeout();
+  else scheduleFingerprint();
  }
  @Override protected void onStop(){
   super.onStop();
