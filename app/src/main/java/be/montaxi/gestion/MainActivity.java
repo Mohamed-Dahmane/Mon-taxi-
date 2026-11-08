@@ -173,8 +173,7 @@ public class MainActivity extends Activity {
    @Override public void onAuthenticationError(int code,CharSequence message){
     if(biometric!=attempt)return;
     boolean canceled=code==BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
-     ||code==BiometricPrompt.BIOMETRIC_ERROR_CANCELED
-     ||code==BiometricPrompt.BIOMETRIC_ERROR_NEGATIVE_BUTTON;
+     ||code==BiometricPrompt.BIOMETRIC_ERROR_CANCELED;
     biometric=null;
     prompting=false;
     credentialPrompt=false;
