@@ -224,6 +224,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash img{display:block;width:100%;aspect-ratio:1;object-fit:contain;border-radius:15%;outline:1px solid #94add032;outline-offset:-1px}
 .taxi-splash-lockup{display:grid;width:max-content;max-width:100%;opacity:0}
 .taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.15s both}
+.taxi-entering .taxi-splash-wordmark{animation:taxiTitleShine .65s ease-in-out 1.7s}
 .taxi-splash-wordmark{height:58px;display:flex;align-items:center;color:#e7d2a6;background:linear-gradient(180deg,#fff3d7 32%,#c3a16b 78%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font:400 clamp(32px,10vw,46px)/1 Georgia,"Times New Roman",serif;letter-spacing:.21em;padding-inline-start:.21em}
 .taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#bca98c;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap}
 .taxi-splash-version::before{content:"";flex:1;height:1px;background:#695638}
@@ -236,6 +237,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 @keyframes taxiSplashEntrance{
  from{transform:translateY(48vh) scale(.025);opacity:.8}
  to{transform:translateY(0) scale(1);opacity:1}
+}
+@keyframes taxiTitleShine{
+ 0%,100%{filter:drop-shadow(0 0 0 transparent)}
+ 48%{filter:drop-shadow(0 0 8px #ffe2aab4)}
 }
 @keyframes taxiTitleIn{from{transform:translateX(-65%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes taxiSplashEvaporate{
@@ -276,7 +281,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
     splash.addEventListener("animationend",event=>{if(event.target===splash&&event.animationName==="taxiSplashFade")finish()});
     document.body.classList.add("taxi-opening");
     timeout=setTimeout(finish,1850);
-   },1150+1800);
+   },1150+2100);
   }));
  },finish);
 })();
@@ -1417,7 +1422,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-evaporation";
+const siteBuild="taxi-v6-11-taximo-shine";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;

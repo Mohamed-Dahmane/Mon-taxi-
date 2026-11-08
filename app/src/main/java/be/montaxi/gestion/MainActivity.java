@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
  private static final long SPLASH_ENTRANCE_MS=1150L;
- private static final long SPLASH_HOLD_MS=1800L;
+ private static final long SPLASH_HOLD_MS=2100L;
  private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
@@ -455,10 +455,20 @@ public class MainActivity extends Activity {
     .withEndAction(()->{
      signature.setTranslationX(-.65f*signature.getWidth());
      signature.animate().translationX(0f).alpha(1f).setDuration(550L)
-      .setInterpolator(new AccelerateDecelerateInterpolator()).start();
+      .setInterpolator(new AccelerateDecelerateInterpolator())
+      .withEndAction(()->shineTitle(title)).start();
      cover.postDelayed(exit,SPLASH_HOLD_MS);
     }).start();
   });
+ }
+ private void shineTitle(TextView title){
+  ValueAnimator shine=ValueAnimator.ofFloat(0f,1f,0f);
+  shine.setDuration(650L);
+  shine.addUpdateListener(frame->{
+   float intensity=(float)frame.getAnimatedValue();
+   title.setShadowLayer(dp(8)*intensity,0f,0f,Color.argb(Math.round(180f*intensity),255,226,170));
+  });
+  shine.start();
  }
  private float smoothStartupPhase(float progress,float start,float end){
   float fraction=Math.max(0f,Math.min(1f,(progress-start)/(end-start)));
@@ -474,8 +484,10 @@ public class MainActivity extends Activity {
  }
  @Override protected void onResume(){
   super.onResume();
+  long timeAway=backgroundAt<0L?0L:SystemClock.elapsedRealtime()-backgroundAt;
+  backgroundAt=-1L;
   if(unlocked){
-   if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS)lockTaxi();
+   if(timeAway>=IDLE_TIMEOUT_MS)lockTaxi();
    else touchSession();
   }
  }
