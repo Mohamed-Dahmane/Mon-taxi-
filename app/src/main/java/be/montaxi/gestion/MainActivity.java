@@ -27,6 +27,8 @@ import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.LinearGradient;
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
@@ -371,6 +373,8 @@ public class MainActivity extends Activity {
   photo.setImageBitmap(splashPhoto);
   photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
   vehicle.addView(photo,new FrameLayout.LayoutParams(-1,-1));
+  WheelTreads treads=new WheelTreads();
+  vehicle.addView(treads,new FrameLayout.LayoutParams(-1,-1));
 
   scene.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
    int side=Math.min(right-left,bottom-top);
@@ -479,6 +483,14 @@ public class MainActivity extends Activity {
    art.animate().translationY(0f).scaleX(1f).scaleY(1f).alpha(1f)
     .setDuration(SPLASH_ENTRANCE_MS).setInterpolator(new AccelerateDecelerateInterpolator())
     .withEndAction(()->{
+     ValueAnimator spin=ValueAnimator.ofFloat(0f,1f);
+     spin.setDuration(620L);
+     spin.setInterpolator(new AccelerateDecelerateInterpolator());
+     spin.addUpdateListener(frame->{
+      treads.progress=(float)frame.getAnimatedValue();
+      treads.invalidate();
+     });
+     spin.start();
      vehicle.animate().translationY(0f).scaleX(1f).scaleY(1f).setDuration(620L)
       .setInterpolator(new AccelerateDecelerateInterpolator())
       .withEndAction(()->{
@@ -490,6 +502,34 @@ public class MainActivity extends Activity {
      cover.postDelayed(exit,SPLASH_HOLD_MS);
     }).start();
   });
+ }
+ private final class WheelTreads extends View{
+  private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final int[] treadPositions={103,824};
+  private float progress;
+
+  WheelTreads(){super(MainActivity.this);}
+
+  @Override protected void onDraw(Canvas canvas){
+   super.onDraw(canvas);
+   float pulse=(float)Math.sin(Math.PI*progress);
+   if(pulse<=0f)return;
+   canvas.save();
+   canvas.scale(getWidth()/1000f,getHeight()/1000f);
+   paint.setStrokeWidth(2f);
+   float offset=(progress*72f)%12f;
+   for(int left:treadPositions){
+    canvas.save();
+    canvas.clipRect(left,849f,left+73,901f);
+    for(float y=837f+offset;y<913f;y+=12f){
+     float edge=Math.max(0f,1f-Math.abs(y-875f)/27f);
+     paint.setColor(Color.argb(Math.round(70f*pulse*edge),144,157,172));
+     canvas.drawLine(left+2,y,left+71,y-4f,paint);
+    }
+    canvas.restore();
+   }
+   canvas.restore();
+  }
  }
  private void shineTitle(TextView title){
   ValueAnimator shine=ValueAnimator.ofFloat(0f,1f,0f);

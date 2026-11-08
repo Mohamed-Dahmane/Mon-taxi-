@@ -227,6 +227,11 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash-vehicle::before{content:"";position:absolute;left:10%;right:10%;top:83%;height:15%;background:radial-gradient(ellipse,#000c 12%,transparent 71%)}
 .taxi-splash-lockup{display:grid;width:max-content;max-width:100%;opacity:0}
 .taxi-entering .taxi-splash-vehicle{animation:taxiCarRoll .62s ease-in-out 1.15s both}
+.taxi-wheel-treads{position:absolute;top:84.9%;width:7.3%;height:5.2%;opacity:0;pointer-events:none;background:repeating-linear-gradient(176deg,transparent 0 16%,#909dac60 18% 21%,transparent 24%);background-size:100% 24%;mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
+.taxi-wheel-treads.left{left:10.3%}
+.taxi-wheel-treads.right{left:82.4%}
+.taxi-entering .taxi-wheel-treads{animation:taxiWheelRoll .62s ease-in-out 1.15s both}
+@keyframes taxiWheelRoll{0%{background-position-y:0;opacity:0}45%{opacity:.85}100%{background-position-y:95%;opacity:0}}
 .taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.77s both}
 .taxi-entering .taxi-splash-wordmark{animation:taxiTitleShine .65s ease-in-out 2.32s}
 .taxi-splash-wordmark{height:58px;display:flex;align-items:center;color:#e7d2a6;background:linear-gradient(180deg,#fff3d7 32%,#c3a16b 78%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font:400 clamp(32px,10vw,46px)/1 Georgia,"Times New Roman",serif;letter-spacing:.21em;padding-inline-start:.21em}
@@ -260,7 +265,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  76%{transform:scale(.94);filter:blur(0);opacity:1}
  100%{transform:scale(1);filter:blur(0);opacity:1}
 }
-</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><div class="taxi-splash-scene"><img src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
+</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><div class="taxi-splash-scene"><img src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), pictures=splash.querySelectorAll("img");
@@ -1427,7 +1432,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-car-roll";
+const siteBuild="taxi-v6-11-taximo-wheel-roll";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
