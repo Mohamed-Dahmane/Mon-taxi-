@@ -359,6 +359,18 @@ public class MainActivity extends Activity {
   vehicle.setScaleX(.84f);
   vehicle.setScaleY(.84f);
   scene.addView(vehicle,new FrameLayout.LayoutParams(-1,-1));
+  LinearLayout cityMark=new LinearLayout(this);
+  cityMark.setGravity(Gravity.CENTER_VERTICAL);
+  ImageView iris=new ImageView(this);
+  iris.setImageResource(R.drawable.taximo_iris);
+  cityMark.addView(iris,new LinearLayout.LayoutParams(dp(24),dp(24)));
+  TextView city=lockText("Brussels",13,0xffe7d2a6);
+  city.setLetterSpacing(.08f);
+  city.setShadowLayer(dp(3),0f,dp(1),Color.BLACK);
+  LinearLayout.LayoutParams citySize=new LinearLayout.LayoutParams(-2,-2);
+  citySize.setMarginStart(dp(5));
+  cityMark.addView(city,citySize);
+  scene.addView(cityMark,new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.START));
   GradientDrawable shadowFill=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
    new int[]{0xb0000000,0x50000000,0x00000000});
   shadowFill.setGradientType(GradientDrawable.RADIAL_GRADIENT);
@@ -376,6 +388,8 @@ public class MainActivity extends Activity {
   scene.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
    int side=Math.min(right-left,bottom-top);
    photoFrame.setCornerRadius(.15f*side);
+   cityMark.setTranslationX(.09f*side);
+   cityMark.setTranslationY(.09f*side);
    scene.invalidateOutline();
    shadowFill.setGradientRadius(Math.max(1f,.4f*side));
    shadow.setTranslationY(.405f*side);

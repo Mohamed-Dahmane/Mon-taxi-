@@ -222,6 +222,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 @media(prefers-reduced-motion:reduce){.taxi-splash{display:none}}
 .taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(calc(100vw - 24px),calc(100vh - 108px));width:min(calc(100vw - 24px),calc(100dvh - 108px))}
 .taxi-splash-scene{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:15%}
+.taxi-splash-city{position:absolute;top:9%;left:9%;display:flex;align-items:center;gap:5px;color:#e7d2a6;font:500 13px/1 system-ui,sans-serif;letter-spacing:.08em;text-shadow:0 1px 3px #000}
+.taxi-splash-city svg{display:block;width:24px;height:24px;flex:none}
 .taxi-splash-scene img,.taxi-splash-vehicle{position:absolute;inset:0;width:100%;height:100%}
 .taxi-splash-vehicle{transform:translateY(-1%) scale(.84)}
 .taxi-splash-vehicle::before{content:"";position:absolute;left:10%;right:10%;top:84%;height:13%;background:radial-gradient(ellipse,#000b 0%,#0005 38%,transparent 72%)}
@@ -265,7 +267,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  76%{transform:scale(.94);filter:blur(0);opacity:1}
  100%{transform:scale(1);filter:blur(0);opacity:1}
 }
-</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><div class="taxi-splash-scene"><img src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
+</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><div class="taxi-splash-scene"><img src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div><div class="taxi-splash-city"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff3d7" d="M16 2 C20 6 22 10 20 14 C19 16 17 17 16 19 C15 17 13 16 12 14 C10 10 12 6 16 2 Z"/><path fill="#e7d2a6" d="M3 10 C8 10 12 13 14 17 L16 21 L18 17 C20 13 24 10 29 10 C28 16 25 21 20 23 L18 24 L18 28 L14 28 L14 24 L12 23 C7 21 4 16 3 10 Z"/><path fill="#c3a16b" d="M8 23 C11 24 13 26 13 29 C10 28 8 26 8 23 Z M24 23 C24 26 22 28 19 29 C19 26 21 24 24 23 Z"/></svg><span>Brussels</span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), pictures=splash.querySelectorAll("img");
@@ -1432,7 +1434,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-soft-entrance";
+const siteBuild="taxi-v6-11-taximo-brussels-iris";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
