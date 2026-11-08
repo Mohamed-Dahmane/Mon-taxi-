@@ -45,7 +45,7 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
- private static final long SPLASH_HOLD_MS=2600L;
+ private static final long SPLASH_HOLD_MS=2400L;
  private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
@@ -57,7 +57,7 @@ public class MainActivity extends Activity {
  private final Handler idleHandler=new Handler(Looper.getMainLooper());
  private final Runnable idleCheck=new Runnable(){@Override public void run(){if(unlocked){if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS){lockTaxi();}else idleHandler.postDelayed(this,Math.max(1000L,IDLE_TIMEOUT_MS-(SystemClock.elapsedRealtime()-lastInteraction)));}}};
  private void touchSession(){lastInteraction=SystemClock.elapsedRealtime();if(unlocked){idleHandler.removeCallbacks(idleCheck);idleHandler.postDelayed(idleCheck,IDLE_TIMEOUT_MS);}}
- private void lockTaxi(){idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null)web.onPause();showLock();}
+ private void lockTaxi(){idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null){web.setVisibility(View.INVISIBLE);web.onPause();}showLock();}
  @Override public boolean dispatchTouchEvent(MotionEvent event){if(unlocked)touchSession();return super.dispatchTouchEvent(event);}
  @Override public boolean dispatchKeyEvent(KeyEvent event){if(unlocked)touchSession();return super.dispatchKeyEvent(event);}
  private CancellationSignal biometric;
@@ -276,11 +276,11 @@ public class MainActivity extends Activity {
   if(showPhoto){
    // Laisser Android dessiner la photo avant de monter la WebView.
    content.postOnAnimation(()->content.postOnAnimation(()->{
-    if(unlocked&&content.isAttachedToWindow())attachTaxiWeb(content);
+    if(unlocked&&content.isAttachedToWindow())attachTaxiWeb(content,true);
    }));
-  }else attachTaxiWeb(content);
+  }else attachTaxiWeb(content,false);
  }
- private void attachTaxiWeb(FrameLayout content){
+ private void attachTaxiWeb(FrameLayout content,boolean covered){
   if(web==null){
    web=new WebView(this);
    web.setBackgroundColor(SPLASH_BACKGROUND);
@@ -330,6 +330,8 @@ public class MainActivity extends Activity {
   // Toujours charger la dernière version en ligne après déverrouillage.
   if(web.getUrl()==null)web.loadUrl(APP_URL);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
+  web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
+  web.setAlpha(covered?0f:1f);
   content.addView(web,0,new FrameLayout.LayoutParams(-1,-1));
   web.onResume();
  }
@@ -400,6 +402,9 @@ public class MainActivity extends Activity {
     content.removeView(cover);
     return;
    }
+   web.setScaleX(.12f);
+   web.setScaleY(.12f);
+   web.setVisibility(View.VISIBLE);
    ValueAnimator transition=ValueAnimator.ofFloat(0f,1f);
    transition.setDuration(SPLASH_TRANSITION_MS);
    transition.setInterpolator(new AccelerateDecelerateInterpolator());
