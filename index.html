@@ -3,7 +3,7 @@
 
 .page{display:none}.page.active{display:block}.pagebar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:15px 0}.pageBtn{border:1px solid #3b4b6b;background:#1a253b;color:#aebedb;padding:13px;border-radius:13px;font-size:15px;font-weight:750}.pageBtn.active{background:#486ee8;border-color:#486ee8;color:white}.hero-number{font-size:36px;letter-spacing:-1px;font-weight:850;margin:8px 0}.homegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.homegrid .card{margin-bottom:0}.inputline{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.inputline label{display:block;font-size:12px;color:#b9c6d8;margin-bottom:6px}.inputline input{padding:13px 6px;text-align:center;font-weight:700}.quick-card{border:1px solid #52669b;background:#18253d}.status{font-size:13px;color:#b6c8df}.dayrow,.rowhead{grid-template-columns:38px repeat(3,minmax(0,1fr));gap:5px}.dayrow input{padding:9px 3px;font-size:14px}.balancebox{background:linear-gradient(125deg,#252039,#182237)}
 
-.carousel-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 13px}.carousel-controls button{background:#182b4b;border:1px solid #4569e5;border-radius:11px;color:#f3f5fa;padding:11px 15px;font-size:14px;font-weight:700;min-height:44px}.carousel-controls span{font-size:13px;color:#b7c8e8;white-space:nowrap}.page{touch-action:pan-y}
+.page{touch-action:pan-y}
 </style><style>
 /* Écran extérieur du Fold : la saisie passe avant les statistiques */
 main{padding-top:10px}header{margin-bottom:8px}h1{font-size:23px}.selectors{margin-bottom:8px}.pagebar{margin:8px 0 10px}.pageBtn{padding:9px}
@@ -320,7 +320,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 </script><main hidden><header class="taxi-header"><div class="taxi-brand"><h1><img src="data:image/jpeg;base64,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" alt="Taxi" class="taxi-brand-icon">Mon Taxi</h1><div class="muted small">V 6/11</div></div><div class="date-bar"><button type="button" id="calendarTrigger" class="calendar-trigger" aria-haspopup="dialog" aria-controls="calendarDialog" aria-expanded="false">—</button></div><button class="button v11-refresh" id="refreshLocal" type="button" aria-label="Actualiser les totaux" title="Actualiser les totaux"><span class="v11-refresh-icon" aria-hidden="true">⟳</span><small id="v11RefreshTime" class="refresh-stamp">—</small></button></header>
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong>Choisir une date</strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-period"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
-<div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div><nav class="carousel-controls" aria-label="Navigation circulaire"><button type="button" id="carouselPrev" aria-label="Page précédente">‹ Précédent</button><span id="carouselPosition" aria-live="polite">1 / 3</span><button type="button" id="carouselNext" aria-label="Page suivante">Suivant ›</button></nav>
+<div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
 <div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">(0 jour)</span></div><div class="value green reference-amount">—</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><div class="taxi-entry taxi-head"><span></span><span></span><span>Total du jour <small class="total-ttc">TTC</small></span></div>
@@ -915,76 +915,60 @@ function renderAnnual(){const root=$("annualRows");root.replaceChildren();let to
 function render(){ensure();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===btn);x.setAttribute("aria-pressed",String(x===btn))});document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.tab))}));document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".pageBtn").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.page));window.scrollTo(0,0)}));
-// Carrousel circulaire : geste horizontal dans les deux sens, avec commandes accessibles.
+// Carrousel tactile circulaire bidirectionnel, sans boutons supplémentaires.
 (function(){
  const pages=["home","details","archive"];
  const main=document.querySelector("main");
- const position=document.getElementById("carouselPosition");
- let gesture=null,pulled=false;
- function currentIndex(){return Math.max(0,pages.indexOf(document.querySelector(".page.active")?.id));}
- function updatePosition(){if(position)position.textContent=(currentIndex()+1)+" / "+pages.length;}
- function navigate(step){
-  const next=pages[(currentIndex()+step+pages.length)%pages.length];
+ let start=null,pulling=false;
+ function clear(){
+  start=null;
+  if(pulling){main.classList.remove("is-pulling");main.style.removeProperty("--pull-offset");pulling=false;}
+ }
+ function move(step){
+  const index=pages.indexOf(document.querySelector(".page.active")?.id);
+  if(index<0)return;
+  const next=pages[(index+step+pages.length)%pages.length];
   document.querySelector('.pageBtn[data-page="'+next+'"]')?.click();
-  updatePosition();
  }
- document.getElementById("carouselPrev")?.addEventListener("click",()=>navigate(-1));
- document.getElementById("carouselNext")?.addEventListener("click",()=>navigate(1));
- document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",updatePosition));
- updatePosition();
- function resetGesture(){
-  gesture=null;
-  if(!pulled)return;
-  main.classList.remove("is-pulling");
-  main.style.removeProperty("--pull-offset");
-  pulled=false;
+ function blocked(target){
+  return target.closest("input,textarea,select,[contenteditable],dialog,[role=slider],.pagebar,.tabs,.taxi-splash");
  }
- function direction(dx,dy){
-  const x=Math.abs(dx),y=Math.abs(dy);
-  if(x>=10&&x>y*1.2)return "horizontal";
-  if(y>=10&&y>x*1.2)return "vertical";
-  return null;
- }
- document.addEventListener("touchstart",e=>{
-  resetGesture();
-  if(e.touches.length!==1||main.hidden||!main.contains(e.target)||
-   document.body.classList.contains("taxi-intro-pending")||
-   document.querySelector("dialog[open]")||document.getElementById("calendarDialog")?.hidden===false||
-   e.target.closest("input,textarea,select,[contenteditable],button,a,[role=slider]"))return;
-  const touch=e.touches[0];
-  gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,axis:null,fromTop:window.scrollY<=0};
+ main.addEventListener("touchstart",e=>{
+  clear();
+  if(e.touches.length!==1||main.hidden||document.body.classList.contains("taxi-intro-pending")||
+   document.querySelector("dialog[open]")||document.getElementById("calendarDialog")?.hidden===false||blocked(e.target))return;
+  const t=e.touches[0];
+  start={id:t.identifier,x:t.clientX,y:t.clientY,axis:null,top:window.scrollY<=0};
  },{passive:true});
- document.addEventListener("touchmove",e=>{
-  if(!gesture)return;
-  const touch=Array.from(e.touches).find(t=>t.identifier===gesture.id);
-  if(!touch||e.touches.length!==1){resetGesture();return;}
-  const dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;
-  gesture.axis??=direction(dx,dy);
-  if(gesture.axis==="horizontal"){
+ main.addEventListener("touchmove",e=>{
+  if(!start||e.touches.length!==1)return;
+  const t=e.touches[0];
+  if(t.identifier!==start.id){clear();return;}
+  const dx=t.clientX-start.x,dy=t.clientY-start.y;
+  if(!start.axis&&Math.max(Math.abs(dx),Math.abs(dy))>=9)start.axis=Math.abs(dx)>Math.abs(dy)*1.12?"horizontal":"vertical";
+  if(start.axis==="horizontal"){
    if(e.cancelable)e.preventDefault();
-   return;
+  }else if(start.axis==="vertical"&&start.top&&window.scrollY<=0&&dy>0&&Math.abs(dy)>Math.abs(dx)*1.25){
+   if(e.cancelable)e.preventDefault();
+   pulling=true;
+   main.classList.add("is-pulling");
+   main.style.setProperty("--pull-offset","0 "+Math.min(dy*.55,72)+"px");
   }
-  if(gesture.axis!=="vertical"||!gesture.fromTop||window.scrollY>0||dy<=0)return;
-  if(e.cancelable)e.preventDefault();
-  pulled=true;
-  main.classList.add("is-pulling");
-  main.style.setProperty("--pull-offset","0 "+Math.min(dy*.55,72)+"px");
  },{passive:false});
- document.addEventListener("touchcancel",resetGesture,{passive:true});
- document.addEventListener("touchend",e=>{
-  const current=gesture;
-  resetGesture();
-  if(!current||e.touches.length)return;
-  const touch=Array.from(e.changedTouches).find(t=>t.identifier===current.id);
-  if(!touch)return;
-  const dx=touch.clientX-current.x,dy=touch.clientY-current.y;
-  const axis=current.axis??direction(dx,dy);
-  if(axis==="vertical"){
-   if(current.fromTop&&window.scrollY<=0&&dy>=75&&dy>Math.abs(dx)*1.25)document.getElementById("refreshLocal")?.click();
-   return;
+ main.addEventListener("touchend",e=>{
+  const gesture=start;
+  clear();
+  if(!gesture||e.touches.length)return;
+  const t=Array.from(e.changedTouches).find(t=>t.identifier===gesture.id);
+  if(!t)return;
+  const dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
+  if(Math.abs(dx)>=38&&Math.abs(dx)>Math.abs(dy)*1.12){
+   move(dx<0?1:-1);
+  }else if(gesture.top&&dy>=75&&Math.abs(dy)>Math.abs(dx)*1.25&&window.scrollY<=0){
+   document.getElementById("refreshLocal")?.click();
   }
-  if(axis==="horizontal"&&Math.abs(dx)>=45&&Math.abs(dx)>Math.abs(dy)*1.2)navigate(dx<0?1:-1);
  },{passive:true});
+ main.addEventListener("touchcancel",clear,{passive:true});
 })();
 const journalAddForm=$("journalAddForm"),journalAddDay=$("journalAddDay");
 const journalAddButtons=[...document.querySelectorAll("[data-journal-add]")];
@@ -1488,7 +1472,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-carousel-controls-20261108";
+const siteBuild="taxi-v6-11-touch-carousel-20261108b";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
