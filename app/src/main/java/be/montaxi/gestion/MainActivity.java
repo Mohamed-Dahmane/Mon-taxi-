@@ -420,17 +420,14 @@ public class MainActivity extends Activity {
     private int appBlur=-1;
     @Override public void onAnimationUpdate(ValueAnimator frame){
      float progress=(float)frame.getAnimatedValue();
-     float photoScale=1f-.92f*progress;
      float appScale=.12f+.88f*smoothStartupPhase(progress,.1f,1f);
-     art.setScaleX(photoScale);
-     art.setScaleY(photoScale);
      web.setScaleX(appScale);
      web.setScaleY(appScale);
      backdrop.setAlpha(1f-smoothStartupPhase(progress,.12f,.85f));
-     art.setAlpha(1f-smoothStartupPhase(progress,.42f,1f));
+     art.setAlpha(1f-smoothStartupPhase(progress,.18f,.95f));
      web.setAlpha(smoothStartupPhase(progress,.1f,.38f));
      if(Build.VERSION.SDK_INT>=31){
-      int nextPhotoBlur=Math.round(12f*smoothStartupPhase(progress,.42f,.88f));
+      int nextPhotoBlur=Math.round(18f*smoothStartupPhase(progress,0f,.88f));
       int nextAppBlur=Math.round(9f*(1f-smoothStartupPhase(progress,.1f,.76f)));
       if(nextPhotoBlur!=photoBlur){
        photoBlur=nextPhotoBlur;

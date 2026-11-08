@@ -231,17 +231,17 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-intro-pending .taxi-splash-art{opacity:0}
 .taxi-entering .taxi-splash-art{animation:taxiSplashEntrance 1.15s ease-in-out both}
 .taxi-opening .taxi-splash::before{animation:taxiSplashFade 1.7s linear both}
-.taxi-opening .taxi-splash-art{animation:taxiSplashShrink 1.7s cubic-bezier(.36,0,.2,1) both}
+.taxi-opening .taxi-splash-art{animation:taxiSplashEvaporate 1.7s cubic-bezier(.36,0,.2,1) both}
 .taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.7s cubic-bezier(.36,0,.2,1) both;pointer-events:none}
 @keyframes taxiSplashEntrance{
  from{transform:translateY(48vh) scale(.025);opacity:.8}
  to{transform:translateY(0) scale(1);opacity:1}
 }
 @keyframes taxiTitleIn{from{transform:translateX(-65%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes taxiSplashShrink{
- 0%{transform:scale(1);filter:blur(0);opacity:1}
- 42%{filter:blur(0);opacity:1}
- 100%{transform:scale(.08);filter:blur(12px);opacity:0}
+@keyframes taxiSplashEvaporate{
+ 0%{filter:blur(0);opacity:1}
+ 48%{filter:blur(9px);opacity:.55}
+ 100%{filter:blur(18px);opacity:0}
 }
 @keyframes taxiSplashFade{0%,15%{opacity:1}35%{opacity:.82}65%{opacity:.22}85%,100%{opacity:0}}
 @keyframes taxiAppGrow{
@@ -1417,7 +1417,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-title-slide";
+const siteBuild="taxi-v6-11-taximo-evaporation";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
