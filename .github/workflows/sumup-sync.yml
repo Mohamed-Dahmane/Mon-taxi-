@@ -13,6 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
+      - name: Record safe trigger diagnostics
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE_EXPRESSION: ${{ github.event.schedule }}
+        run: |
+          echo "Trigger: ${EVENT_NAME}"
+          echo "Scheduled expression: ${SCHEDULE_EXPRESSION:-manual}"
+          echo "Runner started (UTC): $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
       - name: Verify required private configuration
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
