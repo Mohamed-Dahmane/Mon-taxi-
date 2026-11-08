@@ -344,13 +344,17 @@ public class MainActivity extends Activity {
   photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
   GradientDrawable photoFrame=new GradientDrawable();
   photoFrame.setColor(SPLASH_BACKGROUND);
-  photoFrame.setCornerRadius(dp(18));
   photo.setBackground(photoFrame);
   photo.setClipToOutline(true);
   GradientDrawable photoBorder=new GradientDrawable();
-  photoBorder.setCornerRadius(dp(18));
   photoBorder.setStroke(dp(1),0x3294add0);
   photo.setForeground(photoBorder);
+  photo.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
+   float radius=.15f*Math.min(right-left,bottom-top);
+   photoFrame.setCornerRadius(radius);
+   photoBorder.setCornerRadius(radius);
+   photo.invalidateOutline();
+  });
   art.addView(photo,new LinearLayout.LayoutParams(-1,0,1f));
   int labelHeight=dp(58)+dp(26);
   LinearLayout signature=new LinearLayout(this);
