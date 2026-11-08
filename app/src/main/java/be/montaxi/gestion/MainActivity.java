@@ -359,8 +359,8 @@ public class MainActivity extends Activity {
   scene.addView(studio,new FrameLayout.LayoutParams(-1,-1));
 
   FrameLayout vehicle=new FrameLayout(this);
-  vehicle.setScaleX(.76f);
-  vehicle.setScaleY(.76f);
+  vehicle.setScaleX(.84f);
+  vehicle.setScaleY(.84f);
   scene.addView(vehicle,new FrameLayout.LayoutParams(-1,-1));
   GradientDrawable shadowFill=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
    new int[]{0xb0000000,0x50000000,0x00000000});
@@ -478,27 +478,29 @@ public class MainActivity extends Activity {
   };
   cover.postOnAnimation(()->{
    art.setTranslationY(cover.getHeight()*.48f);
-   vehicle.setTranslationY(-.015f*scene.getHeight());
+   float approachOffset=-.01f*scene.getHeight();
+   vehicle.setTranslationY(approachOffset);
    art.setAlpha(.8f);
+   ValueAnimator approach=ValueAnimator.ofFloat(0f,1f);
+   approach.setDuration(SPLASH_ENTRANCE_MS);
+   approach.setInterpolator(new AccelerateDecelerateInterpolator());
+   approach.addUpdateListener(frame->{
+    float progress=(float)frame.getAnimatedValue();
+    float vehicleScale=.84f+.16f*progress;
+    vehicle.setTranslationY(approachOffset*(1f-progress));
+    vehicle.setScaleX(vehicleScale);
+    vehicle.setScaleY(vehicleScale);
+    treads.progress=progress;
+    treads.invalidate();
+   });
+   approach.start();
    art.animate().translationY(0f).scaleX(1f).scaleY(1f).alpha(1f)
     .setDuration(SPLASH_ENTRANCE_MS).setInterpolator(new AccelerateDecelerateInterpolator())
     .withEndAction(()->{
-     ValueAnimator spin=ValueAnimator.ofFloat(0f,1f);
-     spin.setDuration(620L);
-     spin.setInterpolator(new AccelerateDecelerateInterpolator());
-     spin.addUpdateListener(frame->{
-      treads.progress=(float)frame.getAnimatedValue();
-      treads.invalidate();
-     });
-     spin.start();
-     vehicle.animate().translationY(0f).scaleX(1f).scaleY(1f).setDuration(620L)
+     signature.setTranslationX(-.65f*signature.getWidth());
+     signature.animate().translationX(0f).alpha(1f).setDuration(550L)
       .setInterpolator(new AccelerateDecelerateInterpolator())
-      .withEndAction(()->{
-       signature.setTranslationX(-.65f*signature.getWidth());
-       signature.animate().translationX(0f).alpha(1f).setDuration(550L)
-        .setInterpolator(new AccelerateDecelerateInterpolator())
-        .withEndAction(()->shineTitle(title)).start();
-      }).start();
+      .withEndAction(()->shineTitle(title)).start();
      cover.postDelayed(exit,SPLASH_HOLD_MS);
     }).start();
   });
@@ -523,7 +525,7 @@ public class MainActivity extends Activity {
     canvas.clipRect(left,849f,left+73,901f);
     for(float y=837f+offset;y<913f;y+=12f){
      float edge=Math.max(0f,1f-Math.abs(y-875f)/27f);
-     paint.setColor(Color.argb(Math.round(33f*pulse*edge),150,150,150));
+     paint.setColor(Color.argb(Math.round(25f*pulse*edge),150,150,150));
      canvas.drawLine(left+2,y,left+71,y-4f,paint);
     }
     canvas.restore();

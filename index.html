@@ -223,17 +223,17 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-splash-art{position:relative;display:grid;justify-items:center;width:min(calc(100vw - 24px),calc(100vh - 108px));width:min(calc(100vw - 24px),calc(100dvh - 108px))}
 .taxi-splash-scene{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:15%;outline:1px solid #94add015;outline-offset:-1px}
 .taxi-splash-scene img,.taxi-splash-vehicle{position:absolute;inset:0;width:100%;height:100%}
-.taxi-splash-vehicle{transform:translateY(-1.5%) scale(.76)}
+.taxi-splash-vehicle{transform:translateY(-1%) scale(.84)}
 .taxi-splash-vehicle::before{content:"";position:absolute;left:10%;right:10%;top:84%;height:13%;background:radial-gradient(ellipse,#000b 0%,#0005 38%,transparent 72%)}
 .taxi-splash-lockup{display:grid;width:max-content;max-width:100%;opacity:0}
-.taxi-entering .taxi-splash-vehicle{animation:taxiCarRoll .62s ease-in-out 1.15s both}
-.taxi-wheel-treads{position:absolute;top:84.9%;width:7.3%;height:5.2%;opacity:0;pointer-events:none;background:linear-gradient(176deg,transparent 40%,#96969626 48% 55%,transparent 64%);background-size:100% 24%;mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
+.taxi-entering .taxi-splash-vehicle{animation:taxiCarRoll 1.15s ease-in-out both}
+.taxi-wheel-treads{position:absolute;top:84.9%;width:7.3%;height:5.2%;opacity:0;pointer-events:none;background:linear-gradient(176deg,transparent 40%,#96969620 48% 55%,transparent 64%);background-size:100% 24%;mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
 .taxi-wheel-treads.left{left:10.3%}
 .taxi-wheel-treads.right{left:82.4%}
-.taxi-entering .taxi-wheel-treads{animation:taxiWheelRoll .62s ease-in-out 1.15s both}
+.taxi-entering .taxi-wheel-treads{animation:taxiWheelRoll 1.15s ease-in-out both}
 @keyframes taxiWheelRoll{0%{background-position-y:0;opacity:0}45%{opacity:.85}100%{background-position-y:95%;opacity:0}}
-.taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.77s both}
-.taxi-entering .taxi-splash-wordmark{animation:taxiTitleShine .65s ease-in-out 2.32s}
+.taxi-entering .taxi-splash-lockup{animation:taxiTitleIn .55s ease-in-out 1.15s both}
+.taxi-entering .taxi-splash-wordmark{animation:taxiTitleShine .65s ease-in-out 1.7s}
 .taxi-splash-wordmark{height:58px;display:flex;align-items:center;color:#e7d2a6;background:linear-gradient(180deg,#fff3d7 32%,#c3a16b 78%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font:400 clamp(32px,10vw,46px)/1 Georgia,"Times New Roman",serif;letter-spacing:.21em;padding-inline-start:.21em}
 .taxi-splash-version{display:flex;align-items:center;gap:12px;height:26px;color:#bca98c;font:600 11px/1 system-ui,sans-serif;letter-spacing:.15em;white-space:nowrap}
 .taxi-splash-version::before{content:"";flex:1;height:1px;background:#695638}
@@ -247,7 +247,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  from{transform:translateY(48vh) scale(.025);opacity:.8}
  to{transform:translateY(0) scale(1);opacity:1}
 }
-@keyframes taxiCarRoll{from{transform:translateY(-1.5%) scale(.76)}to{transform:translateY(0) scale(1)}}
+@keyframes taxiCarRoll{from{transform:translateY(-1%) scale(.84)}to{transform:translateY(0) scale(1)}}
 @keyframes taxiTitleShine{
  0%,100%{filter:drop-shadow(0 0 0 transparent)}
  48%{filter:drop-shadow(0 0 8px #ffe2aab4)}
@@ -1432,7 +1432,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-photo-finish";
+const siteBuild="taxi-v6-11-taximo-sync-approach";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
