@@ -49,7 +49,6 @@ public class MainActivity extends Activity {
  private Bitmap splashPhoto;
  private Bitmap splashStudio;
  private static final long SPLASH_ENTRANCE_MS=1150L;
- private static final long SPLASH_HOLD_MS=2100L;
  private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
@@ -275,7 +274,7 @@ public class MainActivity extends Activity {
     return WindowInsets.CONSUMED;
    });
   }
-  boolean showPhoto=splashPhoto!=null&&ValueAnimator.areAnimatorsEnabled();
+  boolean showPhoto=splashPhoto!=null;
   if(showPhoto)showStartupPhoto(content);
   setContentView(content);
   content.requestApplyInsets();
@@ -381,7 +380,7 @@ public class MainActivity extends Activity {
    shadow.setTranslationY(.405f*side);
   });
   art.addView(scene,new LinearLayout.LayoutParams(-1,0,1f));
-  int labelHeight=dp(58)+dp(26)+dp(27);
+  int labelHeight=dp(58)+dp(26)+dp(27)+dp(28);
   LinearLayout signature=new LinearLayout(this);
   signature.setOrientation(LinearLayout.VERTICAL);
   signature.setAlpha(0f);
@@ -423,6 +422,9 @@ public class MainActivity extends Activity {
   LinearLayout.LayoutParams cityRow=new LinearLayout.LayoutParams(-2,dp(27));
   cityRow.gravity=Gravity.CENTER_HORIZONTAL;
   signature.addView(cityMark,cityRow);
+  TextView continueHint=lockText("Appuie pour ouvrir",12,0xffbca98c);
+  continueHint.setVisibility(View.INVISIBLE);
+  signature.addView(continueHint,new LinearLayout.LayoutParams(-1,dp(28)));
   FrameLayout cover=new FrameLayout(this){
    @Override protected void onMeasure(int widthSpec,int heightSpec){
     int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight)-dp(24));
@@ -509,8 +511,18 @@ public class MainActivity extends Activity {
      signature.setTranslationX(-.65f*signature.getWidth());
      signature.animate().translationX(0f).alpha(1f).setDuration(550L)
       .setInterpolator(new AccelerateDecelerateInterpolator())
-      .withEndAction(()->shineTitle(title)).start();
-     cover.postDelayed(exit,SPLASH_HOLD_MS);
+      .withEndAction(()->{
+       if(!cover.isAttachedToWindow())return;
+       shineTitle(title);
+       continueHint.setVisibility(View.VISIBLE);
+       cover.setContentDescription("Appuie pour ouvrir Mon Taxi");
+       cover.setFocusable(true);
+       cover.setOnClickListener(view->{
+        cover.setOnClickListener(null);
+        cover.setFocusable(false);
+        exit.run();
+       });
+      }).start();
     }).start();
   });
  }
