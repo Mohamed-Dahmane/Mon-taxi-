@@ -256,7 +256,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
     splash.addEventListener("animationend",event=>{if(event.target===splash)finish()});
     document.body.classList.add("taxi-opening");
     timeout=setTimeout(finish,1850);
-   },2800);
+   },2600);
   }));
  },finish);
 })();
@@ -1397,7 +1397,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-signature";
+const siteBuild="taxi-v6-11-taximo-2600";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
