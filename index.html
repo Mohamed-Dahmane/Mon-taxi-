@@ -1019,6 +1019,8 @@ $("privateRetry").onclick=()=>{
 };
 if(privateSession?.access_token||new URLSearchParams(location.hash.slice(1)).has("access_token")){
  showPrivateResume("Ouverture de ta session…");
+ // Ne jamais laisser un écran de connexion sans action si le réseau se bloque.
+ setTimeout(()=>{if(!privateGate.hidden&&$("privateResumeStatus").textContent==="Ouverture de ta session…")showPrivateResume("Connexion trop lente. Tu peux réessayer ou te reconnecter.",{retry:true,reconnect:true})},9000);
 }else if(window.TaxiDownload){
  showPrivateResume("Une connexion est nécessaire pour ouvrir Mon Taxi.",{reconnect:true});
 }
@@ -1094,7 +1096,7 @@ async function loadPrivatePayments(){
   }
   const rows=[];
   for(let offset=0;;offset+=1000){
-   const response=await fetch(privateApi+"/rest/v1/taxi_sumup_transactions?select=local_day,amount_cents,status,updated_at&order=transaction_id&offset="+offset+"&limit=1000",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},cache:"no-store"});
+   const response=await fetch(privateApi+"/rest/v1/taxi_sumup_transactions?select=local_day,amount_cents,status,updated_at&order=transaction_id&offset="+offset+"&limit=1000",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},cache:"no-store",signal:AbortSignal.timeout(8000)});
    if(!response.ok)throw Error("Accès privé refusé. Reconnecte-toi.");
    const page=await response.json();rows.push(...page);if(page.length<1000)break;
   }
