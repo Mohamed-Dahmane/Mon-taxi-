@@ -453,10 +453,14 @@ public class MainActivity extends Activity {
    art.animate().translationY(0f).scaleX(1f).scaleY(1f).alpha(1f)
     .setDuration(SPLASH_ENTRANCE_MS).setInterpolator(new AccelerateDecelerateInterpolator())
     .withEndAction(()->{
-     signature.setTranslationX(-.65f*signature.getWidth());
-     signature.animate().translationX(0f).alpha(1f).setDuration(550L)
+     photo.animate().scaleX(1.045f).scaleY(1.045f).setDuration(420L)
       .setInterpolator(new AccelerateDecelerateInterpolator())
-      .withEndAction(()->shineTitle(title)).start();
+      .withEndAction(()->{
+       signature.setTranslationX(-.65f*signature.getWidth());
+       signature.animate().translationX(0f).alpha(1f).setDuration(550L)
+        .setInterpolator(new AccelerateDecelerateInterpolator())
+        .withEndAction(()->shineTitle(title)).start();
+      }).start();
      cover.postDelayed(exit,SPLASH_HOLD_MS);
     }).start();
   });
