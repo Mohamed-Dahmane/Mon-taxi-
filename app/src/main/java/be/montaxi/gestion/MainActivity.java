@@ -24,6 +24,8 @@ import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,8 +41,8 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
- private static final long SPLASH_HOLD_MS=1700L;
- private static final long SPLASH_TRANSITION_MS=1100L;
+ private static final long SPLASH_HOLD_MS=2300L;
+ private static final long SPLASH_TRANSITION_MS=1400L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
  private SharedPreferences vault;
@@ -319,24 +321,56 @@ public class MainActivity extends Activity {
   web.onResume();
  }
  private void showStartupPhoto(FrameLayout content){
-  FrameLayout cover=new FrameLayout(this);
-  cover.setBackgroundColor(SPLASH_BACKGROUND);
-  cover.setClickable(true);
+  LinearLayout art=new LinearLayout(this);
+  art.setOrientation(LinearLayout.VERTICAL);
   ImageView photo=new ImageView(this);
   photo.setImageBitmap(splashPhoto);
   photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-  cover.addView(photo,new FrameLayout.LayoutParams(-1,-1));
+  art.addView(photo,new LinearLayout.LayoutParams(-1,0,1f));
+  int labelHeight=dp(56);
+  TextView title=lockText("TAXIMO",28,0xffedf4ff);
+  title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+  title.setLetterSpacing(.28f);
+  title.setShadowLayer(dp(7),0,0,0x806ba8ff);
+  art.addView(title,new LinearLayout.LayoutParams(-1,labelHeight));
+  FrameLayout cover=new FrameLayout(this){
+   @Override protected void onMeasure(int widthSpec,int heightSpec){
+    int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight));
+    FrameLayout.LayoutParams size=(FrameLayout.LayoutParams)art.getLayoutParams();
+    size.width=side;
+    size.height=side+labelHeight;
+    super.onMeasure(widthSpec,heightSpec);
+   }
+  };
+  cover.setBackgroundColor(SPLASH_BACKGROUND);
+  cover.setClickable(true);
+  cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
   cover.postOnAnimation(()->cover.postDelayed(()->{
    if(!cover.isAttachedToWindow())return;
-   AccelerateDecelerateInterpolator easing=new AccelerateDecelerateInterpolator();
-   web.setScaleX(.12f);
-   web.setScaleY(.12f);
-   web.animate().scaleX(1f).scaleY(1f).setDuration(SPLASH_TRANSITION_MS).setInterpolator(easing).start();
-   photo.animate().scaleX(.08f).scaleY(.08f).setDuration(SPLASH_TRANSITION_MS).setInterpolator(easing).start();
-   cover.animate().alpha(0f).setDuration(SPLASH_TRANSITION_MS).setInterpolator(easing)
-    .withEndAction(()->content.removeView(cover)).start();
+   ValueAnimator transition=ValueAnimator.ofFloat(0f,1f);
+   transition.setDuration(SPLASH_TRANSITION_MS);
+   transition.setInterpolator(new AccelerateDecelerateInterpolator());
+   transition.addUpdateListener(frame->{
+    float progress=(float)frame.getAnimatedValue();
+    float photoScale=1f-.92f*progress;
+    float appScale=.12f+.88f*progress;
+    art.setScaleX(photoScale);
+    art.setScaleY(photoScale);
+    web.setScaleX(appScale);
+    web.setScaleY(appScale);
+    cover.setAlpha(1f-Math.max(0f,(progress-.2f)/.8f));
+    if(Build.VERSION.SDK_INT>=31){
+     setStartupBlur(art,dp(14)*Math.max(0f,(progress-.35f)/.65f));
+     setStartupBlur(web,dp(10)*(1f-progress));
+    }
+    if(progress>=1f)content.removeView(cover);
+   });
+   transition.start();
   },SPLASH_HOLD_MS));
+ }
+ private void setStartupBlur(View view,float radius){
+  view.setRenderEffect(radius>0f?RenderEffect.createBlurEffect(radius,radius,Shader.TileMode.CLAMP):null);
  }
  @Override protected void onPause(){
   super.onPause();
