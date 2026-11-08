@@ -20,7 +20,13 @@ import android.text.InputType;
 import android.webkit.*;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.animation.ValueAnimator;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import java.io.IOException;
+import java.io.InputStream;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.widget.*;
@@ -32,6 +38,10 @@ import android.util.Base64;
 
 public class MainActivity extends Activity {
  private WebView web;
+ private Bitmap splashPhoto;
+ private static final long SPLASH_HOLD_MS=1700L;
+ private static final long SPLASH_TRANSITION_MS=1100L;
+ private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
@@ -54,6 +64,11 @@ public class MainActivity extends Activity {
   getWindow().getDecorView().setSystemUiVisibility(0);
   getWindow().setStatusBarColor(Color.rgb(17,24,39));
   showLock();
+  try(InputStream image=getAssets().open("app/mercedes-splash.webp")){
+   splashPhoto=BitmapFactory.decodeStream(image);
+  }catch(IOException ignored){
+   // L'interface web conserve son propre écran de démarrage.
+  }
  }
  private byte[] derive(char[] pin,byte[] salt) throws Exception {
   PBEKeySpec spec=new PBEKeySpec(pin,salt,210000,256);
@@ -236,6 +251,11 @@ public class MainActivity extends Activity {
   touchSession();
   if(web==null){
    web=new WebView(this);
+   web.setBackgroundColor(SPLASH_BACKGROUND);
+   if(splashPhoto!=null){
+    WebSettings settings=web.getSettings();
+    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
+   }
    web.setWebViewClient(new WebViewClient(){
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame())view.loadUrl("file:///android_asset/index.html");}
     @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith(APP_URL);}
@@ -278,26 +298,45 @@ public class MainActivity extends Activity {
   // Toujours charger la dernière version en ligne après déverrouillage.
   if(web.getUrl()==null)web.loadUrl(APP_URL);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
+  FrameLayout content=new FrameLayout(this);
+  content.setBackgroundColor(SPLASH_BACKGROUND);
   if(Build.VERSION.SDK_INT>=30){
    // Réserver les barres système et la découpe en mode bord à bord.
    getWindow().setDecorFitsSystemWindows(false);
    android.view.WindowInsetsController controller=getWindow().getInsetsController();
    if(controller!=null)controller.show(WindowInsets.Type.statusBars());
-   FrameLayout content=new FrameLayout(this);
-   content.setBackgroundColor(Color.rgb(11,16,32));
    content.setOnApplyWindowInsetsListener((view,insets)->{
     android.graphics.Insets safe=insets.getInsets(
      WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());
     view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
     return WindowInsets.CONSUMED;
    });
-   content.addView(web,new FrameLayout.LayoutParams(-1,-1));
-   setContentView(content);
-   content.requestApplyInsets();
-  }else{
-   setContentView(web);
   }
+  content.addView(web,new FrameLayout.LayoutParams(-1,-1));
+  if(splashPhoto!=null&&ValueAnimator.areAnimatorsEnabled())showStartupPhoto(content);
+  setContentView(content);
+  content.requestApplyInsets();
   web.onResume();
+ }
+ private void showStartupPhoto(FrameLayout content){
+  FrameLayout cover=new FrameLayout(this);
+  cover.setBackgroundColor(SPLASH_BACKGROUND);
+  cover.setClickable(true);
+  ImageView photo=new ImageView(this);
+  photo.setImageBitmap(splashPhoto);
+  photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+  cover.addView(photo,new FrameLayout.LayoutParams(-1,-1));
+  content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
+  cover.postOnAnimation(()->cover.postDelayed(()->{
+   if(!cover.isAttachedToWindow())return;
+   AccelerateDecelerateInterpolator easing=new AccelerateDecelerateInterpolator();
+   web.setScaleX(.12f);
+   web.setScaleY(.12f);
+   web.animate().scaleX(1f).scaleY(1f).setDuration(SPLASH_TRANSITION_MS).setInterpolator(easing).start();
+   photo.animate().scaleX(.08f).scaleY(.08f).setDuration(SPLASH_TRANSITION_MS).setInterpolator(easing).start();
+   cover.animate().alpha(0f).setDuration(SPLASH_TRANSITION_MS).setInterpolator(easing)
+    .withEndAction(()->content.removeView(cover)).start();
+  },SPLASH_HOLD_MS));
  }
  @Override protected void onPause(){
   super.onPause();

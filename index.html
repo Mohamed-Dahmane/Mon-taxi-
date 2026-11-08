@@ -218,19 +218,22 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 
 /* La photo reste immobile avant le passage à Mon Taxi. */
 .taxi-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#101114;touch-action:none}
-.taxi-splash[hidden]{display:none}
+@media(prefers-reduced-motion:reduce){.taxi-splash{display:none}}
 .taxi-splash img{width:100%;height:100%;min-height:0;object-fit:contain}
-.taxi-opening .taxi-splash{animation:taxiSplashFade .8s ease-in-out both}
-.taxi-opening .taxi-splash img{animation:taxiSplashShrink .8s cubic-bezier(.4,0,.2,1) both}
-.taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow .8s cubic-bezier(.4,0,.2,1) both;pointer-events:none}
+.taxi-opening .taxi-splash{animation:taxiSplashFade 1.1s ease-in-out both}
+.taxi-opening .taxi-splash img{animation:taxiSplashShrink 1.1s cubic-bezier(.4,0,.2,1) both}
+.taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.1s cubic-bezier(.4,0,.2,1) both;pointer-events:none}
 @keyframes taxiSplashShrink{to{transform:scale(.08)}}
 @keyframes taxiSplashFade{0%,20%{opacity:1}100%{opacity:0}}
 @keyframes taxiAppGrow{from{transform:scale(.12)}to{transform:scale(1)}}
-</style></head><body><div id="taxiSplash" class="taxi-splash" aria-hidden="true" hidden><img src="app/mercedes-splash.webp" alt="" fetchpriority="high"></div>
+</style></head><body><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><img src="app/mercedes-splash.webp" alt="" fetchpriority="high"></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), picture=splash.querySelector("img");
- if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ if(navigator.userAgent.includes("MonTaxiNativeSplash")||matchMedia("(prefers-reduced-motion: reduce)").matches){
+  splash.remove();
+  return;
+ }
  let finished=false,timeout;
  const finish=()=>{
   finished=true;
@@ -242,13 +245,12 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  picture.decode().then(()=>{
   if(finished)return;
   clearTimeout(timeout);
-  splash.hidden=false;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
    setTimeout(()=>{
     splash.addEventListener("animationend",event=>{if(event.target===splash)finish()});
     document.body.classList.add("taxi-opening");
-    timeout=setTimeout(finish,950);
-   },1200);
+    timeout=setTimeout(finish,1250);
+   },1700);
   }));
  },finish);
 })();
@@ -1389,7 +1391,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-mercedes-hd-montants";
+const siteBuild="taxi-v6-11-mercedes-1700-1100";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
