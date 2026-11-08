@@ -1023,7 +1023,7 @@ $("privateRetry").onclick=()=>{
 if(privateSession?.access_token||new URLSearchParams(location.hash.slice(1)).has("access_token")){
  showPrivateResume("Ouverture de ta session…");
  // Ne jamais laisser un écran de connexion sans action si le réseau se bloque.
- setTimeout(()=>{if(!privateGate.hidden&&$("privateResumeStatus").textContent==="Ouverture de ta session…")showPrivateResume("Connexion trop lente. Tu peux réessayer ou te reconnecter.",{retry:true,reconnect:true})},9000);
+ setTimeout(()=>{if(!privateGate.hidden&&$("privateResumeStatus").textContent==="Ouverture de ta session…")showPrivateResume("Connexion trop lente. Tu peux réessayer ou te reconnecter.",{retry:true,reconnect:true})},5000);
 }else if(window.TaxiDownload){
  showPrivateResume("Une connexion est nécessaire pour ouvrir Mon Taxi.",{reconnect:true});
 }
@@ -1345,7 +1345,8 @@ $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie
  }lastEntry=null;save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();showQuickDay();toast("Dernière saisie annulée")});
 $("refreshLocal").addEventListener("click",()=>{selectToday(new Date());markRefreshed();checkPublishedBuild();toast("Totaux actualisés · "+months[Number(monthSel.value)]+" "+yearSel.value)});
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
-save();render();markRefreshed();
+// Une erreur de rendu ne doit jamais empêcher l'initialisation de la session.
+try{render();markRefreshed();}catch(error){console.error("Affichage initial différé",error)}
 document.querySelector("main").hidden=true;
 const logout=document.createElement("button");logout.className="button secondary";logout.textContent="Déconnexion";
 logout.onclick=async()=>{const session=privateSession;privateSession=null;sumupRows=[];sumupReady=false;localStorage.removeItem("taxi-private-session");showPrivateForm();document.querySelector("main").hidden=true;if(session)fetch(privateApi+"/auth/v1/logout",{method:"POST",headers:{apikey:privateKey,Authorization:"Bearer "+session.access_token}}).catch(()=>{});};
@@ -1355,8 +1356,9 @@ if(callback.get("access_token")){const session={access_token:callback.get("acces
 else if(privateSession){
  // Afficher immédiatement les données locales; la synchronisation est asynchrone.
  document.querySelector("main").hidden=false;privateGate.hidden=true;
- checkCloudSync().catch(e=>console.warn("Synchronisation différée",e));
+ // Ne pas lancer deux lectures lourdes simultanément au premier affichage.
  loadPrivatePayments();
+ setTimeout(()=>checkCloudSync().catch(e=>console.warn("Synchronisation différée",e)),1200);
 }
 setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
