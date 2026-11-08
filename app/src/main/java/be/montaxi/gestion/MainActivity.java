@@ -45,7 +45,7 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
- private static final long SPLASH_HOLD_MS=2400L;
+ private static final long SPLASH_HOLD_MS=2300L;
  private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
@@ -413,14 +413,14 @@ public class MainActivity extends Activity {
     private int appBlur=-1;
     @Override public void onAnimationUpdate(ValueAnimator frame){
      float progress=(float)frame.getAnimatedValue();
-     float photoScale=1f-.92f*smoothStartupPhase(progress,0f,.88f);
+     float photoScale=1f-.92f*progress;
      float appScale=.12f+.88f*smoothStartupPhase(progress,.1f,1f);
      art.setScaleX(photoScale);
      art.setScaleY(photoScale);
      web.setScaleX(appScale);
      web.setScaleY(appScale);
      backdrop.setAlpha(1f-smoothStartupPhase(progress,.12f,.85f));
-     art.setAlpha(1f-smoothStartupPhase(progress,.42f,.88f));
+     art.setAlpha(1f-smoothStartupPhase(progress,.42f,1f));
      web.setAlpha(smoothStartupPhase(progress,.1f,.38f));
      if(Build.VERSION.SDK_INT>=31){
       int nextPhotoBlur=Math.round(12f*smoothStartupPhase(progress,.42f,.88f));
