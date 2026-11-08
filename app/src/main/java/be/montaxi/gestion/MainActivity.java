@@ -52,7 +52,8 @@ public class MainActivity extends Activity {
  private static final long SPLASH_ENTRANCE_MS=1150L;
  private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
- private boolean credentialPrompt;
+ private boolean credentialPrompt, credentialOffered, autoPromptPending, resumed;
+ private TextView lockAction;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
  private static final long IDLE_TIMEOUT_MS=60000L;
@@ -101,9 +102,31 @@ public class MainActivity extends Activity {
  private void showLock() {
   FrameLayout content=createTaxiContent();
   unlockContent=content;
+  credentialOffered=false;
+  autoPromptPending=true;
   revealHome=showStartupPhoto(content);
   setContentView(content);
   content.requestApplyInsets();
+  scheduleFingerprint();
+ }
+ private void scheduleFingerprint(){
+  FrameLayout content=unlockContent;
+  if(!resumed||!autoPromptPending||content==null)return;
+  content.postOnAnimation(()->{
+   if(!resumed||!autoPromptPending||unlockContent!=content)return;
+   autoPromptPending=false;
+   authenticate();
+  });
+ }
+ private void showLockAction(boolean offerCode){
+  if(lockAction==null)return;
+  credentialOffered=offerCode;
+  lockAction.setText(offerCode?"Utiliser le code Samsung":"Réessayer l’empreinte");
+  lockAction.setOnClickListener(view->{
+   if(credentialOffered)deviceCredential();
+   else authenticate();
+  });
+  lockAction.setVisibility(View.VISIBLE);
  }
  private boolean canUseFingerprint(){
   if(Build.VERSION.SDK_INT<30)return false;
@@ -114,11 +137,12 @@ public class MainActivity extends Activity {
  private void authenticate(){
   if(prompting||unlocked)return;
   if(canUseFingerprint())showSystemPrompt(false);
-  else deviceCredential();
+  else showLockAction(true);
  }
  private void showSystemPrompt(boolean useCode){
   prompting=true;
   credentialPrompt=useCode;
+  if(lockAction!=null)lockAction.setVisibility(View.INVISIBLE);
   CancellationSignal attempt=new CancellationSignal();
   biometric=attempt;
   BiometricPrompt.Builder builder=new BiometricPrompt.Builder(this).setTitle("Ouvrir Mon Taxi")
@@ -126,7 +150,12 @@ public class MainActivity extends Activity {
     BiometricManager.Authenticators.BIOMETRIC_STRONG);
   if(!useCode){
    builder.setSubtitle("Utilise ton empreinte")
-    .setNegativeButton("Code Samsung",getMainExecutor(),(dialog,which)->fallbackToCredential(attempt));
+    .setNegativeButton("Annuler",getMainExecutor(),(dialog,which)->{
+     if(biometric!=attempt)return;
+     biometric=null;
+     prompting=false;
+     showLockAction(false);
+    });
   }
   builder.build().authenticate(attempt,getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){
    private int failedScans;
@@ -135,34 +164,33 @@ public class MainActivity extends Activity {
     biometric=null;
     prompting=false;
     credentialPrompt=false;
+    lockAction=null;
     openTaxi();
    }
    @Override public void onAuthenticationFailed(){
-    if(!useCode&&biometric==attempt&&++failedScans>=3)fallbackToCredential(attempt);
+    if(!useCode&&biometric==attempt&&++failedScans>=3)offerCredential(attempt);
    }
    @Override public void onAuthenticationError(int code,CharSequence message){
     if(biometric!=attempt)return;
-    if(!useCode&&code!=BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
-      &&code!=BiometricPrompt.BIOMETRIC_ERROR_CANCELED){
-     fallbackToCredential(attempt);
-     return;
-    }
+    boolean canceled=code==BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
+     ||code==BiometricPrompt.BIOMETRIC_ERROR_CANCELED
+     ||code==BiometricPrompt.BIOMETRIC_ERROR_NEGATIVE_BUTTON;
     biometric=null;
     prompting=false;
     credentialPrompt=false;
-    if(useCode&&code!=BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
-      &&code!=BiometricPrompt.BIOMETRIC_ERROR_CANCELED){
+    showLockAction(useCode||!canceled);
+    if(useCode&&!canceled){
      Toast.makeText(MainActivity.this,message,Toast.LENGTH_LONG).show();
     }
    }
   });
  }
- private void fallbackToCredential(CancellationSignal attempt){
+ private void offerCredential(CancellationSignal attempt){
   if(biometric!=attempt)return;
   biometric=null;
   prompting=false;
   attempt.cancel();
-  deviceCredential();
+  showLockAction(true);
  }
  private void deviceCredential(){
   if(prompting||unlocked)return;
@@ -361,12 +389,8 @@ public class MainActivity extends Activity {
   TextView city=lockText("Bruxelles Mobility",13,0xffe7d2a6);
   city.setLetterSpacing(.08f);
   signature.addView(city,new LinearLayout.LayoutParams(-1,dp(27)));
-  boolean fingerprintAvailable=canUseFingerprint();
-  TextView continueHint=lockText(fingerprintAvailable?"Appuie pour t’identifier":"Appuie pour utiliser le code Samsung",12,0xffbca98c);
-  if(fingerprintAvailable){
-   continueHint.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.taximo_fingerprint,0,0,0);
-   continueHint.setCompoundDrawablePadding(dp(7));
-  }
+  TextView continueHint=lockText("",12,0xffbca98c);
+  lockAction=continueHint;
   continueHint.setVisibility(View.INVISIBLE);
   LinearLayout.LayoutParams hintSize=new LinearLayout.LayoutParams(-2,dp(28));
   hintSize.gravity=Gravity.CENTER_HORIZONTAL;
@@ -396,9 +420,8 @@ public class MainActivity extends Activity {
   cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
   Runnable exit=()->{
-   if(!cover.isAttachedToWindow()||!unlocked)return;
-   cover.setOnClickListener(null);
-   cover.setFocusable(false);
+   if(!cover.isAttachedToWindow()||!unlocked||signature.getAlpha()<1f)return;
+   if(web!=null&&web.getVisibility()==View.VISIBLE)return;
    continueHint.setVisibility(View.INVISIBLE);
    if(web==null){
     content.removeView(cover);
@@ -469,10 +492,7 @@ public class MainActivity extends Activity {
       .withEndAction(()->{
        if(!cover.isAttachedToWindow())return;
        shineTitle(title);
-       continueHint.setVisibility(View.VISIBLE);
-       cover.setContentDescription(continueHint.getText());
-       cover.setFocusable(true);
-       cover.setOnClickListener(view->authenticate());
+       if(unlocked)exit.run();
       }).start();
     }).start();
   });
@@ -524,17 +544,19 @@ public class MainActivity extends Activity {
  }
  @Override protected void onPause(){
   super.onPause();
+  resumed=false;
   backgroundAt=SystemClock.elapsedRealtime();
   idleHandler.removeCallbacks(idleCheck);
  }
  @Override protected void onResume(){
   super.onResume();
+  resumed=true;
   long timeAway=backgroundAt<0L?0L:SystemClock.elapsedRealtime()-backgroundAt;
   backgroundAt=-1L;
   if(unlocked){
    if(timeAway>=IDLE_TIMEOUT_MS)lockTaxi();
    else touchSession();
-  }
+  }else scheduleFingerprint();
  }
  @Override protected void onStop(){
   super.onStop();
@@ -543,6 +565,7 @@ public class MainActivity extends Activity {
    CancellationSignal attempt=biometric;
    biometric=null;
    prompting=false;
+   autoPromptPending=true;
    attempt.cancel();
   }
  }
