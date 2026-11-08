@@ -420,7 +420,7 @@ async function checkCloudSync(){
  try{
   if(privateSession.expires_at&&privateSession.expires_at*1000<Date.now()+60000)await renewPrivateSession();
   const response=await fetch(privateApi+"/rest/v1/taxi_management_backups?select=id,snapshot&order=id.desc&limit=1",{
-   headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},cache:"no-store"
+   headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},cache:"no-store",signal:AbortSignal.timeout(8000)
   });
   if(!response.ok)throw Error("Lecture synchronisation : "+response.status);
   const rows=await response.json(),latest=rows[0];
@@ -1101,7 +1101,7 @@ async function loadPrivatePayments(){
    const page=await response.json();rows.push(...page);if(page.length<1000)break;
   }
   // RLS returns no rows for any unapproved account.
-  const userResponse=await fetch(privateApi+"/auth/v1/user",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token}});
+  const userResponse=await fetch(privateApi+"/auth/v1/user",{headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token},signal:AbortSignal.timeout(8000)});
   if(!userResponse.ok)throw Error("Session expirée. Reconnecte-toi.");
   // Aucun encaissement est un résultat valide : ne pas bloquer l’ouverture.
   sumupRows=rows;sumupReady=true;renderArchive();privateGate.hidden=true;
@@ -1352,7 +1352,8 @@ if(callback.get("access_token")){const session={access_token:callback.get("acces
 else if(privateSession){
  // Afficher immédiatement les données locales; la synchronisation est asynchrone.
  document.querySelector("main").hidden=false;privateGate.hidden=true;
- checkCloudSync().finally(()=>loadPrivatePayments());
+ checkCloudSync().catch(e=>console.warn("Synchronisation différée",e));
+ loadPrivatePayments();
 }
 setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
