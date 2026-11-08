@@ -51,8 +51,10 @@ public class MainActivity extends Activity {
  private Bitmap splashStudio;
  private static final long SPLASH_ENTRANCE_MS=1150L;
  private static final long SPLASH_TRANSITION_MS=1700L;
+ private static final long SPLASH_FINGERPRINT_HOLD_MS=1000L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt, credentialOffered, autoPromptPending, resumed;
+ private boolean unlockedWithFingerprint;
  private TextView lockAction;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
@@ -174,7 +176,7 @@ public class MainActivity extends Activity {
     prompting=false;
     credentialPrompt=false;
     lockAction=null;
-    openTaxi();
+    openTaxi(!useCode);
    }
    @Override public void onAuthenticationFailed(){
     if(!useCode&&biometric==attempt&&++failedScans>=3)offerCredential(attempt);
@@ -275,7 +277,9 @@ public class MainActivity extends Activity {
   }
   return content;
  }
- private void openTaxi() {
+ private void openTaxi(){openTaxi(false);}
+ private void openTaxi(boolean withFingerprint) {
+  unlockedWithFingerprint=withFingerprint;
   unlocked=true;
   touchSession();
   FrameLayout content=unlockContent;
@@ -440,6 +444,7 @@ public class MainActivity extends Activity {
    web.setVisibility(View.VISIBLE);
    ValueAnimator transition=ValueAnimator.ofFloat(0f,1f);
    transition.setDuration(SPLASH_TRANSITION_MS);
+   if(unlockedWithFingerprint)transition.setStartDelay(SPLASH_FINGERPRINT_HOLD_MS);
    transition.setInterpolator(new AccelerateDecelerateInterpolator());
    transition.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
     private int photoBlur;
