@@ -350,7 +350,7 @@ public class MainActivity extends Activity {
   scene.setBackground(photoFrame);
   scene.setClipToOutline(true);
   GradientDrawable photoBorder=new GradientDrawable();
-  photoBorder.setStroke(dp(1),0x3294add0);
+  photoBorder.setStroke(dp(1),0x1594add0);
   scene.setForeground(photoBorder);
 
   ImageView studio=new ImageView(this);
@@ -363,11 +363,11 @@ public class MainActivity extends Activity {
   vehicle.setScaleY(.76f);
   scene.addView(vehicle,new FrameLayout.LayoutParams(-1,-1));
   GradientDrawable shadowFill=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-   new int[]{0xcc000000,0x00000000});
+   new int[]{0xb0000000,0x50000000,0x00000000});
   shadowFill.setGradientType(GradientDrawable.RADIAL_GRADIENT);
   View shadow=new View(this);
   shadow.setBackground(shadowFill);
-  shadow.setScaleY(.19f);
+  shadow.setScaleY(.16f);
   vehicle.addView(shadow,new FrameLayout.LayoutParams(-1,-1));
   ImageView photo=new ImageView(this);
   photo.setImageBitmap(splashPhoto);
@@ -516,14 +516,14 @@ public class MainActivity extends Activity {
    if(pulse<=0f)return;
    canvas.save();
    canvas.scale(getWidth()/1000f,getHeight()/1000f);
-   paint.setStrokeWidth(2f);
+   paint.setStrokeWidth(1.4f);
    float offset=(progress*72f)%12f;
    for(int left:treadPositions){
     canvas.save();
     canvas.clipRect(left,849f,left+73,901f);
     for(float y=837f+offset;y<913f;y+=12f){
      float edge=Math.max(0f,1f-Math.abs(y-875f)/27f);
-     paint.setColor(Color.argb(Math.round(70f*pulse*edge),144,157,172));
+     paint.setColor(Color.argb(Math.round(33f*pulse*edge),150,150,150));
      canvas.drawLine(left+2,y,left+71,y-4f,paint);
     }
     canvas.restore();
