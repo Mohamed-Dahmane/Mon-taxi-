@@ -27,6 +27,7 @@ import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -340,19 +341,33 @@ public class MainActivity extends Activity {
   photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
   art.addView(photo,new LinearLayout.LayoutParams(-1,0,1f));
   int labelHeight=dp(58)+dp(26);
-  TextView title=lockText("TAXIMO",44,0xffedf4ff);
-  title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-  title.setLetterSpacing(.2f);
-  title.setShadowLayer(dp(7),0,0,0x806ba8ff);
-  art.addView(title,new LinearLayout.LayoutParams(-1,dp(58)));
+  LinearLayout signature=new LinearLayout(this);
+  signature.setOrientation(LinearLayout.VERTICAL);
+  LinearLayout.LayoutParams signatureSize=new LinearLayout.LayoutParams(-2,labelHeight);
+  signatureSize.gravity=Gravity.CENTER_HORIZONTAL;
+  art.addView(signature,signatureSize);
+  TextView title=lockText("TAXIMO",44,0xffe4edf9);
+  title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+  title.setLetterSpacing(.21f);
+  title.getPaint().setShader(new LinearGradient(0f,0f,0f,title.getTextSize(),
+   0xfff7faff,0xffb8cbe4,Shader.TileMode.CLAMP));
+  signature.addView(title,new LinearLayout.LayoutParams(-2,dp(58)));
   String versionName="";
   try{versionName=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
   catch(PackageManager.NameNotFoundException ignored){}
-  TextView version=lockText(versionName,12,0xffaebed5);
-  version.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);
-  version.setLetterSpacing(.14f);
-  version.setAlpha(0f);
-  art.addView(version,new LinearLayout.LayoutParams(-1,dp(26)));
+  LinearLayout versionRow=new LinearLayout(this);
+  versionRow.setGravity(Gravity.CENTER_VERTICAL);
+  versionRow.setAlpha(0f);
+  signature.addView(versionRow,new LinearLayout.LayoutParams(-1,dp(26)));
+  View rule=new View(this);
+  rule.setBackgroundColor(0xff35465e);
+  LinearLayout.LayoutParams ruleSize=new LinearLayout.LayoutParams(0,dp(1),1f);
+  ruleSize.setMarginEnd(dp(12));
+  versionRow.addView(rule,ruleSize);
+  TextView version=lockText(versionName,11,0xff96adca);
+  version.setLetterSpacing(.15f);
+  version.setSingleLine(true);
+  versionRow.addView(version,new LinearLayout.LayoutParams(-2,-2));
   FrameLayout cover=new FrameLayout(this){
    @Override protected void onMeasure(int widthSpec,int heightSpec){
     int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight));
@@ -366,7 +381,7 @@ public class MainActivity extends Activity {
   cover.setClickable(true);
   cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
-  cover.postOnAnimation(()->version.animate().alpha(1f).setDuration(450L).start());
+  cover.postOnAnimation(()->versionRow.animate().alpha(1f).setDuration(450L).start());
   cover.postOnAnimation(()->cover.postDelayed(()->{
    if(!cover.isAttachedToWindow())return;
    if(web==null){
