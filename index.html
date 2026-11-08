@@ -915,60 +915,54 @@ function renderAnnual(){const root=$("annualRows");root.replaceChildren();let to
 function render(){ensure();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===btn);x.setAttribute("aria-pressed",String(x===btn))});document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.tab))}));document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".pageBtn").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.page));window.scrollTo(0,0)}));
-// Carrousel tactile circulaire bidirectionnel, sans boutons supplémentaires.
+// Navigation circulaire tactile : écoute globale pour les contenus défilants et tableaux.
 (function(){
  const pages=["home","details","archive"];
  const main=document.querySelector("main");
- let start=null,pulling=false;
- function clear(){
-  start=null;
+ let gesture=null,pulling=false;
+ const reset=()=>{
+  gesture=null;
   if(pulling){main.classList.remove("is-pulling");main.style.removeProperty("--pull-offset");pulling=false;}
- }
- function move(step){
+ };
+ const navigate=step=>{
   const index=pages.indexOf(document.querySelector(".page.active")?.id);
-  if(index<0)return;
-  const next=pages[(index+step+pages.length)%pages.length];
-  document.querySelector('.pageBtn[data-page="'+next+'"]')?.click();
- }
- function blocked(target){
-  return target.closest("input,textarea,select,[contenteditable],dialog,[role=slider],.pagebar,.tabs,.taxi-splash");
- }
- main.addEventListener("touchstart",e=>{
-  clear();
-  if(e.touches.length!==1||main.hidden||document.body.classList.contains("taxi-intro-pending")||
-   document.querySelector("dialog[open]")||document.getElementById("calendarDialog")?.hidden===false||blocked(e.target))return;
+  if(index>=0)document.querySelector('.pageBtn[data-page="'+pages[(index+step+pages.length)%pages.length]+'"]')?.click();
+ };
+ document.addEventListener("touchstart",e=>{
+  reset();
+  if(e.touches.length!==1||main.hidden||!main.contains(e.target)||
+   document.body.classList.contains("taxi-intro-pending")||
+   document.querySelector("dialog[open]")||
+   document.getElementById("calendarDialog")?.hidden===false||
+   e.target.closest("input,textarea,select,[contenteditable],dialog,[role=slider],.pagebar,.taxi-splash"))return;
   const t=e.touches[0];
-  start={id:t.identifier,x:t.clientX,y:t.clientY,axis:null,top:window.scrollY<=0};
- },{passive:true});
- main.addEventListener("touchmove",e=>{
-  if(!start||e.touches.length!==1)return;
-  const t=e.touches[0];
-  if(t.identifier!==start.id){clear();return;}
-  const dx=t.clientX-start.x,dy=t.clientY-start.y;
-  if(!start.axis&&Math.max(Math.abs(dx),Math.abs(dy))>=9)start.axis=Math.abs(dx)>Math.abs(dy)*1.12?"horizontal":"vertical";
-  if(start.axis==="horizontal"){
+  gesture={id:t.identifier,x:t.clientX,y:t.clientY,axis:null,top:window.scrollY<=0};
+ },{capture:true,passive:true});
+ document.addEventListener("touchmove",e=>{
+  if(!gesture||e.touches.length!==1)return;
+  const t=Array.from(e.touches).find(t=>t.identifier===gesture.id);
+  if(!t){reset();return;}
+  const dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
+  if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>=8)gesture.axis=Math.abs(dx)>Math.abs(dy)*1.1?"horizontal":"vertical";
+  if(gesture.axis==="horizontal"){
    if(e.cancelable)e.preventDefault();
-  }else if(start.axis==="vertical"&&start.top&&window.scrollY<=0&&dy>0&&Math.abs(dy)>Math.abs(dx)*1.25){
+  }else if(gesture.axis==="vertical"&&gesture.top&&window.scrollY<=0&&dy>0&&Math.abs(dy)>Math.abs(dx)*1.25){
    if(e.cancelable)e.preventDefault();
    pulling=true;
    main.classList.add("is-pulling");
    main.style.setProperty("--pull-offset","0 "+Math.min(dy*.55,72)+"px");
   }
- },{passive:false});
- main.addEventListener("touchend",e=>{
-  const gesture=start;
-  clear();
-  if(!gesture||e.touches.length)return;
-  const t=Array.from(e.changedTouches).find(t=>t.identifier===gesture.id);
+ },{capture:true,passive:false});
+ document.addEventListener("touchend",e=>{
+  const g=gesture;reset();
+  if(!g||e.touches.length)return;
+  const t=Array.from(e.changedTouches).find(t=>t.identifier===g.id);
   if(!t)return;
-  const dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
-  if(Math.abs(dx)>=38&&Math.abs(dx)>Math.abs(dy)*1.12){
-   move(dx<0?1:-1);
-  }else if(gesture.top&&dy>=75&&Math.abs(dy)>Math.abs(dx)*1.25&&window.scrollY<=0){
-   document.getElementById("refreshLocal")?.click();
-  }
- },{passive:true});
- main.addEventListener("touchcancel",clear,{passive:true});
+  const dx=t.clientX-g.x,dy=t.clientY-g.y;
+  if(Math.abs(dx)>=35&&Math.abs(dx)>Math.abs(dy)*1.1)navigate(dx<0?1:-1);
+  else if(g.top&&dy>=75&&Math.abs(dy)>Math.abs(dx)*1.25&&window.scrollY<=0)document.getElementById("refreshLocal")?.click();
+ },{capture:true,passive:true});
+ document.addEventListener("touchcancel",reset,{capture:true,passive:true});
 })();
 const journalAddForm=$("journalAddForm"),journalAddDay=$("journalAddDay");
 const journalAddButtons=[...document.querySelectorAll("[data-journal-add]")];
@@ -1472,7 +1466,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-touch-carousel-20261108b";
+const siteBuild="taxi-v6-11-touch-carousel-20261108c";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
