@@ -342,7 +342,7 @@ public class MainActivity extends Activity {
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // Toujours charger la dernière version en ligne après déverrouillage.
-  if(web.getUrl()==null)web.loadUrl(APP_URL);
+  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=5");
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
   web.setAlpha(covered?0f:1f);
