@@ -16,10 +16,13 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.text.InputType;
 import android.webkit.*;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -41,8 +44,8 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private Bitmap splashPhoto;
- private static final long SPLASH_HOLD_MS=2300L;
- private static final long SPLASH_TRANSITION_MS=1400L;
+ private static final long SPLASH_HOLD_MS=2800L;
+ private static final long SPLASH_TRANSITION_MS=1700L;
  private static final int SPLASH_BACKGROUND=0xff101114;
  private boolean credentialPrompt;
  private SharedPreferences vault;
@@ -251,6 +254,32 @@ public class MainActivity extends Activity {
  private void openTaxi() {
   unlocked=true;
   touchSession();
+  FrameLayout content=new FrameLayout(this);
+  content.setBackgroundColor(SPLASH_BACKGROUND);
+  if(Build.VERSION.SDK_INT>=30){
+   // Réserver les barres système et la découpe en mode bord à bord.
+   getWindow().setDecorFitsSystemWindows(false);
+   android.view.WindowInsetsController controller=getWindow().getInsetsController();
+   if(controller!=null)controller.show(WindowInsets.Type.statusBars());
+   content.setOnApplyWindowInsetsListener((view,insets)->{
+    android.graphics.Insets safe=insets.getInsets(
+     WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());
+    view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+    return WindowInsets.CONSUMED;
+   });
+  }
+  boolean showPhoto=splashPhoto!=null&&ValueAnimator.areAnimatorsEnabled();
+  if(showPhoto)showStartupPhoto(content);
+  setContentView(content);
+  content.requestApplyInsets();
+  if(showPhoto){
+   // Laisser Android dessiner la photo avant de monter la WebView.
+   content.postOnAnimation(()->content.postOnAnimation(()->{
+    if(unlocked&&content.isAttachedToWindow())attachTaxiWeb(content);
+   }));
+  }else attachTaxiWeb(content);
+ }
+ private void attachTaxiWeb(FrameLayout content){
   if(web==null){
    web=new WebView(this);
    web.setBackgroundColor(SPLASH_BACKGROUND);
@@ -300,24 +329,7 @@ public class MainActivity extends Activity {
   // Toujours charger la dernière version en ligne après déverrouillage.
   if(web.getUrl()==null)web.loadUrl(APP_URL);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
-  FrameLayout content=new FrameLayout(this);
-  content.setBackgroundColor(SPLASH_BACKGROUND);
-  if(Build.VERSION.SDK_INT>=30){
-   // Réserver les barres système et la découpe en mode bord à bord.
-   getWindow().setDecorFitsSystemWindows(false);
-   android.view.WindowInsetsController controller=getWindow().getInsetsController();
-   if(controller!=null)controller.show(WindowInsets.Type.statusBars());
-   content.setOnApplyWindowInsetsListener((view,insets)->{
-    android.graphics.Insets safe=insets.getInsets(
-     WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());
-    view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
-    return WindowInsets.CONSUMED;
-   });
-  }
-  content.addView(web,new FrameLayout.LayoutParams(-1,-1));
-  if(splashPhoto!=null&&ValueAnimator.areAnimatorsEnabled())showStartupPhoto(content);
-  setContentView(content);
-  content.requestApplyInsets();
+  content.addView(web,0,new FrameLayout.LayoutParams(-1,-1));
   web.onResume();
  }
  private void showStartupPhoto(FrameLayout content){
@@ -327,12 +339,20 @@ public class MainActivity extends Activity {
   photo.setImageBitmap(splashPhoto);
   photo.setScaleType(ImageView.ScaleType.FIT_CENTER);
   art.addView(photo,new LinearLayout.LayoutParams(-1,0,1f));
-  int labelHeight=dp(56);
-  TextView title=lockText("TAXIMO",28,0xffedf4ff);
+  int labelHeight=dp(58)+dp(26);
+  TextView title=lockText("TAXIMO",44,0xffedf4ff);
   title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-  title.setLetterSpacing(.28f);
+  title.setLetterSpacing(.2f);
   title.setShadowLayer(dp(7),0,0,0x806ba8ff);
-  art.addView(title,new LinearLayout.LayoutParams(-1,labelHeight));
+  art.addView(title,new LinearLayout.LayoutParams(-1,dp(58)));
+  String versionName="";
+  try{versionName=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
+  catch(PackageManager.NameNotFoundException ignored){}
+  TextView version=lockText(versionName,12,0xffaebed5);
+  version.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);
+  version.setLetterSpacing(.14f);
+  version.setAlpha(0f);
+  art.addView(version,new LinearLayout.LayoutParams(-1,dp(26)));
   FrameLayout cover=new FrameLayout(this){
    @Override protected void onMeasure(int widthSpec,int heightSpec){
     int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight));
@@ -346,25 +366,46 @@ public class MainActivity extends Activity {
   cover.setClickable(true);
   cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
+  cover.postOnAnimation(()->version.animate().alpha(1f).setDuration(450L).start());
   cover.postOnAnimation(()->cover.postDelayed(()->{
    if(!cover.isAttachedToWindow())return;
+   if(web==null){
+    content.removeView(cover);
+    return;
+   }
    ValueAnimator transition=ValueAnimator.ofFloat(0f,1f);
    transition.setDuration(SPLASH_TRANSITION_MS);
    transition.setInterpolator(new AccelerateDecelerateInterpolator());
-   transition.addUpdateListener(frame->{
-    float progress=(float)frame.getAnimatedValue();
-    float photoScale=1f-.92f*progress;
-    float appScale=.12f+.88f*progress;
-    art.setScaleX(photoScale);
-    art.setScaleY(photoScale);
-    web.setScaleX(appScale);
-    web.setScaleY(appScale);
-    cover.setAlpha(1f-Math.max(0f,(progress-.2f)/.8f));
-    if(Build.VERSION.SDK_INT>=31){
-     setStartupBlur(art,dp(14)*Math.max(0f,(progress-.35f)/.65f));
-     setStartupBlur(web,dp(10)*(1f-progress));
+   transition.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+    private int photoBlur;
+    private int appBlur=-1;
+    @Override public void onAnimationUpdate(ValueAnimator frame){
+     float progress=(float)frame.getAnimatedValue();
+     float photoScale=1f-.92f*progress;
+     float appScale=.12f+.88f*progress;
+     art.setScaleX(photoScale);
+     art.setScaleY(photoScale);
+     web.setScaleX(appScale);
+     web.setScaleY(appScale);
+     cover.setAlpha(1f-Math.min(1f,Math.max(0f,(progress-.2f)/.75f)));
+     if(Build.VERSION.SDK_INT>=31){
+      int nextPhotoBlur=Math.round(14f*Math.max(0f,(progress-.35f)/.65f));
+      int nextAppBlur=Math.round(10f*Math.max(0f,1f-progress/.75f));
+      if(nextPhotoBlur!=photoBlur){
+       photoBlur=nextPhotoBlur;
+       setStartupBlur(art,dp(photoBlur));
+      }
+      if(nextAppBlur!=appBlur){
+       appBlur=nextAppBlur;
+       setStartupBlur(web,dp(appBlur));
+      }
+     }
     }
-    if(progress>=1f)content.removeView(cover);
+   });
+   transition.addListener(new AnimatorListenerAdapter(){
+    @Override public void onAnimationEnd(Animator animation){
+     content.removeView(cover);
+    }
    });
    transition.start();
   },SPLASH_HOLD_MS));

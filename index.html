@@ -219,16 +219,18 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 /* La photo reste immobile avant le passage à Mon Taxi. */
 .taxi-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#101114;touch-action:none}
 @media(prefers-reduced-motion:reduce){.taxi-splash{display:none}}
-.taxi-splash-art{display:grid;justify-items:center;width:min(100vw,calc(100vh - 56px));width:min(100vw,calc(100dvh - 56px))}
+.taxi-splash-art{display:grid;justify-items:center;width:min(100vw,calc(100vh - 84px));width:min(100vw,calc(100dvh - 84px))}
 .taxi-splash img{display:block;width:100%;aspect-ratio:1;object-fit:contain}
-.taxi-splash-wordmark{display:grid;place-items:center;height:56px;padding-inline-start:.28em;color:#edf4ff;font:700 28px/1 system-ui,sans-serif;letter-spacing:.28em;text-shadow:0 0 14px #6ba8ff80}
-.taxi-opening .taxi-splash{animation:taxiSplashFade 1.4s ease-in-out both}
-.taxi-opening .taxi-splash-art{animation:taxiSplashShrink 1.4s cubic-bezier(.4,0,.2,1) both}
-.taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.4s cubic-bezier(.4,0,.2,1) both;pointer-events:none}
+.taxi-splash-wordmark{display:grid;place-items:center;height:58px;padding-inline-start:.2em;color:#edf4ff;font:750 clamp(32px,10vw,46px)/1 system-ui,sans-serif;letter-spacing:.2em;text-shadow:0 0 16px #6ba8ff80}
+.taxi-splash-version{height:26px;color:#aebed5;font:600 12px/1 system-ui,sans-serif;letter-spacing:.14em;animation:taxiVersionIn .45s ease-out both}
+.taxi-opening .taxi-splash{animation:taxiSplashFade 1.7s ease-in-out both}
+.taxi-opening .taxi-splash-art{animation:taxiSplashShrink 1.7s cubic-bezier(.4,0,.2,1) both}
+.taxi-opening main,.taxi-opening .taxi-access{transform-origin:50% 50vh;animation:taxiAppGrow 1.7s cubic-bezier(.4,0,.2,1) both;pointer-events:none}
+@keyframes taxiVersionIn{from{opacity:0}to{opacity:1}}
 @keyframes taxiSplashShrink{0%{transform:scale(1);filter:blur(0)}35%{filter:blur(0)}100%{transform:scale(.08);filter:blur(14px)}}
-@keyframes taxiSplashFade{0%,20%{opacity:1}100%{opacity:0}}
-@keyframes taxiAppGrow{from{transform:scale(.12);filter:blur(10px)}to{transform:scale(1);filter:blur(0)}}
-</style></head><body><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><img src="app/mercedes-splash.webp" alt="" fetchpriority="high"><div class="taxi-splash-wordmark">TAXIMO</div></div></div>
+@keyframes taxiSplashFade{0%,20%{opacity:1}95%,100%{opacity:0}}
+@keyframes taxiAppGrow{from{transform:scale(.12);filter:blur(10px)}75%{filter:blur(0)}to{transform:scale(1);filter:blur(0)}}
+</style></head><body><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><img src="app/mercedes-splash.webp" alt="" fetchpriority="high"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), picture=splash.querySelector("img");
@@ -251,8 +253,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
    setTimeout(()=>{
     splash.addEventListener("animationend",event=>{if(event.target===splash)finish()});
     document.body.classList.add("taxi-opening");
-    timeout=setTimeout(finish,1550);
-   },2300);
+    timeout=setTimeout(finish,1850);
+   },2800);
   }));
  },finish);
 })();
@@ -1393,7 +1395,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-2300-1400";
+const siteBuild="taxi-v6-11-taximo-2800-1700";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
