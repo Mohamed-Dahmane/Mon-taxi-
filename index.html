@@ -268,7 +268,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
     splash.addEventListener("animationend",event=>{if(event.target===splash&&event.animationName==="taxiSplashFade")finish()});
     document.body.classList.add("taxi-opening");
     timeout=setTimeout(finish,1850);
-   },1900);
+   },1700);
   }));
  },finish);
 })();
@@ -1409,7 +1409,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-1900-champagne";
+const siteBuild="taxi-v6-11-taximo-1700-champagne";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
