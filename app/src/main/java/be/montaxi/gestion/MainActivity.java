@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
  private TextView lockAction;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
- private static final long IDLE_TIMEOUT_MS=20000L;
+ private static final long IDLE_TIMEOUT_MS=60000L;
  private long lastInteraction=SystemClock.elapsedRealtime();
  private final Handler idleHandler=new Handler(Looper.getMainLooper());
  private final Runnable idleCheck=this::checkIdleTimeout;
