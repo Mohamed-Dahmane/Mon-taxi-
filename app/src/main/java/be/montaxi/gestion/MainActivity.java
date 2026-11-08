@@ -46,6 +46,8 @@ import android.util.Base64;
 
 public class MainActivity extends Activity {
  private WebView web;
+ private FrameLayout unlockContent;
+ private Runnable revealHome;
  private Bitmap splashPhoto;
  private Bitmap splashStudio;
  private static final long SPLASH_ENTRANCE_MS=1150L;
@@ -72,7 +74,6 @@ public class MainActivity extends Activity {
   getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
   getWindow().getDecorView().setSystemUiVisibility(0);
   getWindow().setStatusBarColor(Color.rgb(17,24,39));
-  showLock();
   try(InputStream image=getAssets().open("app/mercedes-foreground.webp");
       InputStream studio=getAssets().open("app/mercedes-studio.webp")){
    splashStudio=BitmapFactory.decodeStream(studio);
@@ -80,6 +81,7 @@ public class MainActivity extends Activity {
   }catch(IOException ignored){
    // L'interface web conserve son propre écran de démarrage.
   }
+  showLock();
  }
  private byte[] derive(char[] pin,byte[] salt) throws Exception {
   PBEKeySpec spec=new PBEKeySpec(pin,salt,210000,256);
@@ -112,6 +114,14 @@ public class MainActivity extends Activity {
   return button;
  }
  private void showLock() {
+  if(splashPhoto!=null){
+   FrameLayout content=createTaxiContent();
+   unlockContent=content;
+   revealHome=showStartupPhoto(content);
+   setContentView(content);
+   content.requestApplyInsets();
+   return;
+  }
   ScrollView layout=new ScrollView(this);
   layout.setFillViewport(true);
   layout.setBackgroundColor(0xff0b1020);
@@ -257,9 +267,7 @@ public class MainActivity extends Activity {
    }).start();
   }));dialog.show();
  }
- private void openTaxi() {
-  unlocked=true;
-  touchSession();
+ private FrameLayout createTaxiContent(){
   FrameLayout content=new FrameLayout(this);
   content.setBackgroundColor(SPLASH_BACKGROUND);
   if(Build.VERSION.SDK_INT>=30){
@@ -274,16 +282,24 @@ public class MainActivity extends Activity {
     return WindowInsets.CONSUMED;
    });
   }
-  boolean showPhoto=splashPhoto!=null;
-  if(showPhoto)showStartupPhoto(content);
+  return content;
+ }
+ private void openTaxi() {
+  unlocked=true;
+  touchSession();
+  FrameLayout content=unlockContent;
+  Runnable reveal=revealHome;
+  unlockContent=null;
+  revealHome=null;
+  if(content!=null&&reveal!=null&&content.isAttachedToWindow()){
+   attachTaxiWeb(content,true);
+   content.postOnAnimation(reveal);
+   return;
+  }
+  content=createTaxiContent();
   setContentView(content);
   content.requestApplyInsets();
-  if(showPhoto){
-   // Laisser Android dessiner la photo avant de monter la WebView.
-   content.postOnAnimation(()->content.postOnAnimation(()->{
-    if(unlocked&&content.isAttachedToWindow())attachTaxiWeb(content,true);
-   }));
-  }else attachTaxiWeb(content,false);
+  attachTaxiWeb(content,false);
  }
  private void attachTaxiWeb(FrameLayout content,boolean covered){
   if(web==null){
@@ -340,7 +356,7 @@ public class MainActivity extends Activity {
   content.addView(web,0,new FrameLayout.LayoutParams(-1,-1));
   web.onResume();
  }
- private void showStartupPhoto(FrameLayout content){
+ private Runnable showStartupPhoto(FrameLayout content){
   LinearLayout art=new LinearLayout(this);
   art.setOrientation(LinearLayout.VERTICAL);
   FrameLayout scene=new FrameLayout(this);
@@ -411,9 +427,16 @@ public class MainActivity extends Activity {
   TextView city=lockText("Bruxelles Mobility",13,0xffe7d2a6);
   city.setLetterSpacing(.08f);
   signature.addView(city,new LinearLayout.LayoutParams(-1,dp(27)));
-  TextView continueHint=lockText("Appuie pour ouvrir",12,0xffbca98c);
+  boolean fingerprintAvailable=canUseFingerprint();
+  TextView continueHint=lockText(fingerprintAvailable?"Appuie pour t’identifier":"Appuie pour utiliser le code Samsung",12,0xffbca98c);
+  if(fingerprintAvailable){
+   continueHint.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.taximo_fingerprint,0,0,0);
+   continueHint.setCompoundDrawablePadding(dp(7));
+  }
   continueHint.setVisibility(View.INVISIBLE);
-  signature.addView(continueHint,new LinearLayout.LayoutParams(-1,dp(28)));
+  LinearLayout.LayoutParams hintSize=new LinearLayout.LayoutParams(-2,dp(28));
+  hintSize.gravity=Gravity.CENTER_HORIZONTAL;
+  signature.addView(continueHint,hintSize);
   FrameLayout cover=new FrameLayout(this){
    @Override protected void onMeasure(int widthSpec,int heightSpec){
     int side=Math.max(0,Math.min(MeasureSpec.getSize(widthSpec),MeasureSpec.getSize(heightSpec)-labelHeight)-dp(24));
@@ -434,7 +457,10 @@ public class MainActivity extends Activity {
   cover.addView(art,new FrameLayout.LayoutParams(0,0,Gravity.CENTER));
   content.addView(cover,new FrameLayout.LayoutParams(-1,-1));
   Runnable exit=()->{
-   if(!cover.isAttachedToWindow())return;
+   if(!cover.isAttachedToWindow()||!unlocked)return;
+   cover.setOnClickListener(null);
+   cover.setFocusable(false);
+   continueHint.setVisibility(View.INVISIBLE);
    if(web==null){
     content.removeView(cover);
     return;
@@ -504,16 +530,13 @@ public class MainActivity extends Activity {
        if(!cover.isAttachedToWindow())return;
        shineTitle(title);
        continueHint.setVisibility(View.VISIBLE);
-       cover.setContentDescription("Appuie pour ouvrir Mon Taxi");
+       cover.setContentDescription(continueHint.getText());
        cover.setFocusable(true);
-       cover.setOnClickListener(view->{
-        cover.setOnClickListener(null);
-        cover.setFocusable(false);
-        exit.run();
-       });
+       cover.setOnClickListener(view->authenticate());
       }).start();
     }).start();
   });
+  return exit;
  }
  private final class WheelTreads extends View{
   private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
