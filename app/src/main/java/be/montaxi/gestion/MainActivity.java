@@ -444,15 +444,16 @@ public class MainActivity extends Activity {
   };
   cover.postOnAnimation(()->{
    art.setTranslationY(cover.getHeight()*.48f);
+   float restingOffset=.04f*scene.getHeight();
    float approachOffset=-.01f*scene.getHeight();
-   vehicle.setTranslationY(approachOffset);
+   vehicle.setTranslationY(restingOffset+approachOffset);
    ValueAnimator approach=ValueAnimator.ofFloat(0f,1f);
    approach.setDuration(SPLASH_ENTRANCE_MS);
    approach.setInterpolator(new AccelerateDecelerateInterpolator());
    approach.addUpdateListener(frame->{
     float progress=(float)frame.getAnimatedValue();
     float vehicleScale=.84f+.16f*progress;
-    vehicle.setTranslationY(approachOffset*(1f-progress));
+    vehicle.setTranslationY(restingOffset+approachOffset*(1f-progress));
     vehicle.setScaleX(vehicleScale);
     vehicle.setScaleY(vehicleScale);
     treads.progress=progress;
