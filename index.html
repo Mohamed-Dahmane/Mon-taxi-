@@ -243,7 +243,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  76%{transform:scale(.94);filter:blur(0);opacity:1}
  100%{transform:scale(1);filter:blur(0);opacity:1}
 }
-</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><img src="app/mercedes-splash.webp" alt="" fetchpriority="high"><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
+</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash" aria-hidden="true"><div class="taxi-splash-art"><img src="app/mercedes-splash.webp?v=class" alt="" fetchpriority="high"><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-version">V 6/11</div></div></div></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), picture=splash.querySelector("img");
@@ -1409,7 +1409,7 @@ setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 $("refreshLocal").addEventListener("click",async()=>{await checkCloudSync();await loadPrivatePayments()});
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
-const siteBuild="taxi-v6-11-taximo-1700-champagne";
+const siteBuild="taxi-v6-11-taximo-v-class";
 let newBuildPending=false;
 function safeToReload(){
  const a=document.activeElement;
