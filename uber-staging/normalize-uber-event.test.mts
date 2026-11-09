@@ -47,3 +47,20 @@ test("identical event IDs for different drivers remain distinct", () => {
   assert.notEqual(a.eventKey,b.eventKey);
   assert.equal(uniqueEvents([a,b]).length,2);
 });
+
+test("replayed event in a later batch does not double-count", () => {
+  const firstBatch = uniqueEvents([normalizeUberEvent(base)]);
+  const secondBatch = uniqueEvents([...firstBatch, normalizeUberEvent({...base})]);
+  assert.equal(secondBatch.length, 1);
+  assert.equal(secondBatch.reduce((sum, event) => sum + event.amountCents, 0), 1250);
+});
+test("same trip with distinct adjustment event is retained", () => {
+  const earning = normalizeUberEvent(base);
+  const adjustment = normalizeUberEvent({...base, externalEventId:"evt-adjust-001", eventKind:"adjustment", originalEventId:"evt-001", amountCents:-150});
+  const events = uniqueEvents([earning, adjustment]);
+  assert.equal(events.length, 2);
+  assert.equal(events.reduce((sum, event) => sum + event.amountCents, 0), 1100);
+});
+test("missing trip ID is rejected for trip earnings", () => {
+  assert.throws(() => normalizeUberEvent({...base, tripId:undefined}), /trip ID/);
+});
