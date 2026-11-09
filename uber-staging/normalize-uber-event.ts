@@ -53,7 +53,17 @@ export function normalizeUberEvent(input: UberEventInput): NormalizedUberEvent {
 /** Pure in-memory replay filter for tests/previews, NOT a database uniqueness guarantee. */
 export function uniqueEvents(events: NormalizedUberEvent[]): NormalizedUberEvent[] {
   const seen = new Map<string, NormalizedUberEvent>();
+  // A trip may be present in both Fleet Supplier and an authorized export.
+  // Never silently add both sources to a daily total.
+  const tripOwners = new Map<string, string>();
   for (const event of events) {
+    if (event.eventKind === "trip_earning" && event.tripId) {
+      const tripKey = [event.driverId, event.tripId].map(x => `${x.length}:${x}`).join("|");
+      const previousEventKey = tripOwners.get(tripKey);
+      if (previousEventKey && previousEventKey !== event.eventKey)
+        throw new Error("Ambiguous duplicate trip across earnings events: " + tripKey);
+      tripOwners.set(tripKey, event.eventKey);
+    }
     const old = seen.get(event.eventKey);
     if (old && JSON.stringify(old) !== JSON.stringify(event))
       throw new Error("Conflicting replay: " + event.eventKey);
