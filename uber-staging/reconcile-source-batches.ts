@@ -36,6 +36,8 @@ export function previewAuthorizedDailyBatch(
 ): DailyUberPreview {
   if (!validServiceDate(requestedDate) || !validServiceDate(batch.firstServiceDate) || !validServiceDate(batch.lastServiceDate))
     throw new Error("Invalid Brussels service date");
+  if (batch.firstServiceDate > batch.lastServiceDate)
+    throw new Error("Reversed source coverage window");
   if (!batch.complete || batch.firstServiceDate > requestedDate || batch.lastServiceDate < requestedDate)
     throw new Error("Incomplete source coverage for requested date");
   if (!authorizedDriverId || batch.driverId !== authorizedDriverId)
