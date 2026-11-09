@@ -34,6 +34,22 @@ export function previewDailyUberEarnings(
         throw new Error("Cross-day correction requires explicit reconciliation");
     }
   }
+  // Never let corrections turn a trip into negative earnings in a preview.
+  // Group by original event, not by correction ID, so repeated distinct
+  // reversals cannot silently overdraw the same original trip.
+  const netByOriginal = new Map<string, number>();
+  for (const event of events) {
+    if (event.eventKind === "trip_earning")
+      netByOriginal.set(event.externalEventId, event.amountCents);
+  }
+  for (const event of events) {
+    if (event.eventKind === "trip_earning") continue;
+    const key = event.originalEventId!;
+    const next = netByOriginal.get(key)! + event.amountCents;
+    if (!Number.isSafeInteger(next) || next < 0)
+      throw new Error("Corrections exceed original trip earnings");
+    netByOriginal.set(key, next);
+  }
   const totals = new Map<string, DailyUberPreview>();
   for (const event of events) {
     const day = event.serviceDateBrussels;
