@@ -22,8 +22,11 @@ test("same event replay is idempotent in preview", () => {
 test("same source/event id with different amounts is rejected", () => {
   assert.throws(() => uniqueEvents([normalizeUberEvent(base), normalizeUberEvent({...base, amountCents:1300})]), /Conflicting replay/);
 });
-test("different sources do not collide", () => {
-  assert.equal(uniqueEvents([normalizeUberEvent(base), normalizeUberEvent({...base,source:"uber_fleet_supplier"})]).length,2);
+test("same trip from different sources is rejected to prevent double counting", () => {
+  assert.throws(
+    () => uniqueEvents([normalizeUberEvent(base), normalizeUberEvent({...base,source:"uber_fleet_supplier"})]),
+    /Ambiguous duplicate trip/
+  );
 });
 test("corrections require original event identifier", () => {
   assert.throws(() => normalizeUberEvent({...base,eventKind:"adjustment"}), /original event ID/);
