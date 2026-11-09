@@ -62,3 +62,18 @@ test("cross-day correction requires reconciliation", () => {
     base, {...base, externalEventId: "adj-1", tripId: undefined, occurredAt: "2026-11-11T12:00:00Z", eventKind: "adjustment", originalEventId: "evt-1", amountCents: -100}
   ], "driver-1"), /Cross-day correction requires explicit reconciliation/);
 });
+
+test("valid adjustment changes the daily preview exactly once despite replay", () => {
+  const adjustment: UberEventInput = {
+    ...base, externalEventId: "adj-valid-1", eventKind: "adjustment",
+    originalEventId: "evt-1", amountCents: -234
+  };
+  assert.deepEqual(previewDailyUberEarnings([base, adjustment, {...adjustment}], "driver-1"), [
+    { driverId: "driver-1", serviceDateBrussels: "2026-11-10", amountCents: 1000, eventCount: 2 }
+  ]);
+});
+test("different drivers cannot be aggregated in one preview", () => {
+  assert.throws(() => previewDailyUberEarnings([
+    base, {...base, driverId: "driver-2", externalEventId: "evt-2", tripId: "trip-2"}
+  ], "driver-1"), /Driver ownership mismatch/);
+});
