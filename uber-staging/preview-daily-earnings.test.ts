@@ -32,3 +32,15 @@ test("DST boundary uses Brussels local calendar date", () => {
   const event = {...base, occurredAt: "2026-10-25T00:30:00Z"};
   assert.equal(previewDailyUberEarnings([event], "driver-1")[0].serviceDateBrussels, "2026-10-25");
 });
+
+test("orphan adjustment fails closed", () => {
+  assert.throws(() => previewDailyUberEarnings([
+    {...base, externalEventId: "adj-1", eventKind: "adjustment", originalEventId: "missing", amountCents: -100}
+  ], "driver-1"), /Orphan financial correction/);
+});
+test("adjustment referencing event in another source fails closed", () => {
+  assert.throws(() => previewDailyUberEarnings([
+    base,
+    {...base, source: "uber_authorized_export", externalEventId: "adj-1", eventKind: "adjustment", originalEventId: "evt-1", tripId: undefined, amountCents: -100}
+  ], "driver-1"), /Orphan financial correction/);
+});
