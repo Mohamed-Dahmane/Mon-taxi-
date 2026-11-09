@@ -46,10 +46,12 @@ export function previewDailyUberEarnings(
     if (event.eventKind === "trip_earning") continue;
     const key = event.originalEventId!;
     const next = netByOriginal.get(key)! + event.amountCents;
-    if (!Number.isSafeInteger(next) || next < 0)
-      throw new Error("Corrections exceed original trip earnings");
+    if (!Number.isSafeInteger(next))
+      throw new Error("Unsafe corrected trip amount");
     netByOriginal.set(key, next);
   }
+  if ([...netByOriginal.values()].some(amount => amount < 0))
+    throw new Error("Corrections exceed original trip earnings");
   const totals = new Map<string, DailyUberPreview>();
   for (const event of events) {
     const day = event.serviceDateBrussels;
