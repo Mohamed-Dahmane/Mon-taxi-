@@ -31,6 +31,8 @@ export function normalizeUberEvent(input: UberEventInput): NormalizedUberEvent {
     throw new Error("Invalid EUR integer-cent amount");
   if (!["trip_earning", "adjustment", "reversal"].includes(input.eventKind))
     throw new Error("Unsupported event kind");
+  if (input.eventKind === "trip_earning" && input.amountCents < 0)
+    throw new Error("Negative trip earnings must be represented as an adjustment or reversal");
   if (input.eventKind === "trip_earning" && !input.tripId)
     throw new Error("Trip earnings require trip ID");
   if (input.eventKind !== "trip_earning" && (!input.originalEventId || !ID.test(input.originalEventId)))
