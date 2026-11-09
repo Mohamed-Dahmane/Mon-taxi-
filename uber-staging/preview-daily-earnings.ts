@@ -23,9 +23,9 @@ export function previewDailyUberEarnings(
   const events = uniqueEvents(inputs.map(normalizeUberEvent));
   // A correction is safe to preview only when its original event is present
   // in the same authorized, complete input batch. Never invent a base amount.
-  const eventIds = new Set(events.map(e => e.externalEventId));
+  const eventIds = new Set(events.map(e => `${e.source}|${e.driverId}|${e.externalEventId}`));
   for (const event of events) {
-    if (event.eventKind !== "trip_earning" && !eventIds.has(event.originalEventId!))
+    if (event.eventKind !== "trip_earning" && !eventIds.has(`${event.source}|${event.driverId}|${event.originalEventId}`))
       throw new Error("Orphan financial correction");
   }
   const totals = new Map<string, DailyUberPreview>();
