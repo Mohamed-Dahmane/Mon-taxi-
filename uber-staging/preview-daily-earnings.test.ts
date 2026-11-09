@@ -44,3 +44,21 @@ test("adjustment referencing event in another source fails closed", () => {
     {...base, source: "uber_authorized_export", externalEventId: "adj-1", eventKind: "adjustment", originalEventId: "evt-1", tripId: undefined, amountCents: -100}
   ], "driver-1"), /Orphan financial correction/);
 });
+
+test("correction cannot reference another correction", () => {
+  assert.throws(() => previewDailyUberEarnings([
+    base,
+    {...base, externalEventId: "adj-1", eventKind: "adjustment", originalEventId: "evt-1", amountCents: -100},
+    {...base, externalEventId: "adj-2", eventKind: "adjustment", originalEventId: "adj-1", amountCents: -50}
+  ], "driver-1"), /Correction must reference original trip earning/);
+});
+test("correction with mismatched trip fails closed", () => {
+  assert.throws(() => previewDailyUberEarnings([
+    base, {...base, externalEventId: "adj-1", tripId: "other-trip", eventKind: "adjustment", originalEventId: "evt-1", amountCents: -100}
+  ], "driver-1"), /Correction trip mismatch/);
+});
+test("cross-day correction requires reconciliation", () => {
+  assert.throws(() => previewDailyUberEarnings([
+    base, {...base, externalEventId: "adj-1", tripId: undefined, occurredAt: "2026-11-11T12:00:00Z", eventKind: "adjustment", originalEventId: "evt-1", amountCents: -100}
+  ], "driver-1"), /Cross-day correction requires explicit reconciliation/);
+});
