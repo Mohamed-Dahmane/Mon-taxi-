@@ -18,6 +18,11 @@ export type AuthorizedBatch = {
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+function validServiceDate(value: string): boolean {
+  if (!DATE.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
 
 /**
  * Refuses partial data, gaps in coverage, mixed source batches and foreign drivers.
@@ -29,7 +34,7 @@ export function previewAuthorizedDailyBatch(
   requestedDate: string,
   authorizedDriverId: string
 ): DailyUberPreview {
-  if (!DATE.test(requestedDate) || !DATE.test(batch.firstServiceDate) || !DATE.test(batch.lastServiceDate))
+  if (!validServiceDate(requestedDate) || !validServiceDate(batch.firstServiceDate) || !validServiceDate(batch.lastServiceDate))
     throw new Error("Invalid Brussels service date");
   if (!batch.complete || batch.firstServiceDate > requestedDate || batch.lastServiceDate < requestedDate)
     throw new Error("Incomplete source coverage for requested date");
