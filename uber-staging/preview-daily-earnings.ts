@@ -23,10 +23,16 @@ export function previewDailyUberEarnings(
   const events = uniqueEvents(inputs.map(normalizeUberEvent));
   // A correction is safe to preview only when its original event is present
   // in the same authorized, complete input batch. Never invent a base amount.
-  const eventIds = new Set(events.map(e => `${e.source}|${e.driverId}|${e.externalEventId}`));
+  const eventById = new Map(events.map(e => [`${e.source}|${e.driverId}|${e.externalEventId}`, e]));
   for (const event of events) {
-    if (event.eventKind !== "trip_earning" && !eventIds.has(`${event.source}|${event.driverId}|${event.originalEventId}`))
-      throw new Error("Orphan financial correction");
+    if (event.eventKind !== "trip_earning") {
+      const original = eventById.get(`${event.source}|${event.driverId}|${event.originalEventId}`);
+      if (!original) throw new Error("Orphan financial correction");
+      if (original.eventKind !== "trip_earning") throw new Error("Correction must reference original trip earning");
+      if (event.tripId && event.tripId !== original.tripId) throw new Error("Correction trip mismatch");
+      if (event.serviceDateBrussels !== original.serviceDateBrussels)
+        throw new Error("Cross-day correction requires explicit reconciliation");
+    }
   }
   const totals = new Map<string, DailyUberPreview>();
   for (const event of events) {
