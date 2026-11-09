@@ -92,8 +92,21 @@ public class MainActivity extends Activity {
   checkIdleTimeout();
  }
  private void lockTaxi(){idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null){web.setVisibility(View.INVISIBLE);web.onPause();}showLock();}
- @Override public boolean dispatchTouchEvent(MotionEvent event){if(unlocked)touchSession();return super.dispatchTouchEvent(event);}
- @Override public boolean dispatchKeyEvent(KeyEvent event){if(unlocked)touchSession();return super.dispatchKeyEvent(event);}
+ private boolean acceptSessionInteraction(){
+  if(!unlocked)return true;
+  if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS){
+   lockTaxi();
+   return false;
+  }
+  touchSession();
+  return true;
+ }
+ @Override public boolean dispatchTouchEvent(MotionEvent event){
+  return !acceptSessionInteraction()||super.dispatchTouchEvent(event);
+ }
+ @Override public boolean dispatchKeyEvent(KeyEvent event){
+  return !acceptSessionInteraction()||super.dispatchKeyEvent(event);
+ }
  private CancellationSignal biometric;
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
  @Override public void onCreate(Bundle state) {
