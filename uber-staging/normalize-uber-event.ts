@@ -46,7 +46,7 @@ export function normalizeUberEvent(input: UberEventInput): NormalizedUberEvent {
   }).formatToParts(d);
   const part = (type: string) => parts.find(p => p.type === type)?.value;
   const serviceDateBrussels = `${part("year")}-${part("month")}-${part("day")}`;
-  return { ...input, eventKey: input.source + ":" + input.driverId + ":" + input.externalEventId, serviceDateBrussels };
+  return { ...input, eventKey: [input.source, input.driverId, input.externalEventId].map(x => `${x.length}:${x}`).join("|"), serviceDateBrussels };
 }
 /** Pure in-memory replay filter for tests/previews, NOT a database uniqueness guarantee. */
 export function uniqueEvents(events: NormalizedUberEvent[]): NormalizedUberEvent[] {
