@@ -21,6 +21,13 @@ export function previewDailyUberEarnings(
   if (!authorizedDriverId || inputs.some(e => e.driverId !== authorizedDriverId))
     throw new Error("Driver ownership mismatch");
   const events = uniqueEvents(inputs.map(normalizeUberEvent));
+  // A correction is safe to preview only when its original event is present
+  // in the same authorized, complete input batch. Never invent a base amount.
+  const eventIds = new Set(events.map(e => e.externalEventId));
+  for (const event of events) {
+    if (event.eventKind !== "trip_earning" && !eventIds.has(event.originalEventId!))
+      throw new Error("Orphan financial correction");
+  }
   const totals = new Map<string, DailyUberPreview>();
   for (const event of events) {
     const day = event.serviceDateBrussels;
