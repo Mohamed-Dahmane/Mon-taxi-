@@ -71,3 +71,9 @@ test("separator characters in driver/event IDs cannot collide", () => {
   assert.notEqual(a.eventKey, b.eventKey);
   assert.equal(uniqueEvents([a,b]).length, 2);
 });
+
+test("adjustments and reversals cannot reference themselves", () => {
+  for (const eventKind of ["adjustment", "reversal"] as const) {
+    assert.throws(() => normalizeUberEvent({...base, eventKind, originalEventId:base.externalEventId, amountCents:-100}), /reference itself/);
+  }
+});
