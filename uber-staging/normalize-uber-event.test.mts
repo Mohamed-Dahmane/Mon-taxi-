@@ -64,3 +64,10 @@ test("same trip with distinct adjustment event is retained", () => {
 test("missing trip ID is rejected for trip earnings", () => {
   assert.throws(() => normalizeUberEvent({...base, tripId:undefined}), /trip ID/);
 });
+
+test("separator characters in driver/event IDs cannot collide", () => {
+  const a = normalizeUberEvent({...base, driverId:"driver:a", externalEventId:"event:b"});
+  const b = normalizeUberEvent({...base, driverId:"driver", externalEventId:"a:event:b"});
+  assert.notEqual(a.eventKey, b.eventKey);
+  assert.equal(uniqueEvents([a,b]).length, 2);
+});
