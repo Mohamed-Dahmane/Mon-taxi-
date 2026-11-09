@@ -27,3 +27,17 @@ test("complete authorized empty batch returns zero preview without writing Appli
     driverId: "driver-1", serviceDateBrussels: "2026-11-09", amountCents: 0, eventCount: 0
   });
 });
+
+test("rejects invalid calendar day instead of normalizing it", () => {
+  assert.throws(() => previewAuthorizedDailyBatch(batch, "2026-02-30", "driver-1"), /Invalid Brussels service date/);
+});
+test("rejects a date outside the certified source coverage", () => {
+  assert.throws(() => previewAuthorizedDailyBatch(batch, "2026-11-11", "driver-1"), /Incomplete source coverage/);
+});
+test("rejects mixed Fleet Supplier and export events", () => {
+  assert.throws(() => previewAuthorizedDailyBatch({...batch, events: [{
+    source: "uber_authorized_export", externalEventId: "export-1", tripId: "trip-1",
+    driverId: "driver-1", occurredAt: "2026-11-09T12:00:00Z",
+    currency: "EUR", amountCents: 1000, eventKind: "trip_earning"
+  }]}, "2026-11-09", "driver-1"), /Mixed source or foreign driver/);
+});
