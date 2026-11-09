@@ -35,6 +35,8 @@ export function normalizeUberEvent(input: UberEventInput): NormalizedUberEvent {
     throw new Error("Trip earnings require trip ID");
   if (input.eventKind !== "trip_earning" && (!input.originalEventId || !ID.test(input.originalEventId)))
     throw new Error("Corrections require original event ID");
+  if (input.eventKind !== "trip_earning" && input.originalEventId === input.externalEventId)
+    throw new Error("Correction cannot reference itself");
   if (input.eventKind === "reversal" && input.amountCents > 0)
     throw new Error("Reversal must not be positive");
   if (typeof input.occurredAt !== "string" || !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(input.occurredAt))
