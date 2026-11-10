@@ -23,9 +23,9 @@ def reconcile(events, allowed_driver):
         trip = e.get("trip_id")
         if trip:
             trip_key = (e["driver"], trip)
-            if trip_key in by_trip and by_trip[trip_key] != (amount, e["source"]):
-                raise ValueError("cross-source overlap or adjustment requires review")
-            by_trip[trip_key] = (amount, e["source"])
+            if trip_key in by_trip:
+                raise ValueError("second event for same trip requires reconciliation review")
+            by_trip[trip_key] = key
         by_event[key] = amount
     return by_event
 
@@ -36,6 +36,8 @@ def test():
     for invalid in (
         [base, dict(base, eur="13.30")],
         [base, dict(base, source="export", event_id="x1")],
+        [base, dict(base, event_id="p2")],  # same trip/source/amount but distinct event
+        [base, dict(base, event_id="p2", eur="13.30")],
         [dict(base, driver="d2")],
         [dict(base, eur="1.001")],
     ):
