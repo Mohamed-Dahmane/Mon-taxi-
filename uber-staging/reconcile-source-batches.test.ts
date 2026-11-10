@@ -64,3 +64,30 @@ test("accepts a complete certified zero-day at both coverage boundaries", () => 
     });
   }
 });
+
+
+test("Brussels local date controls midnight UTC boundary, not UTC calendar date", () => {
+  const event = {
+    source: "uber_fleet_supplier" as const, externalEventId: "midnight-1",
+    tripId: "trip-midnight-1", driverId: "driver-1",
+    occurredAt: "2026-11-09T23:30:00Z", currency: "EUR",
+    amountCents: 1750, eventKind: "trip_earning" as const
+  };
+  const result = previewAuthorizedDailyBatch({...batch, events: [event]}, "2026-11-10", "driver-1");
+  assert.equal(result.amountCents, 1750);
+  assert.equal(result.eventCount, 1);
+});
+
+test("Brussels summer time boundary attributes late UTC event to next local day", () => {
+  const event = {
+    source: "uber_fleet_supplier" as const, externalEventId: "summer-1",
+    tripId: "trip-summer-1", driverId: "driver-1",
+    occurredAt: "2026-07-10T22:30:00Z", currency: "EUR",
+    amountCents: 2100, eventKind: "trip_earning" as const
+  };
+  const result = previewAuthorizedDailyBatch({
+    ...batch, firstServiceDate: "2026-07-10", lastServiceDate: "2026-07-11", events: [event]
+  }, "2026-07-11", "driver-1");
+  assert.equal(result.amountCents, 2100);
+  assert.equal(result.eventCount, 1);
+});
