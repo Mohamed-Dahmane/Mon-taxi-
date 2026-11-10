@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { reconcileUberTrips } from './cross-source-guard.mjs';
+const a = {driverId:'driver-1',tripId:'trip-1',source:'fleet',eventId:'event-1',amountCents:1234};
+test('exact replay counted once',()=>assert.equal(reconcileUberTrips([a,{...a}]).length,1));
+test('Fleet/export overlap refused',()=>assert.throws(()=>reconcileUberTrips([a,{...a,source:'export'}]),/Cross-source/));
+test('conflicting amount refused',()=>assert.throws(()=>reconcileUberTrips([a,{...a,amountCents:999}]),/Conflicting/));
+test('different drivers remain distinct',()=>assert.equal(reconcileUberTrips([a,{...a,driverId:'driver-2'}]).length,2));
+test('missing trip identifier refused',()=>assert.throws(()=>reconcileUberTrips([{...a,tripId:''}]),/Incomplete/));
+test('fractional cents refused',()=>assert.throws(()=>reconcileUberTrips([{...a,amountCents:12.5}]),/Incomplete/));
