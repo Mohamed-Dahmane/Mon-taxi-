@@ -115,3 +115,15 @@ test("same trip with different earning IDs fails closed rather than double count
     ...batch, events: [event, {...event, externalEventId: "trip-event-2"}]
   }, "2026-11-09", "driver-1"), /Ambiguous duplicate trip/);
 });
+
+test("conflicting replay of the same external event ID is rejected", () => {
+  const event = {
+    source: "uber_fleet_supplier" as const, externalEventId: "conflict-1",
+    tripId: "trip-conflict-1", driverId: "driver-1",
+    occurredAt: "2026-11-09T12:00:00Z", currency: "EUR",
+    amountCents: 1950, eventKind: "trip_earning" as const
+  };
+  assert.throws(() => previewAuthorizedDailyBatch({
+    ...batch, events: [event, {...event, amountCents: 2450}]
+  }, "2026-11-09", "driver-1"), /[Cc]onflict|[Dd]uplicate|[Rr]eplay/);
+});
