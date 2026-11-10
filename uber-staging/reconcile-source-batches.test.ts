@@ -91,3 +91,27 @@ test("Brussels summer time boundary attributes late UTC event to next local day"
   assert.equal(result.amountCents, 2100);
   assert.equal(result.eventCount, 1);
 });
+
+test("exact replay of a Fleet earning is counted once", () => {
+  const event = {
+    source: "uber_fleet_supplier" as const, externalEventId: "replay-1",
+    tripId: "trip-replay-1", driverId: "driver-1",
+    occurredAt: "2026-11-09T12:00:00Z", currency: "EUR",
+    amountCents: 1950, eventKind: "trip_earning" as const
+  };
+  const result = previewAuthorizedDailyBatch({...batch, events: [event, {...event}]}, "2026-11-09", "driver-1");
+  assert.equal(result.amountCents, 1950);
+  assert.equal(result.eventCount, 1);
+});
+
+test("same trip with different earning IDs fails closed rather than double counting", () => {
+  const event = {
+    source: "uber_fleet_supplier" as const, externalEventId: "trip-event-1",
+    tripId: "trip-shared", driverId: "driver-1",
+    occurredAt: "2026-11-09T12:00:00Z", currency: "EUR",
+    amountCents: 1950, eventKind: "trip_earning" as const
+  };
+  assert.throws(() => previewAuthorizedDailyBatch({
+    ...batch, events: [event, {...event, externalEventId: "trip-event-2"}]
+  }, "2026-11-09", "driver-1"), /Ambiguous duplicate trip/);
+});
