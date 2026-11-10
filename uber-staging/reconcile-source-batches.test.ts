@@ -41,3 +41,26 @@ test("rejects mixed Fleet Supplier and export events", () => {
     currency: "EUR", amountCents: 1000, eventKind: "trip_earning"
   }]}, "2026-11-09", "driver-1"), /Mixed source or foreign driver/);
 });
+
+test("rejects invalid source coverage dates, not just invalid requested dates", () => {
+  assert.throws(() => previewAuthorizedDailyBatch({
+    ...batch, firstServiceDate: "2026-02-30"
+  }, "2026-11-09", "driver-1"), /Invalid Brussels service date/);
+  assert.throws(() => previewAuthorizedDailyBatch({
+    ...batch, lastServiceDate: "2026-11-31"
+  }, "2026-11-09", "driver-1"), /Invalid Brussels service date/);
+});
+
+test("rejects missing authorization identity even for an empty source batch", () => {
+  assert.throws(() => previewAuthorizedDailyBatch({
+    ...batch, driverId: ""
+  }, "2026-11-09", ""), /Driver ownership mismatch/);
+});
+
+test("accepts a complete certified zero-day at both coverage boundaries", () => {
+  for (const day of ["2026-11-09", "2026-11-10"]) {
+    assert.deepEqual(previewAuthorizedDailyBatch(batch, day, "driver-1"), {
+      driverId: "driver-1", serviceDateBrussels: day, amountCents: 0, eventCount: 0
+    });
+  }
+});
