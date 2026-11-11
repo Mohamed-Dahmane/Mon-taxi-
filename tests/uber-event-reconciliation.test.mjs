@@ -18,3 +18,11 @@ test('missing event ID and invalid timestamp are rejected', () => {
  assert.throws(()=>normalizeUberEarning({...base,eventId:''}));
  assert.throws(()=>normalizeUberEarning({...base,occurredAt:'2026-11-11T09:00:00'}));
 });
+
+test('conflicting payloads sharing event ID are quarantined, not silently deduplicated', () => {
+ const changed={...base,amountCents:2500};
+ const result=reconcileUberEarnings([base,changed,base]);
+ assert.equal(result.accepted.length,0);
+ assert.equal(result.totalCents,0);
+ assert.equal(result.conflicts.length,1);
+});
