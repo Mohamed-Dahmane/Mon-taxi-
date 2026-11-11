@@ -17,12 +17,25 @@ export function normalizeUberEarning(row) {
 }
 export function reconcileUberEarnings(rows, existingKeys = []) {
   const seen = new Set(existingKeys);
+  const currentBatch = new Map();
   const accepted = [];
+  const conflicts = [];
   let duplicates = 0;
   for (const raw of rows) {
     const row = normalizeUberEarning(raw);
     // A trip can have multiple distinct earning, tip, adjustment or refund events.
     const key = JSON.stringify([row.source, row.driverId, row.eventId]);
+    if (currentBatch.has(key)) {
+      const previous = currentBatch.get(key);
+      if (JSON.stringify(previous) !== JSON.stringify(row)) {
+        conflicts.push({idempotencyKey:key, reason:'same event ID with conflicting payload'});
+        // Quarantine the entire conflicting event; never silently select a value.
+        const index = accepted.findIndex(item => item.idempotencyKey === key);
+        if (index !== -1) accepted.splice(index, 1);
+      } else { duplicates++; }
+      continue;
+    }
+    currentBatch.set(key, row);
     if (seen.has(key)) { duplicates++; continue; }
     seen.add(key);
     accepted.push({...row, idempotencyKey:key, status:'pending_review'});
@@ -32,7 +45,7 @@ export function reconcileUberEarnings(rows, existingKeys = []) {
     if (!Number.isSafeInteger(next)) throw new Error('Total cents overflow');
     return next;
   }, 0);
-  return {accepted, duplicates, totalCents};
+  return {accepted, duplicates, conflicts, totalCents};
 }
 // All rows remain pending_review; a separate verified reconciliation is required
 // before any data may influence "Appli". Never overwrite manual amounts.
