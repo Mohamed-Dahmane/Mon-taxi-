@@ -15,8 +15,9 @@ export function compareUberWithManual(rows, manualDays = [], existingKeys = []) 
     comparisons:preview.days.map(day => {
       const key = JSON.stringify([day.driverId, day.day]);
       const manualCents = manual.has(key) ? manual.get(key) : null;
-      return {...day, manualCents,
-        differenceCents:manualCents === null ? null : day.totalCents-manualCents,
-        status:'pending_review'};
+      const differenceCents = manualCents === null ? null : day.totalCents - manualCents;
+      if (differenceCents !== null && !Number.isSafeInteger(differenceCents))
+        throw new Error('Manual comparison cents overflow');
+      return {...day, manualCents, differenceCents, status:'pending_review'};
     })};
 }
