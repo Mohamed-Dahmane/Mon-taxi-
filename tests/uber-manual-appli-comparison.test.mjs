@@ -24,3 +24,9 @@ test('duplicate manual day is rejected rather than guessed',()=>{
  {driverId:'a',day:'2026-11-11',amountCents:200}
  ]),/Duplicate manual day/);
 });
+
+test('unsafe difference between Uber and manual Appli is rejected',()=>{
+ assert.throws(()=>compareUberWithManual([earning('fare',2)],
+  [{driverId:'a',day:'2026-11-11',amountCents:-Number.MAX_SAFE_INTEGER}]),
+  /Manual comparison cents overflow/);
+});
