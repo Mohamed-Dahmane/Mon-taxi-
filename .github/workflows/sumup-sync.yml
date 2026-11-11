@@ -115,5 +115,6 @@ jobs:
           processed = result.get("processed")
           if type(processed) is not int or processed < 0:
               raise SystemExit("Sync response has an invalid processed count")
-          print("SumUp sync returned a valid success summary (financial details omitted).")
+          # processed counts examined EUR rows, including existing transactions; it is NOT a count of new payments.
+          print(f"SumUp sync completed: {processed} EUR transaction records processed (not necessarily new). No financial details printed.")
           PY
