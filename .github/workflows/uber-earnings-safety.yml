@@ -7,6 +7,9 @@ on:
     paths:
       - 'tests/**uber**'
       - 'tests/**fleet**'
+      - '**/*uber*.mjs'
+      - '**/*fleet*.mjs'
+      - 'supabase/functions/**/uber/**'
       - '.github/workflows/uber-earnings-safety.yml'
 permissions:
   contents: read
