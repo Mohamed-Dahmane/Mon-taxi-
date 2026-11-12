@@ -28,4 +28,13 @@ requireMatch(source, /pagination_limit_reached/, 'Pagination exhaustion must fai
 requireMatch(source, /No transaction details returned/, 'Success response must not contain payment details');
 requireMatch(workflow, /response intentionally not printed/, 'Failed sync response must not be logged');
 requireMatch(workflow, /processed counts examined EUR rows/, 'Processed count must not be described as new payments');
+// Ensure credentialed HTTP requests remain bounded and cannot follow redirects.
+requireMatch(source, /endpoint=new URL\("https:\/\/api\.sumup\.com\/v0\.1\/me\/transactions\/history"\)/, 'SumUp API must use the fixed HTTPS endpoint');
+requireMatch(source, /signal:AbortSignal\.timeout\(20000\),redirect:"error"/, 'SumUp requests must time out and reject redirects');
+requireMatch(source, /signal:AbortSignal\.timeout\(10000\),redirect:"error"/, 'Supabase verification must time out and reject redirects');
+requireMatch(workflow, /--proto '=https' --tlsv1\.2/, 'Workflow must require HTTPS and TLS 1.2+');
+requireMatch(workflow, /--max-filesize 16384 --max-time 90 --connect-timeout 15/, 'Workflow HTTP calls must be bounded');
+requireMatch(workflow, /timeout-minutes:\s*8/, 'Workflow must have a job timeout');
+requireMatch(workflow, /umask 077/, 'Temporary response files must be private');
+requireMatch(workflow, /trap 'rm -f response\.json' EXIT/, 'Temporary response files must be removed');
 console.log('Private SumUp sync contract checks passed (offline; no live sync verified).');
