@@ -44,4 +44,14 @@ requireMatch(source, /endpoint\.searchParams\.set\("oldest_time","2026-10-31T23:
 requireMatch(source, /return Response\.json\(\{ok:true,processed:count,window_start:"2026-11-01",note:"No transaction details returned"\}\)/, 'Success must return only safe summary fields');
 assert.doesNotMatch(source, /console\.(?:log|debug|info|warn|error)\s*\(/, 'Edge Function must not log transaction or credential data');
 assert.doesNotMatch(workflow, /\becho\s+["']?\$\{?(?:SUMUP_API_KEY|SUPABASE_SERVICE_ROLE_KEY)\}?/, 'Workflow must not echo private credentials');
+
+// Guard the database view: unsuccessful/refunded payments must never count as revenue.
+const migration = readFileSync(new URL('../supabase/migrations/202611050001_taxi_sumup.sql', import.meta.url), 'utf8');
+requireMatch(migration, /where\s+status\s*=\s*'SUCCESSFUL'/i, 'Daily totals must include only successful payments');
+requireMatch(migration, /enable\s+row\s+level\s+security/i, 'Private transaction ledger must enable RLS');
+requireMatch(migration, /revoke\s+all\s+on\s+public\.taxi_sumup_transactions\s+from\s+anon,\s*authenticated/i, 'Public clients must not access the transaction ledger');
+requireMatch(migration, /revoke\s+all\s+on\s+public\.taxi_sumup_daily_totals\s+from\s+anon,\s*authenticated/i, 'Public clients must not access daily totals');
+const testsWorkflow = readFileSync(new URL('../.github/workflows/sumup-calculation-tests.yml', import.meta.url), 'utf8');
+requireMatch(testsWorkflow, /supabase\/migrations\/202611050001_taxi_sumup\.sql/, 'Changes to the revenue view must trigger offline regression checks');
+
 console.log('Private SumUp sync contract checks passed (offline; no live sync verified).');
