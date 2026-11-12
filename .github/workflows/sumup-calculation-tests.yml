@@ -4,6 +4,9 @@ on:
     paths:
       - 'integrations/sumup-reconciliation.js'
       - 'integrations/sumup-reconciliation.test.mjs'
+      - 'integrations/sumup-sync-contract.test.mjs'
+      - 'supabase/functions/taxi-sumup-sync/index.ts'
+      - '.github/workflows/sumup-sync.yml'
       - '.github/workflows/sumup-calculation-tests.yml'
   workflow_dispatch:
 permissions:
@@ -17,4 +20,6 @@ jobs:
         with:
           node-version: '22'
       - name: Tester rapprochement sans accès SumUp
-        run: node integrations/sumup-reconciliation.test.mjs
+        run: |
+          node integrations/sumup-reconciliation.test.mjs
+          node integrations/sumup-sync-contract.test.mjs
