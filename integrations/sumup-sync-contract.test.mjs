@@ -18,4 +18,14 @@ requireMatch(workflow, /cancel-in-progress:\s*false/, 'Overlapping sync must not
 requireMatch(workflow, /secrets\.SUMUP_API_KEY/, 'API key must be a GitHub secret');
 requireMatch(workflow, /secrets\.SUPABASE_SERVICE_ROLE_KEY/, 'Service-role key must be a GitHub secret');
 assert.doesNotMatch(workflow, /\bset\s+-x\b|\bcurl\s+[^\n]*--verbose\b/, 'Do not enable verbose credential logging');
+// Guard financial data validation and prevent partial-history writes.
+requireMatch(source, /!Array\.isArray\(entries\)/, 'Unknown API responses must fail closed');
+requireMatch(source, /entries\.length>100/, 'Oversized pagination pages must be rejected');
+requireMatch(source, /invalid_sumup_currency/, 'Malformed currencies must not be silently discarded');
+requireMatch(source, /!Number\.isSafeInteger\(cents\)\|\|cents<0/, 'Amounts must be nonnegative safe integer cents');
+requireMatch(source, /timeZone:"Europe\/Brussels"/, 'Daily grouping must use Brussels local time');
+requireMatch(source, /pagination_limit_reached/, 'Pagination exhaustion must fail closed');
+requireMatch(source, /No transaction details returned/, 'Success response must not contain payment details');
+requireMatch(workflow, /response intentionally not printed/, 'Failed sync response must not be logged');
+requireMatch(workflow, /processed counts examined EUR rows/, 'Processed count must not be described as new payments');
 console.log('Private SumUp sync contract checks passed (offline; no live sync verified).');
