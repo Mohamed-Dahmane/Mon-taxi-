@@ -1,0 +1,32 @@
+name: Uber earnings safety tests (isolated)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - uber-earnings-safe-reconciliation-20261111
+    paths:
+      - 'tests/**uber**'
+      - 'tests/**fleet**'
+      - '.github/workflows/uber-earnings-safety.yml'
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run isolated Uber tests without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' tests < <(find tests -type f \( -iname '*uber*.test.mjs' -o -iname '*fleet*.test.mjs' \) -print0)
+          if (( ${#tests[@]} == 0 )); then
+            echo 'No matching Uber/Fleet tests; fail closed.'
+            exit 1
+          fi
+          printf 'Running %s isolated test files\n' "${#tests[@]}"
+          node --test "${tests[@]}"
