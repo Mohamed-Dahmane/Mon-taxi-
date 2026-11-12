@@ -37,4 +37,11 @@ requireMatch(workflow, /--max-filesize 16384 --max-time 90 --connect-timeout 15/
 requireMatch(workflow, /timeout-minutes:\s*8/, 'Workflow must have a job timeout');
 requireMatch(workflow, /umask 077/, 'Temporary response files must be private');
 requireMatch(workflow, /trap 'rm -f response\.json' EXIT/, 'Temporary response files must be removed');
+
+// Prevent accidental widening of the financial import window or disclosure of sensitive payloads.
+requireMatch(source, /const START = Date\.parse\("2026-10-31T23:00:00Z"\)/, 'Import start must remain fixed at Brussels November midnight');
+requireMatch(source, /endpoint\.searchParams\.set\("oldest_time","2026-10-31T23:00:00Z"\)/, 'SumUp query must use the same import boundary');
+requireMatch(source, /return Response\.json\(\{ok:true,processed:count,window_start:"2026-11-01",note:"No transaction details returned"\}\)/, 'Success must return only safe summary fields');
+assert.doesNotMatch(source, /console\.(?:log|debug|info|warn|error)\s*\(/, 'Edge Function must not log transaction or credential data');
+assert.doesNotMatch(workflow, /\becho\s+["']?\$\{?(?:SUMUP_API_KEY|SUPABASE_SERVICE_ROLE_KEY)\}?/, 'Workflow must not echo private credentials');
 console.log('Private SumUp sync contract checks passed (offline; no live sync verified).');
