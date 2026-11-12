@@ -6,6 +6,7 @@ on:
       - 'integrations/sumup-reconciliation.test.mjs'
       - 'integrations/sumup-sync-contract.test.mjs'
       - 'supabase/functions/taxi-sumup-sync/index.ts'
+      - 'supabase/migrations/202611050001_taxi_sumup.sql'
       - '.github/workflows/sumup-sync.yml'
       - '.github/workflows/sumup-calculation-tests.yml'
   workflow_dispatch:
