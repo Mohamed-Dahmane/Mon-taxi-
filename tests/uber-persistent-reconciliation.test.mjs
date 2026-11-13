@@ -15,3 +15,6 @@ test('distinguishes drivers with same payment id',()=>assert.equal(reconcile([{.
 test('rejects impossible incoming calendar date',()=>assert.throws(()=>reconcile([{...a,local_service_date:'2026-02-30'}],[]),/Unverifiable/));
 test('rejects impossible persisted calendar date',()=>assert.throws(()=>reconcile([], [{...a,local_service_date:'2026-02-30'}]),/Unverifiable/));
 test('accepts valid leap day',()=>assert.equal(reconcile([{...a,local_service_date:'2028-02-29'}],[]).newPayments.length,1));
+
+test('rejects padded incoming payment id',()=>assert.throws(()=>reconcile([{...a,external_payment_id:' p1 '}],[]),/Unverifiable/));
+test('rejects padded persisted driver id',()=>assert.throws(()=>reconcile([], [{...a,driver_external_id:' d1'}]),/Unverifiable/));
