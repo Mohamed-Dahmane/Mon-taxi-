@@ -18,3 +18,8 @@ test('accepts valid leap day',()=>assert.equal(reconcile([{...a,local_service_da
 
 test('rejects padded incoming payment id',()=>assert.throws(()=>reconcile([{...a,external_payment_id:' p1 '}],[]),/Unverifiable/));
 test('rejects padded persisted driver id',()=>assert.throws(()=>reconcile([], [{...a,driver_external_id:' d1'}]),/Unverifiable/));
+
+test('rejects fractional cents to avoid silent rounding',()=>assert.throws(()=>reconcile([{...a,net_cents:850.5}],[]),/Unverifiable/));
+test('rejects negative payment amounts pending explicit refund handling',()=>assert.throws(()=>reconcile([{...a,net_cents:-100}],[]),/Unverifiable/));
+test('rejects cross-source duplicate identities within the same batch',()=>assert.throws(()=>reconcile([a,{...a,source:'uber_official_export'}],[]),/collision/));
+test('allows exact zero-cent payment without fabricating revenue',()=>assert.equal(reconcile([{...a,net_cents:0}],[]).newPayments.length,1));
