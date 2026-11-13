@@ -13,3 +13,6 @@ test('rejects conflicting duplicate',()=>assert.throws(()=>deduplicateFleetEarni
 test('rejects impossible calendar date',()=>assert.throws(()=>validateFleetEarning({...payment,local_service_date:'2026-02-30'},'driver-1'),/Invalid service date/));
 test('accepts leap-day calendar date',()=>assert.equal(validateFleetEarning({...payment,local_service_date:'2028-02-29'},'driver-1').local_service_date,'2028-02-29'));
 test('rejects whitespace-altered payment ID',()=>assert.throws(()=>validateFleetEarning({...payment,external_payment_id:' p-1 '},'driver-1'),/Payment ID required/));
+
+test('rejects invalid month and day',()=>{ for (const date of ['2026-13-01','2026-04-31','2026-02-29','0000-01-01']) assert.throws(()=>validateFleetEarning({...payment,local_service_date:date},'driver-1'),/Invalid service date/); });
+test('rejects negative amounts',()=>assert.throws(()=>validateFleetEarning({...payment,gross_cents:-100,fee_cents:-150,net_cents:50},'driver-1'),/nonnegative/));
