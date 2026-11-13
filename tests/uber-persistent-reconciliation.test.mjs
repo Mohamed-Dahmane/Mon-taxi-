@@ -11,3 +11,7 @@ test('rejects incomplete persisted snapshot argument',()=>assert.throws(()=>reco
 test('rejects duplicate persisted identities',()=>assert.throws(()=>reconcile([], [a,a]),/collision/));
 test('rejects duplicate incoming identities',()=>assert.throws(()=>reconcile([a,a],[]),/collision/));
 test('distinguishes drivers with same payment id',()=>assert.equal(reconcile([{...a,driver_external_id:'d2'}],[a]).newPayments.length,1));
+
+test('rejects impossible incoming calendar date',()=>assert.throws(()=>reconcile([{...a,local_service_date:'2026-02-30'}],[]),/Unverifiable/));
+test('rejects impossible persisted calendar date',()=>assert.throws(()=>reconcile([], [{...a,local_service_date:'2026-02-30'}]),/Unverifiable/));
+test('accepts valid leap day',()=>assert.equal(reconcile([{...a,local_service_date:'2028-02-29'}],[]).newPayments.length,1));
