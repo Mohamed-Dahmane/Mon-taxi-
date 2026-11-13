@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validateFleetEarning,deduplicateFleetEarnings} from '../lib/uber-fleet-reconciliation.mjs';
+const payment={source:'uber_fleet',external_payment_id:'p-1',driver_external_id:'driver-1',currency:'EUR',gross_cents:1000,fee_cents:150,net_cents:850,local_service_date:'2026-11-12'};
+test('accepts exact driver and reconciled cents',()=>assert.equal(validateFleetEarning(payment,'driver-1').net_cents,850));
+test('rejects another driver',()=>assert.throws(()=>validateFleetEarning(payment,'driver-2'),/Driver mismatch/));
+test('rejects missing identity',()=>assert.throws(()=>validateFleetEarning(payment,''),/identity required/));
+test('rejects inconsistent amounts',()=>assert.throws(()=>validateFleetEarning({...payment,net_cents:900},'driver-1'),/reconcile/));
+test('rejects fractional cents',()=>assert.throws(()=>validateFleetEarning({...payment,fee_cents:1.5},'driver-1'),/integer cents/));
+test('rejects unsupported source',()=>assert.throws(()=>validateFleetEarning({...payment,source:'scraped'},'driver-1'),/Unapproved source/));
+test('collapses identical duplicate',()=>assert.equal(deduplicateFleetEarnings([payment,payment],'driver-1').length,1));
+test('rejects conflicting duplicate',()=>assert.throws(()=>deduplicateFleetEarnings([payment,{...payment,net_cents:800,gross_cents:950}],'driver-1'),/Conflicting duplicate/));
