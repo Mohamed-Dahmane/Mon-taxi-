@@ -16,3 +16,5 @@ test('rejects whitespace-altered payment ID',()=>assert.throws(()=>validateFleet
 
 test('rejects invalid month and day',()=>{ for (const date of ['2026-13-01','2026-04-31','2026-02-29','0000-01-01']) assert.throws(()=>validateFleetEarning({...payment,local_service_date:date},'driver-1'),/Invalid service date/); });
 test('rejects negative amounts',()=>assert.throws(()=>validateFleetEarning({...payment,gross_cents:-100,fee_cents:-150,net_cents:50},'driver-1'),/nonnegative/));
+
+test('rejects same payment across Fleet and official export',()=>assert.throws(()=>deduplicateFleetEarnings([payment,{...payment,source:'uber_official_export'}],'driver-1'),/Cross-source payment collision/));
