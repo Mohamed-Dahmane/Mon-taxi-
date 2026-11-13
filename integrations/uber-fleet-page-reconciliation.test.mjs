@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { reconcileFleetPaymentPage } from './uber-fleet-page-reconciliation.js';
+const p = (id='p1', amount=12) => ({payment_id:id,event_time:1794600000,amount,currency_code:'EUR',cash_collected:0,category:'fare',trip_id:'t1',driver_id:'driver1'});
+const opts = {verifiedDriverId:'driver1'};
+test('first page stages without touching Appli',()=>{const r=reconcileFleetPaymentPage([p()],[],opts);assert.equal(r.inserted.length,1);assert.equal(r.writeToAppli,false)});
+test('replayed page is idempotent',()=>{const a=reconcileFleetPaymentPage([p()],[],opts);const b=reconcileFleetPaymentPage([p()],a.inserted,opts);assert.equal(b.inserted.length,0);assert.deepEqual(b.unchanged,['p1'])});
+test('changed amount is rejected across batches',()=>{const a=reconcileFleetPaymentPage([p()],[],opts);assert.throws(()=>reconcileFleetPaymentPage([p('p1',13)],a.inserted,opts),/Conflicting/)});
+test('other fleet driver rejected',()=>assert.throws(()=>reconcileFleetPaymentPage([{...p(),driver_id:'driver2'}],[],opts),/identity mismatch/));
+test('existing staging driver mismatch rejected',()=>{const a=reconcileFleetPaymentPage([p()],[],opts);assert.throws(()=>reconcileFleetPaymentPage([p()],a.inserted,{verifiedDriverId:'driver2'}))});
+test('duplicate existing records rejected',()=>{const a=reconcileFleetPaymentPage([p()],[],opts);assert.throws(()=>reconcileFleetPaymentPage([], [...a.inserted,...a.inserted],opts),/Duplicate/)});
