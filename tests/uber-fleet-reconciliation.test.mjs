@@ -10,3 +10,6 @@ test('rejects fractional cents',()=>assert.throws(()=>validateFleetEarning({...p
 test('rejects unsupported source',()=>assert.throws(()=>validateFleetEarning({...payment,source:'scraped'},'driver-1'),/Unapproved source/));
 test('collapses identical duplicate',()=>assert.equal(deduplicateFleetEarnings([payment,payment],'driver-1').length,1));
 test('rejects conflicting duplicate',()=>assert.throws(()=>deduplicateFleetEarnings([payment,{...payment,net_cents:800,gross_cents:950}],'driver-1'),/Conflicting duplicate/));
+test('rejects impossible calendar date',()=>assert.throws(()=>validateFleetEarning({...payment,local_service_date:'2026-02-30'},'driver-1'),/Invalid service date/));
+test('accepts leap-day calendar date',()=>assert.equal(validateFleetEarning({...payment,local_service_date:'2028-02-29'},'driver-1').local_service_date,'2028-02-29'));
+test('rejects whitespace-altered payment ID',()=>assert.throws(()=>validateFleetEarning({...payment,external_payment_id:' p-1 '},'driver-1'),/Payment ID required/));
