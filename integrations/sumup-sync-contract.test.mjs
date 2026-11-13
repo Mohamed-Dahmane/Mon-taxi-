@@ -54,4 +54,10 @@ requireMatch(migration, /revoke\s+all\s+on\s+public\.taxi_sumup_daily_totals\s+f
 const testsWorkflow = readFileSync(new URL('../.github/workflows/sumup-calculation-tests.yml', import.meta.url), 'utf8');
 requireMatch(testsWorkflow, /supabase\/migrations\/202611050001_taxi_sumup\.sql/, 'Changes to the revenue view must trigger offline regression checks');
 
+
+// Keep privileged SumUp credentials out of URLs and diagnostic traces.
+assert.doesNotMatch(source, /endpoint\.searchParams\.set\(\s*["'](?:api_key|access_token|token)["']/, 'SumUp credentials must never be placed in query parameters');
+assert.doesNotMatch(workflow, /\bcurl\b[^\n]*(?:--trace(?:-ascii)?|--include|--dump-header)\b/, 'Credentialed curl must not emit HTTP headers or traces');
+requireMatch(source, /headers:\{Authorization:"Bearer "\+key,Accept:"application\/json"\}/, 'SumUp token must be sent only as a Bearer header');
+
 console.log('Private SumUp sync contract checks passed (offline; no live sync verified).');
