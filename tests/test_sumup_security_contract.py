@@ -44,13 +44,13 @@ class SumUpSecurityContract(unittest.TestCase):
 
 
     def test_offline_ci_is_read_only_without_secrets(self):
-        self.assertIn("permissions:\\n  contents: read", self.offline_workflow)
+        self.assertIn("permissions:\n  contents: read", self.offline_workflow)
         self.assertIn("persist-credentials: false", self.offline_workflow)
         self.assertNotIn("${{ secrets.", self.offline_workflow)
         self.assertNotIn("contents: write", self.offline_workflow)
 
     def test_sync_serialization_and_response_cleanup(self):
-        self.assertIn("permissions:\\n  contents: read", self.workflow)
+        self.assertIn("permissions:\n  contents: read", self.workflow)
         self.assertIn("group: taxi-sumup-sync", self.workflow)
         self.assertIn("cancel-in-progress: false", self.workflow)
         self.assertIn("umask 077", self.workflow)
