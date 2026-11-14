@@ -1,0 +1,26 @@
+name: SumUp offline security checks
+on:
+  push:
+    paths:
+      - '.github/workflows/sumup-sync.yml'
+      - 'supabase/functions/taxi-sumup-sync/index.ts'
+      - 'tests/test_sumup_security_contract.py'
+      - '.github/workflows/sumup-security-tests.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/sumup-sync.yml'
+      - 'supabase/functions/taxi-sumup-sync/index.ts'
+      - 'tests/test_sumup_security_contract.py'
+      - '.github/workflows/sumup-security-tests.yml'
+permissions:
+  contents: read
+jobs:
+  offline-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run offline SumUp security regression checks
+        run: python3 -m unittest discover -s tests -p 'test_sumup_security_contract.py' -v
