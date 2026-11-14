@@ -65,6 +65,24 @@ class SumUpSecurityContract(unittest.TestCase):
         self.assertIn('if(!Number.isSafeInteger(cents)||cents<0)', self.function)
         self.assertIn('timeZone:"Europe/Brussels"', self.function)
 
+    def test_no_verbose_http_or_shell_tracing_of_credentials(self):
+        # Workflow carries privileged values in environment variables.
+        # Verbose curl and shell tracing could expose headers in public CI logs.
+        self.assertNotIn("set -x", self.workflow)
+        self.assertNotIn("set -o xtrace", self.workflow)
+        self.assertNotIn("curl -v", self.workflow)
+        self.assertNotIn("curl --verbose", self.workflow)
+        self.assertNotIn("--trace-ascii", self.workflow)
+        self.assertNotIn("--trace ", self.workflow)
+        self.assertNotIn("printenv", self.workflow)
+        self.assertNotIn("env |", self.workflow)
+
+    def test_function_does_not_log_sensitive_transaction_data(self):
+        self.assertNotIn("console.log(", self.function)
+        self.assertNotIn("console.error(", self.function)
+        self.assertNotIn("JSON.stringify(pendingRows)", self.function)
+        self.assertNotIn("JSON.stringify(entries)", self.function)
+
     def test_success_is_not_a_new_payment_count(self):
         self.assertIn('processed counts examined EUR rows', self.workflow)
         self.assertIn('not necessarily new', self.workflow)
