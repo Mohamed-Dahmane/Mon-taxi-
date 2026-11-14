@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {reconcileWithPersistedPayments as reconcile} from '../lib/uber-persistent-reconciliation.mjs';
+const a={source:'uber_fleet',driver_external_id:'d1',external_payment_id:'p1',net_cents:850,local_service_date:'2026-11-12'};
+test('accepts new payment',()=>assert.equal(reconcile([a],[]).newPayments.length,1));
+test('skips identical previously imported payment',()=>assert.equal(reconcile([a],[a]).alreadyPresent,1));
+test('rejects cross-source collision across runs',()=>assert.throws(()=>reconcile([{...a,source:'uber_official_export'}],[a]),/conflict/));
+test('rejects changed net amount across runs',()=>assert.throws(()=>reconcile([{...a,net_cents:900}],[a]),/conflict/));
+test('rejects changed date across runs',()=>assert.throws(()=>reconcile([{...a,local_service_date:'2026-11-13'}],[a]),/conflict/));
+test('rejects incomplete persisted snapshot argument',()=>assert.throws(()=>reconcile([a],null),/snapshot/));
+test('rejects duplicate persisted identities',()=>assert.throws(()=>reconcile([], [a,a]),/collision/));
+test('rejects duplicate incoming identities',()=>assert.throws(()=>reconcile([a,a],[]),/collision/));
+test('distinguishes drivers with same payment id',()=>assert.equal(reconcile([{...a,driver_external_id:'d2'}],[a]).newPayments.length,1));
+
+test('rejects impossible incoming calendar date',()=>assert.throws(()=>reconcile([{...a,local_service_date:'2026-02-30'}],[]),/Unverifiable/));
+test('rejects impossible persisted calendar date',()=>assert.throws(()=>reconcile([], [{...a,local_service_date:'2026-02-30'}]),/Unverifiable/));
+test('accepts valid leap day',()=>assert.equal(reconcile([{...a,local_service_date:'2028-02-29'}],[]).newPayments.length,1));
+
+test('rejects padded incoming payment id',()=>assert.throws(()=>reconcile([{...a,external_payment_id:' p1 '}],[]),/Unverifiable/));
+test('rejects padded persisted driver id',()=>assert.throws(()=>reconcile([], [{...a,driver_external_id:' d1'}]),/Unverifiable/));
+
+test('rejects fractional cents to avoid silent rounding',()=>assert.throws(()=>reconcile([{...a,net_cents:850.5}],[]),/Unverifiable/));
+test('rejects negative payment amounts pending explicit refund handling',()=>assert.throws(()=>reconcile([{...a,net_cents:-100}],[]),/Unverifiable/));
+test('rejects cross-source duplicate identities within the same batch',()=>assert.throws(()=>reconcile([a,{...a,source:'uber_official_export'}],[]),/collision/));
+test('allows exact zero-cent payment without fabricating revenue',()=>assert.equal(reconcile([{...a,net_cents:0}],[]).newPayments.length,1));

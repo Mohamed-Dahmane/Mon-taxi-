@@ -4,15 +4,29 @@ on:
     paths:
       - 'integrations/uber-earnings.js'
       - 'integrations/uber-earnings.test.mjs'
+      - 'docs/uber/**'
+      - 'tests/uber-*.test.mjs'
+      - '.github/workflows/uber-earnings-tests.yml'
+  pull_request:
+    paths:
+      - 'integrations/uber-earnings.js'
+      - 'integrations/uber-earnings.test.mjs'
+      - 'docs/uber/**'
+      - 'tests/uber-*.test.mjs'
       - '.github/workflows/uber-earnings-tests.yml'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run Uber adapter tests
-        run: node --experimental-default-type=module --test integrations/uber-earnings.test.mjs
+      - name: Run Uber adapter and offline reconciliation tests
+        run: |
+          node --experimental-default-type=module --test integrations/uber-earnings.test.mjs
+          node --test tests/uber-*.test.mjs
