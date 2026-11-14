@@ -57,5 +57,20 @@ class SumUpSecurityContract(unittest.TestCase):
         self.assertIn("trap 'rm -f response.json' EXIT", self.workflow)
 
 
+    def test_bounded_history_and_eur_validation(self):
+        self.assertIn('for(let page=0;page<20;page++)', self.function)
+        self.assertIn('if(entries.length>100)', self.function)
+        self.assertIn('if(!Array.isArray(entries))', self.function)
+        self.assertIn('if(tx.currency!=="EUR")continue;', self.function)
+        self.assertIn('if(!Number.isSafeInteger(cents)||cents<0)', self.function)
+        self.assertIn('timeZone:"Europe/Brussels"', self.function)
+
+    def test_success_is_not_a_new_payment_count(self):
+        self.assertIn('processed counts examined EUR rows', self.workflow)
+        self.assertIn('not necessarily new', self.workflow)
+        self.assertIn('result.get("ok") is not True', self.workflow)
+        self.assertIn('result.get("window_start")', self.workflow)
+
+
 if __name__ == "__main__":
     unittest.main()
