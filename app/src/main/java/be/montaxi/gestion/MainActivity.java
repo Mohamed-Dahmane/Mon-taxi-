@@ -112,7 +112,8 @@ public class MainActivity extends Activity {
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
   vault=getSharedPreferences("taxi-lock",MODE_PRIVATE);
-  getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+  // Captures d'écran autorisées dans Mon Taxi Hôtel pour sauvegarder les détails des courses.
+  getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
   getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
   getWindow().getDecorView().setSystemUiVisibility(0);
   getWindow().setStatusBarColor(Color.rgb(17,24,39));
