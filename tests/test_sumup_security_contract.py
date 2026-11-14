@@ -5,6 +5,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/sumup-sync.yml"
 FUNCTION = ROOT / "supabase/functions/taxi-sumup-sync/index.ts"
+OFFLINE_WORKFLOW = ROOT / ".github/workflows/sumup-security-tests.yml"
 
 
 class SumUpSecurityContract(unittest.TestCase):
@@ -12,6 +13,7 @@ class SumUpSecurityContract(unittest.TestCase):
     def setUpClass(cls):
         cls.workflow = WORKFLOW.read_text(encoding="utf-8")
         cls.function = FUNCTION.read_text(encoding="utf-8")
+        cls.offline_workflow = OFFLINE_WORKFLOW.read_text(encoding="utf-8")
 
     def test_private_credentials_only_from_secrets(self):
         for secret in ("SUMUP_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_URL"):
@@ -39,6 +41,20 @@ class SumUpSecurityContract(unittest.TestCase):
         self.assertIn("response intentionally not printed", self.workflow)
         self.assertNotIn("cat response.json", self.workflow)
         self.assertIn('note:"No transaction details returned"', self.function)
+
+
+    def test_offline_ci_is_read_only_without_secrets(self):
+        self.assertIn("permissions:\\n  contents: read", self.offline_workflow)
+        self.assertIn("persist-credentials: false", self.offline_workflow)
+        self.assertNotIn("${{ secrets.", self.offline_workflow)
+        self.assertNotIn("contents: write", self.offline_workflow)
+
+    def test_sync_serialization_and_response_cleanup(self):
+        self.assertIn("permissions:\\n  contents: read", self.workflow)
+        self.assertIn("group: taxi-sumup-sync", self.workflow)
+        self.assertIn("cancel-in-progress: false", self.workflow)
+        self.assertIn("umask 077", self.workflow)
+        self.assertIn("trap 'rm -f response.json' EXIT", self.workflow)
 
 
 if __name__ == "__main__":
