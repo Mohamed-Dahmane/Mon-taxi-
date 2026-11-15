@@ -1549,6 +1549,7 @@ async function refreshEntireTaxi(){
   console.error("Actualisation sans navigation",error);
   toast("Actualisation incomplète");
  }finally{
+  await new Promise(resolve=>setTimeout(resolve,Math.max(0,700-(Date.now()-refreshStarted))));
   if(indicator)indicator.hidden=true;
   taxiRefreshBusy=false;
  }
