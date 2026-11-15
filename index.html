@@ -290,6 +290,12 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .taxi-header .v11-refresh{position:fixed!important;top:12px;right:72px;left:auto;z-index:1099;margin:0!important;width:44px;height:44px;background:#142238!important;border:1px solid #7196c4!important;color:#e8f2ff!important}
 #hotelCommissionsDialog #refreshHotelPage{position:fixed!important;top:12px;right:72px;left:auto;z-index:1105;margin:0!important;width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:#142238!important;border:1px solid #7196c4!important;color:#e8f2ff!important;border-radius:9px}
 #hotelCommissionsDialog .hotel-commissions-bar{padding-right:58px}
+/* Même hauteur que le sélecteur de date, sur toutes les pages. */
+:root{--taxi-header-control-height:39px}
+.taxi-header .calendar-trigger{height:var(--taxi-header-control-height)!important;min-height:var(--taxi-header-control-height)!important;box-sizing:border-box}
+.taxi-header .v11-refresh,#hotelCommissionsDialog #refreshHotelPage{height:var(--taxi-header-control-height)!important;min-height:var(--taxi-header-control-height)!important;width:44px!important;box-sizing:border-box}
+#quickMenuBtn{height:var(--taxi-header-control-height)!important;min-height:var(--taxi-header-control-height)!important;box-sizing:border-box;padding-top:0!important;padding-bottom:0!important;display:flex;align-items:center;justify-content:center}
+
 #refreshLocal,#refreshHotelPage{transition:background-color .15s,box-shadow .15s,transform .15s}
 #refreshLocal:active,#refreshHotelPage:active,#refreshLocal.refresh-tapped,#refreshHotelPage.refresh-tapped{background:#2676b8!important;box-shadow:0 0 0 3px #65b5ff77!important;transform:scale(.92)}
 /* Un unique anneau de progression centré, sans ancien pseudo-élément ovale. */
