@@ -355,7 +355,7 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
   <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Planifier course</button>
   <button type="button" class="button" id="openHotelPlanning" aria-controls="hotelCommissionsDialog">Planning</button>
 </div>
-<div id="taxiPageLocation" class="taxi-page-location" aria-label="Page actuelle"><span data-location="home" class="active">Accueil</span><span data-location="details">Détails</span><span data-location="archive">Archives</span></div>
+<div class="taxi-page-navigation"><button type="button" id="taxiPagePrev" class="taxi-page-arrow" aria-label="Page précédente">‹</button><div id="taxiPageLocation" class="taxi-page-location" aria-label="Page actuelle"><span data-location="home" class="active">Accueil</span><span data-location="details">Détails</span><span data-location="archive">Archives</span></div><button type="button" id="taxiPageNext" class="taxi-page-arrow" aria-label="Page suivante">›</button></div>
 
 <p class="hint" id="hotelSyncStatus" role="status"></p>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
@@ -1012,6 +1012,7 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
 function updateTaxiPageLocation(){const active=document.querySelector(".page.active")?.id||"home";const indicator=document.getElementById("taxiPageLocation");if(indicator){indicator.querySelectorAll("[data-location]").forEach(el=>{const current=el.dataset.location===active;el.classList.toggle("active",current);if(current)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")})}}
 document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",updateTaxiPageLocation));
 updateTaxiPageLocation();
+for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElementById(id)?.addEventListener("click",()=>{const pages=["home","details","archive"];const current=document.querySelector(".page.active")?.id;const index=pages.indexOf(current);document.querySelector(`.pageBtn[data-page="${pages[((index<0?0:index)+step+pages.length)%pages.length]}"]`)?.click()});
 
 // Navigation circulaire tactile : écoute globale pour les contenus défilants et tableaux.
 (function(){
@@ -1868,8 +1869,8 @@ body .pagebar{display:none}
 .taxi-menu-lines{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:22px;height:25px}
 .taxi-menu-lines i{display:block;width:19px;height:2px;background:#e8f2ff;border-radius:2px}
 #quickMenuBtn:active .taxi-menu-lines,#hotelQuickMenuBtn:active .taxi-menu-lines{opacity:.6}
-.taxi-page-location{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;width:100%;margin:7px 0 12px!important;padding:4px 0!important;visibility:visible!important;opacity:1!important}
-.taxi-page-location span{display:block;text-align:center;padding:7px 3px;border-radius:8px;color:#91a7c8;font-size:13px;font-weight:650;line-height:1.2;background:#18253a;border:1px solid #334963}
+.taxi-page-navigation{display:flex;align-items:center;gap:5px;margin:7px 0 12px}.taxi-page-arrow{flex:0 0 24px;display:flex;align-items:center;justify-content:center;border:1px solid #334963;border-radius:7px;background:#18253a;color:#d6e5fb;font-size:21px;line-height:1;height:31px;padding:0}.taxi-page-arrow:active{background:#285fa3}.taxi-page-navigation .taxi-page-location{margin:0!important;flex:1;min-width:0}.taxi-page-location{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;width:100%;margin:7px 0 12px!important;padding:4px 0!important;visibility:visible!important;opacity:1!important}
+.taxi-page-location span{display:block;text-align:center;padding:7px 3px;border-radius:8px;color:#91a7c8;font-size:14px;font-weight:650;line-height:1.2;background:#18253a;border:1px solid #334963}
 .taxi-page-location span.active{background:#285fa3;color:white;border-color:#78b3ff;font-weight:800;box-shadow:inset 0 -2px #9ec9ff}
 
 
