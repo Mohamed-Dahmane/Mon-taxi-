@@ -1530,18 +1530,31 @@ $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie
  const day=data.months[l.key]?.days?.[l.day];if(!day)return;
  if(l.old===undefined)delete day[l.field];else day[l.field]=l.old;
  }lastEntry=null;save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();showQuickDay();toast("Dernière saisie annulée")});
-function refreshEntireTaxi(){
- const indicator=$("fullRefreshIndicator");
- if(indicator&&!indicator.hidden)return;
+let taxiRefreshBusy=false;
+async function refreshEntireTaxi(){
+ if(taxiRefreshBusy)return;
  if(!safeToReload()&&!$("hotelCommissionsDialog").open){toast("Termine la saisie avant d’actualiser");return;}
- indicator.hidden=false;
- try{sessionStorage.setItem("taxi-refresh-success","1");}catch(e){}
- const url=new URL(location.href);url.searchParams.set("_refresh",String(Date.now()));
- location.replace(url.toString());
+ taxiRefreshBusy=true;
+ const indicator=$("fullRefreshIndicator");
+ if(indicator)indicator.hidden=false;
+ try{
+  // Mettre à jour les sources distantes sans remplacer le document ni fermer le planning.
+  await Promise.all([loadPrivatePayments(),syncHotels()]);
+  hotelCommissions=readHotelCommissions();
+  render();
+  markRefreshed();
+  // Garder la page, les dialogues, les filtres et le défilement actuels.
+  toast("Actualisé");
+ }catch(error){
+  console.error("Actualisation sans navigation",error);
+  toast("Actualisation incomplète");
+ }finally{
+  if(indicator)indicator.hidden=true;
+  taxiRefreshBusy=false;
+ }
 }
 $("refreshHotelPage").addEventListener("click",refreshEntireTaxi);
 $("refreshLocal").addEventListener("click",refreshEntireTaxi);
-window.addEventListener("load",()=>{try{if(sessionStorage.getItem("taxi-refresh-success")==="1"){sessionStorage.removeItem("taxi-refresh-success");$("fullRefreshIndicator").hidden=true;toast("Actualisé");}}catch(e){}});
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
 // Une erreur de rendu ne doit jamais empêcher l'initialisation de la session.
 try{render();markRefreshed();}catch(error){console.error("Affichage initial différé",error)}
