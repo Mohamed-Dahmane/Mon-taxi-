@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import org.json.JSONArray;
@@ -18,11 +19,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public final class TaxiReminderReceiver extends BroadcastReceiver {
-    private static final String CHANNEL = "taxi_pickup_reminders";
+    private static final String STORAGE = "taxi_pickup_reminders";
+    private static final String CHANNEL = "taxi_pickup_ring_ring";
     private static final String ACTION = "be.montaxi.gestion.PICKUP_REMINDER";
 
     private static SharedPreferences preferences(Context context) {
-        return context.getSharedPreferences(CHANNEL, Context.MODE_PRIVATE);
+        return context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
     }
 
     private static PendingIntent alarm(Context context, String id) {
@@ -107,6 +109,17 @@ public final class TaxiReminderReceiver extends BroadcastReceiver {
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         NotificationChannel channel = new NotificationChannel(CHANNEL, "Rappels de courses",
                 NotificationManager.IMPORTANCE_HIGH);
+        AudioAttributes audio = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        Uri ring = new Uri.Builder()
+                .scheme("android.resource")
+                .authority(context.getPackageName())
+                .appendPath("raw")
+                .appendPath("taxi_ring_ring")
+                .build();
+        channel.setSound(ring, audio);
         channel.enableVibration(true);
         manager.createNotificationChannel(channel);
         PendingIntent open = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
