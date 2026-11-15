@@ -447,7 +447,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 <section class="panel card" id="backup"><h2>Sauvegarde</h2><div class="toolbar"><button class="button" id="export">Exporter une sauvegarde</button><button class="button secondary" id="importBtn">Importer une sauvegarde ou un mois</button><input id="importFile" type="file" accept=".json,application/json" hidden></div><button class="button secondary" id="undoMonthImport">Annuler le dernier import de mois</button><hr style="border:0;border-top:1px solid #33405a;margin:20px 0"><button class="button danger" id="reset">Remettre les montants à zéro</button><p class="hint">Un import de mois remplace uniquement la période indiquée, sans additionner les montants. Les autres mois sont conservés. Une sauvegarde complète remplace toutes les périodes.</p></section>
 </section></main>
 <dialog id="hotelCommissionsDialog" aria-label="Commissions hôtels">
-  <div class="hotel-commissions-bar"><button type="button" class="button secondary" id="closeHotelCommissions">← Mon Taxi</button></div>
+  <div class="hotel-commissions-bar"><button type="button" class="button secondary" id="closeHotelCommissions">← Mon Taxi</button><button type="button" class="button secondary" id="refreshHotelPage" aria-label="Actualiser toute l’application" title="Actualiser toute l’application" style="margin-left:auto;min-width:42px">⟳</button></div>
   <iframe id="hotelCommissionsFrame" title="Commissions hôtels"></iframe>
 </dialog>
 <dialog id="costDialog" aria-labelledby="costTitle"><form id="costForm">
@@ -1530,6 +1530,7 @@ $("undoQuick").addEventListener("click",()=>{if(!lastEntry){toast("Aucune saisie
  const day=data.months[l.key]?.days?.[l.day];if(!day)return;
  if(l.old===undefined)delete day[l.field];else day[l.field]=l.old;
  }lastEntry=null;save();renderExpenses();renderDays();refreshMetrics();renderAnnual();renderArchive();showQuickDay();toast("Dernière saisie annulée")});
+$("refreshHotelPage").addEventListener("click",()=>{const url=new URL(location.href);url.searchParams.set("_refresh",String(Date.now()));location.replace(url.toString());});
 $("refreshLocal").addEventListener("click",()=>{if(!safeToReload()){toast("Termine la saisie ou ferme la fenêtre avant d’actualiser");return;}const url=new URL(location.href);url.searchParams.set("_refresh",String(Date.now()));location.replace(url.toString());});
 function markRefreshed(){const now=new Date();const stamp=String(now.getDate()).padStart(2,"0")+"."+String(now.getMonth()+1).padStart(2,"0")+"."+now.getFullYear()+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");$("v11RefreshTime").textContent=stamp;}
 // Une erreur de rendu ne doit jamais empêcher l'initialisation de la session.
