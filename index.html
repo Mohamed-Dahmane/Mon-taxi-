@@ -332,7 +332,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
   <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Planifier course</button>
   <button type="button" class="button" id="openHotelPlanning" aria-controls="hotelCommissionsDialog">Planning</button>
 </div>
-<button type="button" class="button secondary" id="enableHotelAlerts">Activer les alertes de courses</button>
+
 <p class="hint" id="hotelSyncStatus" role="status"></p>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
 <section class="page active" id="home">
@@ -1659,22 +1659,11 @@ function updateHotelReminders(){
   updateHotelReminders();
  },Math.min(60000,Math.max(0,next.at-Date.now())));
 }
-$("enableHotelAlerts").onclick=async()=>{
- if(window.TaxiReminder){
-  TaxiReminder.enable();
+// Android requests notification permission once when the hotel module is ready.
+if(window.TaxiReminder){
+  try{TaxiReminder.enable()}catch{}
   updateHotelReminders();
-  return;
- }
- try{
-  hotelAudio??=new AudioContext();
-  await hotelAudio.resume();
-  if(window.Notification?.permission==="default"){
-   Notification.requestPermission().catch(()=>{});
-  }
-  updateHotelReminders();
-  toast("Alertes sonores activées pour cet onglet");
- }catch{toast("Impossible d’activer le son dans ce navigateur")}
-};
+}
 function hotelSyncStatus(message){
  $("hotelSyncStatus").textContent=message;
 }
