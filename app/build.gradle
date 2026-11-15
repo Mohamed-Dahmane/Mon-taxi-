@@ -10,14 +10,15 @@ def signingPassword = System.getenv('TAXI_SIGNING_STORE_PASSWORD')
 def signingAlias = System.getenv('TAXI_SIGNING_KEY_ALIAS')
 def signingKeyPassword = System.getenv('TAXI_SIGNING_KEY_PASSWORD')
 if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
- def variants = { String value ->
+ def variants = { String value, String name ->
   def trimmed = value.trim()
-  def unquoted = trimmed.replaceFirst(/^(['"])(.*)\1$/, '$2')
-  [value, trimmed, unquoted].unique()
+  def unwrapped = trimmed.replaceFirst(/^(?:export\s+)?/ + name + /\s*=\s*/, '').trim()
+  def unquoted = unwrapped.replaceFirst(/^(['"])(.*)\1$/, '$2')
+  [value, trimmed, unwrapped, unquoted].unique()
  }
  def store
  def storePasswordUsed
- for (candidate in variants(signingPassword)) {
+ for (candidate in variants(signingPassword, 'TAXI_SIGNING_STORE_PASSWORD')) {
   try {
    store = java.security.KeyStore.getInstance(file(signingFile), candidate.toCharArray())
    storePasswordUsed = candidate
@@ -27,12 +28,12 @@ if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
  if (store == null) throw new GradleException('Le mot de passe du magasin de clés Android est incorrect.')
 
  def privateAliases = java.util.Collections.list(store.aliases()).findAll { store.isKeyEntry(it) }
- def aliasUsed = variants(signingAlias).find { candidate -> store.isKeyEntry(candidate) }
+ def aliasUsed = variants(signingAlias, 'TAXI_SIGNING_KEY_ALIAS').find { candidate -> store.isKeyEntry(candidate) }
  if (aliasUsed == null && privateAliases.size() == 1) aliasUsed = privateAliases.first()
  if (aliasUsed == null) throw new GradleException('Clé de signature Android introuvable dans le magasin.')
 
  def passwordUsed
- for (candidate in (variants(signingKeyPassword) + [storePasswordUsed]).unique()) {
+ for (candidate in (variants(signingKeyPassword, 'TAXI_SIGNING_KEY_PASSWORD') + [storePasswordUsed]).unique()) {
   try {
    if (store.getKey(aliasUsed, candidate.toCharArray()) instanceof java.security.PrivateKey) {
     passwordUsed = candidate
