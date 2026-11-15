@@ -1,20 +1,20 @@
-# SumUp → Mon Taxi V11 (préparation)
+# SumUp → Mon Taxi : état technique et vérifications
 
-**État : NON DÉPLOYÉ, NON CONNECTÉ.** Ce dossier est un prototype technique. Il n'est pas encore intégré à l'écran V11 et ne doit pas être considéré comme une synchronisation fonctionnelle.
+Ce document décrit le code présent dans le dépôt, **pas une preuve de synchronisation opérationnelle**. Ne jamais publier de clés API, de jetons ou de données financières.
 
-## Sécurité
-- Ne jamais copier la clé SumUp dans GitHub, GitHub Pages, localStorage ou dans ChatGPT.
-- La clé SumUp doit être stockée comme secret chiffré côté serveur (SUMUP_API_KEY).
-- Le Worker exige également ALLOWED_ORIGIN et ACCESS_TOKEN, mais le jeton d'accès ne doit **pas** être embarqué dans la page publique : prévoir une véritable authentification utilisateur (session serveur / identité).
-- Le dépôt GitHub actuel est public. Ne pas déployer l'API sans authentification et tests d'accès.
-- Une note OneNote n'est qu'un emplacement provisoire pour la clé ; privilégier un gestionnaire de secrets.
+## Architecture existante
+- `.github/workflows/sumup-sync.yml` : déclenchement manuel et programmation cron toutes les cinq minutes (GitHub Actions peut retarder ou omettre une exécution).
+- Secrets GitHub Actions attendus : `SUMUP_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Ne jamais afficher leurs valeurs.
+- `supabase/functions/taxi-sumup-sync/index.ts` : fonction serveur protégée, appel de l'API SumUp et écriture dans `taxi_sumup_transactions`.
+- Les transactions sont récupérées à partir du 1er novembre 2026 (heure de Bruxelles), validées et regroupées avant un upsert. Les pages incomplètes et les identifiants répétés entraînent un échec sans écriture.
+- Les calculs `integrations/sumup-reconciliation.js` ne retiennent que les transactions `SUCCESSFUL` en EUR. Cela ne prouve pas que l'écran principal consomme automatiquement ces totaux.
 
-## Avant production
-1. Créer un environnement privé pour le Worker et y ajouter SUMUP_API_KEY sans exposer sa valeur.
-2. Vérifier les permissions exactes de la clé et préférer un accès limité aux transactions si possible.
-3. Vérifier le schéma réel de /v0.1/me/transactions/history, les paramètres de pagination, statuts, remboursements, frais et fuseau horaire avec des transactions de test.
-4. Mettre en place une session authentifiée, protection anti-abus, journalisation sans secrets, et une base de données persistante pour rapprochement.
-5. Ajouter une intégration UI qui distingue les paiements SumUp des montants cash et des commissions manuelles, sans modifier les données locales existantes.
-6. Tester en lecture seule avant activation. Prévoir détection des paiements remboursés et des paiements tardifs.
+## Points à vérifier avant toute activation de l'encodage automatique
+1. Confirmer une exécution GitHub Actions récente **et** le résultat de l'écriture côté Supabase, sans publier de montant ni d'identifiant de transaction.
+2. Vérifier la présence de la fonction déployée et les politiques d'accès aux tables et vues.
+3. Comparer, en privé, une journée de transactions SumUp avec les totaux de la base puis l'affichage dans Mon Taxi.
+4. Prévoir un mode de rapprochement évitant de compter à nouveau les montants de carte déjà saisis manuellement. Ne jamais remplacer automatiquement les données existantes avant validation.
+5. Vérifier les remboursements, les changements de statut, les transactions tardives et la pagination réelle de l'API.
+6. Exécuter les tests `node integrations/sumup-reconciliation.test.mjs` et `node integrations/sumup-sync-contract.test.mjs` après toute modification du calcul ou du contrat.
 
-Les calculs doivent être faits en centimes ; la caisse journalière = carte + cash − commissions de courses. Les frais de transaction SumUp sont séparés pour éviter la double déduction.
+**État : infrastructure de synchronisation présente dans le dépôt ; transfert effectif jusqu'aux recettes affichées non confirmé.** Aucun nouveau service n'est requis pour poursuivre les vérifications avec GitHub Actions et Supabase existants.
