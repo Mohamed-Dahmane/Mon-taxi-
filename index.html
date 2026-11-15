@@ -388,7 +388,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 </section>
 
 </section>
-<section class="page" id="archive"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section><div class="card"><h2>Archives des recettes</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Recettes par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
+<section class="page" id="fixedPage"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section></section><section class="page" id="archive"><div class="card"><h2>Archives des recettes</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Recettes par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
 <section class="card details-overview" aria-labelledby="detailsHeading">
  <div class="details-heading">
   <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
@@ -1781,7 +1781,8 @@ body .pagebar{display:none}
 <button data-quick="planning">▦ Planning</button>
 <button data-quick="details">▤ Détails jour / mois</button>
 <button data-quick="commissions">€ Commissions hôtels</button>
-<button data-quick="archive">▣ Archives / Frais fixes</button>
+<button data-quick="fixedPage">€ Frais fixes</button>
+<button data-quick="archive">▣ Archives</button>
 </nav></div>
 <script>
 (function(){
@@ -1792,7 +1793,7 @@ menu.onclick=e=>{
 if(e.target===menu){close();return}
 const item=e.target.closest('[data-quick]');if(!item)return;
 const key=item.dataset.quick;close();
-if(['home','details','archive'].includes(key)){document.querySelector('.pageBtn[data-page="'+key+'"]')?.click();window.scrollTo(0,0)}
+if(['home','details','archive','fixedPage'].includes(key)){if(key==='fixedPage'){document.querySelectorAll('.pageBtn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='fixedPage'));}else document.querySelector('.pageBtn[data-page="'+key+'"]')?.click();window.scrollTo(0,0)}
 else if(key==='planning'){document.getElementById('openHotelPlanning')?.click()}
 else if(['direct','plan','commissions'].includes(key)){document.getElementById('openHotelCommissions')?.click()}
 };
