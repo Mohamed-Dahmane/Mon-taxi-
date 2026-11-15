@@ -291,8 +291,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 body.taxi-refreshing .refresh-arc{animation:taxiIconSpin .65s linear infinite}
 @keyframes taxiIconSpin{to{transform:rotate(360deg)}}
 #fullRefreshIndicator{display:none!important}
-body:has(.page.active:not(#home)) .taxi-header .v11-refresh{position:fixed;top:12px;left:12px;right:auto;z-index:1099;margin:0;background:#142238!important;border:1px solid #7196c4}
-body:has(.page.active:not(#home)) .taxi-header .v11-refresh-icon{color:#e8f2ff}
+/* Emplacement constant : à gauche du menu à trois lignes, sur toutes les pages. */
+.taxi-header .v11-refresh{position:fixed!important;top:12px;right:72px;left:auto;z-index:1099;margin:0!important;width:44px;height:44px;background:#142238!important;border:1px solid #7196c4!important;color:#e8f2ff!important}
+#hotelCommissionsDialog #refreshHotelPage{position:fixed!important;top:12px;right:72px;left:auto;z-index:1105;margin:0!important;width:44px;height:44px;background:#142238!important;border:1px solid #7196c4!important;color:#e8f2ff!important;border-radius:9px}
+#hotelCommissionsDialog .hotel-commissions-bar{padding-right:58px}
 </style><style id="fullRefreshStyle">#fullRefreshIndicator{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483646;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:#142238dc;backdrop-filter:blur(6px);box-shadow:0 3px 16px #0004;pointer-events:none}#fullRefreshIndicator[hidden]{display:none!important}#fullRefreshIndicator:before{content:"";width:26px;height:26px;border:3px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:taxiRefreshSpin .65s linear infinite}@keyframes taxiRefreshSpin{to{transform:rotate(360deg)}}#v11RefreshTime{display:none!important}</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-separator" aria-hidden="true"></div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
 <script>
 (()=>{
