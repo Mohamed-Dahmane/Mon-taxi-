@@ -24,5 +24,7 @@ export function auditImportCandidates(events) {
     }
   }
   // No auto-import: accepted candidates are only suitable for further manual review.
-  return {...result,acceptedForReview:result.accepted.filter(x=>!blocked.has(x.index)),holds,writesPerformed:0};
+  const safe = result.accepted.filter(x=>!blocked.has(x.index));
+  // Never expose blocked candidates through the inherited `accepted` field.
+  return {...result,accepted:safe,acceptedForReview:safe,holds,writesPerformed:0};
 }
