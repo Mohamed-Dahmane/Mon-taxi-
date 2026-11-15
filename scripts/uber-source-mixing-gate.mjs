@@ -24,5 +24,7 @@ export function auditSourceMixing(events) {
     indices.forEach(i => blocked.add(i));
     mixedDrivers.push({driver, sources:[...sources.keys()].sort(), indices, reason:'unverified_cross_source_event_ids', requiresManualReview:true});
   }
-  return {...audit, acceptedForReview:audit.acceptedForReview.filter(item => !blocked.has(item.index)), mixedDrivers, writesPerformed:0};
+  const safe = audit.acceptedForReview.filter(item => !blocked.has(item.index));
+  // Keep every candidate-facing field consistent: never expose held events via `accepted`.
+  return {...audit, accepted:safe, acceptedForReview:safe, mixedDrivers, writesPerformed:0};
 }
