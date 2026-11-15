@@ -626,7 +626,7 @@ function stats(m,monthKey=key()){
   const invoice=invoiceTtcCents(m.payments?.[day]?.invoiceHt)/100;
   const hotelCommission=hotelCommissionCents(day,monthKey)/100;
   const caisse=hasCost(d.caisse)?number(d.caisse)+invoice-hotelCommission:
-   sumupReady?automaticCaisse(day,m,monthKey):invoice-hotelCommission;
+   automaticCaisse(day,m,monthKey);
   return {...d,caisse};
  });
  const dailyExtra=days.reduce((s,d)=>s+number(d.expense),0)+(m.extra||[]).reduce((s,e)=>s+(e.day?number(e.amount):0),0),revenue=days.reduce((s,d)=>s+number(d.caisse),0)+monthlyReceiptAdjustment(m).total/100,fuel=days.reduce((s,d)=>s+number(d.fuel),0),fixed=fixedEntries(m.fixed||{}).reduce((s,[,v])=>s+number(v),0),extra=dailyExtra+(m.extra||[]).reduce((s,v)=>s+(v.day?0:number(v.amount)),0);return {revenue,fuel,fixed,dailyExtra,extra,costs:fuel+fixed+extra,balance:revenue-fuel-fixed-extra}
@@ -681,9 +681,9 @@ function dailyReceiptBreakdown(day,m,monthKey){
  const appli=Math.round(number(p.appele)*100),invoice=invoiceTtcCents(p.invoiceHt);
  const hotelCommission=hotelCommissionCents(day,monthKey);
  const hasIncome=cardPayment.gross>0||cashReceived>0||appli>0||invoice>0;
- const commission=hasIncome||number(m.days?.[day]?.caisse)>0?Math.round(number(p.commission)*100):0;
- const cash=cashReceived-commission;
- return {cards,cash,appli,invoice,commission,hotelCommission,hasIncome,total:cards+cash+appli+invoice-hotelCommission};
+ const commission=Math.round(number(p.commission)*100);
+ const cash=cashReceived-commission-hotelCommission;
+ return {cards,cash,cashReceived,appli,invoice,commission,hotelCommission,hasIncome,total:cards+cash+appli+invoice};
 }
 function workedDayNetReceipt(day,m,payments){
  const manualCaisse=m.days?.[day]?.caisse;
@@ -697,7 +697,8 @@ function paymentBreakdownItems(values,{total=false,cards}={}){
  if(values.invoice)amounts.push(["Facturation TTC",values.invoice]);
  if(values.hotelCommission)amounts.push(["Commissions hôtels déduites",-values.hotelCommission]);
  if(total)amounts.push(["Total paiements",sumupReady?values.total:null]);
- if(commission)amounts.push(["Cash saisi",values.cash+commission],["Commissions",commission]);
+ if(commission||values.hotelCommission)amounts.push(["Cash saisi",values.cashReceived]);
+ if(commission)amounts.push(["Commission manuelle déduite",-commission]);
  if(cards&&sumupReady&&cards.gross)amounts.push(["Brut carte",cards.gross],["Frais SumUp",cards.fee]);
  return amounts.map(([label,cents])=>{
   const item=document.createElement("div"),name=document.createElement("dt"),amount=document.createElement("dd");
@@ -711,16 +712,15 @@ function paymentBreakdownItems(values,{total=false,cards}={}){
 function renderMonthlyPayments(caisse){
  const {gross,fee,net}=sumupMonthAmounts();
  const t=paymentTotals();
- const cash=t.cashMonth-t.commissionMonth;
+ const cash=t.cashRealMonth;
  $("detailsCardsNet").textContent=sumupReady?money(net/100):"—";
  $("detailsCardsGross").textContent=sumupReady?money(gross/100):"—";
  $("detailsCardsFees").textContent=sumupReady?money(fee/100):"—";
  $("detailsCashReal").textContent=money(cash);
  $("detailsAppIncome").textContent=money(t.appeleMonth);
- const hotelCommissionMonth=[...(hotelCommissions.get(key())?.values()||[])].reduce((sum,cents)=>sum+cents,0);
- $("detailsCommission").textContent=money(t.commissionMonth+hotelCommissionMonth/100);
+ $("detailsCommission").textContent=money(t.commissionMonth);
  $("detailsInvoiceIncome").textContent=money(t.invoiceMonth/100);
- const total=net+Math.round(cash*100)+Math.round(t.appeleMonth*100)+t.invoiceMonth-hotelCommissionMonth;
+ const total=net+Math.round(cash*100)+Math.round(t.appeleMonth*100)+t.invoiceMonth;
  $("detailsPaymentsDifference").hidden=!sumupReady||total===Math.round(caisse*100);
  $("detailsPaymentsNet").textContent=money(total/100);
 }
@@ -754,7 +754,10 @@ function renderDays(){
    input.setAttribute("aria-label",label+" du "+date);
    return input;
   };
-  const calculatedCaisse=()=>dayCalculatedAmount(sumupReady?automaticCaisse(i,month,monthKey):null);
+  const calculatedCaisse=()=>{
+   const amount=automaticCaisse(i,month,monthKey);
+   return dayCalculatedAmount(sumupReady||amount?amount:null);
+  };
   const caisse=hasCost(d.caisse)?entryField("caisse","Caisse saisie hors facturation"):calculatedCaisse();
   let refreshOpenDetail;
   if(hasCost(d.caisse))caisse.addEventListener("blur",()=>{
@@ -819,7 +822,7 @@ if(entry.extra?.length||Object.values(entry.days||{}).some(day=>hasCost(day.fuel
  editCosts.addEventListener("click",()=>openCostPicker(k));
  label.append(editCosts);
 }
-row.append(label,amount,balance);monthRoot.append(row);const count=new Date(y,m+1,0).getDate();for(let d=count;d>=1;d--){const v=entry.days?.[d]||{},p=entry.payments?.[d]||{};const manual=v.caisse!==undefined&&v.caisse!==null&&String(v.caisse)!=="";const hasPayment=Object.values(p).some(x=>x!==""&&x!==null&&x!==undefined);const auto=sumupReady?automaticCaisse(d,entry,k):0;const hotelCommission=hotelCommissionCents(d,k)/100;if(!manual&&!hasPayment&&!auto&&!hotelCommission)continue;const invoice=invoiceTtcCents(p.invoiceHt)/100;const amountValue=manual?number(v.caisse)+invoice-hotelCommission:(sumupReady?auto:(invoice-hotelCommission)||null);const item=document.createElement("div");item.className="annualrow";item.style.gridTemplateColumns="1fr 1fr";const date=document.createElement("span");date.textContent=String(d).padStart(2,"0")+"."+String(m+1).padStart(2,"0")+"."+y;const value=document.createElement("strong");value.textContent=amountValue===null?"—":money(amountValue);item.append(date,value);dayRoot.append(item)}}if(!periods.length)monthRoot.textContent="Aucun mois enregistré depuis le 01.10.2026.";if(!dayRoot.children.length)dayRoot.textContent="Aucune recette datée enregistrée."; $("archiveTotal").textContent=money(revenue);$("archiveCharges").textContent=money(charges);$("archiveNet").textContent=money(net)}
+row.append(label,amount,balance);monthRoot.append(row);const count=new Date(y,m+1,0).getDate();for(let d=count;d>=1;d--){const v=entry.days?.[d]||{},p=entry.payments?.[d]||{};const manual=v.caisse!==undefined&&v.caisse!==null&&String(v.caisse)!=="";const hasPayment=Object.values(p).some(x=>x!==""&&x!==null&&x!==undefined);const auto=automaticCaisse(d,entry,k);const hotelCommission=hotelCommissionCents(d,k)/100;if(!manual&&!hasPayment&&!auto&&!hotelCommission)continue;const invoice=invoiceTtcCents(p.invoiceHt)/100;const amountValue=manual?number(v.caisse)+invoice-hotelCommission:(sumupReady?auto:auto||null);const item=document.createElement("div");item.className="annualrow";item.style.gridTemplateColumns="1fr 1fr";const date=document.createElement("span");date.textContent=String(d).padStart(2,"0")+"."+String(m+1).padStart(2,"0")+"."+y;const value=document.createElement("strong");value.textContent=amountValue===null?"—":money(amountValue);item.append(date,value);dayRoot.append(item)}}if(!periods.length)monthRoot.textContent="Aucun mois enregistré depuis le 01.10.2026.";if(!dayRoot.children.length)dayRoot.textContent="Aucune recette datée enregistrée."; $("archiveTotal").textContent=money(revenue);$("archiveCharges").textContent=money(charges);$("archiveNet").textContent=money(net)}
 
 function costDate(day,monthKey=key()){
  const [year,month]=monthKey.split("-").map(Number);
@@ -1324,11 +1327,12 @@ function paymentMonthCents(m,field){
 function paymentTotals(){
  const m=current(),monthKey=key(),d=m.payments?.[selectedDay]??{};
  const day=dailyReceiptBreakdown(selectedDay,m,monthKey);
- const paidCommission=Object.keys(m.payments??{}).reduce((sum,date)=>sum+dailyReceiptBreakdown(Number(date),m,monthKey).commission,0);
+ const cashMonth=paymentMonthCents(m,"cash");
+ const hotelCommissionMonth=[...(hotelCommissions.get(monthKey)?.values()||[])].reduce((sum,cents)=>sum+cents,0);
+ const commissionMonth=paymentMonthCents(m,"commission")+hotelCommissionMonth;
  return {
-  cash:number(d.cash),commission:day.commission/100,hotelCommission:day.hotelCommission/100,appele:number(d.appele),
-  cashMonth:paymentMonthCents(m,"cash")/100,
-  commissionMonth:(paidCommission+number(m.paymentAdjustments?.commission))/100,
+  cash:day.cashReceived/100,cashReal:day.cash/100,commission:day.commission/100,hotelCommission:day.hotelCommission/100,appele:number(d.appele),
+  cashMonth:cashMonth/100,cashRealMonth:(cashMonth-commissionMonth)/100,commissionMonth:commissionMonth/100,
   appeleMonth:paymentMonthCents(m,"appele")/100,
   invoice:invoiceTtcCents(d.invoiceHt),
   invoiceMonth:Object.values(m.payments??{}).reduce((sum,entry)=>sum+invoiceTtcCents(entry.invoiceHt),0)
@@ -1346,7 +1350,7 @@ function renderPaymentAdjustments(){
  }
  $("paymentAdjustments").hidden=!visible;
 }
-function renderPayments(){renderPaymentAdjustments();const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cash-t.commission);$("cashRealMonth").textContent=money(t.cashMonth-t.commissionMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth+[...(hotelCommissions.get(key())?.values()||[])].reduce((sum,cents)=>sum+cents,0)/100);const cardMonth=sumupMonthAmounts();$("cardMonthLabel").textContent="Bilan · "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;$("cardMonthTotal").textContent=sumupReady?money(cardMonth.gross/100):"—";$("cardMonthNetIndicative").textContent=sumupReady?money(cardMonth.net/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonth.fee/100):"—";const date=costDate(selectedDay),today=new Date();const isToday=selectedDay===today.getDate()&&Number(monthSel.value)===today.getMonth()&&Number(yearSel.value)===today.getFullYear();$("entryDate").textContent=date;$("selectedReceiptLabel").textContent=isToday?"Recette du jour":"Recette du "+date;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("commissionToday").textContent=money(number(current().payments?.[selectedDay]?.commission));$("invoiceToday").textContent=money(t.invoice/100);$("invoiceReceiptToday").textContent=money(t.invoice/100);$("invoiceMonthCard").textContent=money(t.invoiceMonth/100);$("paymentNetToday").textContent=money(dailyReceiptBreakdown(selectedDay,current(),key()).total/100);$("dailyReceiptTotal").textContent=money(dailyReceiptBreakdown(selectedDay,current(),key()).total/100);$("dailyCash").textContent=money(t.cash);$("dailyCommission").textContent=money(t.commission+t.hotelCommission);$("dailyApp").textContent=money(t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";}
+function renderPayments(){renderPaymentAdjustments();const t=paymentTotals();const cardDay=sumupDayAmounts(selectedDay);$("cardNetToday").textContent=sumupReady?money(cardDay.net/100):"—";$("cardFeeToday").textContent=sumupReady?money(cardDay.fee/100):"—";$("cashRealToday").textContent=money(t.cashReal);$("cashRealMonth").textContent=money(t.cashRealMonth);document.querySelectorAll(".payment-month-label").forEach(el=>el.textContent="Total "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value);$("cashMonthCard").textContent=money(t.cashMonth);$("appeleMonthCard").textContent=money(t.appeleMonth);$("commissionMonthCard").textContent=money(t.commissionMonth);const cardMonth=sumupMonthAmounts();$("cardMonthLabel").textContent="Bilan · "+months[Number(monthSel.value)].toLowerCase()+" "+yearSel.value;$("cardMonthTotal").textContent=sumupReady?money(cardMonth.gross/100):"—";$("cardMonthNetIndicative").textContent=sumupReady?money(cardMonth.net/100):"—";$("cardMonthFeeEstimate").textContent=sumupReady?money(cardMonth.fee/100):"—";const date=costDate(selectedDay),today=new Date();const isToday=selectedDay===today.getDate()&&Number(monthSel.value)===today.getMonth()&&Number(yearSel.value)===today.getFullYear();$("entryDate").textContent=date;$("selectedReceiptLabel").textContent=isToday?"Recette du jour":"Recette du "+date;$("cashToday").textContent=money(t.cash);$("appeleToday").textContent=money(t.appele);$("commissionToday").textContent=money(number(current().payments?.[selectedDay]?.commission));$("invoiceToday").textContent=money(t.invoice/100);$("invoiceReceiptToday").textContent=money(t.invoice/100);$("invoiceMonthCard").textContent=money(t.invoiceMonth/100);$("paymentNetToday").textContent=money(dailyReceiptBreakdown(selectedDay,current(),key()).total/100);$("dailyReceiptTotal").textContent=money(dailyReceiptBreakdown(selectedDay,current(),key()).total/100);$("dailyCash").textContent=money(t.cash);$("dailyCommission").textContent=money(t.commission+t.hotelCommission);$("dailyApp").textContent=money(t.appele);$("sumupToday").textContent=sumupReady?money(sumupForDay(selectedDay)):"—";}
 function addPayment(field,input){
  const raw=input.value.trim().replace(",",".");
  if(!raw){input.value="";return true}
@@ -1608,7 +1612,7 @@ window.addEventListener("hotel-commissions-updated",refreshHotelCommissions);
 window.addEventListener("storage",event=>{
  if(event.key===hotelCommissionStorageKey||event.key===null)refreshHotelCommissions();
 });
-const siteBuild="taxi-v6-11-planning-du-jour";
+const siteBuild="taxi-v6-11-cash-reel-commissions";
 const hotelDirectoryKey="montaxi:hotel-commissions:directory-v1";
 const hotelSyncKey="montaxi:hotel-sync:baseline-v1";
 let hotelSyncJob=null,hotelAudio=null,hotelReminderTimer=null;
