@@ -5,17 +5,49 @@ android {
  defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 13; versionName 'V 6/11.4' }
 }
 
-// Signature stable facultative : les secrets ne doivent jamais être publiés dans GitHub.
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
 def signingPassword = System.getenv('TAXI_SIGNING_STORE_PASSWORD')
 def signingAlias = System.getenv('TAXI_SIGNING_KEY_ALIAS')
 def signingKeyPassword = System.getenv('TAXI_SIGNING_KEY_PASSWORD')
 if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
+ def variants = { String value ->
+  def trimmed = value.trim()
+  def unquoted = trimmed.replaceFirst(/^(['"])(.*)\1$/, '$2')
+  [value, trimmed, unquoted].unique()
+ }
+ def store
+ def storePasswordUsed
+ for (candidate in variants(signingPassword)) {
+  try {
+   store = java.security.KeyStore.getInstance(file(signingFile), candidate.toCharArray())
+   storePasswordUsed = candidate
+   break
+  } catch (java.security.GeneralSecurityException | IOException ignored) {}
+ }
+ if (store == null) throw new GradleException('Le mot de passe du magasin de clés Android est incorrect.')
+
+ def privateAliases = java.util.Collections.list(store.aliases()).findAll { store.isKeyEntry(it) }
+ def aliasUsed = variants(signingAlias).find { candidate -> store.isKeyEntry(candidate) }
+ if (aliasUsed == null && privateAliases.size() == 1) aliasUsed = privateAliases.first()
+ if (aliasUsed == null) throw new GradleException('Clé de signature Android introuvable dans le magasin.')
+
+ def passwordUsed
+ for (candidate in (variants(signingKeyPassword) + [storePasswordUsed]).unique()) {
+  try {
+   if (store.getKey(aliasUsed, candidate.toCharArray()) instanceof java.security.PrivateKey) {
+    passwordUsed = candidate
+    break
+   }
+  } catch (java.security.GeneralSecurityException ignored) {}
+ }
+ if (passwordUsed == null) throw new GradleException('Le mot de passe de la clé privée Android est incorrect.')
+
  android.signingConfigs { taxiRelease {
   storeFile file(signingFile)
-  storePassword signingPassword
-  keyAlias signingAlias
-  keyPassword signingKeyPassword
+  storeType store.type
+  storePassword storePasswordUsed
+  keyAlias aliasUsed
+  keyPassword passwordUsed
  } }
  android.buildTypes { release { signingConfig android.signingConfigs.taxiRelease; minifyEnabled false } }
 }
