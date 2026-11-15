@@ -371,6 +371,24 @@ public class MainActivity extends Activity {
      }catch(Exception e){runOnUiThread(()->Toast.makeText(MainActivity.this,"Échec sauvegarde : "+e.getMessage(),Toast.LENGTH_LONG).show());}
     }
    },"TaxiDownload");
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void schedule(String json){
+     runOnUiThread(()->{
+      if(web!=null&&web.getUrl()!=null&&(web.getUrl().startsWith(APP_URL)||
+          web.getUrl().equals("file:///android_asset/index.html"))){
+       TaxiReminderReceiver.schedule(MainActivity.this,json);
+      }
+     });
+    }
+    @android.webkit.JavascriptInterface public void enable(){
+     runOnUiThread(()->{
+      if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+          !=android.content.pm.PackageManager.PERMISSION_GRANTED){
+       requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},36);
+      }else enableExactTaxiReminders();
+     });
+    }
+   },"TaxiReminder");
    web.setWebChromeClient(new WebChromeClient());
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
@@ -588,6 +606,20 @@ public class MainActivity extends Activity {
  }
  private void setStartupBlur(View view,float radius){
   view.setRenderEffect(radius>0f?RenderEffect.createBlurEffect(radius,radius,Shader.TileMode.CLAMP):null);
+ }
+ private void enableExactTaxiReminders(){
+  TaxiReminderReceiver.restore(this);
+  if(Build.VERSION.SDK_INT>=31&&!getSystemService(android.app.AlarmManager.class).canScheduleExactAlarms()){
+   android.content.Intent settings=new android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+       android.net.Uri.parse("package:"+getPackageName()));
+   if(settings.resolveActivity(getPackageManager())!=null)startActivity(settings);
+  }else Toast.makeText(this,"Alertes de courses activées",Toast.LENGTH_SHORT).show();
+ }
+ @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){
+  super.onRequestPermissionsResult(code,permissions,results);
+  if(code==36&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED){
+   enableExactTaxiReminders();
+  }
  }
  @Override protected void onPause(){
   super.onPause();

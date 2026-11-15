@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'index.html'
+      - 'hotel-sync.js'
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
@@ -37,7 +38,7 @@ jobs:
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets/app
-          cp index.html app/src/main/assets/index.html
+          cp index.html hotel-sync.js app/src/main/assets/
           cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
       - name: Prepare launcher icon
         run: |
