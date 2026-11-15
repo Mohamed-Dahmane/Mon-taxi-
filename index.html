@@ -469,7 +469,17 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
 <section class="panel card" id="annual"><h2>Vue annuelle</h2><div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div><div id="annualRows"></div><div class="sumrow"><span>Total annuel caisse</span><span id="annualTotal">0,00 €</span></div></section>
 <section class="panel card" id="backup"><h2>Sauvegarde</h2><div class="toolbar"><button class="button" id="export">Exporter une sauvegarde</button><button class="button secondary" id="importBtn">Importer une sauvegarde ou un mois</button><input id="importFile" type="file" accept=".json,application/json" hidden></div><button class="button secondary" id="undoMonthImport">Annuler le dernier import de mois</button><hr style="border:0;border-top:1px solid #33405a;margin:20px 0"><button class="button danger" id="reset">Remettre les montants à zéro</button><p class="hint">Un import de mois remplace uniquement la période indiquée, sans additionner les montants. Les autres mois sont conservés. Une sauvegarde complète remplace toutes les périodes.</p></section>
 </section></main>
-<dialog id="hotelCommissionsDialog" aria-label="Commissions hôtels"><div id="hotelRefreshIndicator" class="refresh-center-indicator" role="status" aria-label="Actualisation en cours" hidden><svg class="refresh-arc material-refresh" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/></svg></div>
+<dialog id="hotelCommissionsDialog" aria-label="Commissions hôtels"><button id="hotelQuickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button><div id="hotelQuickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
+<button data-quick="close">✕ Fermer</button>
+<button data-quick="home">⌂ Accueil / Encodage</button>
+<button data-quick="direct">🚕 Course directe</button>
+<button data-quick="plan">＋ Planifier une course</button>
+<button data-quick="planning">▦ Planning</button>
+<button data-quick="details">▤ Détails jour / mois</button>
+<button data-quick="commissions">€ Commissions hôtels</button>
+<button data-quick="fixedPage">€ Frais fixes</button>
+<button data-quick="archive">▣ Archives</button>
+</nav></div><div id="hotelRefreshIndicator" class="refresh-center-indicator" role="status" aria-label="Actualisation en cours" hidden><svg class="refresh-arc material-refresh" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/></svg></div>
   <div class="hotel-commissions-bar"><button type="button" class="button secondary" id="closeHotelCommissions">← Mon Taxi</button><button type="button" class="button secondary" id="refreshHotelPage" aria-label="Actualiser toute l’application" title="Actualiser toute l’application" style="margin-left:auto;min-width:44px"><span class="hotel-refresh-icon" aria-hidden="true"><svg class="refresh-arc material-refresh" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/></svg></span></button></div>
   <iframe id="hotelCommissionsFrame" title="Commissions hôtels"></iframe>
 </dialog>
@@ -1848,6 +1858,13 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 #quickMenu nav{margin:8px;width:min(340px,92vw);max-height:95dvh;overflow:auto;padding:15px;background:#111c30;border:1px solid #4c6485;border-radius:15px;color:white}
 #quickMenu nav button{display:block;width:100%;text-align:left;background:#203856;color:white;border:1px solid #3b5776;border-radius:9px;margin-top:7px;padding:13px;font:inherit}
 body .pagebar{display:none}
+#quickMenuBtn,#hotelQuickMenuBtn{position:fixed!important;top:12px!important;right:12px!important;left:auto!important;z-index:1106!important;width:44px!important;height:39px!important;min-height:39px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;color:#e8f2ff!important;font-size:29px!important;font-weight:400!important;line-height:1!important;display:flex!important;align-items:center;justify-content:center;cursor:pointer}
+#quickMenuBtn:active,#hotelQuickMenuBtn:active{opacity:.6}
+#hotelQuickMenu[hidden]{display:none!important}
+#hotelQuickMenu{position:fixed;inset:0;z-index:1107;background:#000a;display:flex;justify-content:flex-end;align-items:flex-start}
+#hotelQuickMenu nav{margin:8px;width:min(340px,92vw);max-height:95dvh;overflow:auto;padding:15px;background:#111c30;border:1px solid #4c6485;border-radius:15px;color:white}
+#hotelQuickMenu nav button{display:block;width:100%;text-align:left;background:#203856;color:white;border:1px solid #3b5776;border-radius:9px;margin-top:7px;padding:13px;font:inherit}
+
 </style>
 <button id="quickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
 <div id="quickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
@@ -1863,18 +1880,23 @@ body .pagebar{display:none}
 </nav></div>
 <script>
 (function(){
-const btn=document.getElementById('quickMenuBtn'),menu=document.getElementById('quickMenu');
-function close(){menu.hidden=true;btn.setAttribute('aria-expanded','false')}
-btn.onclick=()=>{menu.hidden=false;btn.setAttribute('aria-expanded','true')};
-menu.onclick=e=>{
-if(e.target===menu){close();return}
-const item=e.target.closest('[data-quick]');if(!item)return;
-const key=item.dataset.quick;close();
-if(['home','details','archive','fixedPage'].includes(key)){if(key==='fixedPage'){document.querySelectorAll('.pageBtn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='fixedPage'));}else document.querySelector('.pageBtn[data-page="'+key+'"]')?.click();window.scrollTo(0,0)}
-else if(key==='planning'){document.getElementById('openHotelPlanning')?.click()}
-else if(['direct','plan','commissions'].includes(key)){document.getElementById('openHotelCommissions')?.click()}
-};
-document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+const pairs=[["quickMenuBtn","quickMenu"],["hotelQuickMenuBtn","hotelQuickMenu"]].map(([b,m])=>({btn:document.getElementById(b),menu:document.getElementById(m)}));
+function closeAll(){for(const {btn,menu} of pairs){menu.hidden=true;btn.setAttribute("aria-expanded","false")}}
+function navigate(key){
+ const dialog=document.getElementById("hotelCommissionsDialog");
+ if(dialog?.open && ["home","details","archive","fixedPage"].includes(key))dialog.close();
+ if(["home","details","archive","fixedPage"].includes(key)){
+  if(key==="fixedPage"){document.querySelectorAll(".pageBtn").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="fixedPage"))}
+  else document.querySelector('.pageBtn[data-page="'+key+'"]')?.click();
+  window.scrollTo(0,0);
+ }else if(key==="planning"){if(!dialog?.open)document.getElementById("openHotelPlanning")?.click()}
+ else if(["direct","plan","commissions"].includes(key)){if(!dialog?.open)document.getElementById("openHotelCommissions")?.click()}
+}
+for(const {btn,menu} of pairs){
+ btn.onclick=()=>{const open=menu.hidden;closeAll();menu.hidden=!open;btn.setAttribute("aria-expanded",String(open))};
+ menu.onclick=e=>{if(e.target===menu){closeAll();return}const item=e.target.closest("[data-quick]");if(!item)return;const key=item.dataset.quick;closeAll();if(key!=="close")navigate(key)};
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 })();
 </script>
 </body></html>
