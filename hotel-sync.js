@@ -62,7 +62,10 @@
         destination: String(entry.destination || "")
       }))
       .filter(entry => entry.pickup > now)
-      .map(entry => ({ ...entry, at: entry.pickup - 30 * 60 * 1000 }))
+      .flatMap(entry => [60, 30].map(minutes => ({
+        ...entry, id: entry.id + ":" + minutes, minutes,
+        at: entry.pickup - minutes * 60 * 1000
+      })).filter(item => item.at > now))
       .sort((a, b) => a.at - b.at);
   }
   global.TaxiHotels = { equal, merge, courseMap, reminders };
