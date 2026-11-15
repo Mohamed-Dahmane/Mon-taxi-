@@ -355,6 +355,7 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
   <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Planifier course</button>
   <button type="button" class="button" id="openHotelPlanning" aria-controls="hotelCommissionsDialog">Planning</button>
 </div>
+<div id="taxiPageLocation" class="taxi-page-location" aria-live="polite">Accueil</div>
 
 <p class="hint" id="hotelSyncStatus" role="status"></p>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
@@ -469,7 +470,7 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
 <section class="panel card" id="annual"><h2>Vue annuelle</h2><div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div><div id="annualRows"></div><div class="sumrow"><span>Total annuel caisse</span><span id="annualTotal">0,00 €</span></div></section>
 <section class="panel card" id="backup"><h2>Sauvegarde</h2><div class="toolbar"><button class="button" id="export">Exporter une sauvegarde</button><button class="button secondary" id="importBtn">Importer une sauvegarde ou un mois</button><input id="importFile" type="file" accept=".json,application/json" hidden></div><button class="button secondary" id="undoMonthImport">Annuler le dernier import de mois</button><hr style="border:0;border-top:1px solid #33405a;margin:20px 0"><button class="button danger" id="reset">Remettre les montants à zéro</button><p class="hint">Un import de mois remplace uniquement la période indiquée, sans additionner les montants. Les autres mois sont conservés. Une sauvegarde complète remplace toutes les périodes.</p></section>
 </section></main>
-<dialog id="hotelCommissionsDialog" aria-label="Commissions hôtels"><button id="hotelQuickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button><div id="hotelQuickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
+<dialog id="hotelCommissionsDialog" aria-label="Commissions hôtels"><button id="hotelQuickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false"><span class="taxi-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span></button><div id="hotelQuickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
 <button data-quick="close">✕ Fermer</button>
 <button data-quick="home">⌂ Accueil / Encodage</button>
 <button data-quick="direct">🚕 Course directe</button>
@@ -1008,6 +1009,10 @@ function renderAnnual(){const root=$("annualRows");root.replaceChildren();let to
 function render(){ensure();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===btn);x.setAttribute("aria-pressed",String(x===btn))});document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.tab))}));document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".pageBtn").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.page));window.scrollTo(0,0)}));
+function updateTaxiPageLocation(){const active=document.querySelector(".page.active")?.id;const label={home:"Accueil",details:"Détails",archive:"Archives",fixedPage:"Frais fixes"}[active]||"Accueil";const indicator=document.getElementById("taxiPageLocation");if(indicator)indicator.textContent=label}
+document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",updateTaxiPageLocation));
+updateTaxiPageLocation();
+
 // Navigation circulaire tactile : écoute globale pour les contenus défilants et tableaux.
 (function(){
  const pages=["home","details","archive"];
@@ -1858,6 +1863,13 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 #quickMenu nav{margin:8px;width:min(340px,92vw);max-height:95dvh;overflow:auto;padding:15px;background:#111c30;border:1px solid #4c6485;border-radius:15px;color:white}
 #quickMenu nav button{display:block;width:100%;text-align:left;background:#203856;color:white;border:1px solid #3b5776;border-radius:9px;margin-top:7px;padding:13px;font:inherit}
 body .pagebar{display:none}
+/* Menu : seulement trois traits, sans cadre visible, zone tactile invisible. */
+#quickMenuBtn,#hotelQuickMenuBtn{background:none!important;background-color:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;appearance:none!important;-webkit-appearance:none!important;padding:0!important}
+.taxi-menu-lines{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:22px;height:25px}
+.taxi-menu-lines i{display:block;width:19px;height:2px;background:#e8f2ff;border-radius:2px}
+#quickMenuBtn:active .taxi-menu-lines,#hotelQuickMenuBtn:active .taxi-menu-lines{opacity:.6}
+.taxi-page-location{text-align:center;font-size:13px;font-weight:700;color:#d6e5fb;margin:5px 0 8px;letter-spacing:.02em}
+
 #quickMenuBtn,#hotelQuickMenuBtn{position:fixed!important;top:12px!important;right:12px!important;left:auto!important;z-index:1106!important;width:44px!important;height:39px!important;min-height:39px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;color:#e8f2ff!important;font-size:29px!important;font-weight:400!important;line-height:1!important;display:flex!important;align-items:center;justify-content:center;cursor:pointer}
 #quickMenuBtn:active,#hotelQuickMenuBtn:active{opacity:.6}
 #hotelQuickMenu[hidden]{display:none!important}
@@ -1866,7 +1878,7 @@ body .pagebar{display:none}
 #hotelQuickMenu nav button{display:block;width:100%;text-align:left;background:#203856;color:white;border:1px solid #3b5776;border-radius:9px;margin-top:7px;padding:13px;font:inherit}
 
 </style>
-<button id="quickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+<button id="quickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false"><span class="taxi-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span></button>
 <div id="quickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
 <button data-quick="close">✕ Fermer</button>
 <button data-quick="home">⌂ Accueil / Encodage</button>
@@ -1886,7 +1898,7 @@ function navigate(key){
  const dialog=document.getElementById("hotelCommissionsDialog");
  if(dialog?.open && ["home","details","archive","fixedPage"].includes(key))dialog.close();
  if(["home","details","archive","fixedPage"].includes(key)){
-  if(key==="fixedPage"){document.querySelectorAll(".pageBtn").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="fixedPage"))}
+  if(key==="fixedPage"){document.querySelectorAll(".pageBtn").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="fixedPage"));document.getElementById("taxiPageLocation").textContent="Frais fixes"}
   else document.querySelector('.pageBtn[data-page="'+key+'"]')?.click();
   window.scrollTo(0,0);
  }else if(key==="planning"){if(!dialog?.open)document.getElementById("openHotelPlanning")?.click()}
