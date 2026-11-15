@@ -70,7 +70,25 @@ jobs:
       - name: Préparer la clé de signature persistante (si configurée)
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         run: |
-          echo "$TAXI_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/taxi-release.jks"
+          umask 077
+          python3 - <<'PYTHON'
+          import base64
+          import os
+          import re
+          from pathlib import Path
+
+          value = os.environ["TAXI_KEYSTORE_B64"].strip()
+          value = re.sub(r"^(?:export\s+)?TAXI_KEYSTORE_B64\s*=\s*", "", value)
+          value = value.strip("'\\\"").replace("\\r", "").replace("\\n", "")
+          value = re.sub(r"\s+", "", value)
+          try:
+              data = base64.b64decode(value + "=" * (-len(value) % 4), altchars=b"-_", validate=True)
+          except ValueError:
+              raise SystemExit("La clé de signature enregistrée n’est pas un fichier Base64 valide.")
+          if not data.startswith((b"\xfe\xed\xfe\xed", b"\xce\xce\xce\xce", b"\x30")):
+              raise SystemExit("La clé de signature enregistrée ne contient pas de magasin de clés reconnu.")
+          Path(os.environ["RUNNER_TEMP"], "taxi-release.jks").write_bytes(data)
+          PYTHON
           echo "TAXI_SIGNING_STORE_FILE=$RUNNER_TEMP/taxi-release.jks" >> "$GITHUB_ENV"
         env:
           TAXI_KEYSTORE_B64: ${{ secrets.TAXI_KEYSTORE_B64 }}
