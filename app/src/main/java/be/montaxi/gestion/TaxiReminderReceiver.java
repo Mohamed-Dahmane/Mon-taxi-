@@ -21,6 +21,7 @@ import org.json.JSONObject;
 public final class TaxiReminderReceiver extends BroadcastReceiver {
     private static final String STORAGE = "taxi_pickup_reminders";
     private static final String CHANNEL = "taxi_pickup_ring_ring";
+    private static final String URGENT_CHANNEL = "taxi_pickup_urgent_30_v1";
     private static final String ACTION = "be.montaxi.gestion.PICKUP_REMINDER";
 
     private static SharedPreferences preferences(Context context) {
@@ -91,7 +92,7 @@ public final class TaxiReminderReceiver extends BroadcastReceiver {
                 context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
         try {
             JSONArray reminders = new JSONArray(json);
-            String id = intent.getData().getSchemeSpecificPart();
+            String id = Uri.decode(intent.getData().getSchemeSpecificPart());
             long now = System.currentTimeMillis();
             for (int i = 0; i < reminders.length(); i++) {
                 JSONObject item = reminders.getJSONObject(i);
@@ -107,7 +108,9 @@ public final class TaxiReminderReceiver extends BroadcastReceiver {
 
     private void notifyPickup(Context context, JSONObject item, String id) {
         NotificationManager manager = context.getSystemService(NotificationManager.class);
-        NotificationChannel channel = new NotificationChannel(CHANNEL, "Rappels de courses",
+        boolean urgent = id.endsWith(":30");
+        String channelId = urgent ? URGENT_CHANNEL : CHANNEL;
+        NotificationChannel channel = new NotificationChannel(channelId, urgent ? "Courses dans 30 minutes" : "Courses dans une heure",
                 NotificationManager.IMPORTANCE_HIGH);
         AudioAttributes audio = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -119,21 +122,22 @@ public final class TaxiReminderReceiver extends BroadcastReceiver {
                 .appendPath("raw")
                 .appendPath("taxi_ring_ring")
                 .build();
-        channel.setSound(ring, audio);
+        channel.setSound(urgent ? android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM) : ring, audio);
         channel.enableVibration(true);
+        if (urgent) channel.setVibrationPattern(new long[]{0, 600, 250, 600, 250, 900});
         manager.createNotificationChannel(channel);
         PendingIntent open = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         String route = item.optString("hotel");
         if (!item.optString("destination").isEmpty()) route += " → " + item.optString("destination");
-        Notification notice = new Notification.Builder(context, CHANNEL)
+        Notification notice = new Notification.Builder(context, channelId)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("Course à " + item.optString("time"))
+                .setContentTitle((urgent ? "Départ dans 30 min · " : "Départ dans 1 h · ") + item.optString("time"))
                 .setContentText(route)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setContentIntent(open)
                 .setAutoCancel(true)
                 .build();
-        manager.notify(id, 1, notice);
+        manager.notify(id, urgent ? 30 : 60, notice);
     }
 }
