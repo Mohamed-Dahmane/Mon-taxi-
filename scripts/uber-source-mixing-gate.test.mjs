@@ -39,3 +39,16 @@ test('input is not mutated', () => {
   auditSourceMixing(input);
   assert.equal(JSON.stringify(input),before);
 });
+
+
+test('held cross-source events are absent from both accepted outputs', () => {
+  const result = auditSourceMixing([event(),event({source:'statement',eventId:'statement-99'})]);
+  assert.deepEqual(result.accepted, []);
+  assert.deepEqual(result.acceptedForReview, []);
+});
+
+test('conflicting same-source revisions are absent from both accepted outputs', () => {
+  const result = auditSourceMixing([event(),event({amountMinor:1300})]);
+  assert.deepEqual(result.accepted, []);
+  assert.deepEqual(result.acceptedForReview, []);
+});
