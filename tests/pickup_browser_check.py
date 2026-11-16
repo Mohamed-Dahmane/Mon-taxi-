@@ -22,6 +22,8 @@ with sync_playwright() as p:
         intro.click(timeout=5000)
     except Exception:
         pass
+    page.evaluate("""document.querySelector('.pageBtn[data-page="details"]').click()""")
+    expect(page.locator('#details')).to_have_class('page active')
     page.locator('#openHotelCommissions').click()
     hotel=page.frame_locator('#hotelCommissionsFrame')
     hotel.locator('#startReservation').click()
@@ -30,7 +32,24 @@ with sync_playwright() as p:
     expect(hotel.locator('#reservationForm')).to_be_visible()
     expect(hotel.locator('#reservationHotelOptions')).to_be_visible()
     expect(hotel.locator('#rideDirection')).not_to_be_visible()
-    hotel.locator('#closeReservations').click()
+    hotel.locator('#reservationDate').evaluate("""date => {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      date.value = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Brussels'}).format(tomorrow)
+      date.dispatchEvent(new Event('change'))
+    }""")
+    hotel.locator('#reservationTypedHour').fill('14')
+    hotel.locator('#reservationTypedMinute').fill('30')
+    hotel.locator('#nextReservationStep').click()
+    hotel.locator('#nextReservationStep').click()
+    hotel.locator('#saveReservation').click()
+    expect(page.locator('#hotelCommissionsDialog')).not_to_be_visible()
+    expect(page.locator('#home')).to_have_class('page active')
+    page.locator('#openHotelPlanning').click()
+    expect(hotel.locator('#reservationList')).to_contain_text('14:30')
+    expect(hotel.locator('#reservationList')).to_contain_text('Zaventem')
+    page.locator('#closeHotelCommissions').click()
+    page.locator('#openHotelCommissions').click()
     hotel.locator('#startReservation').click()
     hotel.locator('#ridePickup').click()
     pickup=page.frame_locator('#hotelPickupFrame')
@@ -58,6 +77,10 @@ with sync_playwright() as p:
     pickup.locator('#save').click()
     assert not errors,errors
     expect(page.locator('#hotelPickup')).not_to_be_visible()
+    expect(page.locator('#hotelCommissionsDialog')).not_to_be_visible()
+    expect(page.locator('#home')).to_have_class('page active')
+    expect(page.locator('#toast')).to_have_text('Course enregistrée dans le planning')
+    page.locator('#openHotelPlanning').click()
     expect(hotel.locator('#reservationList')).to_contain_text('Client Exemple')
     expect(hotel.locator('#reservationList')).to_contain_text('SN1234')
     expect(hotel.locator('#reservationList')).to_contain_text('2 × Van')
@@ -101,8 +124,8 @@ with sync_playwright() as p:
     expect(hotel.locator('#reservationList')).to_contain_text('Client Direct')
     expect(hotel.locator('#reservationList')).to_contain_text('Course directe · Effectuée')
     courses=page.evaluate('JSON.parse(localStorage.getItem("montaxi:hotel-commissions:courses-v1"))')
-    assert len(courses)==3,courses
-    future=next(c for c in courses if c.get('scheduledDate'))
+    assert len(courses)==4,courses
+    future=next(c for c in courses if c.get('scheduledDate') and c.get('pickup'))
     assert future['contact']=='Fal' and future['announcedPrice']==0 and future['pickup']['reminder60'] is False,future
     assert page.evaluate('(c)=>TaxiHotels.reminders([c]).map(r=>r.minutes)',future)==[30]
     assert not errors,errors
