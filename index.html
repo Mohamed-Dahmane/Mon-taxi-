@@ -1712,9 +1712,13 @@ function routeHotelModule(){
   const header=commissionDoc.querySelector(".app-header");
   const todayButton=commissionDoc.getElementById("openTodayReservations");
   const transfer=commissionDoc.getElementById("copyHotelTransfer")?.closest(".card");
+  const totals=commissionDoc.querySelector("#homeActions>.home-totals");
+  const directory=commissionDoc.querySelector("#homeActions>.home-settings");
   for(const el of [actions,header,todayButton,transfer])if(el)el.style.removeProperty("display");
   if(commissionOnly){for(const el of [actions,header,todayButton,transfer])if(el)el.style.setProperty("display","none","important")}
   else {for(const el of [actions,header,todayButton,transfer])if(el)el.style.removeProperty("display")}
+  // Les totaux et la gestion des hôtels restent uniquement dans Commissions hôtels.
+  for(const el of [totals,directory])if(el){if(commissionOnly)el.style.removeProperty("display");else el.style.setProperty("display","none","important")}
 
   const title=commissionDoc.querySelector(".app-header h1");
   if(title)title.textContent=commissionOnly?"Commissions hôtels":"Planification courses";
