@@ -1716,7 +1716,9 @@ function routeHotelModule(){
   const directory=commissionDoc.querySelector("#homeActions>.home-settings");
   for(const el of [actions,header,todayButton,transfer])if(el)el.style.removeProperty("display");
   if(commissionOnly){for(const el of [actions,header,todayButton,transfer])if(el)el.style.setProperty("display","none","important")}
-  else {for(const el of [actions,header,todayButton,transfer])if(el)el.style.removeProperty("display")}
+  else {for(const el of [actions,header,todayButton])if(el)el.style.removeProperty("display")}
+  // Le transfert manuel est retiré de toutes les vues; ses données restent intactes.
+  if(transfer)transfer.style.setProperty("display","none","important");
   // Les totaux et la gestion des hôtels restent uniquement dans Commissions hôtels.
   for(const el of [totals,directory])if(el){if(commissionOnly)el.style.removeProperty("display");else el.style.setProperty("display","none","important")}
 
