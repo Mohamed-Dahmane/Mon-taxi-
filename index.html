@@ -2005,6 +2005,7 @@ body .pagebar{display:none}
 <button data-quick="fixedPage">€ Frais fixes</button>
 <button data-quick="hotelArchives">▣ Archives des courses</button>
 <button data-quick="hotelAll">▦ Toutes les courses</button>
+<button id="openDiagnostic" type="button">⚙ Diagnostic intelligent</button>
 </nav></div>
 <script>
 (function(){
@@ -2028,4 +2029,5 @@ for(const {btn,menu} of pairs){
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 })();
 </script>
+<dialog id="diagnosticDialog" aria-label="Diagnostic intelligent" style="width:min(92vw,480px);max-height:85dvh;overflow:auto;background:#151e30;color:#f3f5fa;border:1px solid #53699a;border-radius:15px;padding:18px"><h2>Diagnostic intelligent</h2><p id="diagnosticStatus" role="status">Désactivé</p><p class="hint">Facultatif. Enregistre localement les boutons utilisés, les erreurs techniques et les changements de connexion. Aucun montant, client, adresse ou texte saisi n'est collecté. Rien n'est transmis automatiquement.</p><div class="toolbar"><button class="button" id="diagnosticToggle" type="button">Activer le diagnostic</button><button class="button secondary" id="diagnosticExport" type="button">Exporter le rapport JSON</button><button class="button danger" id="diagnosticClear" type="button">Effacer les diagnostics</button><button class="button secondary" id="diagnosticClose" type="button">Fermer</button></div></dialog><script src="taxi-diagnostic.js?v=1" defer></script>
 </body></html>
