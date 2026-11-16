@@ -5,7 +5,7 @@ on:
     paths:
       - 'index.html'
       - 'hotel-sync.js'
-      - 'pickup-test.html'
+      - 'pickup-reservation.html'
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
@@ -41,7 +41,7 @@ jobs:
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets/app
-          cp index.html hotel-sync.js pickup-test.html app/src/main/assets/
+          cp index.html hotel-sync.js pickup-reservation.html app/src/main/assets/
           cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
       - name: Prepare launcher icon
         run: |
