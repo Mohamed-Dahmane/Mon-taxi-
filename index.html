@@ -21,8 +21,7 @@ main{padding-top:10px}header{margin-bottom:8px}h1{font-size:23px}.selectors{marg
 header{gap:10px}header>div{min-width:0}header .v11-refresh{margin:0;align-self:flex-start}.daily-overview{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:start}.daily-overview>div{min-width:0;padding:6px 4px}.daily-overview .label{font-size:11px;line-height:1.3;min-height:2.6em}.daily-overview .value{font-size:18px!important;font-weight:750;margin:7px 0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.daily-overview .average-inline{max-width:none;margin:0;padding:6px 4px;border-radius:8px}.daily-overview .reference-days{font-size:10px;line-height:1.3}@media(max-width:390px){.daily-overview .label{font-size:10px}.daily-overview .value{font-size:15px!important}}.monthly-overview{padding:10px}.charges-value{color:#fbbf24}#home>.v11-balance{margin-top:0;padding:9px 12px;border-radius:11px}#home>.v11-balance .label{font-size:11px}#home>.v11-balance .value{font-size:25px;margin:3px 0}#home>.v11-balance .small{font-size:10px}.quick-card{margin-top:12px}.monthly-overview .daily-overview{align-items:stretch}.monthly-overview .daily-overview .label{min-height:3em}.payment-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}.payment-box .label{font-size:10px;line-height:1.2}.payment-box{background:#1b2b42;border:1px solid #354a6b;border-radius:12px;padding:10px;min-width:0}.payment-box strong{display:block;font-size:25px;margin:8px 0;font-variant-numeric:tabular-nums}.payment-box small{font-size:10px;color:#e8bd78}.payment-entry{display:flex;flex-direction:column;gap:6px}.payment-entry input{padding:9px 6px;font-size:14px}.payment-entry button{padding:9px 4px;font-size:12px}.payment-total{display:flex;justify-content:space-between;gap:12px;margin-top:11px;border-top:1px solid #354a6b;padding-top:12px;font-size:12px}.payment-total strong{font-size:18px;white-space:nowrap}.payment-month{display:flex;justify-content:space-between;gap:9px;margin-top:9px;font-size:11px;color:#b6c8df;flex-wrap:wrap}@media(max-width:450px){.payment-grid{grid-template-columns:1fr 1fr}.payment-grid .payment-box:first-child{grid-column:span 2}.payment-box strong{font-size:22px}}</style><style>#home .payment-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}#home .payment-grid .payment-box:first-child{grid-column:auto}#home .payment-box{padding:8px 4px}#home .payment-box .label{font-size:15px;font-weight:800;white-space:nowrap}#home .payment-box strong{font-size:clamp(12px,3.8vw,23px);letter-spacing:-.6px;white-space:nowrap}#home .payment-entry input{padding:8px 4px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}#home .payment-entry button{font-size:10px;padding:9px 1px}</style><style>#home .card-month-total{margin-top:12px;padding-top:10px;border-top:1px solid #425476}#home .card-month-total>div{font-size:10px;line-height:1.4;color:#b9c6d8}#home .card-month-total strong{font-size:clamp(14px,4.2vw,26px);color:#77ecc2;margin:6px 0 0;letter-spacing:-.7px}</style><style>#home .payment-grid{grid-template-columns:minmax(0,1fr);gap:10px}#home .payment-grid>.payment-box{grid-column:auto;padding:12px}#home .cash-breakdown{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}#home .cash-component{min-width:0}#home .cash-real{border-left:1px solid #425476;padding-left:10px}#home .cash-real>strong{color:#77ecc2}#home .payment-box strong{font-size:clamp(15px,4vw,25px)}#home .payment-entry{margin-top:10px}#home .payment-grid>.payment-box>.payment-entry{max-width:320px}</style><style>#home .card-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}#home .card-comparison>div{min-width:0}#home .card-net{border-left:1px solid #425476;padding-left:14px}#home .card-net strong{color:#77ecc2}</style><style>
 
 html { overscroll-behavior-y: none; }
-main { translate: var(--pull-offset, none); transition: translate 180ms ease-out; }
-main.is-pulling { transition: none; }
+main { /* Le défilement vertical reste natif, sans geste d’actualisation. */ }
 @media (prefers-reduced-motion: reduce) { main { transition: none; } }
 main { padding-top: max(10px, env(safe-area-inset-top)); }
 
@@ -1079,11 +1078,8 @@ for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElem
 (function(){
  const pages=["home","details"];
  const main=document.querySelector("main");
- let gesture=null,pulling=false;
- const reset=()=>{
-  gesture=null;
-  if(pulling){main.classList.remove("is-pulling");main.style.removeProperty("--pull-offset");pulling=false;}
- };
+ let gesture=null;
+ const reset=()=>{gesture=null;};
  const navigate=step=>{
   const index=pages.indexOf(document.querySelector(".page.active")?.id);
   if(index>=0)document.querySelector('.pageBtn[data-page="'+pages[(index+step+pages.length)%pages.length]+'"]')?.click();
@@ -1096,7 +1092,7 @@ for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElem
    document.getElementById("calendarDialog")?.hidden===false||
    e.target.closest("dialog,.taxi-splash"))return;
   const t=e.touches[0];
-  gesture={id:t.identifier,x:t.clientX,y:t.clientY,axis:null,top:window.scrollY<=0};
+  gesture={id:t.identifier,x:t.clientX,y:t.clientY,axis:null};
  },{capture:true,passive:true});
  document.addEventListener("touchmove",e=>{
   if(!gesture||e.touches.length!==1)return;
@@ -1106,11 +1102,6 @@ for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElem
   if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>=8)gesture.axis=Math.abs(dx)>Math.abs(dy)*1.1?"horizontal":"vertical";
   if(gesture.axis==="horizontal"){
    if(e.cancelable)e.preventDefault();
-  }else if(gesture.axis==="vertical"&&gesture.top&&window.scrollY<=0&&dy>0&&Math.abs(dy)>Math.abs(dx)*1.25){
-   if(e.cancelable)e.preventDefault();
-   pulling=true;
-   main.classList.add("is-pulling");
-   main.style.setProperty("--pull-offset","0 "+Math.min(dy*.55,72)+"px");
   }
  },{capture:true,passive:false});
  document.addEventListener("touchend",e=>{
@@ -1121,7 +1112,7 @@ for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElem
   const dx=t.clientX-g.x,dy=t.clientY-g.y;
   if(pointerHandled){pointerHandled=false;return;}
   if(Math.abs(dx)>=30&&Math.abs(dx)>Math.abs(dy)*1.05)navigate(dx<0?1:-1);
-  else if(g.top&&dy>=75&&Math.abs(dy)>Math.abs(dx)*1.25&&window.scrollY<=0)document.getElementById("refreshLocal")?.click();
+
  },{capture:true,passive:true});
  document.addEventListener("touchcancel",reset,{capture:true,passive:true});
  // Pointer Events en secours, notamment sur la page Archives.
@@ -1280,6 +1271,26 @@ const privateKey="sb_publishable_mJNDNx8M1y6p1KYy_zaWyA_fsb8tFnv";
 let sumupRows=[],sumupReady=false,sumupLoading=false;
 let privateSession=null;
 try{privateSession=JSON.parse(localStorage.getItem("taxi-private-session")||"null")}catch{}
+window.taxiDiagnosticUpload=async function(events){
+ if(!Array.isArray(events)||!events.length||!privateSession?.access_token||!navigator.onLine)return false;
+ if(privateSession.expires_at&&privateSession.expires_at*1000<Date.now()+30000)return false;
+ const allowed=new Set(["button","navigation","script-error","promise-error","network-online","network-offline"]);
+ const rows=events.slice(0,20).filter(e=>allowed.has(e.type)).map(e=>({
+  event_time:e.at,event_type:e.type,page:String(e.page||"unknown").slice(0,40),
+  detail:e.type==="button"&&/^[a-zA-Z0-9_-]{1,48}$/.test(e.detail?.id||"")?{id:e.detail.id}:
+   e.type==="navigation"&&/^[a-zA-Z0-9_-]{1,32}$/.test(e.detail?.action||"")?{action:e.detail.action}:
+   e.type==="script-error"?{file:String(e.detail?.file||"unknown").slice(0,70),line:Number(e.detail?.line)||0}:{}
+ }));
+ if(!rows.length)return false;
+ const response=await fetch(privateApi+"/rest/v1/taxi_diagnostic_events",{
+  method:"POST",headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token,
+   "Content-Type":"application/json",Prefer:"return=minimal"},
+  body:JSON.stringify(rows),signal:AbortSignal.timeout(8000)
+ });
+ if(!response.ok)throw Error("Diagnostic non transmis : "+response.status);
+ return true;
+};
+
 const privateGate=document.createElement("section");
 privateGate.className="taxi-access";
 privateGate.style.cssText="position:fixed;inset:0;z-index:100;background:#0b1020;overflow:auto;padding:30px 18px";
@@ -1748,40 +1759,11 @@ function routeHotelModule(){
  hotelOpenedOnPlanning=["planning","direct","plan","hotelArchives","hotelAll"].includes(destination);
 }
 hotelCommissionsFrame.addEventListener("load",()=>{
- // Actualisation visuelle : le planning descend légèrement avec le doigt, puis revient en place.
+ // Aucun geste de rafraîchissement dans le planning : bouton uniquement.
  try{
   const doc=hotelCommissionsFrame.contentDocument;
   doc.documentElement.style.overscrollBehaviorY="contain";
   doc.body.style.overscrollBehaviorY="contain";
-  let start=null,offset=0;
-  const resetPull=()=>{
-   start=null;offset=0;
-   hotelCommissionsFrame.style.transition="transform 180ms ease-out";
-   hotelCommissionsFrame.style.transform="translateY(0px)";
-  };
-  doc.addEventListener("touchstart",e=>{
-   if(e.touches.length!==1)return;
-   const scroller=doc.scrollingElement;
-   start=scroller&&scroller.scrollTop<=0?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;
-   hotelCommissionsFrame.style.transition="none";
-  },{passive:true});
-  doc.addEventListener("touchmove",e=>{
-   if(!start||!e.touches.length)return;
-   const dx=e.touches[0].clientX-start.x,dy=e.touches[0].clientY-start.y;
-   if(dy>8&&Math.abs(dy)>Math.abs(dx)*1.4&&doc.scrollingElement?.scrollTop<=0){
-    e.preventDefault();
-    offset=Math.min(48,Math.max(0,(dy-8)*0.35));
-    hotelCommissionsFrame.style.transform="translateY("+offset+"px)";
-   }
-  },{passive:false});
-  doc.addEventListener("touchend",e=>{
-   if(!start||!e.changedTouches.length){resetPull();return;}
-   const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;
-   const shouldRefresh=dy>=85&&Math.abs(dy)>Math.abs(dx)*1.4&&offset>0;
-   resetPull();
-   if(shouldRefresh)refreshEntireTaxi();
-  },{passive:true});
-  doc.addEventListener("touchcancel",resetPull,{passive:true});
  }catch(e){console.warn("Geste d’actualisation du planning indisponible",e)}
 
  hotelFrameReady=Boolean(hotelCommissionsFrame.contentDocument?.getElementById("openTodayReservations"));
@@ -1964,7 +1946,7 @@ async function syncHotels(){
   }
   throw Error("Courses modifiées sur un autre appareil");
  })().catch(()=>{hotelSyncStatus("Synchronisation en attente · données locales conservées");return false});
- try{await hotelSyncJob}finally{hotelSyncJob=null}
+ try{return await hotelSyncJob}finally{hotelSyncJob=null}
 }
 window.addEventListener("hotel-commissions-updated",()=>{
  updateHotelReminders();
@@ -2043,6 +2025,7 @@ body .pagebar{display:none}
 <button data-quick="fixedPage">€ Frais fixes</button>
 <button data-quick="hotelArchives">▣ Archives des courses</button>
 <button data-quick="hotelAll">▦ Toutes les courses</button>
+<button id="openDiagnostic" type="button">⚙ Diagnostic intelligent</button>
 </nav></div>
 <script>
 (function(){
@@ -2066,4 +2049,5 @@ for(const {btn,menu} of pairs){
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 })();
 </script>
+<dialog id="diagnosticDialog" aria-label="Diagnostic intelligent" style="width:min(92vw,480px);max-height:85dvh;overflow:auto;background:#151e30;color:#f3f5fa;border:1px solid #53699a;border-radius:15px;padding:18px"><h2>Diagnostic intelligent</h2><p id="diagnosticStatus" role="status">Désactivé</p><p class="hint">Facultatif. Enregistre localement les boutons utilisés, les erreurs techniques et les changements de connexion. Aucun montant, client, adresse ou texte saisi n'est collecté. Envoi sécurisé uniquement après activation explicite.</p><div class="toolbar"><button class="button" id="diagnosticToggle" type="button">Activer le diagnostic</button><button class="button secondary" id="diagnosticSend" type="button">Activer l’envoi sécurisé</button><button class="button secondary" id="diagnosticExport" type="button">Exporter le rapport JSON</button><button class="button danger" id="diagnosticClear" type="button">Effacer les diagnostics</button><button class="button secondary" id="diagnosticClose" type="button">Fermer</button></div></dialog><script src="taxi-diagnostic.js?v=1" defer></script>
 </body></html>
