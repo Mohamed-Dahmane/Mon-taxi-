@@ -1706,7 +1706,9 @@ function routeHotelModule(){
  if(commissionDoc){
   let rule=commissionDoc.getElementById("commissionOnlyHidePlanning");
   if(!rule){rule=commissionDoc.createElement("style");rule.id="commissionOnlyHidePlanning";commissionDoc.head.appendChild(rule)}
-  rule.textContent=commissionOnly?"#openDirectCourse,#startReservation{display:none!important}":"";
+  rule.textContent=commissionOnly?"#homeActions,#openTodayReservations{display:none!important}":"";
+  const title=commissionDoc.querySelector(".app-header h1");
+  if(title)title.textContent=commissionOnly?"Commissions hôtels":"Planification courses";
  }
  if(destination==="planning"){
   hotelCommissionsFrame.contentWindow.dispatchEvent(new Event("mon-taxi-open-hotel-planning"));
