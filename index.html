@@ -1791,9 +1791,21 @@ if(new URLSearchParams(location.hash.slice(1)).has("reservation")){
  observer.observe(main,{attributes:true,attributeFilter:["hidden"]});
  openReservationLink();
 }
+function updatePlanningHighlight(){
+ const button=document.getElementById("openHotelPlanning");
+ if(!button)return;
+ try{
+  const entries=JSON.parse(localStorage.getItem(hotelCommissionStorageKey)||"[]");
+  if(!Array.isArray(entries))return;
+  const pending=entries.filter(e=>e&&e.bookingMode==="Programmée"&&e.reservationStatus!=="validated"&&e.reservationStatus!=="cancelled"&&e.reservationStatus!=="non_effectuee"&&e.reservationStatus!=="non-effectuee");
+  button.classList.toggle("planning-has-courses",pending.length>0);
+  button.setAttribute("aria-label",pending.length?"Planning : "+pending.length+" course(s) en attente":"Planning");
+ }catch(error){console.warn("Couleur planning : données indisponibles",error)}
+}
 function refreshHotelCommissions(){
  hotelCommissions=readHotelCommissions();
  renderDays();refreshMetrics();renderAnnual();renderArchive();
+ updatePlanningHighlight();
 }
 window.addEventListener("hotel-commissions-updated",refreshHotelCommissions);
 window.addEventListener("storage",event=>{
@@ -1955,6 +1967,7 @@ try{
  if(!TaxiHotels.equal(state,corrected))applyHotelState(corrected);
 }catch(error){console.warn("Correction du répertoire différée",error)}
 updateHotelReminders();
+updatePlanningHighlight();
 syncHotels();
 
 let newBuildPending=false;
