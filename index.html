@@ -1271,6 +1271,26 @@ const privateKey="sb_publishable_mJNDNx8M1y6p1KYy_zaWyA_fsb8tFnv";
 let sumupRows=[],sumupReady=false,sumupLoading=false;
 let privateSession=null;
 try{privateSession=JSON.parse(localStorage.getItem("taxi-private-session")||"null")}catch{}
+window.taxiDiagnosticUpload=async function(events){
+ if(!Array.isArray(events)||!events.length||!privateSession?.access_token||!navigator.onLine)return false;
+ if(privateSession.expires_at&&privateSession.expires_at*1000<Date.now()+30000)return false;
+ const allowed=new Set(["button","navigation","script-error","promise-error","network-online","network-offline"]);
+ const rows=events.slice(0,20).filter(e=>allowed.has(e.type)).map(e=>({
+  event_time:e.at,event_type:e.type,page:String(e.page||"unknown").slice(0,40),
+  detail:e.type==="button"&&/^[a-zA-Z0-9_-]{1,48}$/.test(e.detail?.id||"")?{id:e.detail.id}:
+   e.type==="navigation"&&/^[a-zA-Z0-9_-]{1,32}$/.test(e.detail?.action||"")?{action:e.detail.action}:
+   e.type==="script-error"?{file:String(e.detail?.file||"unknown").slice(0,70),line:Number(e.detail?.line)||0}:{}
+ }));
+ if(!rows.length)return false;
+ const response=await fetch(privateApi+"/rest/v1/taxi_diagnostic_events",{
+  method:"POST",headers:{apikey:privateKey,Authorization:"Bearer "+privateSession.access_token,
+   "Content-Type":"application/json",Prefer:"return=minimal"},
+  body:JSON.stringify(rows),signal:AbortSignal.timeout(8000)
+ });
+ if(!response.ok)throw Error("Diagnostic non transmis : "+response.status);
+ return true;
+};
+
 const privateGate=document.createElement("section");
 privateGate.className="taxi-access";
 privateGate.style.cssText="position:fixed;inset:0;z-index:100;background:#0b1020;overflow:auto;padding:30px 18px";
@@ -2029,5 +2049,5 @@ for(const {btn,menu} of pairs){
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 })();
 </script>
-<dialog id="diagnosticDialog" aria-label="Diagnostic intelligent" style="width:min(92vw,480px);max-height:85dvh;overflow:auto;background:#151e30;color:#f3f5fa;border:1px solid #53699a;border-radius:15px;padding:18px"><h2>Diagnostic intelligent</h2><p id="diagnosticStatus" role="status">Désactivé</p><p class="hint">Facultatif. Enregistre localement les boutons utilisés, les erreurs techniques et les changements de connexion. Aucun montant, client, adresse ou texte saisi n'est collecté. Rien n'est transmis automatiquement.</p><div class="toolbar"><button class="button" id="diagnosticToggle" type="button">Activer le diagnostic</button><button class="button secondary" id="diagnosticExport" type="button">Exporter le rapport JSON</button><button class="button danger" id="diagnosticClear" type="button">Effacer les diagnostics</button><button class="button secondary" id="diagnosticClose" type="button">Fermer</button></div></dialog><script src="taxi-diagnostic.js?v=1" defer></script>
+<dialog id="diagnosticDialog" aria-label="Diagnostic intelligent" style="width:min(92vw,480px);max-height:85dvh;overflow:auto;background:#151e30;color:#f3f5fa;border:1px solid #53699a;border-radius:15px;padding:18px"><h2>Diagnostic intelligent</h2><p id="diagnosticStatus" role="status">Désactivé</p><p class="hint">Facultatif. Enregistre localement les boutons utilisés, les erreurs techniques et les changements de connexion. Aucun montant, client, adresse ou texte saisi n'est collecté. Envoi sécurisé uniquement après activation explicite.</p><div class="toolbar"><button class="button" id="diagnosticToggle" type="button">Activer le diagnostic</button><button class="button secondary" id="diagnosticSend" type="button">Activer l’envoi sécurisé</button><button class="button secondary" id="diagnosticExport" type="button">Exporter le rapport JSON</button><button class="button danger" id="diagnosticClear" type="button">Effacer les diagnostics</button><button class="button secondary" id="diagnosticClose" type="button">Fermer</button></div></dialog><script src="taxi-diagnostic.js?v=1" defer></script>
 </body></html>
