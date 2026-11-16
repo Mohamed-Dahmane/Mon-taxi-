@@ -1973,6 +1973,8 @@ body .pagebar{display:none}
 <script>
 (function(){
 const pairs=[["quickMenuBtn","quickMenu"],["hotelQuickMenuBtn","hotelQuickMenu"]].map(([b,m])=>({btn:document.getElementById(b),menu:document.getElementById(m)}));
+function removeDuplicateDirectMenuItems(){for(const {menu} of pairs){for(const item of menu.querySelectorAll("button")){if(item.dataset.quick==="direct"||/^\s*(?:🚕\s*)?course directe\s*$/i.test(item.textContent||""))item.remove()}}}
+removeDuplicateDirectMenuItems();
 function closeAll(){for(const {btn,menu} of pairs){menu.hidden=true;btn.setAttribute("aria-expanded","false")}}
 function navigate(key){
  if(key==="exportBackup"||key==="importBackup"){
