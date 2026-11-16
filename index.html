@@ -1707,6 +1707,15 @@ function routeHotelModule(){
   let rule=commissionDoc.getElementById("commissionOnlyHidePlanning");
   if(!rule){rule=commissionDoc.createElement("style");rule.id="commissionOnlyHidePlanning";commissionDoc.head.appendChild(rule)}
   rule.textContent=commissionOnly?".app-header,#homeActions>.home-actions,#openTodayReservations,#homeActions>.card:has(#copyHotelTransfer){display:none!important}":"";
+  // Rétablir explicitement les commandes de planification hors du menu Commissions.
+  const actions=commissionDoc.querySelector("#homeActions>.home-actions");
+  const header=commissionDoc.querySelector(".app-header");
+  const todayButton=commissionDoc.getElementById("openTodayReservations");
+  const transfer=commissionDoc.getElementById("copyHotelTransfer")?.closest(".card");
+  for(const el of [actions,header,todayButton,transfer])if(el)el.style.removeProperty("display");
+  if(commissionOnly){for(const el of [actions,header,todayButton,transfer])if(el)el.style.setProperty("display","none","important")}
+  else {for(const el of [actions,header,todayButton,transfer])if(el)el.style.removeProperty("display")}
+
   const title=commissionDoc.querySelector(".app-header h1");
   if(title)title.textContent=commissionOnly?"Commissions hôtels":"Planification courses";
  }
