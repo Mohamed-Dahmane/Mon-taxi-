@@ -27,12 +27,12 @@ main.is-pulling { transition: none; }
 main { padding-top: max(10px, env(safe-area-inset-top)); }
 
 /* Tableaux de la fiche Détails */
-#daily .hint { margin-block: 7px; }
-#daily .rowhead { margin-bottom: 6px; }
-#daily .dayrow { margin-bottom: 2px; }
-#daily .dayrow input { padding-block: 5px; min-height: 32px; font-size: 18px; }
+#monthlyJournal .hint { margin-block: 7px; }
+#monthlyJournal .rowhead { margin-bottom: 6px; }
+#monthlyJournal .dayrow { margin-bottom: 2px; }
+#monthlyJournal .dayrow input { padding-block: 5px; min-height: 32px; font-size: 18px; }
 .fixedrow input[inputmode="decimal"], #extraAmount { font-size: 21px; }
-#daily .daytotals { padding-block: 8px; }
+#monthlyJournal .daytotals { padding-block: 8px; }
 .selectors{grid-template-columns:minmax(44px,.6fr) minmax(0,1.4fr) minmax(0,1fr);gap:6px}
 .selectors select,.selectors .calendar-trigger{min-width:0;padding:8px 6px;font-size:14px}
 .selectors .calendar-trigger{width:100%;margin:0;text-align:center}
@@ -54,16 +54,16 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #home .payment-pencil:hover,#home .payment-pencil:focus-visible{color:#fff;background:#354a6b}
 .payment-month-amount{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;column-gap:1px}
 #home .payment-month-amount strong{margin-block:0}
-#daily{padding-inline:clamp(9px,3vw,17px)}
-#daily :is(.rowhead,.dayrow,.journal-totals){grid-template-columns:36px repeat(3,minmax(0,1fr));gap:4px}
-#daily .rowhead{padding:5px 2px;border-bottom:1px solid #34435e;text-align:center;font-size:clamp(10px,3vw,12px);font-weight:750}
-#daily .dayrow{padding:3px 2px;border-bottom:1px solid #2d3b55}
-#daily .day{position:relative;color:#c1cedf;font-weight:650;font-variant-numeric:tabular-nums}
-#daily .journal-worked .day::before,.journal-worked-key::before{content:"";display:inline-block;width:2px;height:12px;border-radius:2px;background:#75b5a7}
-#daily .journal-worked .day::before{position:absolute;left:-3px;top:50%;transform:translateY(-50%)}
+#monthlyJournal{padding-inline:clamp(9px,3vw,17px)}
+#monthlyJournal :is(.rowhead,.dayrow,.journal-totals){grid-template-columns:36px repeat(3,minmax(0,1fr));gap:4px}
+#monthlyJournal .rowhead{padding:5px 2px;border-bottom:1px solid #34435e;text-align:center;font-size:clamp(10px,3vw,12px);font-weight:750}
+#monthlyJournal .dayrow{padding:3px 2px;border-bottom:1px solid #2d3b55}
+#monthlyJournal .day{position:relative;color:#c1cedf;font-weight:650;font-variant-numeric:tabular-nums}
+#monthlyJournal .journal-worked .day::before,.journal-worked-key::before{content:"";display:inline-block;width:2px;height:12px;border-radius:2px;background:#75b5a7}
+#monthlyJournal .journal-worked .day::before{position:absolute;left:-3px;top:50%;transform:translateY(-50%)}
 .journal-worked-key::before{margin-right:5px;vertical-align:middle}
 .journal-heading{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
-#daily .journal-heading h2{margin:0}
+#monthlyJournal .journal-heading h2{margin:0}
 .journal-actions{display:flex;gap:4px;flex-wrap:wrap}
 .journal-actions .button{font-size:12px;padding:6px 8px}
 .journal-actions [aria-expanded="true"]{border-color:#75b5a7}
@@ -81,14 +81,14 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .journal-payments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0;font-size:12px}
 .journal-payments dt{color:#b7c9df}
 .journal-payments dd{margin:2px 0 0;font-weight:700;overflow-wrap:anywhere}
-#daily :is(.dayrow>input,.day-calculated){min-height:38px;font-size:clamp(12px,3.6vw,16px);font-weight:700;font-variant-numeric:tabular-nums}
-#daily .day-calculated{display:grid;align-content:center;text-align:right;padding:4px 5px;overflow-wrap:anywhere}
+#monthlyJournal :is(.dayrow>input,.day-calculated){min-height:38px;font-size:clamp(12px,3.6vw,16px);font-weight:700;font-variant-numeric:tabular-nums}
+#monthlyJournal .day-calculated{display:grid;align-content:center;text-align:right;padding:4px 5px;overflow-wrap:anywhere}
 .button.add-action{background:#16784a;color:#fff;border-color:#36a975}
 .button.add-action:hover{background:#12653e}
 #home .workday-average{margin-bottom:10px}
-#daily .dayrow{align-items:start}
-#daily .dayrow .day{align-self:center}
-#daily .dayrow input{padding-inline:5px}
+#monthlyJournal .dayrow{align-items:start}
+#monthlyJournal .dayrow .day{align-self:center}
+#monthlyJournal .dayrow input{padding-inline:5px}
 .details-overview h2 span{display:block;font-size:12px;color:#b7c9df;margin-top:3px}
 .details-result,.details-metric{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .details-total{min-height:46px;padding:8px 12px;margin-bottom:5px;background:#1e3049;border-radius:9px;font-size:14px;font-weight:700}
@@ -110,6 +110,10 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .details-heading .reference-days{font-size:10px}
 #details .details-tabs{display:flex;flex-wrap:wrap;gap:6px}
 #details .details-tabs .tab{flex:1 0 auto;min-height:40px;padding:7px 9px}
+.financial-history .v11-summary{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
+.financial-history .v11-summary strong{font-size:clamp(12px,3.4vw,17px)}
+.financial-history details{margin-top:12px}
+.financial-history summary{padding:10px 0;cursor:pointer}
 
 .taxi-summary{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
 #home .taxi-summary .work-reference{margin:0;max-width:none;min-width:0;padding:5px 4px;text-align:center;border:1px solid #354a6b;border-radius:8px}
@@ -214,7 +218,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 .invoice-input small,.invoice-total small{font-size:8px;white-space:nowrap}
 .invoice-total{display:flex;align-items:baseline;justify-content:flex-end;gap:3px}
 .invoice-total small{flex:none}
-#daily .journal-day-toggle{min-height:36px}
+#monthlyJournal .journal-day-toggle{min-height:36px}
 
 /* Icône intégrée au bandeau : contours fondus et halo bleu discret */
 .taxi-brand h1{display:inline-flex;align-items:center;gap:5px}
@@ -359,10 +363,10 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
   <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Planifier course</button>
   <button type="button" class="button" id="openHotelPlanning" aria-controls="hotelCommissionsDialog">Planning</button>
 </div>
-<div class="taxi-page-navigation"><button type="button" id="taxiPagePrev" class="taxi-page-arrow" aria-label="Page précédente">‹</button><div id="taxiPageLocation" class="taxi-page-location" aria-label="Page actuelle"><span data-location="home" class="active">Accueil</span><span data-location="details">Détails</span><span data-location="archive">Archives</span></div><button type="button" id="taxiPageNext" class="taxi-page-arrow" aria-label="Page suivante">›</button></div>
+<div class="taxi-page-navigation"><button type="button" id="taxiPagePrev" class="taxi-page-arrow" aria-label="Page précédente">‹</button><div id="taxiPageLocation" class="taxi-page-location" aria-label="Page actuelle"><button type="button" data-location="home" class="active">Accueil</button><button type="button" data-location="details">Bilan</button></div><button type="button" id="taxiPageNext" class="taxi-page-arrow" aria-label="Page suivante">›</button></div>
 
 <p class="hint" id="hotelSyncStatus" role="status"></p>
-<div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Détails</button><button class="pageBtn" data-page="archive">Archives</button></div>
+<div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Bilan</button></div>
 <section class="page active" id="home">
 <div class="taxi-summary"><div class="work-reference payment-day-total"><div class="label" id="selectedReceiptLabel">Recette du jour</div><div class="value green reference-amount" id="paymentNetToday">—</div></div><div class="work-reference workday-average"><div class="label average-heading">Moyenne <span class="reference-days">(0 jour)</span></div><div class="value green reference-amount">—</div></div></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="eyebrow">SAISIE DES MONTANTS · <span id="entryDate"></span></div><div class="taxi-entry taxi-head"><span></span><span></span><span>Total du jour <small class="total-ttc">TTC</small></span></div>
@@ -416,7 +420,13 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
 </section>
 
 </section>
-<section class="page" id="fixedPage"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section></section><section class="page" id="archive"><div class="card"><h2>Archives des recettes</h2><div class="v11-summary"><div><span class="label">Total encaissé depuis le 01.10.2026</span><strong class="green" id="archiveTotal">0,00 €</strong></div><div><span class="label">Total des charges</span><strong id="archiveCharges">0,00 €</strong></div><div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div></div><h2 style="margin-top:18px">Totaux par mois</h2><div id="archiveMonths"></div><h2 style="margin-top:18px">Recettes par date</h2><div id="archiveDays"></div><p class="hint">Historique depuis le 01.10.2026. Les paiements SumUp sont inclus avec la connexion privée.</p></div></section><section class="page" id="details">
+<section class="page" id="fixedPage"><section class="card" id="fixed"><h2>Frais fixes du mois</h2><div id="fixedRows"></div><button type="button" class="button add-action" id="addFixed">+ Ajouter une charge fixe</button><div class="sumrow"><span>Total frais fixes</span><span id="fixedSum">0,00 €</span></div><p class="hint">Tu peux modifier le nom et le montant de chaque charge, indépendamment pour chaque mois.</p></section></section><section class="page" id="details">
+<div class="tabs details-tabs" aria-label="Rubriques du bilan">
+ <button type="button" class="tab active" data-tab="daily" aria-controls="daily" aria-pressed="true">Mois</button>
+ <button type="button" class="tab" data-tab="history" aria-controls="history" aria-pressed="false">Historique</button>
+ <button type="button" class="tab" data-tab="backup" aria-controls="backup" aria-pressed="false">Sauvegarde</button>
+</div>
+<div class="panel active" id="daily">
 <section class="card details-overview" aria-labelledby="detailsHeading">
  <div class="details-heading">
   <h2 id="detailsHeading">Bilan du mois <span id="v11DetailsPeriod"></span></h2>
@@ -443,14 +453,9 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
   <div class="details-metric"><span>Frais fixes</span><strong id="v11DetailsFixed">0,00 €</strong></div>
  </div>
 </section>
-<div class="tabs details-tabs" aria-label="Rubriques de la page Détails">
- <button class="tab active" data-tab="daily" aria-controls="daily" aria-pressed="true">Journal</button>
- <button class="tab" data-tab="annual" aria-controls="annual" aria-pressed="false">Année</button>
- <button class="tab" data-tab="backup" aria-controls="backup" aria-pressed="false">Sauvegarde</button>
-</div>
-<section class="panel active card" id="daily">
+<section class="card" id="monthlyJournal" aria-labelledby="journalHeading">
  <div class="journal-heading">
-  <h2>Journal du mois</h2>
+  <h2 id="journalHeading">Journal du mois</h2>
   <div class="journal-actions" role="group" aria-label="Ajouter un frais">
    <button type="button" class="button secondary" data-journal-add="fuel" aria-expanded="false" aria-controls="journalAddForm">+ Carburant</button>
    <button type="button" class="button secondary" data-journal-add="expense" aria-expanded="false" aria-controls="journalAddForm">+ Dépense</button>
@@ -471,7 +476,28 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
  <div class="journal-totals" aria-label="Totaux du journal"><span>Total</span><strong id="journalCaisseTotal">—</strong><strong id="journalFuelTotal">—</strong><strong id="journalExpenseTotal">—</strong></div>
  <p class="hint" id="journalTotalsNote" hidden>Ces totaux reprennent les lignes du journal. Les ajustements du mois et les dépenses sans date figurent dans le bilan.</p>
 </section>
-<section class="panel card" id="annual"><h2>Vue annuelle</h2><div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div><div id="annualRows"></div><div class="sumrow"><span>Total annuel caisse</span><span id="annualTotal">0,00 €</span></div></section>
+</div>
+<section class="panel card financial-history" id="history" aria-labelledby="financialHistoryHeading">
+ <h2 id="financialHistoryHeading">Depuis le 1er octobre 2026</h2>
+ <div class="v11-summary">
+  <div><span class="label">Recettes</span><strong class="green" id="archiveTotal">0,00 €</strong></div>
+  <div><span class="label">Charges</span><strong id="archiveCharges">0,00 €</strong></div>
+  <div><span class="label">Résultat net</span><strong id="archiveNet">0,00 €</strong></div>
+ </div>
+ <h2>Totaux par mois</h2>
+ <div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div>
+ <div id="archiveMonths"></div>
+ <details>
+  <summary>Recettes par date</summary>
+  <div id="archiveDays"></div>
+ </details>
+ <details>
+  <summary>Vue annuelle <span id="financialHistoryYear"></span></summary>
+  <div class="annualrow muted"><span>Mois</span><strong>Recettes</strong><strong>Résultat</strong></div>
+  <div id="annualRows"></div>
+  <div class="sumrow"><span>Total annuel caisse</span><span id="annualTotal">0,00 €</span></div>
+ </details>
+</section>
 <section class="panel card" id="backup"><h2>Sauvegarde</h2><div class="toolbar"><button class="button" id="export">Exporter une sauvegarde</button><button class="button secondary" id="importBtn">Importer une sauvegarde ou un mois</button><input id="importFile" type="file" accept=".json,application/json" hidden></div><button class="button secondary" id="undoMonthImport">Annuler le dernier import de mois</button><hr style="border:0;border-top:1px solid #33405a;margin:20px 0"><button class="button danger" id="reset">Remettre les montants à zéro</button><p class="hint">Un import de mois remplace uniquement la période indiquée, sans additionner les montants. Les autres mois sont conservés. Une sauvegarde complète remplace toutes les périodes.</p></section>
 </section></main>
 <dialog id="hotelCommissionsDialog" aria-label="Commissions hôtels"><button id="hotelQuickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false"><span class="taxi-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span></button><div id="hotelQuickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
@@ -480,10 +506,9 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
 <button data-quick="direct">🚕 Course directe</button>
 <button data-quick="plan">＋ Planifier une course</button>
 <button data-quick="planning">▦ Planning</button>
-<button data-quick="details">▤ Détails jour / mois</button>
+<button data-quick="details">▤ Bilan</button>
 <button data-quick="commissions">€ Commissions hôtels</button>
 <button data-quick="fixedPage">€ Frais fixes</button>
-<button data-quick="archive">▣ Archives</button>
 <button data-quick="hotelArchives">▣ Archives des courses</button>
 <button data-quick="hotelAll">▦ Toutes les courses</button>
 </nav></div><div id="hotelRefreshIndicator" class="refresh-center-indicator" role="status" aria-label="Actualisation en cours" hidden><svg class="refresh-arc material-refresh" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/></svg></div>
@@ -1015,7 +1040,7 @@ function renderExpenses(){
   root.append(row);
  }
 }
-function renderAnnual(){const root=$("annualRows");root.replaceChildren();let total=0;months.forEach((m,i)=>{const monthData=data.months[yearSel.value+"-"+i]||{days:{},extra:[]};const s=stats({...monthData,fixed:monthData.fixed||defaultFixed()},yearSel.value+"-"+i);total+=s.revenue;const row=document.createElement("div");row.className="annualrow";const label=document.createElement("span");label.textContent=m;const rev=document.createElement("strong");rev.textContent=money(s.revenue);const balance=document.createElement("strong");balance.textContent=money(s.balance);balance.className=s.balance<0?"red":"green";row.append(label,rev,balance);root.append(row)});$("annualTotal").textContent=money(total)}
+function renderAnnual(){$("financialHistoryYear").textContent=yearSel.value;const root=$("annualRows");root.replaceChildren();let total=0;months.forEach((m,i)=>{const monthData=data.months[yearSel.value+"-"+i]||{days:{},extra:[]};const s=stats({...monthData,fixed:monthData.fixed||defaultFixed()},yearSel.value+"-"+i);total+=s.revenue;const row=document.createElement("div");row.className="annualrow";const label=document.createElement("span");label.textContent=m;const rev=document.createElement("strong");rev.textContent=money(s.revenue);const balance=document.createElement("strong");balance.textContent=money(s.balance);balance.className=s.balance<0?"red":"green";row.append(label,rev,balance);root.append(row)});$("annualTotal").textContent=money(total)}
 function render(){ensure();renderQuick();renderDays();renderFixed();renderExpenses();refreshMetrics();renderAnnual();renderArchive()}
 monthSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});yearSel.addEventListener("change",()=>{const t=new Date();selectedDay=Number(yearSel.value)===t.getFullYear()&&Number(monthSel.value)===t.getMonth()?t.getDate():1;render();if(!calendarDialog.hidden)renderCalendar()});
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===btn);x.setAttribute("aria-pressed",String(x===btn))});document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.tab))}));document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".pageBtn").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===btn.dataset.page));window.scrollTo(0,0)}));
@@ -1023,11 +1048,11 @@ function updateTaxiPageLocation(){const active=document.querySelector(".page.act
 document.getElementById("taxiPageLocation")?.addEventListener("click",e=>{const target=e.target.closest("[data-location]");if(!target)return;document.querySelector('.pageBtn[data-page="'+target.dataset.location+'"]')?.click()});
 document.querySelectorAll(".pageBtn").forEach(btn=>btn.addEventListener("click",updateTaxiPageLocation));
 updateTaxiPageLocation();
-for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElementById(id)?.addEventListener("click",()=>{const pages=["home","details","archive"];const current=document.querySelector(".page.active")?.id;const index=pages.indexOf(current);document.querySelector(`.pageBtn[data-page="${pages[((index<0?0:index)+step+pages.length)%pages.length]}"]`)?.click()});
+for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElementById(id)?.addEventListener("click",()=>{const pages=["home","details"];const current=document.querySelector(".page.active")?.id;const index=pages.indexOf(current);document.querySelector(`.pageBtn[data-page="${pages[((index<0?0:index)+step+pages.length)%pages.length]}"]`)?.click()});
 
 // Navigation circulaire tactile : écoute globale pour les contenus défilants et tableaux.
 (function(){
- const pages=["home","details","archive"];
+ const pages=["home","details"];
  const main=document.querySelector("main");
  let gesture=null,pulling=false;
  const reset=()=>{
@@ -1777,7 +1802,7 @@ window.addEventListener("hotel-commissions-updated",refreshHotelCommissions);
 window.addEventListener("storage",event=>{
  if(event.key===hotelCommissionStorageKey||event.key===null)refreshHotelCommissions();
 });
-const siteBuild="taxi-v6-11-retour-accueil";
+const siteBuild="taxi-v6-11-bilan";
 const hotelDirectoryKey="montaxi:hotel-commissions:directory-v1";
 const hotelSyncKey="montaxi:hotel-sync:baseline-v1";
 let hotelSyncJob=null,hotelAudio=null,hotelReminderTimer=null;
@@ -1786,6 +1811,41 @@ function readHotelState(){
  const directory=JSON.parse(localStorage.getItem(hotelDirectoryKey)||"{}");
  if(!Array.isArray(courses)||!directory||typeof directory!=="object"||Array.isArray(directory))throw Error("Données hôtels illisibles");
  return {courses:TaxiHotels.courseMap(courses),directory};
+}
+function correctDriverName(state){
+ const rename=value=>typeof value==="string"&&/^mohaled 70$/i.test(value.trim())?"Mohamed 70":value;
+ const renameList=values=>[...new Set(values.map(rename))];
+ const directory={...state.directory};
+ for(const key of ["contacts","archivedDriverNames","driverOrder","contactGroupSequence","standardReceptionNames"]){
+  if(Array.isArray(directory[key]))directory[key]=renameList(directory[key]);
+ }
+ if(Array.isArray(directory.referralOnlyContacts)){
+  directory.referralOnlyContacts=[...new Set(directory.referralOnlyContacts.map(key=>key==="mohaled 70"?"mohamed 70":key))];
+ }
+ if(directory.hotels){
+  directory.hotels=Object.fromEntries(Object.entries(directory.hotels).map(([hotel,name])=>[hotel,rename(name)]));
+ }
+ if(directory.allowedContacts){
+  directory.allowedContacts=Object.fromEntries(Object.entries(directory.allowedContacts)
+   .map(([hotel,names])=>[hotel,Array.isArray(names)?renameList(names):names]));
+ }
+ if(directory.driverNameOverrides){
+  const overrides={...directory.driverNameOverrides};
+  for(const [key,name] of Object.entries(overrides))overrides[key]=rename(name);
+  if(Object.hasOwn(overrides,"mohaled 70")){
+   overrides["mohamed 70"]??=overrides["mohaled 70"];
+   delete overrides["mohaled 70"];
+  }
+  directory.driverNameOverrides=overrides;
+ }
+ const courses=Object.fromEntries(Object.entries(state.courses).map(([id,entry])=>{
+  const course={...entry};
+  for(const key of ["contact","driverName","completedDriverName"]){
+   if(Object.hasOwn(course,key))course[key]=rename(course[key]);
+  }
+  return [id,course];
+ }));
+ return {courses,directory};
 }
 function applyHotelState(state){
  localStorage.setItem(hotelCommissionStorageKey,JSON.stringify(Object.values(state.courses)));
@@ -1852,7 +1912,7 @@ async function syncHotels(){
    const current=readHotelState();
    const empty={courses:{},directory:{}};
    const base=saved?.snapshot??empty;
-   const snapshot=TaxiHotels.merge(base,current,remote?.snapshot??empty,!saved);
+   const snapshot=correctDriverName(TaxiHotels.merge(base,current,remote?.snapshot??empty,!saved));
    if(!remote||!TaxiHotels.equal(snapshot,remote.snapshot)){
     const update=await fetch(url+(remote?"?revision=eq."+remote.revision:""),{
      method:remote?"PATCH":"POST",
@@ -1865,7 +1925,7 @@ async function syncHotels(){
     if(!(await update.json()).length)continue;
    }
    const latest=readHotelState();
-   const merged=TaxiHotels.merge(current,latest,snapshot);
+   const merged=correctDriverName(TaxiHotels.merge(current,latest,snapshot));
    if(!TaxiHotels.equal(latest,merged))applyHotelState(merged);
    localStorage.setItem(hotelSyncKey,JSON.stringify({owner,snapshot}));
    if(!TaxiHotels.equal(merged,snapshot))setTimeout(syncHotels,0);
@@ -1888,6 +1948,11 @@ document.addEventListener("visibilitychange",()=>{
 setInterval(()=>{
  if(document.visibilityState==="visible")syncHotels();
 },4000);
+try{
+ const state=readHotelState();
+ const corrected=correctDriverName(state);
+ if(!TaxiHotels.equal(state,corrected))applyHotelState(corrected);
+}catch(error){console.warn("Correction du répertoire différée",error)}
 updateHotelReminders();
 syncHotels();
 
@@ -1924,9 +1989,9 @@ body .pagebar{display:none}
 .taxi-menu-lines{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:22px;height:25px}
 .taxi-menu-lines i{display:block;width:19px;height:2px;background:#e8f2ff;border-radius:2px}
 #quickMenuBtn:active .taxi-menu-lines,#hotelQuickMenuBtn:active .taxi-menu-lines{opacity:.6}
-.taxi-page-navigation{display:flex;align-items:center;gap:5px;margin:7px 0 12px}.taxi-page-arrow{flex:0 0 24px;display:flex;align-items:center;justify-content:center;border:1px solid #334963;border-radius:7px;background:#18253a;color:#d6e5fb;font-size:21px;line-height:1;height:31px;padding:0}.taxi-page-arrow:active{background:#285fa3}.taxi-page-navigation .taxi-page-location{margin:0!important;flex:1;min-width:0}.taxi-page-location{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;width:100%;margin:7px 0 12px!important;padding:4px 0!important;visibility:visible!important;opacity:1!important}
-.taxi-page-location span{cursor:pointer;touch-action:manipulation;display:block;text-align:center;padding:7px 3px;border-radius:8px;color:#91a7c8;font-size:14px;font-weight:650;line-height:1.2;background:#18253a;border:1px solid #334963}
-.taxi-page-location span.active{background:#285fa3;color:white;border-color:#78b3ff;font-weight:800;box-shadow:inset 0 -2px #9ec9ff}
+.taxi-page-navigation{display:flex;align-items:center;gap:5px;margin:7px 0 12px}.taxi-page-arrow{flex:0 0 24px;display:flex;align-items:center;justify-content:center;border:1px solid #334963;border-radius:7px;background:#18253a;color:#d6e5fb;font-size:21px;line-height:1;height:31px;padding:0}.taxi-page-arrow:active{background:#285fa3}.taxi-page-navigation .taxi-page-location{margin:0!important;flex:1;min-width:0}.taxi-page-location{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:center;width:100%;margin:7px 0 12px!important;padding:4px 0!important;visibility:visible!important;opacity:1!important}
+.taxi-page-location button{cursor:pointer;touch-action:manipulation;display:block;text-align:center;padding:7px 3px;border-radius:8px;color:#91a7c8;font-size:14px;font-weight:650;line-height:1.2;background:#18253a;border:1px solid #334963}
+.taxi-page-location button.active{background:#285fa3;color:white;border-color:#78b3ff;font-weight:800;box-shadow:inset 0 -2px #9ec9ff}
 
 
 #quickMenuBtn,#hotelQuickMenuBtn{position:fixed!important;top:12px!important;right:12px!important;left:auto!important;z-index:1106!important;width:44px!important;height:39px!important;min-height:39px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;color:#e8f2ff!important;font-size:29px!important;font-weight:400!important;line-height:1!important;display:flex!important;align-items:center;justify-content:center;cursor:pointer}
@@ -1944,10 +2009,9 @@ body .pagebar{display:none}
 <button data-quick="direct">🚕 Course directe</button>
 <button data-quick="plan">＋ Planifier une course</button>
 <button data-quick="planning">▦ Planning</button>
-<button data-quick="details">▤ Détails jour / mois</button>
+<button data-quick="details">▤ Bilan</button>
 <button data-quick="commissions">€ Commissions hôtels</button>
 <button data-quick="fixedPage">€ Frais fixes</button>
-<button data-quick="archive">▣ Archives</button>
 <button data-quick="hotelArchives">▣ Archives des courses</button>
 <button data-quick="hotelAll">▦ Toutes les courses</button>
 </nav></div>
@@ -1957,8 +2021,8 @@ const pairs=[["quickMenuBtn","quickMenu"],["hotelQuickMenuBtn","hotelQuickMenu"]
 function closeAll(){for(const {btn,menu} of pairs){menu.hidden=true;btn.setAttribute("aria-expanded","false")}}
 function navigate(key){
  const dialog=document.getElementById("hotelCommissionsDialog");
- if(dialog?.open && ["home","details","archive","fixedPage"].includes(key))dialog.close();
- if(["home","details","archive","fixedPage"].includes(key)){
+ if(dialog?.open && ["home","details","fixedPage"].includes(key))dialog.close();
+ if(["home","details","fixedPage"].includes(key)){
   if(key==="fixedPage"){document.querySelectorAll(".pageBtn").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="fixedPage"));updateTaxiPageLocation()}
   else document.querySelector('.pageBtn[data-page="'+key+'"]')?.click();
   window.scrollTo(0,0);
