@@ -511,6 +511,8 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
 <button data-quick="fixedPage">€ Frais fixes</button>
 <button data-quick="hotelArchives">▣ Archives des courses</button>
 <button data-quick="hotelAll">▦ Toutes les courses</button>
+<button data-quick="exportBackup">↓ Exporter une sauvegarde</button>
+<button data-quick="importBackup">↑ Importer une sauvegarde</button>
 </nav></div><div id="hotelRefreshIndicator" class="refresh-center-indicator" role="status" aria-label="Actualisation en cours" hidden><svg class="refresh-arc material-refresh" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/></svg></div>
   <div class="hotel-commissions-bar"><button type="button" class="button secondary" id="closeHotelCommissions">← Mon Taxi</button><button type="button" class="button secondary" id="refreshHotelPage" aria-label="Actualiser toute l’application" title="Actualiser toute l’application" style="margin-left:auto;min-width:44px"><span class="hotel-refresh-icon" aria-hidden="true"><svg class="refresh-arc material-refresh" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/></svg></span></button></div>
   <iframe id="hotelCommissionsFrame" title="Commissions hôtels"></iframe>
@@ -2018,12 +2020,19 @@ body .pagebar{display:none}
 <button data-quick="fixedPage">€ Frais fixes</button>
 <button data-quick="hotelArchives">▣ Archives des courses</button>
 <button data-quick="hotelAll">▦ Toutes les courses</button>
+<button data-quick="exportBackup">↓ Exporter une sauvegarde</button>
+<button data-quick="importBackup">↑ Importer une sauvegarde</button>
 </nav></div>
 <script>
 (function(){
 const pairs=[["quickMenuBtn","quickMenu"],["hotelQuickMenuBtn","hotelQuickMenu"]].map(([b,m])=>({btn:document.getElementById(b),menu:document.getElementById(m)}));
 function closeAll(){for(const {btn,menu} of pairs){menu.hidden=true;btn.setAttribute("aria-expanded","false")}}
 function navigate(key){
+ if(key==="exportBackup"||key==="importBackup"){
+  const action=document.getElementById(key==="exportBackup"?"export":"importBtn");
+  if(action)action.click();
+  return;
+ }
  const dialog=document.getElementById("hotelCommissionsDialog");
  if(dialog?.open && ["home","details","fixedPage"].includes(key))dialog.close();
  if(["home","details","fixedPage"].includes(key)){
