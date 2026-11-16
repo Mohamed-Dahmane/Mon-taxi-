@@ -314,6 +314,31 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #fullRefreshIndicator:after,#hotelRefreshIndicator:after{content:"";display:block!important;box-sizing:border-box!important;flex:0 0 42px!important;width:42px!important;height:42px!important;border:4px solid transparent!important;border-top-color:#fff!important;border-right-color:#ffffffb0!important;border-bottom-color:#ffffff3d!important;border-left-color:transparent!important;border-radius:50%!important;animation:taxiCenterSpin .72s linear infinite!important}
 @keyframes taxiCenterSpin{to{transform:rotate(360deg)}}
 body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #hotelRefreshIndicator:not([hidden]){display:flex!important}
+
+/* Accueil compact */
+main:has(> #home.active) > .taxi-header{margin-bottom:5px}
+main:has(> #home.active) > .taxi-page-navigation{margin-block:3px 5px}
+main:has(> #home.active) > .taxi-page-navigation .taxi-page-location{padding-block:0!important}
+main:has(> #home.active) > #hotelSyncStatus:empty{display:none}
+#home > .card{margin-bottom:6px}
+#home .taxi-summary{margin-block:5px 6px}
+#home .taxi-summary .work-reference{padding-block:2px}
+#home .taxi-summary .work-reference .label{line-height:1.15}
+#home .taxi-summary .reference-amount{margin-block:0;line-height:1.1}
+#home .entry-hub{padding:8px 10px}
+#home .entry-hub .taxi-entry{padding-block:1px}
+#home .entry-hub .taxi-entry input{min-height:36px;padding-block:3px}
+#home .entry-hub .entry-costs{margin-top:5px;padding-top:0}
+#home .entry-hub .entry-group-heading{margin-block:3px 1px}
+#home .home-disclosure > summary{min-height:38px;padding-block:5px}
+#home .home-disclosure-body{padding-block:2px 5px}
+#home .home-disclosure-body .taxi-line{padding-block:2px}
+#home .home-disclosure-body .taxi-fee{margin-bottom:3px}
+#home .monthly-overview{padding:7px 9px 3px}
+#home .monthly-overview h2{margin-bottom:4px}
+#home .monthly-overview-values{gap:5px;margin-bottom:4px}
+#home .monthly-overview-values > div{padding-block:4px}
+#home .monthly-overview-values dd{margin-top:1px;line-height:1.15}
 </style><style id="fullRefreshStyle">#v11RefreshTime{display:none!important}</style></head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-separator" aria-hidden="true"></div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
 <script>
 (()=>{
