@@ -35,5 +35,22 @@ class SumUpSecurityTests(unittest.TestCase):
         self.assertIn('security_invoker = true', self.sql)
 
 
+    def test_privileged_http_requests_do_not_follow_redirects(self):
+        # A redirected request must never forward a privileged Authorization header.
+        self.assertIn('class NoRedirect(urllib.request.HTTPRedirectHandler)', self.workflow)
+        self.assertIn('return None', self.workflow)
+        self.assertIn('redirect:"error"', self.function)
+        self.assertIn('--proto \'=https\'', self.workflow)
+        self.assertNotIn('--location', self.workflow)
+        self.assertNotIn('--location-trusted', self.workflow)
+
+    def test_sync_does_not_print_private_response_or_financial_rows(self):
+        self.assertIn('--output response.json', self.workflow)
+        self.assertIn("trap 'rm -f response.json' EXIT", self.workflow)
+        self.assertIn('response intentionally not printed', self.workflow)
+        self.assertIn('No financial details printed.', self.workflow)
+        self.assertIn('No transaction details returned', self.function)
+
+
 if __name__ == '__main__':
     unittest.main()
