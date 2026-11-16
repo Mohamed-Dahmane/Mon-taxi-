@@ -92,6 +92,14 @@ function commissionDefault(){
   return (per*(Number($("vans").value)||1)).toFixed(2)
 }
 $("save").onclick=()=>{if(!integrated)return;for(const id of ["hotel","contact","driver"]){$(id+"Search").dispatchEvent(new Event("change"))}let r={};ids.forEach(id=>r[id]=$(id).value);updateCommission();r.commission=$("commission").value;r.reminder60=$("reminder60").checked;r.reminder30=$("reminder30").checked;if(!/^[1-9]\d*$/.test(String(r.vans).trim())||!Number.isSafeInteger(Number(r.vans))){alert("Indique un nombre entier de véhicules supérieur à zéro.");$("vans").focus();return}if(!Number.isFinite(Number(r.commissionUnit))||Number(r.commissionUnit)<0||!/^\d+(?:\.\d{1,2})?$/.test(String(r.commissionUnit).trim())){alert("La commission par véhicule doit être un montant positif ou 0 €, avec deux décimales maximum.");$("commissionUnit").focus();return}if(!r.date||(r.timeMode==="arrival"?!r.arrival:!r.time)){alert("Date et heure obligatoires");return}if(r.contact==="Autre"&&!r.otherContact.trim()){alert("Indique le nom du contact.");return}if(r.destination==="other"&&!r.destinationOther.trim()){alert("Précise la destination.");return}if(r.hotel==="Autre hôtel / entité"&&!r.otherHotel.trim()){alert("Précise qui attribue la course.");return}if(!r.flight.trim()){alert("Indique le numéro de vol ou de train.");$("flight").focus();return}const required=[["hotel","Course attribuée par"],["contact","Nom du contact"],["driver","Chauffeur"],["client","Nom du client"],["phone","Téléphone du client"],["place","Lieu"],["destination","Destination"],["vehicle","Type de véhicule"],["vans","Nombre de véhicules"],["passengers","Nombre de passagers"],["commissionUnit","Commission par véhicule"]];for(const [id,label] of required){if(!String(r[id]||"").trim()||(id==="vans"||id==="passengers")&&Number(r[id])<1){alert("Champ obligatoire : "+label);$(id==="hotel"?"hotelSearch":id==="contact"?"contactSearch":id==="driver"?"driverSearch":id).focus();return}}if(r.place==="Autre"&&!r.otherPlace.trim()){alert("Précise le lieu.");$("otherPlace").focus();return}if(r.driver==="Autre"&&!r.otherDriver.trim()){alert("Indique le chauffeur.");$("driverSearch").focus();return}if(integrated.mode==="Réservation"&&r.timeMode==="arrival"&&!r.arrival){alert("Indique l’heure d’arrivée.");$("arrivalHour").focus();return}if(r.timeMode==="arrival")r.time=r.arrival;if(!["vans","passengers","commissionUnit","price"].every(id=>$(id).reportValidity()))return
+  const quantity=Number(r.vans),unit=Number(r.commissionUnit);
+  const confirmation="Valider les véhicules avant d'enregistrer le pick-up ?\\n\\n"+
+    quantity+" × "+r.vehicle+"\\n"+
+    "Chauffeur : "+resolvedName(r,"driver","otherDriver")+"\\n"+
+    "Commission : "+unit.toFixed(2)+" € par véhicule\\n"+
+    "Total : "+(quantity*unit).toFixed(2)+" €\\n\\n"+
+    "Annuler permet de modifier les informations.";
+  if(!window.confirm(confirmation))return;
   saveIntegrated(r)
 }
 $("reset").onclick=reset
