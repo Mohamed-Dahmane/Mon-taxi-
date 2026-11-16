@@ -2026,12 +2026,16 @@ body .pagebar{display:none}
 <button data-quick="hotelArchives">▣ Archives des courses</button>
 <button data-quick="hotelAll">▦ Toutes les courses</button>
 <button id="openDiagnostic" type="button">⚙ Diagnostic intelligent</button>
+<button data-quick="backupExport" type="button">⬇ Sauvegarder mes données</button>
+<button data-quick="backupImport" type="button">⬆ Restaurer une sauvegarde</button>
 </nav></div>
 <script>
 (function(){
 const pairs=[["quickMenuBtn","quickMenu"],["hotelQuickMenuBtn","hotelQuickMenu"]].map(([b,m])=>({btn:document.getElementById(b),menu:document.getElementById(m)}));
 function closeAll(){for(const {btn,menu} of pairs){menu.hidden=true;btn.setAttribute("aria-expanded","false")}}
 function navigate(key){
+ if(key==="backupExport"){document.getElementById("export")?.click();return}
+ if(key==="backupImport"){document.getElementById("importBtn")?.click();return}
  const dialog=document.getElementById("hotelCommissionsDialog");
  if(dialog?.open && ["home","details","fixedPage"].includes(key))dialog.close();
  if(["home","details","fixedPage"].includes(key)){
