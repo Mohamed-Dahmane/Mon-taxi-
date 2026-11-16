@@ -1655,6 +1655,7 @@ function closeHotelPickup(){
  hotelPickupFrame.removeAttribute("src");
  if(hotelCommissionsDialog.open)hotelCommissionsFrame.focus();
 }
+window.openHotelPickup=openHotelPickup;
 window.getHotelPickupContext=source=>source===hotelPickupFrame.contentWindow&&hotelPickupContext
  ? {...hotelPickupContext,save:form=>{
     const error=hotelPickupContext.save(form);
@@ -1746,6 +1747,7 @@ async function openHotelModule(destination){
  fitHotelCommissions();
  routeHotelModule();
 }
+window.openHotelModule=openHotelModule;
 $("openHotelCommissions").onclick=()=>openHotelModule("module");
 $("openHotelPlanning").onclick=()=>openHotelModule("planning");
 $("closeHotelCommissions").onclick=()=>hotelCommissionsDialog.close();
@@ -1954,9 +1956,9 @@ function navigate(key){
   if(key==="fixedPage"){document.querySelectorAll(".pageBtn").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="fixedPage"));updateTaxiPageLocation()}
   else document.querySelector('.pageBtn[data-page="'+key+'"]')?.click();
   window.scrollTo(0,0);
- }else if(key==="planning")openHotelModule("planning");
- else if(key==="commissions")openHotelModule("module");
- else if(["direct","plan","hotelArchives","hotelAll"].includes(key))openHotelModule(key);
+ }else if(key==="planning")window.openHotelModule("planning");
+ else if(key==="commissions")window.openHotelModule("module");
+ else if(["direct","plan","hotelArchives","hotelAll"].includes(key))window.openHotelModule(key);
 }
 for(const {btn,menu} of pairs){
  btn.onclick=()=>{const open=menu.hidden;closeAll();menu.hidden=!open;btn.setAttribute("aria-expanded",String(open))};

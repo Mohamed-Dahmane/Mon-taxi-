@@ -6,7 +6,7 @@ with sync_playwright() as p:
     context=browser.new_context(viewport={'width':420,'height':850},permissions=['clipboard-read','clipboard-write'])
     page=context.new_page()
     errors=[]
-    page.on('pageerror',lambda error:errors.append(str(error)))
+    page.on('pageerror',lambda error:(errors.append(str(error)),print("Browser error:",error,flush=True)))
     page.on('dialog',lambda d:(errors.append(d.message),d.dismiss()))
     page.route('**/*',lambda route:route.continue_() if route.request.url.startswith('http://localhost:8765') else route.abort())
     page.add_init_script('''if(location.pathname==="/"){
