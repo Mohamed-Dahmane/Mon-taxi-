@@ -1926,7 +1926,7 @@ async function syncHotels(){
   }
   throw Error("Courses modifiées sur un autre appareil");
  })().catch(()=>{hotelSyncStatus("Synchronisation en attente · données locales conservées");return false});
- try{await hotelSyncJob}finally{hotelSyncJob=null}
+ try{return await hotelSyncJob}finally{hotelSyncJob=null}
 }
 window.addEventListener("hotel-commissions-updated",()=>{
  updateHotelReminders();
