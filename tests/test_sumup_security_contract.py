@@ -83,6 +83,11 @@ class SumUpSecurityContract(unittest.TestCase):
         self.assertNotIn("JSON.stringify(pendingRows)", self.function)
         self.assertNotIn("JSON.stringify(entries)", self.function)
 
+    def test_zero_processed_is_warned_without_financial_details(self):
+        self.assertIn("if processed == 0:", self.workflow)
+        self.assertIn("WARNING: SumUp returned zero processed EUR records", self.workflow)
+        self.assertIn("No financial details printed.", self.workflow)
+
     def test_success_is_not_a_new_payment_count(self):
         self.assertIn('processed counts examined EUR rows', self.workflow)
         self.assertIn('not necessarily new', self.workflow)
