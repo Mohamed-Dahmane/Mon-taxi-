@@ -58,14 +58,17 @@
         entry.validatedAt && entry.validatedAt >= entry.scheduledDate))
       .map(entry => ({
         id: String(entry.id), pickup: pickupTime(entry.scheduledDate, entry.scheduledTime),
-        hotel: String(entry.hotel || "Réservation"), time: entry.scheduledTime,
+        hotel: String(entry.pickup?.place || entry.hotel || "Réservation"), time: entry.scheduledTime,
+        pickupOptions: entry.pickup,
         destination: String(entry.destination || "")
       }))
       .filter(entry => entry.pickup > now)
-      .flatMap(entry => [60, 30].map(minutes => ({
-        ...entry, id: entry.id + ":" + minutes, minutes,
-        at: entry.pickup - minutes * 60 * 1000
-      })).filter(item => item.at > now))
+      .flatMap(({ pickupOptions, ...entry }) => [60, 30]
+        .filter(minutes => pickupOptions?.["reminder" + minutes] !== false)
+        .map(minutes => ({
+          ...entry, id: entry.id + ":" + minutes, minutes,
+          at: entry.pickup - minutes * 60 * 1000
+        })).filter(item => item.at > now))
       .sort((a, b) => a.at - b.at);
   }
   global.TaxiHotels = { equal, merge, courseMap, reminders };
