@@ -1700,6 +1700,14 @@ function routeHotelModule(){
  if(!hotelFrameReady||!hotelCommissionsDialog.open||!hotelDestination)return;
  const destination=hotelDestination;
  hotelDestination=null;
+ // Le menu Commissions hôtels est réservé aux totaux, sans création de courses.
+ const commissionOnly=destination==="module";
+ const commissionDoc=hotelCommissionsFrame.contentDocument;
+ if(commissionDoc){
+  let rule=commissionDoc.getElementById("commissionOnlyHidePlanning");
+  if(!rule){rule=commissionDoc.createElement("style");rule.id="commissionOnlyHidePlanning";commissionDoc.head.appendChild(rule)}
+  rule.textContent=commissionOnly?"#openDirectCourse,#startReservation{display:none!important}":"";
+ }
  if(destination==="planning"){
   hotelCommissionsFrame.contentWindow.dispatchEvent(new Event("mon-taxi-open-hotel-planning"));
  }else if(["direct","plan","hotelArchives","hotelAll"].includes(destination)){
