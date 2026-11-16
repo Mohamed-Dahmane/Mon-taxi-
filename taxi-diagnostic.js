@@ -3,13 +3,13 @@
 "use strict";
 const KEY="montaxi:diagnostic:v1",MAX=300;
 const allowedPages=new Set(["home","details","fixedPage","planning","direct","plan","hotelArchives","hotelAll","commissions"]);
-let enabled=false,records=[];
-try{const saved=JSON.parse(localStorage.getItem(KEY)||"{}");enabled=saved.enabled===true;records=Array.isArray(saved.records)?saved.records.slice(-MAX):[]}catch{}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({enabled,records:records.slice(-MAX)}))}catch{}};
+let enabled=false,transmit=false,records=[],uploading=false;
+try{const saved=JSON.parse(localStorage.getItem(KEY)||"{}");enabled=saved.enabled===true;transmit=saved.transmit===true;records=Array.isArray(saved.records)?saved.records.slice(-MAX):[]}catch{}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({enabled,transmit,records:records.slice(-MAX)}))}catch{}};
 const page=()=>{const active=document.querySelector(".page.active");return allowedPages.has(active?.id)?active.id:"hotel-module"};
 function log(type,detail){
  if(!enabled)return;
- records.push({at:new Date().toISOString(),type,page:page(),detail});
+ records.push({at:new Date().toISOString(),type,page:page(),detail,sent:false});
  if(records.length>MAX)records=records.slice(-MAX);
  save();update();
 }
@@ -18,13 +18,35 @@ function update(){
  if(status)status.textContent=enabled?"Activé · "+records.length+" événements locaux":"Désactivé";
  const toggle=document.getElementById("diagnosticToggle");
  if(toggle)toggle.textContent=enabled?"Désactiver le diagnostic":"Activer le diagnostic";
+ const send=document.getElementById("diagnosticSend");
+ if(send)send.textContent=transmit?"Désactiver l’envoi sécurisé":"Activer l’envoi sécurisé";
 }
 const dialog=document.getElementById("diagnosticDialog");
 document.getElementById("openDiagnostic")?.addEventListener("click",()=>{update();dialog?.showModal()});
 document.getElementById("diagnosticClose")?.addEventListener("click",()=>dialog?.close());
 document.getElementById("diagnosticToggle")?.addEventListener("click",()=>{
- enabled=!enabled;save();update();
+ enabled=!enabled;if(!enabled)transmit=false;save();update();
 });
+async function upload(){
+ if(!enabled||!transmit||uploading||typeof window.taxiDiagnosticUpload!=="function")return;
+ const pending=records.filter(e=>!e.sent).slice(0,20);
+ if(!pending.length)return;
+ uploading=true;
+ try{
+  if(await window.taxiDiagnosticUpload(pending)){
+   const sent=new Set(pending);
+   for(const record of records)if(sent.has(record))record.sent=true;
+   save();update();
+  }
+ }catch{ /* Conservé localement pour nouvel essai, sans données sensibles dans les erreurs. */ }
+ finally{uploading=false}
+}
+document.getElementById("diagnosticSend")?.addEventListener("click",()=>{
+ transmit=!transmit;save();update();if(transmit)upload();
+});
+setInterval(upload,60000);
+window.addEventListener("online",upload);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")upload()});
 document.getElementById("diagnosticClear")?.addEventListener("click",()=>{
  records=[];save();update();
 });
