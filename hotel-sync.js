@@ -31,6 +31,54 @@
     return initial && remote !== missing ? remote : local;
   }
 
+  function applyPartnerDirectory(directory, feed) {
+    const previous = directory.partnerDirectory;
+    if (!feed || previous?.revision >= feed.revision) return directory;
+
+    const { hotels, drivers } = feed.payload;
+    const oldHotels = new Map((previous?.hotels ?? []).map(hotel => [hotel.id, hotel]));
+    const oldHotelNames = new Set([...oldHotels.values()].map(hotel => hotel.name));
+    const oldPeople = new Set(previous?.people ?? []);
+    const partnerNames = new Set(hotels.map(hotel => hotel.name));
+    const partners = new Set([...drivers.map(person => person.name),
+      ...hotels.flatMap(hotel => hotel.people.map(person => person.name))]);
+    const assigners = hotels.filter(hotel => hotel.role === "attribution")
+      .flatMap(hotel => hotel.people.map(person => person.name));
+
+    const existingHotels = Object.entries(directory.hotels ?? {})
+      .filter(([name]) => !oldHotelNames.has(name) && !partnerNames.has(name));
+    const hotelDefaults = hotels.map(hotel => [hotel.name,
+      hotel.people.find(person => person.id === hotel.defaultId)?.name ?? ""]);
+    const existingContacts = Object.entries(directory.allowedContacts ?? {})
+      .filter(([name]) => !oldHotelNames.has(name) && !partnerNames.has(name));
+    const allowedContacts = hotels.map(hotel => [hotel.name, hotel.people.map(person => person.name)]);
+    const tariffNames = { ...directory.tariffNames };
+    for (const hotel of hotels) {
+      const oldName = oldHotels.get(hotel.id)?.name;
+      if (oldName && oldName !== hotel.name) tariffNames[hotel.name] = tariffNames[oldName] ?? oldName;
+    }
+    const unique = values => [...new Set(values)];
+    const nameKey = value => value.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/\p{M}/gu, "");
+    const managedPeople = new Set([...oldPeople, ...partners].map(nameKey));
+    const driverNames = [...drivers.map(person => person.name),
+      ...hotels.filter(hotel => hotel.role === "chauffeur").flatMap(hotel => hotel.people.map(person => person.name))];
+    return {
+      ...directory,
+      hotels: Object.fromEntries([...hotelDefaults, ...existingHotels]),
+      allowedContacts: Object.fromEntries([...allowedContacts, ...existingContacts]),
+      contacts: unique([...partners, ...(directory.contacts ?? []).filter(name => !managedPeople.has(nameKey(name)))]),
+      hotelSequence: unique([...partnerNames, ...(directory.hotelSequence ?? []).filter(name => !oldHotelNames.has(name))]),
+      driverOrder: unique([...driverNames, ...(directory.driverOrder ?? []).filter(name => !managedPeople.has(nameKey(name)))]),
+      manualHotelOrder: true,
+      tariffNames,
+      referralOnlyContacts: unique([...assigners.map(nameKey),
+        ...(directory.referralOnlyContacts ?? []).filter(key => !managedPeople.has(key))]),
+      inactiveCommissionHotels: unique([...(directory.inactiveCommissionHotels ?? []).filter(name => !oldHotelNames.has(name) && !partnerNames.has(name)),
+        ...hotels.filter(hotel => hotel.role === "chauffeur").map(hotel => hotel.name)]),
+      partnerDirectory: { revision: feed.revision, hotels: hotels.map(({ id, name }) => ({ id, name })), people: [...partners] }
+    };
+  }
+
   const courseMap = entries => Object.fromEntries(entries
     .filter(entry => isRecord(entry) && entry.id != null)
     .map(entry => [String(entry.id), entry]));
@@ -71,5 +119,5 @@
         })).filter(item => item.at > now))
       .sort((a, b) => a.at - b.at);
   }
-  global.TaxiHotels = { equal, merge, courseMap, reminders };
+  global.TaxiHotels = { equal, merge, applyPartnerDirectory, courseMap, reminders };
 })(globalThis);
