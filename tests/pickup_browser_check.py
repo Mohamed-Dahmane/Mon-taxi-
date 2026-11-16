@@ -13,7 +13,9 @@ with sync_playwright() as p:
       localStorage.setItem("taxi-private-session",'{"access_token":"test","expires_at":9999999999}');
       if(!localStorage.getItem("taxi-pickup-prototype-v1")){
         localStorage.setItem("taxi-pickup-prototype-v1",'[{"client":"FICHE DE TEST"}]');
-        localStorage.setItem("montaxi:hotel-commissions:courses-v1",'[{"id":"existing","hotel":"Moxy","contact":"Alexis","destination":"Zaventem","date":"2026-11-01","recordedTime":"12:00","bookingMode":"Direct","reservationStatus":"validated","validatedAt":"2026-11-01T12:00","amount":10}]');
+        localStorage.setItem("montaxi:hotel-commissions:courses-v1",'[{"id":"existing","hotel":"Moxy","contact":"Alexis","destination":"Zaventem","date":"2026-11-01","recordedTime":"12:00","bookingMode":"Direct","reservationStatus":"validated","validatedAt":"2026-11-01T12:00","driver":"other","driverName":"Mohaled 70","completedDriver":"other","completedDriverName":"Mohaled 70","amount":10}]');
+        localStorage.setItem("montaxi:hotel-commissions:directory-v1", JSON.stringify({contacts:["Mohaled 70","Mohamed 70"], driverOrder:["Mohaled 70","Mohamed 70"]}));
+        localStorage.setItem("gestion-taxi-test-v3", JSON.stringify({months:{"2026-9":{days:{"15":{caisse:"123.45"}}}}}));
       }
     }''')
     page.goto('http://localhost:8765/')
@@ -22,8 +24,24 @@ with sync_playwright() as p:
         intro.click(timeout=5000)
     except Exception:
         pass
-    page.evaluate("""document.querySelector('.pageBtn[data-page="details"]').click()""")
+    navigation = page.locator('#taxiPageLocation')
+    expect(navigation.get_by_role('button')).to_have_text(['Accueil','Bilan'])
+    page.locator('#taxiPageNext').click()
     expect(page.locator('#details')).to_have_class('page active')
+    expect(page.get_by_role('heading',name='Journal du mois')).to_be_visible()
+    page.get_by_role('button',name='Historique',exact=True).click()
+    expect(page.locator('#archiveMonths')).to_contain_text('Octobre 2026')
+    page.get_by_text('Recettes par date',exact=True).click()
+    expect(page.locator('#archiveDays')).to_contain_text('15.10.2026')
+    page.get_by_role('button',name='Sauvegarde',exact=True).click()
+    expect(page.get_by_role('button',name='Exporter une sauvegarde')).to_be_visible()
+    page.get_by_role('button',name='Mois',exact=True).click()
+    page.locator('#taxiPageNext').click()
+    expect(page.locator('#home')).to_have_class('page active')
+    navigation.get_by_role('button',name='Bilan').click()
+    directory = page.evaluate('JSON.parse(localStorage.getItem("montaxi:hotel-commissions:directory-v1"))')
+    assert directory['contacts'] == ['Mohamed 70'], directory
+    assert directory['driverOrder'] == ['Mohamed 70'], directory
     page.locator('#openHotelCommissions').click()
     hotel=page.frame_locator('#hotelCommissionsFrame')
     hotel.locator('#startReservation').click()
@@ -107,6 +125,9 @@ with sync_playwright() as p:
     page.locator('#hotelQuickMenuBtn').click()
     page.locator('#hotelQuickMenu [data-quick=hotelAll]').click()
     expect(hotel.locator('#reservationList')).to_contain_text('Moxy')
+    expect(hotel.locator('#reservationList')).to_contain_text('Attribuée à · Mohamed 70')
+    expect(hotel.locator('#reservationList')).to_contain_text('Effectuée par · Mohamed 70')
+    expect(hotel.locator('#reservationList')).not_to_contain_text('Mohaled 70')
     expect(hotel.locator('#reservationList')).to_contain_text('Brussels Airlines')
     page.locator('#hotelQuickMenuBtn').click()
     page.locator('#hotelQuickMenu [data-quick=direct]').click()
