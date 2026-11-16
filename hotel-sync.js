@@ -31,10 +31,23 @@
     return initial && remote !== missing ? remote : local;
   }
 
+  function directoryForPartners(directory) {
+    return Object.fromEntries([
+      "hotels", "allowedContacts", "contacts", "hotelSequence", "driverOrder", "referralOnlyContacts"
+    ].map(key => [key, directory[key] ?? (["hotels", "allowedContacts"].includes(key) ? {} : [])]));
+  }
+
   function applyPartnerDirectory(directory, feed) {
     const previous = directory.partnerDirectory;
-    if (!feed || previous?.revision >= feed.revision) return directory;
+    if (!feed || previous?.revision > feed.revision) return directory;
+    if (previous?.revision === feed.revision) {
+      return previous.baseline ? directory : {
+        ...directory, partnerDirectory: { ...previous, baseline: directoryForPartners(directory) }
+      };
+    }
 
+    const local = directoryForPartners(directory);
+    const expected = previous?.baseline ? { ...directory, ...previous.baseline } : directory;
     const { hotels, drivers } = feed.payload;
     const oldHotels = new Map((previous?.hotels ?? []).map(hotel => [hotel.id, hotel]));
     const oldHotelNames = new Set([...oldHotels.values()].map(hotel => hotel.name));
@@ -45,11 +58,11 @@
     const assigners = hotels.filter(hotel => hotel.role === "attribution")
       .flatMap(hotel => hotel.people.map(person => person.name));
 
-    const existingHotels = Object.entries(directory.hotels ?? {})
+    const existingHotels = Object.entries(expected.hotels ?? {})
       .filter(([name]) => !oldHotelNames.has(name) && !partnerNames.has(name));
     const hotelDefaults = hotels.map(hotel => [hotel.name,
       hotel.people.find(person => person.id === hotel.defaultId)?.name ?? ""]);
-    const existingContacts = Object.entries(directory.allowedContacts ?? {})
+    const existingContacts = Object.entries(expected.allowedContacts ?? {})
       .filter(([name]) => !oldHotelNames.has(name) && !partnerNames.has(name));
     const allowedContacts = hotels.map(hotel => [hotel.name, hotel.people.map(person => person.name)]);
     const tariffNames = { ...directory.tariffNames };
@@ -62,21 +75,30 @@
     const managedPeople = new Set([...oldPeople, ...partners].map(nameKey));
     const driverNames = [...drivers.map(person => person.name),
       ...hotels.filter(hotel => hotel.role === "chauffeur").flatMap(hotel => hotel.people.map(person => person.name))];
-    return {
+    const synced = {
       ...directory,
       hotels: Object.fromEntries([...hotelDefaults, ...existingHotels]),
       allowedContacts: Object.fromEntries([...allowedContacts, ...existingContacts]),
-      contacts: unique([...partners, ...(directory.contacts ?? []).filter(name => !managedPeople.has(nameKey(name)))]),
-      hotelSequence: unique([...partnerNames, ...(directory.hotelSequence ?? []).filter(name => !oldHotelNames.has(name))]),
-      driverOrder: unique([...driverNames, ...(directory.driverOrder ?? []).filter(name => !managedPeople.has(nameKey(name)))]),
+      contacts: unique([...partners, ...(expected.contacts ?? []).filter(name => !managedPeople.has(nameKey(name)))]),
+      hotelSequence: unique([...partnerNames, ...(expected.hotelSequence ?? []).filter(name => !oldHotelNames.has(name))]),
+      driverOrder: unique([...driverNames, ...(expected.driverOrder ?? []).filter(name => !managedPeople.has(nameKey(name)))]),
       manualHotelOrder: true,
       tariffNames,
       referralOnlyContacts: unique([...assigners.map(nameKey),
-        ...(directory.referralOnlyContacts ?? []).filter(key => !managedPeople.has(key))]),
+        ...(expected.referralOnlyContacts ?? []).filter(key => !managedPeople.has(key))]),
       inactiveCommissionHotels: unique([...(directory.inactiveCommissionHotels ?? []).filter(name => !oldHotelNames.has(name) && !partnerNames.has(name)),
         ...hotels.filter(hotel => hotel.role === "chauffeur").map(hotel => hotel.name)]),
       partnerDirectory: { revision: feed.revision, hotels: hotels.map(({ id, name }) => ({ id, name })), people: [...partners] }
     };
+    const baseline = directoryForPartners(synced);
+    synced.partnerDirectory.baseline = baseline;
+    if (previous?.baseline) {
+      Object.assign(synced, merge(previous.baseline, local, baseline));
+      for (const field of ["hotelRenames", "peopleRenames"]) {
+        if (previous[field]) synced.partnerDirectory[field] = previous[field];
+      }
+    }
+    return synced;
   }
 
   const courseMap = entries => Object.fromEntries(entries
