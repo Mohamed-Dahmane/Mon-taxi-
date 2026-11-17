@@ -83,7 +83,8 @@ Deno.serve(async (req) => {
         return Response.json({ok:false,reason:"invalid_sumup_currency"},{status:502});
       // Detect shifting offset pages across all currencies, not just EUR rows.
       // A repeated non-EUR ID also means the pagination snapshot may be incomplete.
-      if(typeof tx.id!=="string" || !tx.id)
+      // Bound external identifiers before retaining them in memory or sending them to PostgREST.
+      if(typeof tx.id!=="string" || !tx.id || tx.id.length>128)
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
       if(seenTransactionIds.has(tx.id))
         return Response.json({ok:false,reason:"duplicate_sumup_transaction_in_pages"},{status:502});
@@ -91,9 +92,9 @@ Deno.serve(async (req) => {
       if(tx.currency!=="EUR")continue;
       // Never coerce an unexpected status object to "[object Object]".
       // Missing status stays UNKNOWN for later manual reconciliation.
-      if(tx.status != null && (typeof tx.status !== "string" || !tx.status.trim()))
+      if(tx.status != null && (typeof tx.status !== "string" || !tx.status.trim() || tx.status.length>64))
         return Response.json({ok:false,reason:"invalid_sumup_status"},{status:502});
-      if(typeof tx.id!=="string" || !tx.id || typeof tx.timestamp!=="string" ||
+      if(typeof tx.timestamp!=="string" || tx.timestamp.length>64 ||
          typeof tx.amount!=="number" || !Number.isFinite(tx.amount))
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
       const t=Date.parse(tx.timestamp);
