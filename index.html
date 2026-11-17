@@ -507,7 +507,7 @@ body.taxi-refreshing #fullRefreshIndicator:not([hidden]),body.taxi-refreshing #h
 </section></main>
 <dialog id="hotelCommissionsDialog" aria-label="Commissions hôtels"><button id="hotelQuickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false"><span class="taxi-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span></button><div id="hotelQuickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
 <button data-quick="close">✕ Fermer</button>
-<button data-quick="commissions">€ Commissions hôtels</button>
+<button data-quick="hotelDashboard">▦ Commissions hôtels · Accueil</button>
 <button data-quick="fixedPage">€ Frais fixes</button>
 <button data-quick="hotelArchives">▣ Archives de toutes les courses</button>
 <button data-quick="exportBackup">↓ Exporter une sauvegarde</button>
@@ -2057,7 +2057,7 @@ body .pagebar{display:none}
 <button id="quickMenuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false"><span class="taxi-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span></button>
 <div id="quickMenu" hidden><nav aria-label="Menu Mon Taxi"><strong>Mon Taxi · Menu</strong>
 <button data-quick="close">✕ Fermer</button>
-<button data-quick="commissions">€ Commissions hôtels</button>
+<button data-quick="hotelDashboard">▦ Commissions hôtels · Accueil</button>
 <button data-quick="fixedPage">€ Frais fixes</button>
 <button data-quick="hotelArchives">▣ Archives de toutes les courses</button>
 <button data-quick="exportBackup">↓ Exporter une sauvegarde</button>
@@ -2069,7 +2069,33 @@ const pairs=[["quickMenuBtn","quickMenu"],["hotelQuickMenuBtn","hotelQuickMenu"]
 function removeDuplicateDirectMenuItems(){for(const {menu} of pairs){for(const item of menu.querySelectorAll("button")){if(item.dataset.quick==="direct"||/^\s*(?:🚕\s*)?course directe\s*$/i.test(item.textContent||""))item.remove()}}}
 removeDuplicateDirectMenuItems();
 function closeAll(){for(const {btn,menu} of pairs){menu.hidden=true;btn.setAttribute("aria-expanded","false")}}
+function showHotelDashboard(){
+ let overlay=document.getElementById("hotelDashboardOverlay");
+ if(!overlay){
+  overlay=document.createElement("div");
+  overlay.id="hotelDashboardOverlay";
+  overlay.setAttribute("role","dialog");
+  overlay.setAttribute("aria-modal","true");
+  overlay.setAttribute("aria-label","Commissions hôtels · Accueil");
+  overlay.style.cssText="position:fixed;inset:0;z-index:99999;background:#0b1020;color:#f3f5fa;overflow:auto;padding:24px 16px;font-family:system-ui";
+  overlay.innerHTML='<div style="max-width:620px;margin:auto"><button type="button" data-hotel-action="close" style="background:#26354e;color:white;border:0;border-radius:12px;padding:12px">← Mon Taxi</button><h2 style="margin:25px 0 8px">Commissions Hôtels</h2><p style="color:#9daac1">Choisissez directement votre opération.</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" id="hotelDashboardActions"><button data-hotel-action="direct">🚕 Course directe</button><button data-hotel-action="plan">📅 Course planifiée</button><button data-hotel-action="planning">🗓 Planning</button><button data-hotel-action="commissions">€ Totaux</button><button data-hotel-action="hotelArchives">▣ Archives</button><button data-hotel-action="module">⚙ Gestion existante</button></div></div>';
+  overlay.querySelectorAll("#hotelDashboardActions button").forEach(btn=>btn.style.cssText="min-height:88px;border:1px solid #3b5776;background:#182840;color:white;border-radius:14px;padding:12px;font:600 15px system-ui");
+  overlay.addEventListener("click",event=>{
+   const button=event.target.closest("[data-hotel-action]");
+   if(!button)return;
+   const action=button.dataset.hotelAction;
+   overlay.hidden=true;
+   if(action==="close")return;
+   if(action==="module")window.openHotelModule("module");
+   else navigate(action);
+  });
+  document.body.appendChild(overlay);
+ }
+ overlay.hidden=false;
+ overlay.querySelector('[data-hotel-action="close"]')?.focus();
+}
 function navigate(key){
+ if(key==="hotelDashboard"){showHotelDashboard();return;}
  if(key==="exportBackup"||key==="importBackup"){
   const action=document.getElementById(key==="exportBackup"?"export":"importBtn");
   if(action)action.click();
