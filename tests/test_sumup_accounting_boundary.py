@@ -16,6 +16,12 @@ class SumUpAccountingBoundary(unittest.TestCase):
         self.assertIn('transaction_id:String(tx.id)', self.source)
         self.assertIn('amount_cents:cents', self.source)
 
+    def test_malformed_eur_status_fails_closed_before_upsert(self):
+        self.assertIn('reason:"invalid_sumup_status"', self.source)
+        self.assertIn('typeof tx.status !== "string" || !tx.status.trim()', self.source)
+        self.assertLess(self.source.index('reason:"invalid_sumup_status"'),
+                        self.source.index('.upsert(pendingRows,'))
+
     def test_sync_does_not_book_revenue_or_override_manual_cards(self):
         # This importer is deliberately staging-only. Any future accounting
         # integration needs explicit settled-status and deduplication tests.
