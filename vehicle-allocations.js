@@ -5,8 +5,9 @@
 "use strict";
 const TYPES=["Petite voiture","Van"];
 function money(value){
+ if(value===null||value===undefined||String(value).trim()==="")throw Error("Commission obligatoire (0 € autorisé)");
  const n=Number(value);
- if(!Number.isFinite(n)||n<0||Math.round(n*100)!==n*100)throw Error("Commission invalide (0 € autorisé, deux décimales maximum)");
+ if(!Number.isFinite(n)||n<0||!Number.isSafeInteger(Math.round(n*100))||Math.abs(n*100-Math.round(n*100))>1e-7)throw Error("Commission invalide (0 € autorisé, deux décimales maximum)");
  return Math.round(n*100);
 }
 function normalize(rows){
@@ -18,6 +19,7 @@ function normalize(rows){
   const driver=String(row.driver||"").trim();
   if(!driver)throw Error("Chauffeur obligatoire à la ligne "+(index+1));
   const commissionCents=money(row.commissionUnit);
+  if(!Number.isSafeInteger(commissionCents*quantity))throw Error("Commission totale trop élevée à la ligne "+(index+1));
   return {type:row.type,quantity,driver,commissionUnit:commissionCents/100,commissionCents:commissionCents*quantity};
  });
  const totalVehicles=result.reduce((n,r)=>n+r.quantity,0);
