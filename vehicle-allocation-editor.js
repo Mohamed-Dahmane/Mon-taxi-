@@ -34,7 +34,7 @@ function mount(host, options={}){
   [quantity.el,commission.el].forEach(el=>el.addEventListener("input",updateSubtotal));
   const remove=doc.createElement("button");remove.type="button";remove.textContent="Supprimer";
   [type,quantity,driver,commission].forEach(f=>{line.append(f.wrap);f.el.addEventListener("input",invalidate);f.el.addEventListener("change",invalidate)});
-  type.el.addEventListener("change",()=>{if(!commission.el.dataset.manuallyEdited){commission.el.value=defaultForType(type.el.value);invalidate()}});
+  type.el.addEventListener("change",()=>{if(!commission.el.dataset.manuallyEdited){commission.el.value=defaultForType(type.el.value)}updateSubtotal();invalidate()});
   commission.el.addEventListener("input",()=>{commission.el.dataset.manuallyEdited="1"});
   line.append(subtotal,remove);list.append(line);updateSubtotal();
   const row={line,type:type.el,quantity:quantity.el,driver:driver.el,commission:commission.el};rows.push(row);
