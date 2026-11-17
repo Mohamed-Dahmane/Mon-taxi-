@@ -126,8 +126,12 @@ Deno.serve(async (req) => {
       if(!Number.isFinite(t))
         return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
       if(t<START)continue;
-      const cents=Math.round(Number(tx.amount)*100);
-      if(!Number.isSafeInteger(cents)||cents<0)
+      // EUR is a two-decimal currency. Reject fractional cents instead of
+      // silently rounding a malformed amount into a different payment value.
+      const rawCents=tx.amount*100;
+      const cents=Math.round(rawCents);
+      if(!Number.isSafeInteger(cents)||cents<0 ||
+         Math.abs(rawCents-cents)>1e-7)
         return Response.json({ok:false,reason:"invalid_sumup_amount"},{status:502});
       const dateParts=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Brussels",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(t));
       const dateField=(type: string)=>dateParts.find(part=>part.type===type)?.value;
