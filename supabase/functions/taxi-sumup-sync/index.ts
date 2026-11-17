@@ -127,14 +127,14 @@ Deno.serve(async (req) => {
       const parts=/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d{1,9})?(Z|([+-])(\\d{2}):(\\d{2}))$/.exec(tx.timestamp);
       if(!parts) return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
       const [,yearText,monthText,dayText,hourText,minuteText,secondText,, ,offsetHourText,offsetMinuteText]=parts;
-      const year=Number(yearText),month=Number(monthText),dayNumber=Number(dayText);
+      const parsedYear=Number(yearText),parsedMonth=Number(monthText),dayNumber=Number(dayText);
       const hour=Number(hourText),minute=Number(minuteText),second=Number(secondText);
       const offsetHour=offsetHourText===undefined?0:Number(offsetHourText);
       const offsetMinute=offsetMinuteText===undefined?0:Number(offsetMinuteText);
       const calendar=new Date(0);
-      calendar.setUTCFullYear(year,month-1,dayNumber);
+      calendar.setUTCFullYear(parsedYear,parsedMonth-1,dayNumber);
       calendar.setUTCHours(hour,minute,second,0);
-      if(calendar.getUTCFullYear()!==year || calendar.getUTCMonth()!==month-1 ||
+      if(calendar.getUTCFullYear()!==parsedYear || calendar.getUTCMonth()!==parsedMonth-1 ||
          calendar.getUTCDate()!==dayNumber || calendar.getUTCHours()!==hour ||
          calendar.getUTCMinutes()!==minute || calendar.getUTCSeconds()!==second ||
          offsetHour>14 || offsetMinute>59 || (offsetHour===14 && offsetMinute!==0))
