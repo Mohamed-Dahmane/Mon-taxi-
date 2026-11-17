@@ -62,7 +62,8 @@ class SumUpSecurityContract(unittest.TestCase):
         self.assertIn('if(entries.length>100)', self.function)
         self.assertIn('if(!Array.isArray(entries))', self.function)
         self.assertIn('if(tx.currency!=="EUR")continue;', self.function)
-        self.assertIn('if(!Number.isSafeInteger(cents)||cents<0)', self.function)
+        self.assertIn('if(!Number.isSafeInteger(cents)||cents<0 ||', self.function)
+        self.assertIn('Math.abs(rawCents-cents)>1e-7)', self.function)
         self.assertIn('timeZone:"Europe/Brussels"', self.function)
 
     def test_no_verbose_http_or_shell_tracing_of_credentials(self):
