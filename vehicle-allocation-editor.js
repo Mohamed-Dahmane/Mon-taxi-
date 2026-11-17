@@ -26,10 +26,13 @@ function mount(host, options={}){
   const quantity=field("input","Quantité",value.quantity??1);quantity.el.type="number";quantity.el.min="1";quantity.el.step="1";
   const driver=field("input","Chauffeur",value.driver??options.defaultDriver??"Moi");
   driver.el.setAttribute("list",options.driverListId||"driverSuggestions");
-  const commission=field("input","Commission unitaire (€)",value.commissionUnit??options.defaultCommission??10);
+  const defaultForType=t=>typeof options.commissionFor==="function"?options.commissionFor(t):options.defaultCommission??10;
+  const commission=field("input","Commission unitaire (€)",value.commissionUnit??defaultForType(type.el.value));
   commission.el.type="number";commission.el.min="0";commission.el.step=".01";
   const remove=doc.createElement("button");remove.type="button";remove.textContent="Supprimer";
   [type,quantity,driver,commission].forEach(f=>{line.append(f.wrap);f.el.addEventListener("input",invalidate);f.el.addEventListener("change",invalidate)});
+  type.el.addEventListener("change",()=>{if(!commission.el.dataset.manuallyEdited)commission.el.value=defaultForType(type.el.value)});
+  commission.el.addEventListener("input",()=>{commission.el.dataset.manuallyEdited="1"});
   line.append(remove);list.append(line);
   const row={line,type:type.el,quantity:quantity.el,driver:driver.el,commission:commission.el};rows.push(row);
   remove.addEventListener("click",()=>{line.remove();rows.splice(rows.indexOf(row),1);invalidate()});
