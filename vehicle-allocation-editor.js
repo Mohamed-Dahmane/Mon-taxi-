@@ -48,7 +48,7 @@ function mount(host, options={}){
    feedback.textContent=approved.totalVehicles+" véhicule(s) confirmés : "+approved.vehicleCounts.cars+" voiture(s), "+approved.vehicleCounts.vans+" van(s), "+approved.totalCommission.toFixed(2)+" € de commissions. Attribution : "+approved.assignments.map(a=>a.quantity+" × "+a.type+" → "+a.driver+" ("+a.commissionUnit.toFixed(2)+" € / véhicule)").join(" ; ");
    if(typeof options.onConfirm==="function")options.onConfirm(approved);
    return approved;
-  }catch(e){approved=null;feedback.textContent=e.message;return null}
+  }catch(e){approved=null;feedback.textContent=e&&e.message?e.message:"Confirmation impossible";if(typeof options.onInvalidate==="function")options.onInvalidate();return null}
  }
  add.addEventListener("click",()=>addRow());
  confirm.addEventListener("click",validate);
