@@ -1963,8 +1963,8 @@ async function syncHotels(){
   if(saved&&saved.owner!==owner)throw Error("Compte Mon Taxi différent");
   const url=privateApi+"/rest/v1/taxi_hotel_sync";
   const headers={apikey:privateKey,Authorization:"Bearer "+token};
-  const feedResponse=await fetch(privateApi+"/rest/v1/taxi_directory_feed?select=revision,payload",{headers,cache:"no-store",signal:AbortSignal.timeout(5000)}).catch(()=>null);
-  const [feed]=feedResponse?.ok?await feedResponse.json():[];
+  /* Site Hôtels partenaires désolidarisé : aucun flux externe chargé. */
+  
   for(let attempt=0;attempt<4;attempt++){
    const response=await fetch(url+"?select=revision,snapshot",{headers,cache:"no-store",signal:AbortSignal.timeout(8000)});
    if(!response.ok)throw Error("Lecture des courses indisponible");
@@ -1973,7 +1973,7 @@ async function syncHotels(){
    const empty={courses:{},directory:{}};
    const base=saved?.snapshot??empty;
    const snapshot=TaxiHotels.merge(base,current,remote?.snapshot??empty,!saved);
-   snapshot.directory=TaxiHotels.applyPartnerDirectory(snapshot.directory,feed);
+   /* Les listes hôtels/chauffeurs sont gérées uniquement dans Mon Taxi. */
    const corrected=correctDriverName(snapshot);
    if(!remote||!TaxiHotels.equal(corrected,remote.snapshot)){
     const update=await fetch(url+(remote?"?revision=eq."+remote.revision:""),{
