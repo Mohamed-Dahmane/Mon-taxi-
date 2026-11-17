@@ -26,6 +26,10 @@ class SumUpNetworkBoundary(unittest.TestCase):
         self.assertIn('response intentionally not printed', WORKFLOW)
         self.assertIn("trap 'rm -f response.json' EXIT", WORKFLOW)
 
+    def test_privileged_supabase_client_never_follows_redirects(self):
+        self.assertIn('global:{fetch:(input,init)=>fetch(input,{...init,redirect:"error"})}', FUNCTION)
+        self.assertIn('auth:{persistSession:false}', FUNCTION)
+
     def test_no_partial_upsert_on_pagination_error(self):
         self.assertIn('reason:"duplicate_sumup_transaction_in_pages"', FUNCTION)
         self.assertIn('reason:"pagination_limit_reached"', FUNCTION)
