@@ -65,6 +65,11 @@ Deno.serve(async (req) => {
       return Response.json({ok:false,reason:"sumup_network_error"},{status:502});
     }
     if(!response.ok) return Response.json({ok:false,reason:"sumup_http_"+response.status},{status:502});
+    // A successful HTTP status does not make a non-JSON response trustworthy.
+    // Reject HTML, text or an absent media type before buffering the body.
+    const mediaType=response.headers.get("content-type")?.split(";",1)[0].trim().toLowerCase();
+    if(mediaType!=="application/json")
+      return Response.json({ok:false,reason:"invalid_sumup_content_type"},{status:502});
     // Bound each remote page before JSON parsing: a compromised or malfunctioning
     // upstream must not exhaust Edge Function memory with an oversized response.
     const MAX_PAGE_BYTES=1024*1024;
