@@ -277,8 +277,8 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
  100%{transform:scale(1);filter:blur(0);opacity:1}
 }
 
-.hotel-home-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.hotel-home-actions .button{min-width:0;min-height:44px;padding-inline:8px;background:#145fa7}
+.hotel-home-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.hotel-home-actions .button{min-width:0;min-height:44px;padding:7px 3px;background:#145fa7;font-size:clamp(10px,2.7vw,14px);line-height:1.15;white-space:nowrap}
 #hotelCommissionsDialog{position:fixed;inset:0 auto auto 0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:#0a1323;color:#eaf1fb}
 #hotelCommissionsDialog[open]{display:flex;flex-direction:column}
 .hotel-commissions-bar{padding:5px 8px;background:#111c30}
@@ -385,9 +385,9 @@ input,select,textarea{accent-color:#7098ff}
 <select id="quickDay" hidden aria-label="Jour sélectionné"></select>
 <div id="calendarDialog" class="calendar-dialog" role="dialog" aria-label="Choisir une date" hidden><div class="calendar-head"><strong>Choisir une date</strong><button type="button" id="calendarClose" class="calendar-close" aria-label="Fermer le calendrier">✕</button></div><div class="calendar-period"><select id="month" aria-label="Mois"></select><select id="year" aria-label="Année"></select></div><div class="calendar-grid" id="calendarGrid"></div><button type="button" id="calendarToday" class="calendar-today">Aujourd’hui</button></div>
 <div class="hotel-home-actions">
-  <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Course directe</button>
-  <button type="button" class="button" id="openHotelReservationQuick" aria-controls="hotelCommissionsDialog">Réservation</button>
   <button type="button" class="button" id="openHotelPlanning" aria-controls="hotelCommissionsDialog">Planning</button>
+  <button type="button" class="button" id="openHotelReservationQuick" aria-controls="hotelCommissionsDialog">Réservation</button>
+  <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Course directe</button>
 </div>
 <div class="taxi-page-navigation"><button type="button" id="taxiPagePrev" class="taxi-page-arrow" aria-label="Page précédente">‹</button><div id="taxiPageLocation" class="taxi-page-location" aria-label="Page actuelle"><button type="button" data-location="home" class="active">Accueil</button><button type="button" data-location="details">Bilan</button></div><button type="button" id="taxiPageNext" class="taxi-page-arrow" aria-label="Page suivante">›</button></div>
 
