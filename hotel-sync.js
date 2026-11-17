@@ -98,6 +98,28 @@
         if (previous[field]) synced.partnerDirectory[field] = previous[field];
       }
     }
+    // Local removals are intentional: partner imports must not resurrect deleted names.
+    // Keep tombstones outside partnerDirectory.baseline so they survive future revisions.
+    const removedKey = value => String(value || "").trim().toLocaleLowerCase("fr")
+      .normalize("NFD").replace(/\\p{M}/gu, "");
+    const removedHotels = new Set((directory.deletedHotels ?? []).map(removedKey));
+    const removedDrivers = new Set((directory.deletedDriverNames ?? []).map(removedKey));
+    const activeHotel = name => !removedHotels.has(removedKey(name));
+    const activePerson = name => !removedDrivers.has(removedKey(name));
+    synced.hotels = Object.fromEntries(Object.entries(synced.hotels ?? {})
+      .filter(([name]) => activeHotel(name))
+      .map(([name, driver]) => [name, activePerson(driver) ? driver : ""]));
+    synced.allowedContacts = Object.fromEntries(Object.entries(synced.allowedContacts ?? {})
+      .filter(([name]) => activeHotel(name))
+      .map(([name, people]) => [name, (people ?? []).filter(activePerson)]));
+    for (const key of ["contacts", "driverOrder"]) {
+      synced[key] = [...new Map((synced[key] ?? []).filter(activePerson)
+        .map(name => [removedKey(name), name])).values()];
+    }
+    synced.hotelSequence = [...new Map((synced.hotelSequence ?? []).filter(activeHotel)
+      .map(name => [removedKey(name), name])).values()];
+    synced.deletedHotels = [...new Set(directory.deletedHotels ?? [])];
+    synced.deletedDriverNames = [...new Set(directory.deletedDriverNames ?? [])];
     return synced;
   }
 
