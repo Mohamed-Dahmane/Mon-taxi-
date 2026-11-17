@@ -65,9 +65,33 @@ Deno.serve(async (req) => {
       return Response.json({ok:false,reason:"sumup_network_error"},{status:502});
     }
     if(!response.ok) return Response.json({ok:false,reason:"sumup_http_"+response.status},{status:502});
+    // Bound each remote page before JSON parsing: a compromised or malfunctioning
+    // upstream must not exhaust Edge Function memory with an oversized response.
+    const MAX_PAGE_BYTES=1024*1024;
     let data: unknown;
-    try { data=await response.json(); }
-    catch { return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502}); }
+    try {
+      const declared=Number(response.headers.get("content-length"));
+      if(Number.isFinite(declared) && declared>MAX_PAGE_BYTES)
+        return Response.json({ok:false,reason:"sumup_page_too_large"},{status:502});
+      const reader=response.body?.getReader();
+      if(!reader) return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502});
+      const chunks: Uint8Array[]=[];
+      let total=0;
+      while(true){
+        const {done,value}=await reader.read();
+        if(done)break;
+        total+=value.byteLength;
+        if(total>MAX_PAGE_BYTES){
+          await reader.cancel();
+          return Response.json({ok:false,reason:"sumup_page_too_large"},{status:502});
+        }
+        chunks.push(value);
+      }
+      const bytes=new Uint8Array(total);
+      let offset=0;
+      for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+      data=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+    } catch { return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502}); }
     const entries=Array.isArray(data)?data:(data && typeof data==="object" ? (("items" in data ? data.items : undefined) ?? ("transactions" in data ? data.transactions : undefined)) : undefined);
     // A 200 response containing an error object or an unknown shape is not an empty history.
     if(!Array.isArray(entries)) return Response.json({ok:false,reason:"unexpected_sumup_response"},{status:502});
