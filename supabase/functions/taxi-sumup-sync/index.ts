@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       if(tx.status != null && (typeof tx.status !== "string" || !tx.status.trim() || tx.status.length>64))
         return Response.json({ok:false,reason:"invalid_sumup_status"},{status:502});
       if(typeof tx.timestamp!=="string" || tx.timestamp.length>64 ||
-         !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:Z|[+-]\\d{2}:\\d{2})$/.test(tx.timestamp) ||
+         !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(tx.timestamp) ||
          typeof tx.amount!=="number" || !Number.isFinite(tx.amount))
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
       const t=Date.parse(tx.timestamp);
