@@ -54,7 +54,7 @@ function mount(host, options={}){
  confirm.addEventListener("click",validate);
  host.append(shell);
  (options.initialRows&&options.initialRows.length?options.initialRows:[{}]).forEach(addRow);
- return Object.freeze({getConfirmed:()=>approved,validate,getRows:values,addRow,reset(initialRows){list.replaceChildren();rows.length=0;(Array.isArray(initialRows)&&initialRows.length?initialRows:[{}]).forEach(addRow);}});
+ return Object.freeze({getConfirmed:()=>approved,validate,getRows:values,addRow,reset(initialRows){invalidate();list.replaceChildren();rows.length=0;(Array.isArray(initialRows)&&initialRows.length?initialRows:[{}]).forEach(addRow);}});
 }
 root.TaxiVehicleAllocationEditor=Object.freeze({mount});
 })(typeof window!=="undefined"?window:globalThis);
