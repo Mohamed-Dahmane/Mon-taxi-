@@ -17,11 +17,12 @@ function mount(host, options={}){
   const wrap=doc.createElement("label");wrap.textContent=label+" ";
   const el=doc.createElement(tag);el.value=value;wrap.append(el);return {wrap,el};
  }
- function invalidate(){approved=null;feedback.textContent="Validation des véhicules nécessaire";}
+ function invalidate(){approved=null;feedback.textContent="Validation des véhicules nécessaire";if(typeof options.onInvalidate==="function")options.onInvalidate();}
  function addRow(value={}){
   const line=doc.createElement("div");
   const type=field("select","Véhicule",value.type||"Petite voiture");
   model.TYPES.forEach(t=>{const o=doc.createElement("option");o.value=t;o.textContent=t;type.el.append(o)});
+  type.el.value=value.type||"Petite voiture";
   const quantity=field("input","Quantité",value.quantity??1);quantity.el.type="number";quantity.el.min="1";quantity.el.step="1";
   const driver=field("input","Chauffeur",value.driver??options.defaultDriver??"Moi");
   driver.el.setAttribute("list",options.driverListId||"driverSuggestions");
@@ -47,7 +48,7 @@ function mount(host, options={}){
  confirm.addEventListener("click",validate);
  host.append(shell);
  (options.initialRows&&options.initialRows.length?options.initialRows:[{}]).forEach(addRow);
- return Object.freeze({getConfirmed:()=>approved,validate,getRows:values,addRow});
+ return Object.freeze({getConfirmed:()=>approved,validate,getRows:values,addRow,reset(initialRows){list.replaceChildren();rows.length=0;(Array.isArray(initialRows)&&initialRows.length?initialRows:[{}]).forEach(addRow);}});
 }
 root.TaxiVehicleAllocationEditor=Object.freeze({mount});
 })(typeof window!=="undefined"?window:globalThis);
