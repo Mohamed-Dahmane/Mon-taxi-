@@ -31,11 +31,11 @@ function mount(host, options={}){
   commission.el.type="number";commission.el.min="0";commission.el.step=".01";
   const remove=doc.createElement("button");remove.type="button";remove.textContent="Supprimer";
   [type,quantity,driver,commission].forEach(f=>{line.append(f.wrap);f.el.addEventListener("input",invalidate);f.el.addEventListener("change",invalidate)});
-  type.el.addEventListener("change",()=>{if(!commission.el.dataset.manuallyEdited)commission.el.value=defaultForType(type.el.value)});
+  type.el.addEventListener("change",()=>{if(!commission.el.dataset.manuallyEdited){commission.el.value=defaultForType(type.el.value);invalidate()}});
   commission.el.addEventListener("input",()=>{commission.el.dataset.manuallyEdited="1"});
   line.append(remove);list.append(line);
   const row={line,type:type.el,quantity:quantity.el,driver:driver.el,commission:commission.el};rows.push(row);
-  remove.addEventListener("click",()=>{line.remove();rows.splice(rows.indexOf(row),1);invalidate()});
+  remove.addEventListener("click",()=>{const index=rows.indexOf(row);if(index<0)return;line.remove();rows.splice(index,1);invalidate()});
   invalidate();
  }
  function values(){return rows.map(r=>({type:r.type.value,quantity:r.quantity.value,driver:r.driver.value,commissionUnit:r.commission.value}))}
