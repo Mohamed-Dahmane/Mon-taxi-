@@ -27,6 +27,13 @@ class SumUpSecurityTests(unittest.TestCase):
                        'redirect:"error"', 'status:403'):
             self.assertIn(marker, self.function)
 
+    def test_eur_amounts_cannot_silently_round_fractional_cents(self):
+        self.assertIn('const rawCents=tx.amount*100;', self.function)
+        self.assertIn('Math.abs(rawCents-cents)>1e-7', self.function)
+        self.assertIn('reason:"invalid_sumup_amount"', self.function)
+        self.assertLess(abs(12.34 * 100 - round(12.34 * 100)), 1e-7)
+        self.assertGreater(abs(12.345 * 100 - round(12.345 * 100)), 1e-7)
+
     def test_ledger_remains_private_and_success_only(self):
         self.assertRegex(self.sql, r'(?i)enable\s+row\s+level\s+security')
         self.assertRegex(self.sql, r'(?i)revoke\s+all\s+on\s+public\.taxi_sumup_transactions\s+from\s+anon,\s*authenticated')
