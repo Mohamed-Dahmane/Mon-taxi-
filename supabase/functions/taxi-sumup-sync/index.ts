@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
       // Date.parse can normalize impossible dates (for example February 30).
       // Validate the calendar and offset explicitly before assigning a Brussels accounting day.
-      const parts=/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d{1,9})?(Z|([+-])(\\d{2}):(\\d{2}))$/.exec(tx.timestamp);
+      const parts=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|([+-])(\d{2}):(\d{2}))$/.exec(tx.timestamp);
       if(!parts) return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
       const [,yearText,monthText,dayText,hourText,minuteText,secondText,, ,offsetHourText,offsetMinuteText]=parts;
       const parsedYear=Number(yearText),parsedMonth=Number(monthText),dayNumber=Number(dayText);
