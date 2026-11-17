@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
     await verification.body?.cancel();
   }
   if (!key) return Response.json({ok:false,reason:"sumup_secret_missing"},{status:503});
-  const db = createClient(url,service,{auth:{persistSession:false}});
+  // Prevent privileged Supabase requests from forwarding service-role headers across redirects.
+  const db = createClient(url,service,{auth:{persistSession:false},global:{fetch:(input,init)=>fetch(input,{...init,redirect:"error"})}});
   let count=0, cursor=0, reachedEnd=false;
   // Stage pages until pagination completes: never write an incomplete history window.
   const pendingRows: Array<Record<string, string | number>> = [];
