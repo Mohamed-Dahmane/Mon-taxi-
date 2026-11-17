@@ -101,7 +101,7 @@
     // Local removals are intentional: partner imports must not resurrect deleted names.
     // Keep tombstones outside partnerDirectory.baseline so they survive future revisions.
     const removedKey = value => String(value || "").trim().toLocaleLowerCase("fr")
-      .normalize("NFD").replace(/\\p{M}/gu, "");
+      .normalize("NFD").replace(/\p{M}/gu, "");
     const removedHotels = new Set((directory.deletedHotels ?? []).map(removedKey));
     const removedDrivers = new Set((directory.deletedDriverNames ?? []).map(removedKey));
     const activeHotel = name => !removedHotels.has(removedKey(name));
