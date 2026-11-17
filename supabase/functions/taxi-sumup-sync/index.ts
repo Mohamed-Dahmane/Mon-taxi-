@@ -88,6 +88,10 @@ Deno.serve(async (req) => {
         return Response.json({ok:false,reason:"duplicate_sumup_transaction_in_pages"},{status:502});
       seenTransactionIds.add(tx.id);
       if(tx.currency!=="EUR")continue;
+      // Never coerce an unexpected status object to "[object Object]".
+      // Missing status stays UNKNOWN for later manual reconciliation.
+      if(tx.status != null && (typeof tx.status !== "string" || !tx.status.trim()))
+        return Response.json({ok:false,reason:"invalid_sumup_status"},{status:502});
       if(typeof tx.id!=="string" || !tx.id || typeof tx.timestamp!=="string" ||
          typeof tx.amount!=="number" || !Number.isFinite(tx.amount))
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
