@@ -30,7 +30,7 @@ function mount(host, options={}){
   const commission=field("input","Commission unitaire (€)",value.commissionUnit??defaultForType(type.el.value));
   commission.el.type="number";commission.el.min="0";commission.el.step=".01";
   const subtotal=doc.createElement("output");subtotal.setAttribute("aria-live","polite");subtotal.style.display="block";
-  function updateSubtotal(){const q=Number(quantity.el.value),c=Number(commission.el.value);subtotal.textContent=Number.isSafeInteger(q)&&q>0&&Number.isFinite(c)&&c>=0&&Number.isFinite(q*c)?"Sous-total : "+(q*c).toFixed(2)+" €":"Sous-total : à vérifier";}
+  function updateSubtotal(){const q=Number(quantity.el.value),c=Number(commission.el.value);subtotal.textContent=Number.isSafeInteger(q)&&q>0&&Number.isFinite(c)&&c>=0&&Number.isSafeInteger(Math.round(q*c*100))?"Sous-total : "+(Math.round(q*c*100)/100).toFixed(2)+" €":"Sous-total : à vérifier";}
   [quantity.el,commission.el].forEach(el=>el.addEventListener("input",updateSubtotal));
   const remove=doc.createElement("button");remove.type="button";remove.textContent="Supprimer";
   [type,quantity,driver,commission].forEach(f=>{line.append(f.wrap);f.el.addEventListener("input",invalidate);f.el.addEventListener("change",invalidate)});
