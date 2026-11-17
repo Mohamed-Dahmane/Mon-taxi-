@@ -73,8 +73,13 @@
     const unique = values => [...new Set(values)];
     const nameKey = value => value.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/\p{M}/gu, "");
     const managedPeople = new Set([...oldPeople, ...partners].map(nameKey));
-    const driverNames = [...drivers.map(person => person.name),
-      ...hotels.filter(hotel => hotel.role === "chauffeur").flatMap(hotel => hotel.people.map(person => person.name))];
+    // Les contacts des hôtels d'attribution (DoubleTree et The Standard)
+    // ne doivent jamais apparaître comme chauffeurs, même s'ils figurent
+    // accidentellement dans la liste générale ou dans un autre hôtel.
+    const forbiddenDrivers = new Set(assigners.map(nameKey));
+    const driverNames = unique([...drivers.map(person => person.name),
+      ...hotels.filter(hotel => hotel.role === "chauffeur").flatMap(hotel => hotel.people.map(person => person.name))])
+      .filter(name => !forbiddenDrivers.has(nameKey(name)));
     const synced = {
       ...directory,
       hotels: Object.fromEntries([...hotelDefaults, ...existingHotels]),
