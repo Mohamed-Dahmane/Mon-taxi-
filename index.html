@@ -1766,9 +1766,16 @@ function routeHotelModule(){
   const doc=hotelCommissionsFrame.contentDocument;
   const id={direct:"openDirectCourse",plan:"startReservation",hotelArchives:"openArchivedReservations",hotelAll:"openAllCourses"}[destination];
   hotelCommissionsFrame.contentWindow.dispatchEvent(new Event("mon-taxi-open-hotel-home"));
+  // Une vue archives précédemment ouverte ne doit jamais masquer la saisie d'une course.
+  if(destination==="direct"||destination==="plan"){
+   const overlay=doc.getElementById("reservationsOverlay");
+   if(overlay)overlay.hidden=true;
+   const board=doc.getElementById("reservationBoard");
+   if(board)board.classList.remove("archive-only","history-view");
+  }
   const direction=doc.getElementById('rideDirection');
   if(direction?.open)direction.close();
-  doc.getElementById(id).click();
+  doc.getElementById(id)?.click();
  }else if(destination==="module"&&hotelOpenedOnPlanning){
   hotelCommissionsFrame.contentWindow.dispatchEvent(new Event("mon-taxi-open-hotel-home"));
  }
