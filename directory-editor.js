@@ -2,7 +2,7 @@
 "use strict";
 const KEY="montaxi:hotel-commissions:directory-v1";
 const norm=s=>String(s||"").trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-const reserved=new Set(["night","day","papas","fal","moncef","djo","jonas","yaguy","celine","adelia","diego","estella","sumira","aline"].map(norm));
+const reserved=new Set(["night","day","papa","papas","fal","moncef","djo","jonas","yaguy","celine","adelia","diego","estella","sumira","aline"].map(norm));
 const protectedHotels=new Set(["doubletree by hilton","the standard"]);
 const dialog=document.createElement("dialog");dialog.id="taxiDirectoryEditor";dialog.innerHTML='<div class="directory-head"><h2 id="directoryTitle"></h2><button type="button" id="directoryClose">✕ Fermer</button></div><p id="directoryInfo"></p><div class="directory-sort"><label for="directorySort">Classement</label><select id="directorySort"><option value="priority">Priorité ↑ ↓</option><option value="az">Alphabétique A → Z</option><option value="za">Alphabétique Z → A</option></select></div><div id="directoryRows"></div><div class="directory-add"><input id="directoryNew" placeholder="Nouveau nom" aria-label="Nouveau nom"><button type="button" id="directoryAdd">+ Ajouter</button></div><p class="directory-note">Les contacts d’attribution DoubleTree et The Standard restent séparés des chauffeurs.</p>';
 document.body.append(dialog);
