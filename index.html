@@ -529,6 +529,8 @@ input,select,textarea{accent-color:#7098ff}
 <button data-quick="close">✕ Fermer</button>
 <button data-quick="commissions">€ Commissions hôtels</button>
 <button data-quick="fixedPage">€ Frais fixes</button>
+<button data-quick="hotelList">▤ Liste des hôtels</button>
+<button data-quick="driverList">♙ Liste des chauffeurs</button>
 <button data-quick="hotelArchives">▣ Archives de toutes les courses</button>
 <button data-quick="exportBackup">↓ Exporter une sauvegarde</button>
 <button data-quick="importBackup">↑ Importer une sauvegarde</button>
@@ -2079,6 +2081,8 @@ body .pagebar{display:none}
 <button data-quick="close">✕ Fermer</button>
 <button data-quick="commissions">€ Commissions hôtels</button>
 <button data-quick="fixedPage">€ Frais fixes</button>
+<button data-quick="hotelList">▤ Liste des hôtels</button>
+<button data-quick="driverList">♙ Liste des chauffeurs</button>
 <button data-quick="hotelArchives">▣ Archives de toutes les courses</button>
 <button data-quick="exportBackup">↓ Exporter une sauvegarde</button>
 <button data-quick="importBackup">↑ Importer une sauvegarde</button>
@@ -2090,6 +2094,7 @@ function removeDuplicateDirectMenuItems(){for(const {menu} of pairs){for(const i
 removeDuplicateDirectMenuItems();
 function closeAll(){for(const {btn,menu} of pairs){menu.hidden=true;btn.setAttribute("aria-expanded","false")}}
 function navigate(key){
+ if(key==="hotelList"||key==="driverList"){window.openTaxiDirectory?.(key==="hotelList"?"hotels":"drivers");return;}
  if(key==="exportBackup"||key==="importBackup"){
   const action=document.getElementById(key==="exportBackup"?"export":"importBtn");
   if(action)action.click();
@@ -2117,4 +2122,5 @@ for(const {btn,menu} of pairs){
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 })();
 </script>
+<script src="directory-editor.js?v=20261117"></script>
 </body></html>
