@@ -122,6 +122,23 @@ Deno.serve(async (req) => {
          !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(tx.timestamp) ||
          typeof tx.amount!=="number" || !Number.isFinite(tx.amount))
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
+      // Date.parse can normalize impossible dates (for example February 30).
+      // Validate the calendar and offset explicitly before assigning a Brussels accounting day.
+      const parts=/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d{1,9})?(Z|([+-])(\\d{2}):(\\d{2}))$/.exec(tx.timestamp);
+      if(!parts) return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
+      const [,yearText,monthText,dayText,hourText,minuteText,secondText,, ,offsetHourText,offsetMinuteText]=parts;
+      const year=Number(yearText),month=Number(monthText),dayNumber=Number(dayText);
+      const hour=Number(hourText),minute=Number(minuteText),second=Number(secondText);
+      const offsetHour=offsetHourText===undefined?0:Number(offsetHourText);
+      const offsetMinute=offsetMinuteText===undefined?0:Number(offsetMinuteText);
+      const calendar=new Date(0);
+      calendar.setUTCFullYear(year,month-1,dayNumber);
+      calendar.setUTCHours(hour,minute,second,0);
+      if(calendar.getUTCFullYear()!==year || calendar.getUTCMonth()!==month-1 ||
+         calendar.getUTCDate()!==dayNumber || calendar.getUTCHours()!==hour ||
+         calendar.getUTCMinutes()!==minute || calendar.getUTCSeconds()!==second ||
+         offsetHour>14 || offsetMinute>59 || (offsetHour===14 && offsetMinute!==0))
+        return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
       const t=Date.parse(tx.timestamp);
       if(!Number.isFinite(t))
         return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
