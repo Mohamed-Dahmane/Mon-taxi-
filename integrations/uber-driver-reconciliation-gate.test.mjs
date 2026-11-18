@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { stageVerifiedDriverPayments } from './uber-driver-reconciliation-gate.js';
+const p={payment_id:'pay-1',event_time:1794590000,amount:12.50,currency_code:'EUR',driver_id:'driver-1',cash_collected:0};
+test('requires verified driver',()=>assert.throws(()=>stageVerifiedDriverPayments([p],{}),/Verified driver/));
+test('rejects different driver',()=>assert.throws(()=>stageVerifiedDriverPayments([p],{verifiedDriverId:'driver-2'}),/mismatch/));
+test('rejects missing payment driver',()=>assert.throws(()=>stageVerifiedDriverPayments([{...p,driver_id:undefined}],{verifiedDriverId:'driver-1'}),/mismatch/));
+test('deduplicates repeated payment',()=>assert.equal(stageVerifiedDriverPayments([p,p],{verifiedDriverId:'driver-1'}).length,1));
+test('returns staging-only records',()=>assert.equal(stageVerifiedDriverPayments([p],{verifiedDriverId:'driver-1'})[0].status,'staging_only'));
+test('rejects conflicting replay',()=>assert.throws(()=>stageVerifiedDriverPayments([p,{...p,amount:13}],{verifiedDriverId:'driver-1'}),/Conflicting/));
