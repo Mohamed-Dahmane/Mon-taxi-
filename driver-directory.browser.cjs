@@ -443,6 +443,27 @@ const details=page=>page.locator('#driversDetails');
  await integrated.waitForFunction(()=>typeof window.openTaxiDrivers==='function');
  await integrated.evaluate(()=>openTaxiDrivers());
  assert.deepEqual(await priorities(),['1','2','3']);
+ await integrated.locator('#taxiDrivers [data-close]').click();
+ assert.equal(await integrated.locator('main button').filter({hasText:/^Déconnexion$/}).count(),0);
+ for(const hotelMenu of [false,true]){
+  await integrated.evaluate(()=>{
+   document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');
+   document.querySelector('main').hidden=false;
+   document.querySelector('.taxi-access').hidden=true;
+   document.querySelectorAll('.taxi-splash').forEach(element=>element.remove());
+   localStorage.setItem('taxi-private-session','{}');
+  });
+  if(hotelMenu)await integrated.evaluate(()=>openHotelModule('planning'));
+  const menu=integrated.locator(hotelMenu?'#hotelQuickMenu':'#quickMenu');
+  const logout=menu.getByRole('button',{name:'Déconnexion',exact:true});
+  assert.equal(await logout.isVisible(),false);
+  await integrated.locator(hotelMenu?'#hotelQuickMenuBtn':'#quickMenuBtn').click();
+  await logout.click();
+  assert.equal(await integrated.locator('main').isVisible(),false);
+  assert.equal(await integrated.locator('#privateForm').isVisible(),true);
+  assert.equal(await integrated.locator('#hotelCommissionsDialog').evaluate(el=>el.open),false);
+  assert.equal(await integrated.evaluate(()=>localStorage.getItem('taxi-private-session')),null);
+ }
  console.log('Browser passed: names-only directory, prefix-free ranked search, detail/back flow, vehicle/day/night choices, native refresh, optional client creation/editing, airport/room/fare/date in copied text and SMS, and home return.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
