@@ -202,6 +202,10 @@ const css=doc.createElement('style');css.textContent=`
 #taxiDrivers .driver-priority[data-level="1"]{background:#145733;color:#dcfce7}
 #taxiDrivers .driver-priority[data-level="2"]{background:#204f96;color:#e0f2fe}
 #taxiDrivers .driver-priority[data-level="3"]{background:#3b485a;color:#f1f5f9}
+#taxiDrivers .driver-call-line{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
+#taxiDrivers .driver-call-line .driver-detail-phone{margin:0;min-width:0;overflow-wrap:anywhere}
+#taxiDrivers #driversCall{flex:none;margin-inline-start:auto;min-height:44px;background:#17633d;border-color:#3bae75;color:#fff;font-weight:700}
+#taxiDrivers #driversCall:hover,#taxiDrivers #driversCall:active{background:#1b7146}
 #taxiDrivers .driver-row strong,#taxiDrivers .driver-row small{display:block;margin-bottom:7px}#taxiDrivers small{color:#bed0e5}
 #taxiDrivers .drivers-checks{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;font-size:13px}#taxiDrivers .drivers-checks span{flex:none;width:88px;color:#bed0e5;font-size:11px}
 #taxiDrivers .drivers-checks label{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0}
@@ -296,14 +300,16 @@ function render(){
  if(selected){
   const back=action('← Retour aux noms',returnToNames);back.id='driversBack';const name=doc.createElement('h3');name.textContent=selected.name;
   const num=doc.createElement('p');num.className='driver-detail-phone';num.textContent=selected.phone;
+  const call=action('Appeler',()=>callDriver(selected));call.id='driversCall';
+  const callLine=doc.createElement('div');callLine.className='driver-call-line';callLine.append(num,call);
   const kind=doc.createElement('small');kind.textContent=selected.category==='van'?'Véhicule : Van':'Véhicule : Voiture normale';
-  const actions=doc.createElement('div');actions.className='driver-actions';actions.append(action('Appeler',()=>callDriver(selected)),action('SMS',()=>{recipient=selected.id;updateRecipient();$('driversSmsPanel').hidden=false;$('driversMessage').focus();}),action('Modifier',()=>edit(selected)),action('Supprimer',()=>deleteDriver(selected)));
+  const actions=doc.createElement('div');actions.className='driver-actions';actions.append(action('SMS',()=>{recipient=selected.id;updateRecipient();$('driversSmsPanel').hidden=false;$('driversMessage').focus();}),action('Modifier',()=>edit(selected)),action('Supprimer',()=>deleteDriver(selected)));
   if(pickDriverCallback)actions.prepend(action('Choisir ce chauffeur',()=>{if(courseContext&&!compatibleWithCourse(selected,courseContext)){status('Ce véhicule ne correspond pas à la course.');return;}if(pickDriverCallback(selected)!==false)dialog.close();else status('Ce nom ne peut pas être attribué comme chauffeur. Choisis une autre fiche.');}));
   else actions.append(action('Importer une course',()=>showCoursePicker(selected)));
   if(selected.nativeId&&root.TaxiContacts)actions.append(action('Modifier dans le téléphone',()=>root.TaxiContacts.edit(selected.nativeId)));
   const services=checkboxGroup('Courses possibles');services.append(check('Voiture normale',true,true,value=>editOptions(selected,{acceptsCar:value,manualServices:true})),check('Van',selected.category==='van',true,()=>{}));
   const times=checkboxGroup('Disponibilité');times.append(check('Jour',selected.availability.day,false,value=>editOptions(selected,{availability:{...selected.availability,day:value},manualAvailability:true})),check('Nuit',selected.availability.night,false,value=>editOptions(selected,{availability:{...selected.availability,night:value},manualAvailability:true})));
-  details.append(back,name,num,kind,priorityBadge(driverPriority(selected,hotelContacts),true),actions,services,times);return;
+  details.append(back,name,callLine,kind,priorityBadge(driverPriority(selected,hotelContacts),true),actions,services,times);return;
  }
  const query=norm($('driversSearch').value);
  const priorityOrder=$('driversSort').value==='priority';

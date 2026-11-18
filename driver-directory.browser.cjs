@@ -179,7 +179,18 @@ const details=page=>page.locator('#driversDetails');
  await options.locator('summary').click();
  await vanRow.getByRole('button',{name:'Répertoire',exact:true}).click();
  assert.equal(await integrated.locator('#driversVanOnly').isChecked(),true);assert.equal(await integrated.locator('#driversVanOnly').isDisabled(),true);assert.deepEqual(await integrated.locator('.driver-name').allTextContents(),['Test intégré','TX Van uniquement']);
- await select(integrated,'Test intégré');await details(integrated).getByRole('button',{name:'Appeler',exact:true}).click();
+ await select(integrated,'Test intégré');
+ const callButton=details(integrated).getByRole('button',{name:'Appeler',exact:true});
+ const callPosition=await callButton.evaluate(button=>({
+  rightGap:button.parentElement.getBoundingClientRect().right-button.getBoundingClientRect().right,
+  color:getComputedStyle(button).backgroundColor,
+  height:button.getBoundingClientRect().height
+ }));
+ assert.ok(Math.abs(callPosition.rightGap)<1);
+ assert.equal(callPosition.color,'rgb(23, 99, 61)');
+ assert.ok(callPosition.height>=44);
+ await callButton.click();
+ assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'tel:0470123456');
  const leaveAndReturn=()=>integrated.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));});
  await leaveAndReturn();await integrated.waitForFunction(()=>document.querySelector('#hotelCommissionsDialog').open&&!document.querySelector('#taxiDrivers').open);
  await vanRow.locator('.last-called-driver').waitFor();assert.match(await vanRow.locator('.last-called-driver strong').innerText(),/Test intégré/);
