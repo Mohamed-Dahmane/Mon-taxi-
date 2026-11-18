@@ -254,6 +254,7 @@ public class MainActivity extends Activity {
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
   super.onActivityResult(requestCode,resultCode,data);
+  if(requestCode==TaxiContactsBridge.CONTACT_PICK&&taxiContacts!=null)taxiContacts.picked(resultCode,data);
   if(requestCode==91){
    prompting=false;
    if(resultCode==RESULT_OK)openTaxi();
@@ -624,10 +625,6 @@ public class MainActivity extends Activity {
   if(code==36&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED){
    enableExactTaxiReminders();
   }
- }
- @Override protected void onActivityResult(int request,int result,android.content.Intent data){
-  super.onActivityResult(request,result,data);
-  if(request==TaxiContactsBridge.CONTACT_PICK&&taxiContacts!=null)taxiContacts.picked(result,data);
  }
  @Override protected void onPause(){
   super.onPause();
