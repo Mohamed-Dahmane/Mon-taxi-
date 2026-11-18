@@ -1,0 +1,153 @@
+html.taxi-clean {
+  color-scheme: dark;
+  --clean-bg: #10151c;
+  --clean-surface: #171f29;
+  --clean-field: #121a23;
+  --clean-soft: #202c39;
+  --clean-line: #364555;
+  --clean-text: #eef3f8;
+  --clean-muted: #b6c3d1;
+  --clean-blue: #255f9f;
+  --clean-accent: #a5d1ff;
+  background: var(--clean-bg);
+  color: var(--clean-text);
+  font-family: system-ui, sans-serif;
+}
+
+.taxi-clean body { background: var(--clean-bg); color: var(--clean-text); }
+.taxi-clean :is(h1, h2, h3) { letter-spacing: 0; }
+.taxi-clean h2 { font-size: 18px; }
+.taxi-clean :is(.hint, .muted, small) { color: var(--clean-muted); }
+.taxi-clean :is(p[role="status"], p.hint):empty { display: none; }
+
+.taxi-clean :is(button, summary, input, select, textarea):focus-visible {
+  outline: 2px solid var(--clean-accent);
+  outline-offset: 2px;
+}
+
+.taxi-clean :is(.card, #costDialog, #costPicker) {
+  background: var(--clean-surface);
+  border: 1px solid var(--clean-line);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.taxi-clean :is(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+  background: var(--clean-field);
+  border-color: var(--clean-line);
+  color: var(--clean-text);
+  border-radius: 8px;
+}
+
+.taxi-clean :is(.button, button.primary) {
+  background: var(--clean-blue);
+  border-color: var(--clean-blue);
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.taxi-clean :is(.button.secondary, button.secondary, .typeBtn, .tab, .calendar-trigger) {
+  background: var(--clean-soft);
+  border-color: var(--clean-line);
+  color: var(--clean-text);
+}
+
+.taxi-clean #home .taxi-summary { gap: 1px; background: var(--clean-line); border: 1px solid var(--clean-line); border-radius: 12px; overflow: hidden; }
+.taxi-clean #home .taxi-summary .work-reference { background: var(--clean-surface); border: 0; border-radius: 0; padding: 8px 4px; }
+.taxi-clean #home .taxi-summary .label { color: var(--clean-muted); }
+.taxi-clean #home .taxi-summary .reference-amount { font-size: clamp(17px, 5vw, 23px); }
+.taxi-clean .entry-hub :is(.taxi-entry, .entry-costs) { border-color: var(--clean-line); }
+.taxi-clean .entry-hub .entry-heading { margin: 0 0 5px; font-size: 16px; font-weight: 700; }
+.taxi-clean .entry-heading #entryDate { color: var(--clean-muted); font-size: 12px; font-weight: 500; }
+.taxi-clean .entry-group-heading { letter-spacing: 0; text-transform: none; }
+.taxi-clean .hotel-home-actions .button { background: var(--clean-blue); min-height: 44px; }
+.taxi-clean .hotel-home-actions #openHotelPlanning.planning-has-courses { background: #995013; border-color: #d88b40; color: #fff; }
+
+.taxi-clean .taxi-page-navigation { margin: 6px 0 10px; }
+.taxi-clean #taxiPageLocation button { background: transparent; border-color: transparent; color: var(--clean-muted); }
+.taxi-clean #taxiPageLocation button.active { background: var(--clean-soft); border-color: var(--clean-line); box-shadow: none; color: var(--clean-text); }
+.taxi-clean .details-overview .details-total { background: transparent; border-radius: 0; border-bottom: 1px solid var(--clean-line); padding-inline: 0; }
+.taxi-clean .details-overview .details-total:last-child { border-bottom: 0; }
+.taxi-clean .financial-disclosure { border-top: 1px solid var(--clean-line); }
+.taxi-clean .financial-disclosure > summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 650; }
+.taxi-clean .financial-disclosure > summary strong { float: right; }
+.taxi-clean .monthly-payment-summary { margin-block: 0; padding-block: 0; border: 0; }
+.taxi-clean .financial-history .v11-summary > div { background: var(--clean-soft); border-color: var(--clean-line); }
+.taxi-clean #quickMenu nav,
+.taxi-clean #hotelQuickMenu nav { background: var(--clean-surface); border-color: var(--clean-line); box-shadow: none; }
+.taxi-clean :is(#quickMenu, #hotelQuickMenu) nav button {
+  background: transparent; border-color: transparent; border-bottom-color: var(--clean-line); border-radius: 0; margin: 0;
+}
+.taxi-clean :is(#quickMenu, #hotelQuickMenu) nav button:hover { background: var(--clean-soft); }
+.taxi-clean .hotel-commissions-bar,
+.taxi-clean #hotelPickupBar { background: var(--clean-bg); border-bottom: 1px solid var(--clean-line); }
+.taxi-clean #hotelCommissionsDialog { background: var(--clean-bg); }
+.taxi-clean #taxiQuickNavigation { background: var(--clean-surface); border-color: var(--clean-line); box-shadow: none; }
+.taxi-clean #taxiQuickNavigation button { background: var(--clean-surface) !important; }
+
+.taxi-clean :is(#taxiDrivers, #taxiDirectoryEditor, #taxiDrivers #driversPriorityPicker) {
+  background: var(--clean-surface);
+  border-color: var(--clean-line);
+  color: var(--clean-text);
+  border-radius: 12px;
+}
+.taxi-clean #taxiDrivers button:not(.driver-priority, .driver-name, [aria-pressed="true"]),
+.taxi-clean #taxiDirectoryEditor button:not(.directory-name) {
+  background: var(--clean-soft);
+  border-color: var(--clean-line);
+  box-shadow: none;
+}
+.taxi-clean #taxiDrivers #driversTx { width: auto; min-height: 40px; margin-top: 10px; }
+.taxi-clean #taxiDrivers #driversStatus { margin: 7px 0; }
+.taxi-clean #taxiDrivers #driversStatus:empty,
+.taxi-clean #taxiDrivers #driversLastSync:empty { display: none; }
+.taxi-clean #taxiDrivers .drivers-list-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-block: 8px; }
+.taxi-clean #taxiDrivers .drivers-list-filters :is(#driversPeriodFilters, #driversVanFilter) { margin: 0; }
+.taxi-clean #taxiDrivers .drivers-periods button { min-height: 38px; padding-inline: 9px; }
+.taxi-clean #taxiDrivers #driversSearchBox { margin-block: 8px; }
+.taxi-clean #taxiDrivers #driversSortBox { display: flex; align-items: center; gap: 8px; margin-block: 8px; }
+.taxi-clean #taxiDrivers #driversSortBox select { flex: 1; min-width: 0; margin: 0; }
+.taxi-clean #taxiDrivers .driver-row,
+.taxi-clean #taxiDirectoryEditor .directory-row { border-color: var(--clean-line); }
+
+.taxi-clean.taxi-hotel {
+  --taxi-surface: var(--clean-surface);
+  --taxi-field: var(--clean-field);
+  --taxi-soft: var(--clean-soft);
+  --taxi-line: var(--clean-line);
+  --taxi-text: var(--clean-text);
+  --taxi-muted: var(--clean-muted);
+  --taxi-blue: var(--clean-blue);
+  --taxi-accent: var(--clean-accent);
+}
+.taxi-clean.taxi-hotel .wrap { padding-inline: clamp(10px, 3vw, 20px); }
+.taxi-clean.taxi-hotel #reservationBoardTitle { margin: 0 0 8px; }
+.taxi-clean.taxi-hotel .reservation-create-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.taxi-clean.taxi-hotel .reservation-create-actions button { min-height: 44px; padding: 5px; line-height: 1.2; }
+.taxi-clean.taxi-hotel .reservation-status-filters { gap: 5px; }
+.taxi-clean.taxi-hotel .reservation-status-filters button { min-height: 42px; padding-inline: 6px; white-space: normal; }
+.taxi-clean.taxi-hotel .reservation-card-title { align-items: baseline; flex-wrap: wrap; }
+.taxi-clean.taxi-hotel #reservationList .entry.reservation-card { border-radius: 10px; box-shadow: none; }
+.taxi-clean.taxi-hotel .course-contact-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.taxi-clean.taxi-hotel .course-contact-actions button { margin: 0; }
+.taxi-clean.taxi-hotel .course-options { border-top: 1px solid var(--clean-line); margin-top: 8px; padding-top: 3px; }
+.taxi-clean.taxi-hotel .course-options summary { cursor: pointer; min-height: 40px; padding-block: 9px; color: var(--clean-accent); font-weight: 650; }
+.taxi-clean.taxi-hotel .course-options > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.taxi-clean.taxi-hotel .course-options > div small { flex-basis: 100%; }
+.taxi-clean.taxi-hotel .course-options button { margin: 0; }
+.taxi-clean.taxi-hotel .home-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.taxi-clean.taxi-hotel .home-totals [data-home-commission="all"] { grid-column: auto; }
+.taxi-clean.taxi-hotel :is(.form-step, .reservation-step) { box-shadow: none; }
+.taxi-clean.taxi-hotel :is(#formSummary, #reservationFormSummary) { border-color: var(--clean-line); box-shadow: none; }
+.taxi-clean.taxi-pickup main { padding: 12px 14px 72px; }
+.taxi-clean.taxi-pickup section { background: var(--clean-surface); border-radius: 12px; border-color: var(--clean-line); margin: 10px 0; }
+.taxi-clean.taxi-pickup h2 { margin-top: 0; }
+.taxi-clean.taxi-pickup .grid { gap: 12px; }
+.taxi-clean.taxi-pickup button { border-radius: 8px; box-shadow: none; }
+
+.taxi-clean .taxi-page-navigation > .taxi-page-arrow[hidden] { display: none; }
+.taxi-clean .taxi-page-navigation #taxiPageLocation { margin: 0; }
+.taxi-clean #hotelCommissionsDialog:has(#taxiQuickNavigation) #closeHotelCommissions { display: none; }
+.taxi-clean #hotelCommissionsDialog .hotel-commissions-bar { min-height: 49px; }
+.taxi-clean #details .details-tabs .tab.active,
+.taxi-clean .typeBtn.active { background: var(--clean-blue); border-color: var(--clean-blue); color: var(--clean-text); }

@@ -169,9 +169,11 @@ const dialog=doc.createElement('dialog');dialog.id='taxiDrivers';dialog.innerHTM
 <p>Les vans figurent aussi dans Voiture normale. Coche Jour et Nuit si le chauffeur travaille dans les deux périodes.</p>
 <div class="drivers-tools"><button type="button" id="driversSave">Enregistrer dans Mon Taxi</button><button type="button" id="driversEditCancel">Annuler</button><button type="button" id="driversPhoneEdit" hidden>Modifier dans le téléphone</button><button type="button" id="driversDelete" hidden>Supprimer</button></div></fieldset>
 <div id="driversContent">
+<div class="drivers-list-filters">
 <label id="driversVanFilter"><input type="checkbox" id="driversVanOnly"> Uniquement van</label>
 <div id="driversPeriodFilters" class="drivers-periods" role="group" aria-label="Période"><button type="button" data-period="all">Tous</button><button type="button" data-period="day">Jour</button><button type="button" data-period="night">Nuit</button></div>
-<label id="driversSortBox">Classement<select id="driversSort"><option value="priority">Priorité</option><option value="az">Ordre alphabétique A → Z</option><option value="za">Ordre alphabétique Z → A</option></select></label>
+</div>
+<label id="driversSortBox">Tri<select id="driversSort"><option value="priority">Priorité</option><option value="az">Ordre alphabétique A → Z</option><option value="za">Ordre alphabétique Z → A</option></select></label>
 <div id="driversPriorityLegend" aria-label="Couleurs des priorités"></div>
 <dialog id="driversPriorityPicker" aria-labelledby="driversPriorityTitle"><div class="drivers-heading"><h2 id="driversPriorityTitle">Priorité</h2><button type="button" id="driversPriorityCancel">Fermer</button></div><div id="driversPriorityOptions"></div></dialog>
 <label id="driversSearchBox">Rechercher<input id="driversSearch" type="search" placeholder="Prénom, nom ou téléphone — sans TX"></label>
