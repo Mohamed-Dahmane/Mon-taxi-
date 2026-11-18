@@ -34,3 +34,11 @@
 - Prévisualisation et édition du texte avant l'ouverture de l'application SMS du téléphone (sms:), avec confirmation finale par l'utilisateur ; ne pas envoyer automatiquement.
 - Les contacts de DoubleTree et The Standard qui sont des contacts d'attribution ne deviennent pas des chauffeurs par cette fonctionnalité.
 - Tests Android et Chrome pour liens tel:/sms:, encodage Unicode, numéros internationaux et permissions ; ne pas déclarer l'envoi effectué avant confirmation par le système SMS.
+
+## Chauffeurs sans préfixe TX — ajout volontaire
+- Bouton « Importer un chauffeur » : l'utilisateur choisit explicitement un contact Samsung, même sans préfixe TX, puis sélectionne Petite voiture ou Van.
+- Bouton « Ajouter manuellement » : nom, numéro et catégorie, sans contact natif obligatoire.
+- Conserver le nom natif du contact sans TX ; ne pas le préfixer automatiquement lors de l'import ni lors d'un changement de catégorie.
+- Distinguer la source et la catégorie de la fiche chauffeur (TX auto, contact choisi, saisie manuelle) ; préserver ce choix après actualisation des contacts TX.
+- Éviter les doublons par identifiant natif, et proposer confirmation en cas de même numéro.
+- Les fiches sans TX bénéficient aussi d'Appeler, SMS réservation/course/message libre, Modifier et Supprimer.
