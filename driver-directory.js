@@ -237,27 +237,19 @@ function render(){
  const query=norm($('driversSearch').value);
  const rows=orderedDrivers(state.drivers,state.sortMode).map((driver,index)=>({driver,index,rank:searchRank(driver,query)})).filter(x=>eligible(x.driver,active,period)&&x.rank>=0&&(!courseContext||compatibleWithCourse(x.driver,courseContext))).sort((a,b)=>(!['az','za'].includes(state.sortMode)?a.rank-b.rank:0)||a.index-b.index).map(x=>x.driver);
  for(const d of rows){
-  const row=doc.createElement('div');row.className='driver-row';row.dataset.driverId=d.id;
-  const button=action(d.name,()=>selectDriver(d.id));button.className='driver-name';row.append(button);
-  if(!['az','za'].includes(state.sortMode)){
-   const index=rows.indexOf(d);
-   for(const [label,offset] of [['↑',-1],['↓',1]]){
-    const arrow=action(label,()=>moveDriver(d.id,rows[index+offset]?.id));arrow.className='driver-reorder';
-    arrow.setAttribute('aria-label',(offset<0?'Monter ':'Descendre ')+d.name);
-    arrow.disabled=index+offset<0||index+offset>=rows.length;row.append(arrow);
-   }
-  }
+  const row=doc.createElement('div');row.className='driver-row';row.dataset.driverId=d.id;row.dataset.reorderKey=d.id;
+  const button=action(d.name,()=>selectDriver(d.id));button.className='driver-name taxi-hold-handle';button.title='Maintenir puis déplacer pour changer l’ordre de pertinence';row.append(button);
   list.append(row);
  }
  if(!rows.length){const p=doc.createElement('p');p.textContent='Aucun chauffeur pour ce véhicule et cette recherche.';list.append(p);}
 }
-function moveDriver(driverId,targetId){
- if(!targetId)return;
- const ordered=orderedDrivers(state.drivers),from=ordered.findIndex(d=>d.id===driverId),to=ordered.findIndex(d=>d.id===targetId);
- if(from<0||to<0)return;
- [ordered[from],ordered[to]]=[ordered[to],ordered[from]];
- if(commit(ordered.map((d,priority)=>({...d,priority}))))status('Ordre de pertinence enregistré.');
-}
+root.TaxiHoldReorder.bind($('driversList'),{
+ item:'.driver-row',handle:'.driver-name',enabled:()=>!['az','za'].includes(state.sortMode),
+ onDrop(ids){const visible=new Set(ids),byId=new Map(state.drivers.map(d=>[d.id,d])),next=[...ids];
+  const reordered=orderedDrivers(state.drivers).map(d=>visible.has(d.id)?byId.get(next.shift()):d);
+  const saved=commit(reordered.map((d,priority)=>({...d,priority})));if(saved)status('Ordre de pertinence enregistré.');return saved;
+ }
+});
 function editorServices(){const van=$('driversCategory').value==='van';$('driversCarEligible').disabled=true;$('driversCarEligible').checked=true;$('driversVanEligible').checked=van;}
 function edit(d){
  editing=d?.id||null;$('driversName').value=d?.name||'';$('driversPhone').value=d?.phone||'';$('driversCategory').value=d?.category||(active==='van'?'van':'car');

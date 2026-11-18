@@ -3,6 +3,9 @@ const fs=require('fs');
 const assert=require('node:assert/strict');
 const KEY='montaxi:driver-directory:v1';
 const code=fs.readFileSync(__dirname+'/driver-directory.js','utf8');
+const reorderCode=fs.readFileSync(__dirname+'/hold-reorder.js','utf8');
+async function holdDrag(page,from,to){const a=await from.boundingBox(),b=await to.boundingBox();await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(550);await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:10});await page.mouse.up();}
+async function touchDrag(page,from,to){const a=await from.boundingBox(),b=await to.boundingBox(),cdp=await page.context().newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:a.x+a.width/2,y:a.y+a.height/2}]});await page.waitForTimeout(550);for(let step=1;step<=8;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:a.x+a.width/2+(b.x+b.width/2-a.x-a.width/2)*step/8,y:a.y+a.height/2+(b.y+b.height/2-a.y-a.height/2)*step/8}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();}
 const names=page=>page.locator('#driversList .driver-row');
 const select=async(page,name)=>page.locator('#driversList .driver-name').filter({hasText:name}).click();
 const back=async page=>page.click('#driversBack');
@@ -19,7 +22,7 @@ const details=page=>page.locator('#driversDetails');
   {id:'van',nativeId:'2',name:'TX Van Nuit Hassan',phone:'0470223344',category:'van',priority:4},
   {id:'chosen',nativeId:'3',name:'Karim',phone:'0470334455',category:'car',source:'chosen'}
  ],deletedNativeIds:[]})),KEY);
- await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');
+ await page.addScriptTag({content:reorderCode});await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');
  assert.equal(await page.locator('#driversContent').isVisible(),false);
  await page.click('[data-category="car"]');assert.equal(await names(page).count(),3);
  assert.equal(await page.getByRole('button',{name:'Appeler',exact:true}).count(),0);
@@ -56,19 +59,21 @@ const details=page=>page.locator('#driversDetails');
  await page.click('#driversSms');const sms=await page.evaluate(()=>nativeCalls.filter(x=>x.type==='open').at(-1));assert.ok(sms.url.startsWith('sms:0470887766?body='));assert.match(decodeURIComponent(sms.url),/ATTENTION — PRIX FIXÉ : 80,00\s€/);assert.equal(sms.directoryClosed,true);
  await page.evaluate(()=>openTaxiDrivers());await page.click('[data-category="car"]');await select(page,'Hassan renommé');await details(page).getByRole('button',{name:'Appeler',exact:true}).click();assert.equal(await page.evaluate(()=>nativeCalls.at(-1).url),'tel:0470887766');
  assert.equal(await page.locator('#taxiDrivers').evaluate(el=>el.scrollWidth>el.clientWidth),false);
- await page.reload();await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');await page.click('[data-period="night"]');assert.equal(await names(page).count(),1);
+ await page.reload();await page.addScriptTag({content:reorderCode});await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');await page.click('[data-period="night"]');assert.equal(await names(page).count(),1);
  const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);assert.equal(saved.version,2);assert.equal(saved.drivers.find(d=>d.id==='van').priority,4);assert.ok(saved.lastSyncedAt);
  // Sorting works on displayed names, persists and preserves manual relevance.
  await page.click('[data-category="car"]');await page.click('[data-period="all"]');await page.fill('#driversSearch','');await page.selectOption('#driversSort','az');
  assert.deepEqual(await page.locator('.driver-name').allTextContents(),['TX Alexis actualisé','TX Van Hassan renommé','Karim nouveau']);
  await page.selectOption('#driversSort','za');
  assert.deepEqual(await page.locator('.driver-name').allTextContents(),['Karim nouveau','TX Van Hassan renommé','TX Alexis actualisé']);
- await page.reload();await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');
+ await page.reload();await page.addScriptTag({content:reorderCode});await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');
  assert.equal(await page.inputValue('#driversSort'),'za');await page.selectOption('#driversSort','priority');
  const priorOrder=await page.locator('.driver-name').allTextContents();
- await page.getByRole('button',{name:'Descendre '+priorOrder[0],exact:true}).click();
- const movedOrder=await page.locator('.driver-name').allTextContents();assert.deepEqual(movedOrder,[priorOrder[1],priorOrder[0],priorOrder[2]]);
- await page.reload();await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');
+ await holdDrag(page,page.locator('.driver-name').nth(0),page.locator('.driver-name').nth(1));
+ let movedOrder=await page.locator('.driver-name').allTextContents();assert.deepEqual(movedOrder,[priorOrder[1],priorOrder[0],priorOrder[2]]);
+ assert.equal(await page.locator('#driversDetails').isVisible(),false);
+ await touchDrag(page,page.locator('.driver-name').nth(1),page.locator('.driver-name').nth(0));movedOrder=await page.locator('.driver-name').allTextContents();assert.deepEqual(movedOrder,priorOrder);
+ await page.reload();await page.addScriptTag({content:reorderCode});await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');
  assert.deepEqual(await page.locator('.driver-name').allTextContents(),movedOrder);
  await respond({mode:'sync',contacts:[{nativeId:'51',name:'TX Yacine',phone:'0470111122'},{nativeId:'52',name:'TX Van Yassine Bekay',phone:'0470111133'},{nativeId:'53',name:'TX Farid Yassine',phone:'0470111144'}]});
  await page.click('[data-category="car"]');await page.click('[data-period="all"]');await page.fill('#driversSearch','y');assert.deepEqual(await page.locator('.driver-name').allTextContents(),['TX Yacine','TX Van Yassine Bekay','TX Farid Yassine']);
@@ -181,6 +186,23 @@ const details=page=>page.locator('#driversDetails');
  assert.equal(await integrated.locator('#hotelCommissionsDialog').evaluate(el=>el.open),true);
  await integrated.locator('#taxiQuickNavigation button').last().click();
  assert.equal(await integrated.locator('#hotelCommissionsDialog').evaluate(el=>el.open),false);
+ // Long press is shared by the editable reference lists, with persistent order.
+ for(const mode of ['hotels','drivers']){
+  await integrated.evaluate(mode=>openTaxiDirectory(mode),mode);
+  const rows=integrated.locator('#directoryRows .directory-name');const original=await rows.allTextContents();assert.ok(original.length>2);
+  await holdDrag(integrated,rows.nth(0),rows.nth(1));const reordered=await rows.allTextContents();assert.deepEqual(reordered.slice(0,3),[original[1],original[0],original[2]]);
+  assert.equal(await integrated.locator('#directoryRows button').filter({hasText:/^[↑↓]$/}).count(),0);
+  await integrated.click('#directoryClose');await integrated.evaluate(mode=>openTaxiDirectory(mode),mode);assert.deepEqual(await rows.allTextContents(),reordered);
+  await integrated.selectOption('#directorySort','az');const alphabetical=await rows.allTextContents();await holdDrag(integrated,rows.nth(0),rows.nth(1));assert.deepEqual(await rows.allTextContents(),alphabetical);
+  await integrated.click('#directoryClose');
+ }
+ await integrated.evaluate(()=>openHotelModule('home'));
+ await frame.evaluate(()=>{openHotelManagement('The Standard');$('driverOrderSettings').open=true;});
+ const orderedDrivers=frame.locator('#driverOrderList button');await orderedDrivers.first().waitFor();
+ const oldDriverOrder=await orderedDrivers.allTextContents();await holdDrag(integrated,orderedDrivers.nth(0),orderedDrivers.nth(1));
+ assert.deepEqual((await orderedDrivers.allTextContents()).slice(0,3),[oldDriverOrder[1],oldDriverOrder[0],oldDriverOrder[2]]);
+ assert.equal(await frame.locator('#moveDriverUp,#moveDriverDown').count(),0);
+ await integrated.locator('#taxiQuickNavigation button').last().click();
  console.log('Browser passed: names-only directory, prefix-free ranked search, detail/back flow, vehicle/day/night choices, native refresh, optional client creation/editing, airport/room/fare/date in copied text and SMS, and home return.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
