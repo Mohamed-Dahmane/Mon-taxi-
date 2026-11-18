@@ -223,7 +223,7 @@ function render(){
  $('driversCourseContext').hidden=!linkedCourse;$('driversCourseContext').textContent=linkedCourse?'Course : '+courseTitle(linkedCourse):'';
  if(!active)return;
  if(selected){
-  const back=action('← Retour aux noms',returnToNames);back.id='driversBack';const name=doc.createElement('h3');name.textContent=driverSearchName(selected.name)||selected.name;
+  const back=action('← Retour aux noms',returnToNames);back.id='driversBack';const name=doc.createElement('h3');name.textContent=selected.name;
   const num=doc.createElement('p');num.className='driver-detail-phone';num.textContent=selected.phone;
   const kind=doc.createElement('small');kind.textContent=selected.category==='van'?'Véhicule : Van':'Véhicule : Voiture normale';
   const actions=doc.createElement('div');actions.className='driver-actions';actions.append(action('Appeler',()=>callDriver(selected)),action('SMS',()=>{recipient=selected.id;updateRecipient();$('driversSmsPanel').hidden=false;$('driversMessage').focus();}),action('Modifier',()=>edit(selected)),action('Supprimer',()=>deleteDriver(selected)));
@@ -238,12 +238,12 @@ function render(){
  const rows=orderedDrivers(state.drivers,state.sortMode).map((driver,index)=>({driver,index,rank:searchRank(driver,query)})).filter(x=>eligible(x.driver,active,period)&&x.rank>=0&&(!courseContext||compatibleWithCourse(x.driver,courseContext))).sort((a,b)=>(!['az','za'].includes(state.sortMode)?a.rank-b.rank:0)||a.index-b.index).map(x=>x.driver);
  for(const d of rows){
   const row=doc.createElement('div');row.className='driver-row';row.dataset.driverId=d.id;
-  const button=action(driverSearchName(d.name)||d.name,()=>selectDriver(d.id));button.className='driver-name';row.append(button);
+  const button=action(d.name,()=>selectDriver(d.id));button.className='driver-name';row.append(button);
   if(!['az','za'].includes(state.sortMode)){
    const index=rows.indexOf(d);
    for(const [label,offset] of [['↑',-1],['↓',1]]){
     const arrow=action(label,()=>moveDriver(d.id,rows[index+offset]?.id));arrow.className='driver-reorder';
-    arrow.setAttribute('aria-label',(offset<0?'Monter ':'Descendre ')+(driverSearchName(d.name)||d.name));
+    arrow.setAttribute('aria-label',(offset<0?'Monter ':'Descendre ')+d.name);
     arrow.disabled=index+offset<0||index+offset>=rows.length;row.append(arrow);
    }
   }
