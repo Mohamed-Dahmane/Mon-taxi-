@@ -8,6 +8,8 @@ on:
       - 'pickup-reservation.html'
       - 'directory-editor.js'
       - 'driver-directory.js'
+      - 'vehicle-allocations.js'
+      - 'vehicle-allocation-editor.js'
       - 'fixed-navigation.js'
       - 'app/**'
       - 'build.gradle'
