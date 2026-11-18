@@ -1,0 +1,25 @@
+name: Vehicle allocations regression and JavaScript syntax
+on:
+  push:
+    paths:
+      - 'vehicle-allocations.js'
+      - 'vehicle-allocation-editor.js'
+      - 'tests/vehicle-allocations-regression-20261118.test.js'
+      - '.github/workflows/vehicle-allocations-tests.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  vehicle-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax of repository JavaScript files
+        run: |
+          find . -type f \( -name '*.js' -o -name '*.cjs' -o -name '*.mjs' \) -not -path './node_modules/*' -print0 | while IFS= read -r -d '' file; do node --check "$file" || exit 1; done
+      - name: Vehicle allocations regression
+        run: node --test tests/vehicle-allocations-regression-20261118.test.js
