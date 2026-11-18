@@ -19,5 +19,5 @@ jobs:
           node-version: '22'
       - run: node --check driver-directory.js && node --test driver-directory.test.cjs
       - run: npm install --no-save playwright
-      - run: npx playwright install --with-deps chromium
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
       - run: node driver-directory.browser.cjs
