@@ -1,0 +1,23 @@
+name: Vérifier le répertoire chauffeurs
+on:
+  push:
+    paths:
+      - 'driver-directory*'
+      - 'index.html'
+      - 'app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java'
+      - '.github/workflows/driver-directory-tests.yml'
+  workflow_dispatch:
+jobs:
+  directory:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check driver-directory.js && node --test driver-directory.test.cjs
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node driver-directory.browser.cjs

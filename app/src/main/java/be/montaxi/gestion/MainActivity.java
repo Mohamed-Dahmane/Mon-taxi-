@@ -45,6 +45,7 @@ import android.util.Base64;
 
 public class MainActivity extends Activity {
  private WebView web;
+ private TaxiContactsBridge taxiContacts;
  private boolean recoveryShown=false;
  private final Handler webHealthHandler=new Handler(Looper.getMainLooper());
  private void verifyWebContent(){
@@ -389,6 +390,8 @@ public class MainActivity extends Activity {
      });
     }
    },"TaxiReminder");
+   taxiContacts=new TaxiContactsBridge(this,web);
+   web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
@@ -617,9 +620,14 @@ public class MainActivity extends Activity {
  }
  @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){
   super.onRequestPermissionsResult(code,permissions,results);
+  if(code==TaxiContactsBridge.CONTACT_PERMISSION&&taxiContacts!=null)taxiContacts.permissionResult(results);
   if(code==36&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED){
    enableExactTaxiReminders();
   }
+ }
+ @Override protected void onActivityResult(int request,int result,android.content.Intent data){
+  super.onActivityResult(request,result,data);
+  if(request==TaxiContactsBridge.CONTACT_PICK&&taxiContacts!=null)taxiContacts.picked(result,data);
  }
  @Override protected void onPause(){
   super.onPause();
