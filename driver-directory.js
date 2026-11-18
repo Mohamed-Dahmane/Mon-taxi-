@@ -173,6 +173,7 @@ const dialog=doc.createElement('dialog');dialog.id='taxiDrivers';dialog.innerHTM
 <div id="driversPeriodFilters" class="drivers-periods" role="group" aria-label="Période"><button type="button" data-period="all">Tous</button><button type="button" data-period="day">Jour</button><button type="button" data-period="night">Nuit</button></div>
 <label id="driversSortBox">Classement<select id="driversSort"><option value="priority">Priorité</option><option value="az">Ordre alphabétique A → Z</option><option value="za">Ordre alphabétique Z → A</option></select></label>
 <div id="driversPriorityLegend" aria-label="Couleurs des priorités"></div>
+<dialog id="driversPriorityPicker" aria-labelledby="driversPriorityTitle"><div class="drivers-heading"><h2 id="driversPriorityTitle">Priorité</h2><button type="button" id="driversPriorityCancel">Fermer</button></div><div id="driversPriorityOptions"></div></dialog>
 <label id="driversSearchBox">Rechercher<input id="driversSearch" type="search" placeholder="Prénom, nom ou téléphone — sans TX"></label>
 <p id="driversCourseContext" hidden></p><div id="driversList"></div><section id="driversDetails" hidden></section><fieldset id="driversImportPanel" hidden><legend>Importer une course du Planning</legend><label>Course<select id="driversImportCourse"></select></label><button type="button" id="driversImportConfirm">Importer cette course</button></fieldset>
 <fieldset id="driversSmsPanel" hidden><legend>SMS au chauffeur sélectionné</legend><label>Contenu<select id="driversMessageSource"><option value="free">Message libre / saisie rapide</option><option value="course">Course du Planning / réservation</option></select></label><select id="driversCourse" aria-label="Course" hidden></select><p id="driversPriceAlert" hidden><strong></strong></p><label>Message à vérifier et modifier<textarea id="driversMessage" rows="7"></textarea></label><p id="driversRecipient">Sélectionne un chauffeur dans la liste.</p><button type="button" id="driversSms">Ouvrir l’application SMS</button><p>L’envoi est à confirmer dans l’application SMS.</p></fieldset></div>`;
@@ -190,6 +191,12 @@ const css=doc.createElement('style');css.textContent=`
 #taxiDrivers .driver-row{display:flex;align-items:center;gap:4px;padding:0;border-bottom:1px solid #34435e;overflow-wrap:anywhere}#taxiDrivers .driver-name{display:block;flex:1;min-width:0;width:auto;min-height:44px;padding:11px 6px;border:0;border-radius:0;background:transparent;text-align:left}#taxiDrivers .driver-reorder{flex:none;width:34px;padding:4px;min-height:34px}#taxiDrivers .driver-name:hover,#taxiDrivers .driver-name:focus-visible{background:#203856}#taxiDrivers .driver-detail-phone{font-size:21px;margin:10px 0}#driversDetails .driver-actions{margin:14px 0}#driversDetails h3{margin:16px 0 0}
 #driversPriorityLegend{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 #taxiDrivers .driver-priority{display:inline-flex;flex:none;align-items:center;justify-content:center;min-width:24px;min-height:24px;padding:2px 6px;border-radius:7px;font-size:12px;font-weight:700;line-height:1.2}
+#taxiDrivers .driver-row .driver-priority{min-width:44px;min-height:44px;border:0;padding:0}
+#taxiDrivers #driversPriorityPicker{width:min(340px,86vw);box-sizing:border-box;background:#111c30;color:#f5f7ff;border:1px solid #7196c4;border-radius:16px;padding:14px}
+#taxiDrivers #driversPriorityPicker::backdrop{background:#0009}
+#driversPriorityOptions{display:grid;gap:8px;margin-top:12px}#driversPriorityError:empty{display:none}
+#taxiDrivers #driversPriorityOptions button{min-height:44px;font-size:14px}
+#taxiDrivers #driversPriorityOptions [aria-pressed=true]{outline:2px solid currentColor;outline-offset:-4px}
 #taxiDrivers .driver-priority[data-level="1"]{background:#145733;color:#dcfce7}
 #taxiDrivers .driver-priority[data-level="2"]{background:#204f96;color:#e0f2fe}
 #taxiDrivers .driver-priority[data-level="3"]{background:#3b485a;color:#f1f5f9}
@@ -202,8 +209,9 @@ const css=doc.createElement('style');css.textContent=`
 #openTaxiDrivers{position:static;grid-column:2 / 4;grid-row:2;justify-self:end;margin-left:auto;width:auto;padding:6px 10px!important;min-height:32px;font-size:12px!important;border:1px solid #7196c4;border-radius:9px;background:#142238;color:white}
 #taxiDrivers [hidden]{display:none!important}`;doc.head.append(css);
 const $=s=>dialog.querySelector('#'+s);
-function priorityBadge(level,full=false){
- const badge=doc.createElement('span');
+function priorityBadge(level,full=false,onClick){
+ const badge=doc.createElement(onClick?'button':'span');
+ if(onClick){badge.type='button';badge.onclick=onClick;}
  badge.className='driver-priority';badge.dataset.level=level;
  const label=level+' · '+priorityLabels[level];
  badge.textContent=full?label:level;
@@ -212,6 +220,37 @@ function priorityBadge(level,full=false){
 }
 for(const level of [1,2,3])$('driversPriorityLegend').append(priorityBadge(level,true));
 const hotelDriverContacts=()=>root.taxiHotelDriverContactNames?.()||new Set();
+const priorityPicker=$('driversPriorityPicker');
+let priorityDriverId=null;
+function showPriorityPicker(driverId){
+ const driver=state.drivers.find(d=>d.id===driverId);
+ if(!driver||priorityPicker.open)return;
+ priorityDriverId=driverId;
+ $('driversPriorityTitle').textContent='Priorité · '+driver.name;
+ const current=driverPriority(driver,hotelDriverContacts());
+ const choices=[1,2,3].map(level=>{
+  const button=priorityBadge(level,true,()=>{
+   const updated=state.drivers.map(d=>d.id===driverId?{...d,priorityClass:level}:d);
+   if(commit(updated)){priorityPicker.close();status('Priorité enregistrée pour '+driver.name+'.');}
+   else $('driversPriorityError').textContent=$('driversStatus').textContent;
+  });
+  button.setAttribute('aria-pressed',String(level===current));
+  return button;
+ });
+ const error=doc.createElement('p');error.id='driversPriorityError';error.setAttribute('role','status');
+ $('driversPriorityOptions').replaceChildren(...choices,error);
+ priorityPicker.showModal();
+ choices[current-1].focus();
+}
+$('driversPriorityCancel').onclick=()=>priorityPicker.close();
+priorityPicker.addEventListener('close',()=>{
+ if(dialog.open){
+  const row=[...$('driversList').children].find(item=>item.dataset.driverId===priorityDriverId);
+  row?.querySelector('.driver-priority')?.focus({preventScroll:true});
+ }
+ priorityDriverId=null;
+});
+dialog.addEventListener('close',()=>{if(priorityPicker.open)priorityPicker.close()});
 let vanOnly=false,period='all',editing=null,recipient=null,busy=false,selectedDriver=null,listScroll=0,courseContext=null,linkedCourse=null,pickDriverCallback=null;
 const vanRequired=()=>requiredVehicle(courseContext)==='van';
 const vanFilter=()=>vanOnly||vanRequired();
@@ -273,7 +312,11 @@ function render(){
   .map(x=>x.driver);
  for(const d of rows){
   const row=doc.createElement('div');row.className='driver-row';row.dataset.driverId=d.id;row.dataset.reorderKey=d.id;
-  const button=action(d.name,()=>selectDriver(d.id));button.className='driver-name taxi-hold-handle';button.title='Maintenir puis déplacer dans la même priorité';row.append(priorityBadge(driverPriority(d,hotelContacts)),button);
+  const button=action(d.name,()=>selectDriver(d.id));button.className='driver-name taxi-hold-handle';button.title='Appui long pour la priorité · Maintenir et déplacer pour réordonner';
+  const badge=priorityBadge(driverPriority(d,hotelContacts),false,()=>showPriorityPicker(d.id));
+  badge.setAttribute('aria-label','Modifier la priorité de '+d.name+' · '+badge.getAttribute('aria-label'));
+  badge.setAttribute('aria-haspopup','dialog');
+  row.append(badge,button);
   list.append(row);
  }
  if(!rows.length){const p=doc.createElement('p');p.textContent='Aucun chauffeur ne correspond aux filtres.';list.append(p);}
@@ -281,6 +324,7 @@ function render(){
 root.TaxiHoldReorder.bind($('driversList'),{
  item:'.driver-row',handle:'.driver-name',
  enabled:()=>$('driversSort').value==='priority'&&!norm($('driversSearch').value),
+ onHold:row=>showPriorityPicker(row.dataset.driverId),
  onDrop(ids){
   const visible=new Set(ids),byId=new Map(state.drivers.map(d=>[d.id,d]));
   const hotelContacts=hotelDriverContacts();
