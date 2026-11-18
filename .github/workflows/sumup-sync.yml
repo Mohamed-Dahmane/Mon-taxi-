@@ -75,13 +75,15 @@ jobs:
           class NoRedirect(urllib.request.HTTPRedirectHandler):
               def redirect_request(self, req, fp, code, msg, headers, newurl):
                   return None
-          opener=urllib.request.build_opener(NoRedirect)
+          # Ignore runner proxy environment variables for privileged Supabase credentials.
+          opener=urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect)
           try:
               with opener.open(request,timeout=20) as response:
                   print('Supabase verified server access: HTTP '+str(response.status))
           except urllib.error.HTTPError as error:
               print('Supabase server credential validation: HTTP '+str(error.code))
-              body=error.read().decode('utf-8','replace').lower()
+              # Bound untrusted error bodies; never print raw response content.
+              body=error.read(4096).decode('utf-8','replace').lower()
               categories={'invalid api key':'invalid_api_key','invalid jwt':'invalid_jwt','legacy api keys are disabled':'legacy_keys_disabled','permission denied':'database_permission_denied','invalid signature':'invalid_signature','expired':'credential_expired','disabled':'credential_disabled','forbidden':'forbidden'}
               print('Safe rejection categories: '+','.join(label for pattern,label in categories.items() if pattern in body))
               raise SystemExit('Stored server credential was rejected by Supabase; sync stopped.')
@@ -95,7 +97,8 @@ jobs:
           set -euo pipefail
           umask 077
           trap 'rm -f response.json' EXIT
-          status=$(curl --disable --proto '=https' --tlsv1.2 --max-filesize 16384 --max-time 90 --connect-timeout 15 --retry 2 --retry-delay 3 --retry-connrefused --silent --show-error --output response.json --write-out '%{http_code}' \
+          # Avoid forwarding privileged headers through runner-configured HTTP proxies.
+          status=$(curl --disable --noproxy '*' --proto '=https' --tlsv1.2 --max-filesize 16384 --max-time 90 --connect-timeout 15 --retry 2 --retry-delay 3 --retry-connrefused --silent --show-error --output response.json --write-out '%{http_code}' \
             --request POST "${SUPABASE_URL%/}/functions/v1/taxi-sumup-sync" \
             --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
             --header "X-SumUp-Api-Key: $SUMUP_API_KEY" \

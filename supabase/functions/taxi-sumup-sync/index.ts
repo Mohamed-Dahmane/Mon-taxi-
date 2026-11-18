@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
     await verification.body?.cancel();
   }
   if (!key) return Response.json({ok:false,reason:"sumup_secret_missing"},{status:503});
-  const db = createClient(url,service,{auth:{persistSession:false}});
+  // Prevent privileged Supabase requests from forwarding service-role headers across redirects.
+  const db = createClient(url,service,{auth:{persistSession:false},global:{fetch:(input,init)=>fetch(input,{...init,redirect:"error"})}});
   let count=0, cursor=0, reachedEnd=false;
   // Stage pages until pagination completes: never write an incomplete history window.
   const pendingRows: Array<Record<string, string | number>> = [];
@@ -64,9 +65,38 @@ Deno.serve(async (req) => {
       return Response.json({ok:false,reason:"sumup_network_error"},{status:502});
     }
     if(!response.ok) return Response.json({ok:false,reason:"sumup_http_"+response.status},{status:502});
+    // A successful HTTP status does not make a non-JSON response trustworthy.
+    // Reject HTML, text or an absent media type before buffering the body.
+    const mediaType=response.headers.get("content-type")?.split(";",1)[0].trim().toLowerCase();
+    if(mediaType!=="application/json")
+      return Response.json({ok:false,reason:"invalid_sumup_content_type"},{status:502});
+    // Bound each remote page before JSON parsing: a compromised or malfunctioning
+    // upstream must not exhaust Edge Function memory with an oversized response.
+    const MAX_PAGE_BYTES=1024*1024;
     let data: unknown;
-    try { data=await response.json(); }
-    catch { return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502}); }
+    try {
+      const declared=Number(response.headers.get("content-length"));
+      if(Number.isFinite(declared) && declared>MAX_PAGE_BYTES)
+        return Response.json({ok:false,reason:"sumup_page_too_large"},{status:502});
+      const reader=response.body?.getReader();
+      if(!reader) return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502});
+      const chunks: Uint8Array[]=[];
+      let total=0;
+      while(true){
+        const {done,value}=await reader.read();
+        if(done)break;
+        total+=value.byteLength;
+        if(total>MAX_PAGE_BYTES){
+          await reader.cancel();
+          return Response.json({ok:false,reason:"sumup_page_too_large"},{status:502});
+        }
+        chunks.push(value);
+      }
+      const bytes=new Uint8Array(total);
+      let offset=0;
+      for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+      data=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+    } catch { return Response.json({ok:false,reason:"invalid_sumup_json"},{status:502}); }
     const entries=Array.isArray(data)?data:(data && typeof data==="object" ? (("items" in data ? data.items : undefined) ?? ("transactions" in data ? data.transactions : undefined)) : undefined);
     // A 200 response containing an error object or an unknown shape is not an empty history.
     if(!Array.isArray(entries)) return Response.json({ok:false,reason:"unexpected_sumup_response"},{status:502});
@@ -82,21 +112,48 @@ Deno.serve(async (req) => {
         return Response.json({ok:false,reason:"invalid_sumup_currency"},{status:502});
       // Detect shifting offset pages across all currencies, not just EUR rows.
       // A repeated non-EUR ID also means the pagination snapshot may be incomplete.
-      if(typeof tx.id!=="string" || !tx.id)
+      // Bound external identifiers before retaining them in memory or sending them to PostgREST.
+      if(typeof tx.id!=="string" || !tx.id || tx.id.length>128)
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
       if(seenTransactionIds.has(tx.id))
         return Response.json({ok:false,reason:"duplicate_sumup_transaction_in_pages"},{status:502});
       seenTransactionIds.add(tx.id);
       if(tx.currency!=="EUR")continue;
-      if(typeof tx.id!=="string" || !tx.id || typeof tx.timestamp!=="string" ||
+      // Never coerce an unexpected status object to "[object Object]".
+      // Missing status stays UNKNOWN for later manual reconciliation.
+      if(tx.status != null && (typeof tx.status !== "string" || !tx.status.trim() || tx.status.length>64))
+        return Response.json({ok:false,reason:"invalid_sumup_status"},{status:502});
+      if(typeof tx.timestamp!=="string" || tx.timestamp.length>64 ||
+         !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(tx.timestamp) ||
          typeof tx.amount!=="number" || !Number.isFinite(tx.amount))
         return Response.json({ok:false,reason:"invalid_sumup_transaction"},{status:502});
+      // Date.parse can normalize impossible dates (for example February 30).
+      // Validate the calendar and offset explicitly before assigning a Brussels accounting day.
+      const parts=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|([+-])(\d{2}):(\d{2}))$/.exec(tx.timestamp);
+      if(!parts) return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
+      const [,yearText,monthText,dayText,hourText,minuteText,secondText,, ,offsetHourText,offsetMinuteText]=parts;
+      const parsedYear=Number(yearText),parsedMonth=Number(monthText),dayNumber=Number(dayText);
+      const hour=Number(hourText),minute=Number(minuteText),second=Number(secondText);
+      const offsetHour=offsetHourText===undefined?0:Number(offsetHourText);
+      const offsetMinute=offsetMinuteText===undefined?0:Number(offsetMinuteText);
+      const calendar=new Date(0);
+      calendar.setUTCFullYear(parsedYear,parsedMonth-1,dayNumber);
+      calendar.setUTCHours(hour,minute,second,0);
+      if(calendar.getUTCFullYear()!==parsedYear || calendar.getUTCMonth()!==parsedMonth-1 ||
+         calendar.getUTCDate()!==dayNumber || calendar.getUTCHours()!==hour ||
+         calendar.getUTCMinutes()!==minute || calendar.getUTCSeconds()!==second ||
+         offsetHour>14 || offsetMinute>59 || (offsetHour===14 && offsetMinute!==0))
+        return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
       const t=Date.parse(tx.timestamp);
       if(!Number.isFinite(t))
         return Response.json({ok:false,reason:"invalid_sumup_timestamp"},{status:502});
       if(t<START)continue;
-      const cents=Math.round(Number(tx.amount)*100);
-      if(!Number.isSafeInteger(cents)||cents<0)
+      // EUR is a two-decimal currency. Reject fractional cents instead of
+      // silently rounding a malformed amount into a different payment value.
+      const rawCents=tx.amount*100;
+      const cents=Math.round(rawCents);
+      if(!Number.isSafeInteger(cents)||cents<0 ||
+         Math.abs(rawCents-cents)>1e-7)
         return Response.json({ok:false,reason:"invalid_sumup_amount"},{status:502});
       const dateParts=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Brussels",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(t));
       const dateField=(type: string)=>dateParts.find(part=>part.type===type)?.value;
