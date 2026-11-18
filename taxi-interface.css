@@ -108,7 +108,7 @@ html.taxi-clean {
 .taxi-clean .monthly-overview-values .monthly-result .green { color: var(--clean-average); }
 
 .taxi-clean .entry-hub :is(.taxi-entry, .entry-costs) { border-color: var(--clean-line); }
-.taxi-clean #home .entry-hub .taxi-entry { padding-block: 4px; }
+.taxi-clean #home .entry-hub .taxi-entry { padding-block: 5px; }
 .taxi-clean .entry-hub .entry-heading { margin: 0 0 5px; font-size: 16px; font-weight: 700; }
 .taxi-clean .entry-heading #entryDate { color: var(--clean-muted); font-size: 12px; font-weight: 500; }
 .taxi-clean .entry-group-heading { letter-spacing: 0; text-transform: none; }
@@ -121,7 +121,7 @@ html.taxi-clean {
   .taxi-clean #home .entry-hub-header { border-bottom: 1px solid var(--clean-line); padding-bottom: 4px; }
   .taxi-clean #home .entry-heading { margin: 0; font-size: 14px; }
   .taxi-clean #home .entry-heading #entryDate { font-size: 11px; }
-  .taxi-clean #home .entry-hub .taxi-entry { grid-template-columns: minmax(0, .96fr) minmax(0, .86fr) minmax(0, 1.18fr); gap: 5px; padding-block: 2px; }
+  .taxi-clean #home .entry-hub .taxi-entry { grid-template-columns: minmax(0, .96fr) minmax(0, .86fr) minmax(0, 1.18fr); gap: 5px; padding-block: 3px; }
   .taxi-clean #home .entry-hub .taxi-entry > label { line-height: 1.14; }
   .taxi-clean #home .entry-hub .invoice-entry label { white-space: normal; }
   .taxi-clean #home .entry-hub .invoice-entry label small { display: inline-block; }
