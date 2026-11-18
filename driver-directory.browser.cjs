@@ -182,13 +182,20 @@ const details=page=>page.locator('#driversDetails');
  await select(integrated,'Test intégré');
  const callButton=details(integrated).getByRole('button',{name:'Appeler',exact:true});
  const callPosition=await callButton.evaluate(button=>({
-  rightGap:button.parentElement.getBoundingClientRect().right-button.getBoundingClientRect().right,
+  rightGap:button.closest('.driver-call-line').getBoundingClientRect().right-button.getBoundingClientRect().right,
+  smsColor:getComputedStyle(button.previousElementSibling).backgroundColor,
+  smsGap:button.getBoundingClientRect().left-button.previousElementSibling.getBoundingClientRect().right,
+  sameRow:button.getBoundingClientRect().top===button.previousElementSibling.getBoundingClientRect().top,
+  smsHeight:button.previousElementSibling.getBoundingClientRect().height,
   color:getComputedStyle(button).backgroundColor,
   height:button.getBoundingClientRect().height
  }));
  assert.ok(Math.abs(callPosition.rightGap)<1);
  assert.equal(callPosition.color,'rgb(23, 99, 61)');
  assert.ok(callPosition.height>=44);
+ assert.equal(callPosition.smsColor,'rgb(37, 95, 159)');
+ assert.ok(callPosition.sameRow&&callPosition.smsGap>=6&&callPosition.smsGap<=12);
+ assert.ok(callPosition.smsHeight>=44);
  await callButton.click();
  assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'tel:0470123456');
  const leaveAndReturn=()=>integrated.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));});
