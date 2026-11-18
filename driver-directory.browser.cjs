@@ -96,9 +96,10 @@ const details=page=>page.locator('#driversDetails');
    const limit=innerHeight;
    const top=nav.getBoundingClientRect().bottom;
    return {fits:ids.every(id=>{const r=rect(id);return r.top>=top&&r.bottom<=limit&&r.height>=42&&r.width>0;}),
+    buttonsFit:[...document.querySelectorAll('.hotel-home-actions button')].every(button=>button.scrollWidth<=button.clientWidth),
     bottom:rect('ExpenseInput').bottom,limit,scroll:scrollY};
   },entryFields);
-  assert.ok(geometry.fits,JSON.stringify({viewport,...geometry}));
+  assert.ok(geometry.fits&&geometry.buttonsFit,JSON.stringify({viewport,...geometry}));
   assert.equal(geometry.scroll,0);
  }
  await integrated.setViewportSize({width:360,height:640});
@@ -151,7 +152,7 @@ const details=page=>page.locator('#driversDetails');
  assert.equal(await integrated.locator('#taxiPageLocation [aria-current="page"]').evaluate(activeColor),'rgb(18, 52, 93)');
  assert.equal(await integrated.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await integrated.locator('#taxiPageLocation [data-location="details"]').click();
- assert.equal(await integrated.locator('#taxiPageLocation [data-location="details"]').evaluate(activeColor),'rgb(18, 52, 93)');
+ await integrated.waitForFunction(()=>getComputedStyle(document.querySelector('#taxiPageLocation [data-location="details"]')).backgroundColor==='rgb(18, 52, 93)');
  assert.equal(await integrated.locator('#taxiQuickNavigation').isVisible(),true);
  const balanceAverage=integrated.locator('#details .workday-average .reference-amount');
  assert.equal(await balanceAverage.evaluate(el=>getComputedStyle(el).color),averageColor);
