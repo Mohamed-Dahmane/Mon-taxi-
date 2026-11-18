@@ -7,6 +7,7 @@ function bind(container,options){
  const items=()=>[...container.querySelectorAll(options.item)];
  const keys=()=>items().map(row=>row.getAttribute('data-reorder-key'));
  const enabled=()=>!options.enabled||options.enabled();
+ let heldHandle=null;
  function scroller(row){for(let el=row.parentElement;el&&el!==doc.body;el=el.parentElement)if(/auto|scroll/.test(root.getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight)return el;return root;}
  function restore(order){const map=new Map(items().map(row=>[row.getAttribute('data-reorder-key'),row]));for(const key of order)if(map.has(key))container.append(map.get(key));}
  function position(){
@@ -27,7 +28,7 @@ function bind(container,options){
   const s=state;if(!s)return;state=null;root.clearTimeout(s.timer);if(s.frame)root.cancelAnimationFrame(s.frame);s.ghost?.remove();s.row.classList.remove('taxi-hold-moving');
   if(s.kind==='mouse'&&container.hasPointerCapture(s.id))container.releasePointerCapture(s.id);
   if(!s.held)return;
-  blockedUntil=Date.now()+600;
+  blockedUntil=Date.now()+600;heldHandle=s.handle;
   if(s.dragging){
    const order=keys(),changed=order.some((key,index)=>key!==s.order[index]);
    if(!commit||!enabled())restore(s.order);
@@ -39,7 +40,7 @@ function bind(container,options){
   if(state||(!enabled()&&!options.onHold))return;
   const handle=event.target.closest(options.handle);if(!handle||!container.contains(handle))return;
   const row=handle.closest(options.item);if(!row||row.parentElement!==container)return;
-  const s=state={row,id:point.id,kind,x:point.x,y:point.y,startX:point.x,startY:point.y,held:false,dragging:false,moved:false,scroll:scroller(row)};
+  const s=state={row,handle,id:point.id,kind,x:point.x,y:point.y,startX:point.x,startY:point.y,held:false,dragging:false,moved:false,scroll:scroller(row)};
   s.timer=root.setTimeout(()=>{
    if(state!==s||(!enabled()&&!options.onHold))return;
    s.held=true;
@@ -71,7 +72,7 @@ function bind(container,options){
  container.addEventListener('touchmove',e=>{if(state?.kind!=='touch')return;const t=[...e.changedTouches].find(t=>t.identifier===state.id);if(t)move(e,{id:t.identifier,x:t.clientX,y:t.clientY});},{passive:false});
  container.addEventListener('touchend',e=>{if(state?.kind==='touch'&&[...e.changedTouches].some(t=>t.identifier===state.id)){if(state.held&&e.cancelable)e.preventDefault();finish(true);}},{passive:false});
  container.addEventListener('touchcancel',()=>finish(false));
- container.addEventListener('click',e=>{if(Date.now()<blockedUntil){e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
+ container.addEventListener('click',e=>{if(Date.now()<blockedUntil&&e.target.closest(options.handle)===heldHandle){e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
  container.addEventListener('contextmenu',e=>{if(e.target.closest(options.handle))e.preventDefault();});
  root.addEventListener('blur',()=>finish(false));container.closest('dialog')?.addEventListener('close',()=>finish(false));
  container.addEventListener('keydown',e=>{if(!enabled()||!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;const handle=e.target.closest(options.handle),row=handle?.closest(options.item),rows=items(),index=rows.indexOf(row),target=index+(e.key==='ArrowUp'?-1:1);if(index<0||target<0||target>=rows.length)return;e.preventDefault();const before=keys();container.insertBefore(row,e.key==='ArrowUp'?rows[target]:rows[target].nextSibling);if(options.onDrop(keys())===false)restore(before);});
