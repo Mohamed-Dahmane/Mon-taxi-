@@ -42,7 +42,7 @@ function searchRank(driver,query){
 function orderedDrivers(drivers,mode='priority'){
  const collator=new Intl.Collator('fr',{sensitivity:'base',numeric:true});
  return drivers.map((driver,index)=>({driver,index})).sort((a,b)=>{
-  if(mode==='az'||mode==='za')return (mode==='az'?1:-1)*collator.compare(a.driver.name,b.driver.name)||a.index-b.index;
+  if(mode==='az'||mode==='za')return (mode==='az'?1:-1)*collator.compare(driverSearchName(a.driver.name),driverSearchName(b.driver.name))||a.index-b.index;
   const priority=item=>Number.isFinite(item.driver.priority)?item.driver.priority:item.index;
   return priority(a)-priority(b)||a.index-b.index;
  }).map(item=>item.driver);

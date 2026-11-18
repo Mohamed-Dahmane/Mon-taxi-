@@ -123,3 +123,5 @@ test('legacy car bookings keep their eligibility and get the new name in SMS',()
  assert.equal(core.eligible(legacyVan,'car'),true);
  assert.equal(core.eligible({category:'car'},'van'),false);
 });
+
+test('alphabetical sorting ignores telephone prefixes',()=>{assert.deepEqual(core.orderedDrivers([{name:'Karim'},{name:'TX Van Nuit Hassan'},{name:'TX Alexis'}],'az').map(d=>d.name),['TX Alexis','TX Van Nuit Hassan','Karim']);});
