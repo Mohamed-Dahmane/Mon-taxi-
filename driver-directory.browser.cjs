@@ -52,7 +52,7 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  await page.click('#driversTx');await respond({mode:'sync',contacts:incoming});assert.equal(await page.locator('.driver-row').count(),1);
  await page.evaluate(()=>openTaxiDrivers({id:'course1',date:'2026-11-19',hotel:'DoubleTree',destination:'BRU',room:'418',announcedPrice:80,note:'Bonjour Émilie'}));
  assert.equal(await page.locator('#driversContent').isVisible(),false);await page.click('[data-category="car"]');
- await row(page,'TX Van Hassan renommé').getByRole('button',{name:'SMS',exact:true}).click();assert.match(await page.inputValue('#driversMessage'),/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(await page.inputValue('#driversMessage'),/Chambre : 418/);
+ await row(page,'TX Van Hassan renommé').getByRole('button',{name:'SMS',exact:true}).click();assert.match(await page.inputValue('#driversMessage'),/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(await page.inputValue('#driversMessage'),/Chambre : 418/);assert.match(await page.inputValue('#driversMessage'),/19\/11\/2026/);
  await page.click('#driversSms');const sms=await page.evaluate(()=>nativeCalls.filter(x=>x.type==='open').at(-1).url);assert.ok(sms.startsWith('sms:0470887766?body='));assert.match(decodeURIComponent(sms),/Bonjour Émilie/);assert.match(decodeURIComponent(sms),/ATTENTION — PRIX FIXÉ : 80,00\s€/);assert.equal(await page.locator('#driversPriceAlert strong').evaluate(el=>Number(getComputedStyle(el).fontWeight)>=600),true);
  await row(page,'TX Van Hassan renommé').getByRole('button',{name:'Appeler',exact:true}).click();assert.equal(await page.evaluate(()=>nativeCalls.at(-1).url),'tel:0470887766');
  assert.equal(await page.locator('#taxiDrivers').evaluate(el=>el.scrollWidth>el.clientWidth),false);
@@ -76,7 +76,7 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
   await frame.copyCourse({bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotel:'DoubleTree',destination:'Zaventem',room:'0123',announcedPrice:74.79,amount:10,vehicle:'Van',driver:'self'});
   return frame.__copiedCourse;
  });
- assert.match(copied,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(copied,/Chambre : 0123/);assert.match(copied,/^ATTENTION — PRIX FIXÉ : 74,79\s€/);assert.doesNotMatch(copied,/10,00/);
+ assert.match(copied,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(copied,/Chambre : 0123/);assert.match(copied,/20\/11\/2026 à 05:15/);assert.match(copied,/^ATTENTION — PRIX FIXÉ : 74,79\s€/);assert.doesNotMatch(copied,/10,00/);
  const pickupCopied=await integrated.evaluate(async()=>{
   const frame=document.querySelector('#hotelCommissionsFrame').contentWindow;
   await frame.copyCourse({bookingMode:'Direct',date:'2026-11-20',recordedTime:'05:15',hotel:'Standard',destination:'Hôtel',room:'7A',vehicle:'Van',driver:'self',pickup:{place:'CRL'}});

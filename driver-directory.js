@@ -72,11 +72,16 @@ function fixedPriceLine(value){
  if(!Number.isFinite(amount)||amount<0)return '';
  return 'ATTENTION — PRIX FIXÉ : '+new Intl.NumberFormat('fr-BE',{style:'currency',currency:'EUR'}).format(amount);
 }
+function driverDate(value){
+ const text=String(value??'').trim();
+ const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+ return match?match[3]+'/'+match[2]+'/'+match[1]:text;
+}
 function courseText(e){
  const p=e.pickup||{};
  return [
   fixedPriceLine(e.announcedPrice),
-  [e.scheduledDate||e.date,e.scheduledTime||e.recordedTime].filter(Boolean).join(' à '),
+  [driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime].filter(Boolean).join(' à '),
   [p.place?airportLabel(p.place):e.hotel,airportLabel(e.destination==='Autre'?(e.otherDestination||e.destination):e.destination)].filter(Boolean).join(' → '),
   String(e.room??'').trim()&&'Chambre : '+String(e.room).trim(),
   p.timeMode==='arrival'?'Suivi vol / train':'',
@@ -87,7 +92,7 @@ function courseText(e){
   e.note&&'Remarques : '+e.note
  ].filter(Boolean).join('\n');
 }
-const core={merge,parseVcard,airportLabel,fixedPriceLine,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible};
+const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible};
 if(typeof module==='object'&&module.exports){module.exports=core;return;}
 root.TaxiDriverDirectoryCore=core;
 const doc=root.document;
@@ -182,7 +187,7 @@ function edit(d){
 function updateRecipient(){const d=state.drivers.find(x=>x.id===recipient);$('driversRecipient').textContent=d?'Destinataire : '+d.name+' · '+d.phone:'Sélectionne un chauffeur dans la liste.';$('driversSms').disabled=!d;}
 function launch(url){if(root.TaxiContacts)root.TaxiContacts.open(url);else root.location.href=url;}
 function courses(){try{const raw=JSON.parse(localStorage.getItem('montaxi:hotel-commissions:courses-v1')||'[]');return Array.isArray(raw)?raw:[];}catch{status('Impossible de lire les courses enregistrées.');return [];}}
-function refreshCourses(selected){const select=$('driversCourse');select.replaceChildren();const blank=doc.createElement('option');blank.value='';blank.textContent='Choisir une course';select.append(blank);for(const e of courses()){const o=doc.createElement('option');o.value=e.id;o.textContent=[e.scheduledDate||e.date,e.scheduledTime||e.recordedTime,e.pickup?.client||e.hotel,e.destination].filter(Boolean).join(' · ');select.append(o);}select.value=selected||'';}
+function refreshCourses(selected){const select=$('driversCourse');select.replaceChildren();const blank=doc.createElement('option');blank.value='';blank.textContent='Choisir une course';select.append(blank);for(const e of courses()){const o=doc.createElement('option');o.value=e.id;o.textContent=[driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime,e.pickup?.client||e.hotel,e.destination].filter(Boolean).join(' · ');select.append(o);}select.value=selected||'';}
 function pricePreview(entry){const text=fixedPriceLine(entry?.announcedPrice);$('driversPriceAlert').hidden=!text;$('driversPriceAlert').querySelector('strong').textContent=text;}
 function chooseCourse(){const e=courses().find(x=>String(x.id)===$('driversCourse').value);if(e){$('driversMessage').value=courseText(e);pricePreview(e);}}
 function setBusy(value){busy=value;$('driversTx').disabled=value;$('driversTx').setAttribute('aria-busy',String(value));$('driversTx').textContent=value?'Analyse du répertoire…':'↻ Actualiser le répertoire';}

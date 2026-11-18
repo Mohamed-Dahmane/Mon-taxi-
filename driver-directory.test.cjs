@@ -17,7 +17,7 @@ test('manual and selected non-TX contacts are accepted; invalid numbers excluded
 test('vCard handles folding, escaped names and tel URI',()=>{assert.deepEqual(core.parseVcard('BEGIN:VCARD\r\nFN:Karim\\, chauffeur\r\nTEL;TYPE=CELL:tel:+32470\r\n 123456\r\nEND:VCARD'),[{name:'Karim, chauffeur',phone:'+32470123456'}]);});
 test('SMS contains actual booking data and Unicode without inventing absent fields',()=>{
  const text=core.courseText({scheduledDate:'2026-11-19',scheduledTime:'04:30',destination:'Hôtel',carCount:1,vanCount:2,pickup:{place:'BRU',client:'Émilie',phone:'+32470123456',flight:'SN123'},note:'2 sièges'});
- assert.match(text,/2026-11-19 à 04:30/);assert.match(text,/Airport BRU \(Zaventem\) → Hôtel/);assert.match(text,/Émilie/);assert.match(text,/2 van/);assert.doesNotMatch(text,/undefined|Prix annoncé/);
+ assert.match(text,/19\/11\/2026 à 04:30/);assert.match(text,/Airport BRU \(Zaventem\) → Hôtel/);assert.match(text,/Émilie/);assert.match(text,/2 van/);assert.doesNotMatch(text,/undefined|Prix annoncé/);
 });
 
 test('v1 migration preserves identity and makes vehicle eligibility asymmetric',()=>{
@@ -66,4 +66,11 @@ test('fixed fare warning leads the message and uses the fare, never the commissi
  assert.match(core.fixedPriceLine('80,50'),/80,50\s€/);
  for(const value of [null,undefined,'','  ',-1,'incorrect'])assert.equal(core.fixedPriceLine(value),'');
  assert.doesNotMatch(core.courseText({hotel:'Standard',destination:'Charleroi',amount:10}),/PRIX FIXÉ/);
+});
+
+test('driver dates use day/month/year while stored course dates and times stay unchanged',()=>{
+ assert.equal(core.driverDate('2026-11-18'),'18/11/2026');assert.equal(core.driverDate('2026-01-05'),'05/01/2026');assert.equal(core.driverDate('18/11/2026'),'18/11/2026');assert.equal(core.driverDate(null),'');
+ const course={date:'2026-11-18',recordedTime:'04:30',hotel:'Standard',destination:'Charleroi'};
+ assert.match(core.courseText(course),/18\/11\/2026 à 04:30/);assert.equal(course.date,'2026-11-18');
+ assert.match(core.courseText({...course,scheduledDate:'2026-11-20',scheduledTime:'05:15'}),/20\/11\/2026 à 05:15/);
 });
