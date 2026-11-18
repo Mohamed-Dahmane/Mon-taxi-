@@ -3,8 +3,7 @@
 const KEY="montaxi:hotel-commissions:directory-v1";
 const norm=s=>String(s||"").trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 const reserved=new Set(["night","day","papa","papas","fal","moncef","djo","jonas","yaguy","celine","adelia","diego","estella","sumira","aline"].map(norm));
-const protectedHotels=new Set(["doubletree by hilton","the standard"]);
-function isProtectedHotel(d,name){return protectedHotels.has(norm(d.tariffNames?.[name]||name))}
+function isProtectedHotel(d,name){return /^(?:double\s?tree|the standard)\b/.test(norm(d.tariffNames?.[name]||name))}
 function reservedContacts(d){
   const names=new Set([...reserved,...(d.referralOnlyContacts||[]).map(norm),...(d.standardReceptionNames||[]).map(norm),...Object.values(d.doubleTreeContactNames||{}).map(norm)]);
   for(const [hotel,contact] of Object.entries(d.hotels)){
@@ -18,6 +17,20 @@ document.body.append(dialog);
 const style=document.createElement("style");style.textContent='#taxiDirectoryEditor{width:min(680px,96vw);max-height:90dvh;overflow:auto;background:#111c30;color:#f5f7ff;border:1px solid #4c6485;border-radius:16px;padding:17px}#taxiDirectoryEditor::backdrop{background:#000b}#taxiDirectoryEditor .directory-head{display:flex;align-items:center;justify-content:space-between;gap:10px}#taxiDirectoryEditor button{cursor:pointer;border:1px solid #4c6485;border-radius:8px;background:#203856;color:white;padding:9px;font:inherit}#taxiDirectoryEditor .directory-row{padding:10px 0;border-bottom:1px solid #34435e;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}#taxiDirectoryEditor .directory-actions{display:flex;flex-wrap:wrap;gap:4px}#taxiDirectoryEditor .directory-row small{display:block;color:#b5c6dc;margin-top:5px}#taxiDirectoryEditor .directory-add{display:flex;gap:8px;margin-top:15px}#taxiDirectoryEditor .directory-add input{flex:1;min-width:0}#taxiDirectoryEditor .directory-note{color:#b5c6dc;font-size:13px}#taxiDirectoryEditor select{width:100%;margin-top:5px}#taxiDirectoryEditor .directory-sort{display:flex;align-items:center;gap:10px;margin:12px 0}#taxiDirectoryEditor .directory-sort select{flex:1;width:auto}#taxiDirectoryEditor #directorySearchLabel{display:grid;gap:5px;margin-bottom:10px}#taxiDirectoryEditor #directorySearchLabel[hidden]{display:none}#taxiDirectoryEditor button:disabled{opacity:.35;cursor:default}';document.head.append(style);
 const $=id=>document.getElementById(id);let mode="hotels";const sortMode={hotels:"priority",drivers:"priority"};const collator=new Intl.Collator("fr",{sensitivity:"base",numeric:true});
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d.hotels==="object"&&!Array.isArray(d.hotels)?d:null}catch{return null}}
+window.taxiHotelDriverContactNames=()=>{
+  const d=load();
+  if(!d?.hotels)return new Set();
+  const reservedNames=reservedContacts(d);
+  const names=new Set();
+  for(const [hotel,contact] of Object.entries(d.hotels)){
+    if(isProtectedHotel(d,hotel))continue;
+    for(const name of [contact,...(d.allowedContacts?.[hotel]||[])]){
+      const key=norm(name).replace(/\s+/g," ");
+      if(key&&!reservedNames.has(key))names.add(key);
+    }
+  }
+  return names;
+};
 function save(d){localStorage.setItem(KEY,JSON.stringify(d));window.dispatchEvent(new Event("hotel-commissions-updated"));window.dispatchEvent(new Event("mon-taxi-hotel-sync"));const frame=$("hotelCommissionsFrame");try{frame?.contentWindow?.dispatchEvent(new Event("mon-taxi-hotel-sync"))}catch{}render()}
 function drivers(d){
   const reservedNames=reservedContacts(d);

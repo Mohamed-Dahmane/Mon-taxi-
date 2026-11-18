@@ -125,3 +125,17 @@ test('legacy car bookings keep their eligibility and get the new name in SMS',()
 });
 
 test('alphabetical sorting ignores telephone prefixes',()=>{assert.deepEqual(core.orderedDrivers([{name:'Karim'},{name:'TX Van Nuit Hassan'},{name:'TX Alexis'}],'az').map(d=>d.name),['TX Alexis','TX Van Nuit Hassan','Karim']);});
+
+test('driver priorities support hotel matching, manual overrides and stable order',()=>{
+ const hotels=new Set(['emilie','pierre']);
+ const drivers=[
+  {id:'regular',name:'TX Normal',priority:0},
+  {id:'manual',name:'TX Van Pierre',priorityClass:2,priority:1},
+  {id:'hotel',name:'TX Van Émilie',priority:9},
+  {id:'second',name:'Chauffeur favori',priorityClass:2,priority:2}
+ ];
+ assert.deepEqual(core.orderedDrivers(drivers,'priority',hotels).map(d=>d.id),['hotel','manual','second','regular']);
+ const refreshed=core.merge([{...drivers[1],nativeId:'123',phone:'0470112233'}],[{nativeId:'123',name:'TX Van Pierre',phone:'0470112255'}],'sync');
+ assert.equal(core.driverPriority(refreshed.drivers[0],hotels),2);
+ assert.equal(core.driverPriority({...drivers[1],priorityClass:null},hotels),1);
+});

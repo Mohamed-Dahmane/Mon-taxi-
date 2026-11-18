@@ -1,6 +1,8 @@
 (function(root){
 'use strict';
 const KEY='montaxi:driver-directory:v1';
+const HOTEL_DIRECTORY_KEY='montaxi:hotel-commissions:directory-v1';
+const priorityLabels=['','Contact d’hôtel','Chauffeur de confiance','Chauffeur standard'];
 const norm=s=>String(s||'').trim().replace(/\s+/g,' ');
 const phone=s=>String(s||'').trim().replace(/[\s().-]/g,'');
 const validPhone=s=>/^\+?[0-9]{3,20}$/.test(phone(s));
@@ -44,12 +46,16 @@ function searchRank(driver,query){
  const digits=phone(cleanSearch(query));
  return /[0-9]/.test(digits)&&phone(driver.phone).includes(digits)?3:-1;
 }
-function orderedDrivers(drivers,mode='priority'){
+function driverPriority(driver,hotelContacts){
+ if([1,2,3].includes(driver.priorityClass))return driver.priorityClass;
+ return hotelContacts.has(cleanSearch(driverSearchName(driver.name)))||hotelContacts.has(cleanSearch(driver.name))?1:3;
+}
+function orderedDrivers(drivers,mode='priority',hotelContacts=new Set()){
+ const priority=item=>Number.isFinite(item.driver.priority)?item.driver.priority:item.index;
  const collator=new Intl.Collator('fr',{sensitivity:'base',numeric:true});
  return drivers.map((driver,index)=>({driver,index})).sort((a,b)=>{
   if(mode==='az'||mode==='za')return (mode==='az'?1:-1)*collator.compare(driverSearchName(a.driver.name),driverSearchName(b.driver.name))||a.index-b.index;
-  const priority=item=>Number.isFinite(item.driver.priority)?item.driver.priority:item.index;
-  return priority(a)-priority(b)||a.index-b.index;
+  return driverPriority(a.driver,hotelContacts)-driverPriority(b.driver,hotelContacts)||priority(a)-priority(b)||a.index-b.index;
  }).map(item=>item.driver);
 }
 function requiredVehicle(course){
@@ -138,7 +144,7 @@ function courseText(e){
   e.note&&'Remarques : '+e.note
  ].filter(Boolean).join('\n');
 }
-const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,orderedDrivers};
+const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,driverPriority,orderedDrivers};
 if(typeof module==='object'&&module.exports){module.exports=core;return;}
 root.TaxiDriverDirectoryCore=core;
 const doc=root.document;
@@ -156,6 +162,7 @@ const dialog=doc.createElement('dialog');dialog.id='taxiDrivers';dialog.innerHTM
 <details class="drivers-management"><summary>Ajouter / sauvegarder</summary><div class="drivers-tools"><button type="button" id="driversPick">Importer un chauffeur</button><button type="button" id="driversAdd">+ Ajouter manuellement</button><button type="button" id="driversExport">Sauvegarder le répertoire</button></div></details>
 <fieldset id="driversEditor" hidden><legend>Fiche chauffeur</legend>
 <label>Nom<input id="driversName" autocomplete="off"></label><label>Téléphone<input id="driversPhone" type="tel" autocomplete="off"></label>
+<label>Priorité<select id="driversEditPriority"><option value="">Automatique · selon les contacts d’hôtel</option>${priorityLabels.slice(1).map((label,index)=>`<option value="${index+1}">${index+1} · ${label}</option>`).join('')}</select></label>
 <label>Véhicule réel<select id="driversCategory"><option value="car">Voiture normale</option><option value="van">Van</option></select></label>
 <div class="drivers-checks"><span>Courses possibles</span><label><input id="driversCarEligible" type="checkbox"> Voiture normale</label><label><input id="driversVanEligible" type="checkbox" disabled> Van</label></div>
 <div class="drivers-checks"><span>Disponibilité</span><label><input id="driversDay" type="checkbox"> Jour</label><label><input id="driversNight" type="checkbox"> Nuit</label></div>
@@ -164,7 +171,8 @@ const dialog=doc.createElement('dialog');dialog.id='taxiDrivers';dialog.innerHTM
 <div id="driversContent">
 <label id="driversVanFilter"><input type="checkbox" id="driversVanOnly"> Uniquement van</label>
 <div id="driversPeriodFilters" class="drivers-periods" role="group" aria-label="Période"><button type="button" data-period="all">Tous</button><button type="button" data-period="day">Jour</button><button type="button" data-period="night">Nuit</button></div>
-<label id="driversSortBox">Classement<select id="driversSort"><option value="priority">Pertinence</option><option value="az">Ordre alphabétique A → Z</option><option value="za">Ordre alphabétique Z → A</option></select></label>
+<label id="driversSortBox">Classement<select id="driversSort"><option value="priority">Priorité</option><option value="az">Ordre alphabétique A → Z</option><option value="za">Ordre alphabétique Z → A</option></select></label>
+<div id="driversPriorityLegend" aria-label="Couleurs des priorités"></div>
 <label id="driversSearchBox">Rechercher<input id="driversSearch" type="search" placeholder="Prénom, nom ou téléphone — sans TX"></label>
 <p id="driversCourseContext" hidden></p><div id="driversList"></div><section id="driversDetails" hidden></section><fieldset id="driversImportPanel" hidden><legend>Importer une course du Planning</legend><label>Course<select id="driversImportCourse"></select></label><button type="button" id="driversImportConfirm">Importer cette course</button></fieldset>
 <fieldset id="driversSmsPanel" hidden><legend>SMS au chauffeur sélectionné</legend><label>Contenu<select id="driversMessageSource"><option value="free">Message libre / saisie rapide</option><option value="course">Course du Planning / réservation</option></select></label><select id="driversCourse" aria-label="Course" hidden></select><p id="driversPriceAlert" hidden><strong></strong></p><label>Message à vérifier et modifier<textarea id="driversMessage" rows="7"></textarea></label><p id="driversRecipient">Sélectionne un chauffeur dans la liste.</p><button type="button" id="driversSms">Ouvrir l’application SMS</button><p>L’envoi est à confirmer dans l’application SMS.</p></fieldset></div>`;
@@ -180,6 +188,11 @@ const css=doc.createElement('style');css.textContent=`
 #taxiDrivers .drivers-heading{justify-content:space-between;gap:8px}#taxiDrivers .drivers-heading button{font-size:13px;padding:8px}
 #taxiDrivers #driversVanFilter{display:flex;align-items:center;gap:8px;min-height:36px;width:fit-content}
 #taxiDrivers .driver-row{display:flex;align-items:center;gap:4px;padding:0;border-bottom:1px solid #34435e;overflow-wrap:anywhere}#taxiDrivers .driver-name{display:block;flex:1;min-width:0;width:auto;min-height:44px;padding:11px 6px;border:0;border-radius:0;background:transparent;text-align:left}#taxiDrivers .driver-reorder{flex:none;width:34px;padding:4px;min-height:34px}#taxiDrivers .driver-name:hover,#taxiDrivers .driver-name:focus-visible{background:#203856}#taxiDrivers .driver-detail-phone{font-size:21px;margin:10px 0}#driversDetails .driver-actions{margin:14px 0}#driversDetails h3{margin:16px 0 0}
+#driversPriorityLegend{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+#taxiDrivers .driver-priority{display:inline-flex;flex:none;align-items:center;justify-content:center;min-width:24px;min-height:24px;padding:2px 6px;border-radius:7px;font-size:12px;font-weight:700;line-height:1.2}
+#taxiDrivers .driver-priority[data-level="1"]{background:#145733;color:#dcfce7}
+#taxiDrivers .driver-priority[data-level="2"]{background:#204f96;color:#e0f2fe}
+#taxiDrivers .driver-priority[data-level="3"]{background:#3b485a;color:#f1f5f9}
 #taxiDrivers .driver-row strong,#taxiDrivers .driver-row small{display:block;margin-bottom:7px}#taxiDrivers small{color:#bed0e5}
 #taxiDrivers .drivers-checks{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;font-size:13px}#taxiDrivers .drivers-checks span{flex:none;width:88px;color:#bed0e5;font-size:11px}
 #taxiDrivers .drivers-checks label{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0}
@@ -189,6 +202,16 @@ const css=doc.createElement('style');css.textContent=`
 #openTaxiDrivers{position:static;grid-column:2 / 4;grid-row:2;justify-self:end;margin-left:auto;width:auto;padding:6px 10px!important;min-height:32px;font-size:12px!important;border:1px solid #7196c4;border-radius:9px;background:#142238;color:white}
 #taxiDrivers [hidden]{display:none!important}`;doc.head.append(css);
 const $=s=>dialog.querySelector('#'+s);
+function priorityBadge(level,full=false){
+ const badge=doc.createElement('span');
+ badge.className='driver-priority';badge.dataset.level=level;
+ const label=level+' · '+priorityLabels[level];
+ badge.textContent=full?label:level;
+ badge.title=label;badge.setAttribute('aria-label',label);
+ return badge;
+}
+for(const level of [1,2,3])$('driversPriorityLegend').append(priorityBadge(level,true));
+const hotelDriverContacts=()=>root.taxiHotelDriverContactNames?.()||new Set();
 let vanOnly=false,period='all',editing=null,recipient=null,busy=false,selectedDriver=null,listScroll=0,courseContext=null,linkedCourse=null,pickDriverCallback=null;
 const vanRequired=()=>requiredVehicle(courseContext)==='van';
 const vanFilter=()=>vanOnly||vanRequired();
@@ -226,7 +249,8 @@ function render(){
  const list=$('driversList'),details=$('driversDetails');list.replaceChildren();details.replaceChildren();
  const selected=state.drivers.find(d=>d.id===selectedDriver);if(!selected)selectedDriver=null;
  list.hidden=!!selectedDriver;details.hidden=!selectedDriver;$('driversPeriodFilters').hidden=!!selectedDriver;$('driversSearchBox').hidden=!!selectedDriver;$('driversSortBox').hidden=!!selectedDriver;
- $('driversVanFilter').hidden=!!selectedDriver;
+ $('driversVanFilter').hidden=!!selectedDriver;$('driversPriorityLegend').hidden=!!selectedDriver;
+ const hotelContacts=hotelDriverContacts();
  $('driversCourseContext').hidden=!linkedCourse;$('driversCourseContext').textContent=linkedCourse?'Course : '+courseTitle(linkedCourse):'';
  if(selected){
   const back=action('← Retour aux noms',returnToNames);back.id='driversBack';const name=doc.createElement('h3');name.textContent=selected.name;
@@ -238,27 +262,44 @@ function render(){
   if(selected.nativeId&&root.TaxiContacts)actions.append(action('Modifier dans le téléphone',()=>root.TaxiContacts.edit(selected.nativeId)));
   const services=checkboxGroup('Courses possibles');services.append(check('Voiture normale',true,true,value=>editOptions(selected,{acceptsCar:value,manualServices:true})),check('Van',selected.category==='van',true,()=>{}));
   const times=checkboxGroup('Disponibilité');times.append(check('Jour',selected.availability.day,false,value=>editOptions(selected,{availability:{...selected.availability,day:value},manualAvailability:true})),check('Nuit',selected.availability.night,false,value=>editOptions(selected,{availability:{...selected.availability,night:value},manualAvailability:true})));
-  details.append(back,name,num,kind,actions,services,times);return;
+  details.append(back,name,num,kind,priorityBadge(driverPriority(selected,hotelContacts),true),actions,services,times);return;
  }
  const query=norm($('driversSearch').value);
- const rows=orderedDrivers(state.drivers,state.sortMode).map((driver,index)=>({driver,index,rank:searchRank(driver,query)})).filter(x=>eligible(x.driver,vanFilter()?'van':'car',period)&&x.rank>=0&&(!courseContext||compatibleWithCourse(x.driver,courseContext))).sort((a,b)=>(!['az','za'].includes(state.sortMode)?a.rank-b.rank:0)||a.index-b.index).map(x=>x.driver);
+ const priorityOrder=$('driversSort').value==='priority';
+ const rows=orderedDrivers(state.drivers,state.sortMode,hotelContacts)
+  .map((driver,index)=>({driver,index,rank:searchRank(driver,query),priority:driverPriority(driver,hotelContacts)}))
+  .filter(x=>x.rank>=0&&eligible(x.driver,vanFilter()?'van':'car',period)&&compatibleWithCourse(x.driver,courseContext))
+  .sort((a,b)=>(priorityOrder?a.priority-b.priority||a.rank-b.rank:0)||a.index-b.index)
+  .map(x=>x.driver);
  for(const d of rows){
   const row=doc.createElement('div');row.className='driver-row';row.dataset.driverId=d.id;row.dataset.reorderKey=d.id;
-  const button=action(d.name,()=>selectDriver(d.id));button.className='driver-name taxi-hold-handle';button.title='Maintenir puis déplacer pour changer l’ordre de pertinence';row.append(button);
+  const button=action(d.name,()=>selectDriver(d.id));button.className='driver-name taxi-hold-handle';button.title='Maintenir puis déplacer dans la même priorité';row.append(priorityBadge(driverPriority(d,hotelContacts)),button);
   list.append(row);
  }
  if(!rows.length){const p=doc.createElement('p');p.textContent='Aucun chauffeur ne correspond aux filtres.';list.append(p);}
 }
 root.TaxiHoldReorder.bind($('driversList'),{
- item:'.driver-row',handle:'.driver-name',enabled:()=>!['az','za'].includes(state.sortMode),
- onDrop(ids){const visible=new Set(ids),byId=new Map(state.drivers.map(d=>[d.id,d])),next=[...ids];
-  const reordered=orderedDrivers(state.drivers).map(d=>visible.has(d.id)?byId.get(next.shift()):d);
-  const saved=commit(reordered.map((d,priority)=>({...d,priority})));if(saved)status('Ordre de pertinence enregistré.');return saved;
+ item:'.driver-row',handle:'.driver-name',
+ enabled:()=>$('driversSort').value==='priority'&&!norm($('driversSearch').value),
+ onDrop(ids){
+  const visible=new Set(ids),byId=new Map(state.drivers.map(d=>[d.id,d]));
+  const hotelContacts=hotelDriverContacts();
+  const ranked=orderedDrivers(state.drivers,'priority',hotelContacts);
+  let index=0;
+  const reordered=ranked.map(driver=>visible.has(driver.id)?byId.get(ids[index++]):driver);
+  if(reordered.some((driver,i)=>driverPriority(driver,hotelContacts)!==driverPriority(ranked[i],hotelContacts))){
+   status('Pour changer de priorité, modifie la fiche du chauffeur.');
+   return false;
+  }
+  const saved=commit(reordered.map((driver,priority)=>({...driver,priority})));
+  if(saved)status('Ordre enregistré.');
+  return saved;
  }
 });
 function editorServices(){const van=$('driversCategory').value==='van';$('driversCarEligible').disabled=true;$('driversCarEligible').checked=true;$('driversVanEligible').checked=van;}
 function edit(d){
  editing=d?.id||null;$('driversName').value=d?.name||'';$('driversPhone').value=d?.phone||'';$('driversCategory').value=d?.category||(vanFilter()?'van':'car');
+ $('driversEditPriority').value=[1,2,3].includes(d?.priorityClass)?String(d.priorityClass):'';
  $('driversCarEligible').checked=d?d.acceptsCar:$('driversCategory').value==='car';editorServices();
  const times=d?.availability||{day:true,night:false};$('driversDay').checked=times.day;$('driversNight').checked=times.night;
  $('driversDelete').hidden=!d;$('driversPhoneEdit').hidden=!d?.nativeId||!root.TaxiContacts;
@@ -305,7 +346,7 @@ $('driversSave').onclick=()=>{
  const times={day:$('driversDay').checked,night:$('driversNight').checked};if(!times.day&&!times.night){status('Coche au moins Jour ou Nuit.');return;}
  const old=state.drivers.find(x=>x.id===editing);
  if(state.drivers.some(x=>x.id!==editing&&phone(x.phone)===number)&&!confirm('Ce numéro existe déjà. Ajouter / conserver une autre fiche avec ce numéro ?'))return;
- const record=normalizeDriver({...old,id:old?.id||id(),name,phone:number,category:cat,acceptsCar:$('driversCarEligible').checked,availability:times,source:old?.source||'manual',manualCategory:true,manualServices:true,manualAvailability:true,localName:old?.localName||!!old&&old.name!==name,localPhone:old?.localPhone||!!old&&old.phone!==number});
+ const record=normalizeDriver({...old,id:old?.id||id(),name,phone:number,category:cat,priorityClass:Number($('driversEditPriority').value)||null,acceptsCar:$('driversCarEligible').checked,availability:times,source:old?.source||'manual',manualCategory:true,manualServices:true,manualAvailability:true,localName:old?.localName||!!old&&old.name!==name,localPhone:old?.localPhone||!!old&&old.phone!==number});
  if(commit(old?state.drivers.map(x=>x.id===old.id?record:x):[...state.drivers,record])){selectedDriver=record.id;$('driversEditor').hidden=true;render();status('Fiche enregistrée dans Mon Taxi.');}
 };
 $('driversDelete').onclick=()=>{const d=state.drivers.find(x=>x.id===editing);if(d)deleteDriver(d);};
@@ -366,7 +407,7 @@ root.TaxiDriverCommunication={
   dialog.close();Promise.resolve(root.openHotelModule('planning')).then(()=>revealLastCall(course)).catch(()=>root.openTaxiDrivers(course,{driverId:lastCall.driverId}));return true;
  },
  sendToLast(course){const actual=courses().find(e=>String(e.id)===String(course.id))||course;const d=lastFor(actual);if(!d)return;const profile=state.drivers.find(x=>x.id===d.id);openSms(profile,courseText(actual));},
- nextFor(course){const compatible=state.drivers.filter(d=>compatibleWithCourse(d,course));if(!compatible.length){root.openTaxiDrivers(course);return;}const current=compatible.findIndex(d=>d.id===lastCall?.driverId);root.openTaxiDrivers(course,{driverId:compatible[(current+1)%compatible.length].id});},
+ nextFor(course){const compatible=orderedDrivers(state.drivers,'priority',hotelDriverContacts()).filter(d=>compatibleWithCourse(d,course));if(!compatible.length){root.openTaxiDrivers(course);return;}const current=compatible.findIndex(d=>d.id===lastCall?.driverId);root.openTaxiDrivers(course,{driverId:compatible[(current+1)%compatible.length].id});},
  namesForCourse(course){return [...new Set(state.drivers.filter(d=>compatibleWithCourse(d,course)).map(d=>driverSearchName(d.name)||d.name))];},
  canAssignName(name,course){if(['moi','self'].includes(String(name).toLocaleLowerCase('fr')))return true;const key=norm(name).toLocaleLowerCase('fr');const matches=state.drivers.filter(d=>[d.name,driverSearchName(d.name)].some(n=>norm(n).toLocaleLowerCase('fr')===key));return matches.length?matches.some(d=>compatibleWithCourse(d,course)):requiredVehicle(course)!=='van';}
 };
@@ -383,11 +424,13 @@ root.openTaxiDrivers=function(course,options={}){
  const required=requiredVehicle(course);vanOnly=false;period='all';selectedDriver=null;recipient=null;listScroll=0;
  $('driversSearch').value='';$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;$('driversImportPanel').hidden=true;pricePreview(null);
  if(options.driverId){const d=state.drivers.find(x=>x.id===options.driverId);if(d&&(!course||compatibleWithCourse(d,course))){selectedDriver=d.id;}}
- if(!dialog.open)dialog.showModal();render();updateRecipient();if(readError)status('Le répertoire enregistré est illisible : sauvegardez-le avant réparation.');
+ if(!dialog.open)dialog.showModal();render();updateRecipient();
+ if(!localStorage.getItem(HOTEL_DIRECTORY_KEY))root.initializeHotelDirectory?.();if(readError)status('Le répertoire enregistré est illisible : sauvegardez-le avant réparation.');
  if(linkedCourse){$('driversMessageSource').value='course';$('driversCourse').hidden=false;refreshCourses(String(course.id));$('driversMessage').value=courseText(course);pricePreview(course);status(required==='van'?'Course Van : chauffeurs Van uniquement.':'Course conservée : choisis un chauffeur compatible.');}
  else if(pickDriverCallback&&!readError)status('Choisis le chauffeur pour cette course.');
  else if(!readError&&!busy)status('');
 };
-root.addEventListener('storage',event=>{if(event.key!==KEY)return;try{state=readState();readError=false;render();updateRecipient();}catch{readError=true;status('Le répertoire enregistré est illisible : sauvegardez-le avant réparation.');}});
+root.addEventListener('hotel-commissions-updated',()=>{if(dialog.open)render()});
+root.addEventListener('storage',event=>{if(event.key===HOTEL_DIRECTORY_KEY){if(dialog.open)render();return;}if(event.key!==KEY)return;try{state=readState();readError=false;render();updateRecipient();}catch{readError=true;status('Le répertoire enregistré est illisible : sauvegardez-le avant réparation.');}});
 const open=action('Répertoire',()=>root.openTaxiDrivers());open.id='openTaxiDrivers';open.setAttribute('aria-label','Ouvrir le répertoire chauffeurs');(doc.querySelector('.taxi-header')||doc.querySelector('main'))?.append(open);
 })(typeof window!=='undefined'?window:globalThis);
