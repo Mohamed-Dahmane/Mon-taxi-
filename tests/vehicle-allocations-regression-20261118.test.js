@@ -25,3 +25,14 @@ test('0 € est accepté, les valeurs négatives et les fractions de centime son
  assert.throws(()=>normalize([{...row,quantity:0}]));
  assert.throws(()=>normalize([{...row,driver:' '}])) ;
 });
+
+test('confirmation impossible sans attribution et sans chauffeur',()=>{
+ assert.throws(()=>normalize([]));
+ assert.throws(()=>normalize([{type:'Van',quantity:1,driver:'',commissionUnit:10}]));
+ assert.throws(()=>normalize([{type:'Autobus',quantity:1,driver:'Moi',commissionUnit:10}]));
+});
+test('une quantité non entière et un total hors plage sûre sont refusés',()=>{
+ const row={type:'Petite voiture',quantity:1,driver:'Moi',commissionUnit:10};
+ assert.throws(()=>normalize([{...row,quantity:1.5}]));
+ assert.throws(()=>normalize([{...row,quantity:Number.MAX_SAFE_INTEGER,commissionUnit:10}]));
+});
