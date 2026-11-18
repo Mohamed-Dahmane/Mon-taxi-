@@ -87,7 +87,7 @@ html.taxi-clean {
 .taxi-clean #home .taxi-summary button:active { filter: brightness(1.35); }
 .taxi-clean #home .taxi-summary button:focus-visible { outline-offset: -3px; }
 .taxi-clean #home .taxi-summary .work-reference .label { white-space: normal; }
-.taxi-clean #home .summary-detail { scroll-margin-block: 8px; }
+.taxi-clean #home .summary-detail { scroll-margin-block: calc(max(10px, env(safe-area-inset-top)) + 45px) 8px; }
 .taxi-clean #home .summary-detail .home-disclosure-body { padding-inline: 0; border-top: 0; }
 .taxi-clean #home .summary-detail .monthly-overview-values { margin-top: 6px; }
 .taxi-clean #home .summary-detail .monthly-overview-values + .home-disclosure-body { margin-top: 8px; }
@@ -239,7 +239,7 @@ html.taxi-clean {
 .taxi-clean .typeBtn.active { background: var(--clean-blue); border-color: var(--clean-blue); color: var(--clean-text); }
 
 
-.taxi-clean body:has(> #taxiQuickNavigation:not([hidden])) main {
+.taxi-clean body:has(#taxiQuickNavigation:not([hidden])) main {
   padding-top: calc(max(10px, env(safe-area-inset-top)) + 45px);
 }
 .taxi-clean .taxi-page-navigation #taxiPageLocation { column-gap: 6px; row-gap: 3px; }
