@@ -21,7 +21,7 @@ class SumUpNetworkBoundary(unittest.TestCase):
         self.assertNotIn('console.error(', FUNCTION)
 
     def test_github_request_does_not_follow_redirects_or_dump_body(self):
-        self.assertIn("curl --noproxy '*' --disable --proto '=https'", WORKFLOW)
+        self.assertIn("curl --disable --noproxy '*' --proto '=https'", WORKFLOW)
         self.assertNotIn('--location', WORKFLOW)
         self.assertIn('response intentionally not printed', WORKFLOW)
         self.assertIn("trap 'rm -f response.json' EXIT", WORKFLOW)
