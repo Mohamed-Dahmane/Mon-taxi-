@@ -36,12 +36,12 @@ function bind(container,options){
   const handle=event.target.closest(options.handle);if(!handle||!container.contains(handle))return;
   const row=handle.closest(options.item);if(!row||row.parentElement!==container)return;
   const s=state={row,id:point.id,kind,x:point.x,y:point.y,startX:point.x,startY:point.y,dragging:false,scroll:scroller(row)};
-  if(kind==='mouse')container.setPointerCapture(s.id);
-  s.timer=root.setTimeout(()=>{if(state!==s||!enabled())return;const rect=row.getBoundingClientRect();s.dragging=true;s.order=keys();s.offsetX=s.startX-rect.left;s.offsetY=s.startY-rect.top;s.ghost=row.cloneNode(true);s.ghost.removeAttribute('id');s.ghost.removeAttribute('data-reorder-key');s.ghost.className='taxi-hold-preview';s.ghost.style.width=rect.width+'px';s.ghost.style.height=rect.height+'px';s.ghost.setAttribute('aria-hidden','true');(row.closest('dialog')||doc.body).append(s.ghost);row.classList.add('taxi-hold-moving');position();autoScroll();try{root.navigator.vibrate?.(30);}catch{}},450);
+  s.timer=root.setTimeout(()=>{if(state!==s||!enabled())return;const rect=row.getBoundingClientRect();s.dragging=true;if(s.kind==='mouse')container.setPointerCapture(s.id);s.order=keys();s.offsetX=s.startX-rect.left;s.offsetY=s.startY-rect.top;s.ghost=row.cloneNode(true);s.ghost.removeAttribute('id');s.ghost.removeAttribute('data-reorder-key');s.ghost.className='taxi-hold-preview';s.ghost.style.width=rect.width+'px';s.ghost.style.height=rect.height+'px';s.ghost.setAttribute('aria-hidden','true');(row.closest('dialog')||doc.body).append(s.ghost);row.classList.add('taxi-hold-moving');position();autoScroll();try{root.navigator.vibrate?.(30);}catch{}},450);
  }
  function move(event,point){const s=state;if(!s||s.id!==point.id)return;s.x=point.x;s.y=point.y;if(s.dragging){if(event.cancelable)event.preventDefault();position();}else if(Math.hypot(s.x-s.startX,s.y-s.startY)>12)finish(false);}
  container.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'&&e.button===0&&e.isPrimary)press(e,{id:e.pointerId,x:e.clientX,y:e.clientY},'mouse');});
  container.addEventListener('pointermove',e=>{if(state?.kind==='mouse')move(e,{id:e.pointerId,x:e.clientX,y:e.clientY});});
+ container.addEventListener('pointerleave',()=>{if(state?.kind==='mouse'&&!state.dragging)finish(false);});
  container.addEventListener('pointerup',e=>{if(state?.kind==='mouse'&&e.pointerId===state.id)finish(true);});
  container.addEventListener('pointercancel',e=>{if(state?.kind==='mouse'&&e.pointerId===state.id)finish(false);});
  container.addEventListener('lostpointercapture',e=>{if(state?.kind==='mouse'&&e.pointerId===state.id)finish(false);});
