@@ -45,3 +45,26 @@ test('une attribution confirmée est immuable, y compris ses lignes',()=>{
  assert.equal(Object.isFrozen(confirmed.vehicleCounts),true);
  assert.equal(confirmed.totalVehicles,2);
 });
+
+test('les commissions décimales restent exactes au centime sur plusieurs véhicules',()=>{
+ const course=normalize([
+  {type:'Petite voiture',quantity:3,driver:'Moi',commissionUnit:12.35},
+  {type:'Van',quantity:2,driver:'Autre',commissionUnit:0},
+  {type:'Van',quantity:1,driver:'Moi',commissionUnit:20.10}
+ ]);
+ assert.equal(course.totalCommission,57.15);
+ assert.equal(course.assignments[0].commissionCents,3705);
+ assert.equal(course.assignments[1].commissionCents,0);
+ assert.deepEqual(course.vehicleCounts,{cars:3,vans:3});
+});
+
+test('une confirmation conserve ses valeurs malgré une modification ultérieure des données saisies',()=>{
+ const rows=[{type:'Van',quantity:2,driver:'Moi',commissionUnit:10}];
+ const confirmed=normalize(rows);
+ rows[0].quantity=99;
+ rows[0].driver='Autre';
+ rows[0].commissionUnit=0;
+ assert.equal(confirmed.totalVehicles,2);
+ assert.equal(confirmed.totalCommission,20);
+ assert.equal(confirmed.assignments[0].driver,'Moi');
+});
