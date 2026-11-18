@@ -50,10 +50,10 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  await page.click('[data-category="van"]');await page.click('[data-period="all"]');assert.equal(await page.locator('.driver-row').count(),2);
  await row(page,'TX Nuit Van Nouveau').getByRole('button',{name:'Modifier',exact:true}).click();page.once('dialog',d=>d.accept());await page.click('#driversDelete');
  await page.click('#driversTx');await respond({mode:'sync',contacts:incoming});assert.equal(await page.locator('.driver-row').count(),1);
- await page.evaluate(()=>openTaxiDrivers({id:'course1',date:'2026-11-19',hotel:'DoubleTree',destination:'BRU',room:'418',note:'Bonjour Émilie'}));
+ await page.evaluate(()=>openTaxiDrivers({id:'course1',date:'2026-11-19',hotel:'DoubleTree',destination:'BRU',room:'418',announcedPrice:80,note:'Bonjour Émilie'}));
  assert.equal(await page.locator('#driversContent').isVisible(),false);await page.click('[data-category="car"]');
  await row(page,'TX Van Hassan renommé').getByRole('button',{name:'SMS',exact:true}).click();assert.match(await page.inputValue('#driversMessage'),/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(await page.inputValue('#driversMessage'),/Chambre : 418/);
- await page.click('#driversSms');const sms=await page.evaluate(()=>nativeCalls.filter(x=>x.type==='open').at(-1).url);assert.ok(sms.startsWith('sms:0470887766?body='));assert.match(decodeURIComponent(sms),/Bonjour Émilie/);
+ await page.click('#driversSms');const sms=await page.evaluate(()=>nativeCalls.filter(x=>x.type==='open').at(-1).url);assert.ok(sms.startsWith('sms:0470887766?body='));assert.match(decodeURIComponent(sms),/Bonjour Émilie/);assert.match(decodeURIComponent(sms),/ATTENTION — PRIX FIXÉ : 80,00\s€/);assert.equal(await page.locator('#driversPriceAlert strong').evaluate(el=>Number(getComputedStyle(el).fontWeight)>=600),true);
  await row(page,'TX Van Hassan renommé').getByRole('button',{name:'Appeler',exact:true}).click();assert.equal(await page.evaluate(()=>nativeCalls.at(-1).url),'tel:0470887766');
  assert.equal(await page.locator('#taxiDrivers').evaluate(el=>el.scrollWidth>el.clientWidth),false);
  await page.reload();await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');await page.click('[data-period="night"]');assert.equal(await page.locator('.driver-row').count(),1);
@@ -73,16 +73,16 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  const copied=await integrated.evaluate(async()=>{
   const frame=document.querySelector('#hotelCommissionsFrame').contentWindow;
   Object.defineProperty(frame.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{frame.__copiedCourse=text;}}});
-  await frame.copyCourse({bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotel:'DoubleTree',destination:'Zaventem',room:'0123',vehicle:'Van',driver:'self'});
+  await frame.copyCourse({bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotel:'DoubleTree',destination:'Zaventem',room:'0123',announcedPrice:74.79,amount:10,vehicle:'Van',driver:'self'});
   return frame.__copiedCourse;
  });
- assert.match(copied,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(copied,/Chambre : 0123/);
+ assert.match(copied,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(copied,/Chambre : 0123/);assert.match(copied,/^ATTENTION — PRIX FIXÉ : 74,79\s€/);assert.doesNotMatch(copied,/10,00/);
  const pickupCopied=await integrated.evaluate(async()=>{
   const frame=document.querySelector('#hotelCommissionsFrame').contentWindow;
   await frame.copyCourse({bookingMode:'Direct',date:'2026-11-20',recordedTime:'05:15',hotel:'Standard',destination:'Hôtel',room:'7A',vehicle:'Van',driver:'self',pickup:{place:'CRL'}});
   return frame.__copiedCourse;
  });
- assert.match(pickupCopied,/Pick-up · Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);
+ assert.match(pickupCopied,/Pick-up · Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);assert.doesNotMatch(pickupCopied,/PRIX FIXÉ/);
  await integrated.evaluate(()=>document.querySelector('#hotelCommissionsFrame').contentWindow.parent.openTaxiDrivers({id:'planning',date:'2026-11-20',hotel:'Standard',destination:'CRL'}));assert.equal(await integrated.locator('#taxiDrivers').evaluate(el=>el.open),true);
  await integrated.click('[data-category="car"]');await integrated.locator('.driver-row').getByRole('button',{name:'SMS',exact:true}).click();assert.match(await integrated.inputValue('#driversMessage'),/Standard → Airport CRL \(Charleroi\)/);
  console.log('Browser passed: quick category choice, car/van asymmetry, day/night dual availability, explicit full refresh including non-TX, denial retention, no duplicates, deletion, calls, SMS, v1 migration, persistence, 360px real app and Planning.');

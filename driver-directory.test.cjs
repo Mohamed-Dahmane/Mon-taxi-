@@ -58,3 +58,12 @@ test('driver messages use explicit airport names and include the entered room on
  assert.doesNotMatch(core.courseText({hotel:'Hôtel',destination:'Gare du Midi',room:'  '}),/Chambre|undefined/);
  assert.equal(core.airportLabel('Gare du Midi'),'Gare du Midi');
 });
+
+test('fixed fare warning leads the message and uses the fare, never the commission',()=>{
+ const text=core.courseText({hotel:'Standard',destination:'Zaventem',announcedPrice:74.79,amount:10,room:'204'});
+ assert.match(text,/^ATTENTION — PRIX FIXÉ : 74,79\s€\n/);assert.match(text,/Chambre : 204/);assert.doesNotMatch(text,/Prix annoncé|10,00/);
+ assert.match(core.fixedPriceLine(0),/^ATTENTION — PRIX FIXÉ : 0,00\s€/);
+ assert.match(core.fixedPriceLine('80,50'),/80,50\s€/);
+ for(const value of [null,undefined,'','  ',-1,'incorrect'])assert.equal(core.fixedPriceLine(value),'');
+ assert.doesNotMatch(core.courseText({hotel:'Standard',destination:'Charleroi',amount:10}),/PRIX FIXÉ/);
+});
