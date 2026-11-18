@@ -24,7 +24,7 @@ test('v1 migration preserves identity and makes vehicle eligibility asymmetric',
  const car=core.normalizeDriver({id:'car',name:'TX Alexis',phone:'0470112233',category:'car',acceptsCar:false});
  const van=core.normalizeDriver({id:'van',name:'TX Van Hassan',phone:'0470223344',category:'van'});
  assert.equal(core.eligible(car,'car'),true);assert.equal(core.eligible(car,'van'),false);
- assert.equal(core.eligible(van,'van'),true);assert.equal(core.eligible(van,'car'),false);
+ assert.equal(core.eligible(van,'van'),true);assert.equal(core.eligible(van,'car'),true);
  const both=core.normalizeDriver({...van,acceptsCar:true});assert.equal(core.eligible(both,'car'),true);assert.equal(core.eligible(both,'van'),true);assert.equal(both.id,'van');
 });
 test('night markers work for cars and vans; both periods and filtering are independent',()=>{
@@ -62,11 +62,28 @@ test('driver messages use explicit airport names and include the entered room on
 
 test('course vehicle restriction covers single, grouped and mixed bookings',()=>{
  for(const e of [{vehicle:'Van'},{vehicleChoice:'Van'},{carCount:0,vanCount:3},{vehicle:'2 × Van'}])assert.equal(core.courseVehicle(e),'van');
- for(const e of [{vehicle:'Petite voiture'},{carCount:2,vanCount:0},{carCount:1,vanCount:2}])assert.equal(core.courseVehicle(e),'car');
+ for(const e of [{vehicle:'Voiture normale'},{carCount:2,vanCount:0},{carCount:1,vanCount:2}])assert.equal(core.courseVehicle(e),'car');
  assert.equal(core.courseVehicle({vehicle:'Autre'}),null);
 });
 test('passenger count is copied for direct, reservation and pickup courses',()=>{
  for(const bookingMode of ['Direct','Programmée'])assert.match(core.courseText({bookingMode,passengers:4}),/Passagers : 4/);
  assert.match(core.courseText({pickup:{passengers:6}}),/Passagers : 6/);
  assert.doesNotMatch(core.courseText({passengers:null}),/Passagers|undefined/);
+});
+
+
+test('sorting keeps manual relevance and supports both alphabetical directions',()=>{
+ const drivers=[{id:'z',name:'Zohra',priority:0},{id:'e',name:'Émile',priority:2},{id:'a',name:'Alexis',priority:1}];
+ assert.deepEqual(core.orderedDrivers(drivers).map(d=>d.id),['z','a','e']);
+ assert.deepEqual(core.orderedDrivers(drivers,'az').map(d=>d.id),['a','e','z']);
+ assert.deepEqual(core.orderedDrivers(drivers,'za').map(d=>d.id),['z','e','a']);
+ assert.deepEqual(drivers.map(d=>d.id),['z','e','a']);
+});
+test('legacy car bookings keep their eligibility and get the new name in SMS',()=>{
+ assert.equal(core.courseVehicle({vehicle:'Petite voiture'}),'car');
+ assert.match(core.courseText({vehicle:'Petite voiture'}),/Voiture normale/);
+ assert.doesNotMatch(core.courseText({vehicle:'Petite voiture'}),/Petite voiture/);
+ const legacyVan={category:'van',acceptsCar:false};
+ assert.equal(core.eligible(legacyVan,'car'),true);
+ assert.equal(core.eligible({category:'car'},'van'),false);
 });

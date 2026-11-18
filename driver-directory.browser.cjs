@@ -18,11 +18,11 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  ],deletedNativeIds:[]})),KEY);
  await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');
  assert.equal(await page.locator('#driversContent').isVisible(),false);
- await page.click('[data-category="car"]');assert.equal(await page.locator('.driver-row').count(),2);
+ await page.click('[data-category="car"]');assert.equal(await page.locator('.driver-row').count(),3);
  assert.equal(await row(page,'TX Alexis').getByRole('checkbox',{name:'Van',exact:true}).isDisabled(),true);
  assert.equal(await row(page,'TX Alexis').getByRole('checkbox',{name:'Van',exact:true}).isChecked(),false);
  await page.click('[data-category="van"]');assert.equal(await page.locator('.driver-row').count(),1);
- await row(page,'TX Van Nuit Hassan').getByRole('checkbox',{name:'Petite voiture',exact:true}).check();
+ await row(page,'TX Van Nuit Hassan').getByRole('checkbox',{name:'Voiture normale',exact:true}).check();
  await row(page,'TX Van Nuit Hassan').getByRole('checkbox',{name:'Jour',exact:true}).check();
  assert.equal(await row(page,'TX Van Nuit Hassan').getByRole('checkbox',{name:'Nuit',exact:true}).isChecked(),true);
  await page.click('[data-category="car"]');assert.equal(await page.locator('.driver-row').count(),3);
@@ -43,7 +43,7 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  assert.match(await row(page,'TX Alexis actualisé').innerText(),/0470998877/);
  assert.match(await row(page,'Karim nouveau').innerText(),/0470776655/);
  const vanAfter=row(page,'TX Van Hassan renommé');
- for(const name of ['Petite voiture','Van','Jour','Nuit'])assert.equal(await vanAfter.getByRole('checkbox',{name,exact:true}).isChecked(),true);
+ for(const name of ['Voiture normale','Van','Jour','Nuit'])assert.equal(await vanAfter.getByRole('checkbox',{name,exact:true}).isChecked(),true);
  await page.click('#driversTx');await respond({mode:'sync',contacts:incoming});assert.match(await page.locator('#driversStatus').innerText(),/0 ajouté\(s\), 0 modifié\(s\)/);
  await page.click('#driversTx');await respond({mode:'sync',error:'Accès aux contacts refusé. Les fiches sont conservées.'});assert.equal(await page.locator('#driversTx').isDisabled(),false);
  assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).drivers.length,KEY),4);
@@ -58,6 +58,22 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  assert.equal(await page.locator('#taxiDrivers').evaluate(el=>el.scrollWidth>el.clientWidth),false);
  await page.reload();await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');await page.click('[data-period="night"]');assert.equal(await page.locator('.driver-row').count(),1);
  const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);assert.equal(saved.version,2);assert.equal(saved.drivers.find(d=>d.id==='van').priority,4);assert.ok(saved.lastSyncedAt);assert.deepEqual(errors,[]);
+ // Three persistent sorting choices and manual relevance work inside the vehicle/period filters.
+ await page.click('[data-period="all"]');
+ await page.selectOption('#driversSort','az');
+ assert.deepEqual(await page.locator('.driver-row strong').allTextContents(),['Karim nouveau','TX Alexis actualisé','TX Van Hassan renommé']);
+ await page.selectOption('#driversSort','za');
+ assert.deepEqual(await page.locator('.driver-row strong').allTextContents(),['TX Van Hassan renommé','TX Alexis actualisé','Karim nouveau']);
+ await page.reload();await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');
+ assert.equal(await page.inputValue('#driversSort'),'za');
+ await page.selectOption('#driversSort','priority');
+ const priorOrder=await page.locator('.driver-row strong').allTextContents();
+ await page.getByRole('button',{name:'Descendre '+priorOrder[0],exact:true}).click();
+ const movedOrder=await page.locator('.driver-row strong').allTextContents();
+ assert.deepEqual(movedOrder,[priorOrder[1],priorOrder[0],priorOrder[2]]);
+ await page.reload();await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-category="car"]');
+ assert.deepEqual(await page.locator('.driver-row strong').allTextContents(),movedOrder);
+ assert.match(await page.locator('[data-category="car"]').innerText(),/Voiture normale/);
  // Exercise the real app CSS and Planning integration without contacting a live backend.
  const integrated=await browser.newPage({viewport:{width:360,height:780}});
  await integrated.route('**/*',r=>{const u=new URL(r.request().url());if(u.origin!=='http://taxi-app.test')return r.abort();const path=u.pathname==='/'?'index.html':u.pathname.slice(1);if(path.includes('..'))return r.abort();const target=__dirname+'/'+path;if(!fs.existsSync(target))return r.fulfill({status:404,body:''});return r.fulfill({contentType:path.endsWith('.js')?'application/javascript':path.endsWith('.html')?'text/html':'application/octet-stream',body:fs.readFileSync(target)});});
@@ -91,7 +107,7 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  assert.equal(await integrated.locator('[data-category="van"]').getAttribute('aria-pressed'),'true');
  await integrated.locator('.driver-row').getByRole('button',{name:'SMS',exact:true}).click();
  assert.match(await integrated.inputValue('#driversMessage'),/Passagers : 6/);
- await integrated.evaluate(()=>openTaxiDrivers({id:'car-course',vehicle:'Petite voiture',passengers:3}));
+ await integrated.evaluate(()=>openTaxiDrivers({id:'car-course',vehicle:'Voiture normale',passengers:3}));
  assert.equal(await integrated.locator('[data-category="car"]').isDisabled(),false);
  assert.equal(await integrated.locator('[data-category="car"]').getAttribute('aria-pressed'),'true');
  await integrated.click('[data-category="van"]');assert.equal(await integrated.locator('.driver-row').count(),1);
@@ -101,7 +117,7 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  // Check the actual reservation editor restores the count and copied course includes it.
  const passengers=await integrated.evaluate(async()=>{
   const frame=document.querySelector('#hotelCommissionsFrame').contentWindow;
-  const entry={id:'passengers-test',bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotelGroup:'DoubleTree by Hilton',hotel:'DoubleTree by Hilton',contact:'Night',destination:'Zaventem',vehicle:'Van',passengers:5,driver:'self'};
+  const entry={id:'passengers-test',bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotelGroup:'DoubleTree by Hilton',hotel:'DoubleTree by Hilton',contact:'Night',destination:'Zaventem',vehicle:'Petite voiture',vehicleChoice:'Petite voiture',passengers:5,driver:'self'};
   frame.showReservationForm(entry);
   await frame.copyCourse(entry);
   return {value:frame.document.querySelector('#reservationPassengers').value,text:frame.__copiedCourse,direct:!!frame.document.querySelector('#directPassengers')};

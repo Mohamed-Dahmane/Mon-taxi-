@@ -20,9 +20,9 @@ function mount(host, options={}){
  function invalidate(){approved=null;feedback.textContent="Validation des véhicules nécessaire";if(typeof options.onInvalidate==="function")options.onInvalidate();}
  function addRow(value={}){
   const line=doc.createElement("div");
-  const type=field("select","Véhicule",value.type||"Petite voiture");
+  const type=field("select","Véhicule",value.type||"Voiture normale");
   model.TYPES.forEach(t=>{const o=doc.createElement("option");o.value=t;o.textContent=t;type.el.append(o)});
-  type.el.value=value.type||"Petite voiture";
+  type.el.value=value.type==="Petite voiture"?"Voiture normale":value.type||"Voiture normale";
   const quantity=field("input","Quantité",value.quantity??1);quantity.el.type="number";quantity.el.min="1";quantity.el.step="1";
   const driver=field("input","Chauffeur",value.driver??options.defaultDriver??"Moi");
   driver.el.setAttribute("list",options.driverListId||"driverSuggestions");
