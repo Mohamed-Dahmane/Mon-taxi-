@@ -22,6 +22,23 @@ function eligible(d,vehicle,period='all'){
  d=normalizeDriver(d);
  return (vehicle==='van'?d.category==='van':d.category==='car'||d.acceptsCar)&&(period==='all'||d.availability[period]===true);
 }
+function driverSearchName(name){
+ let text=norm(name).replace(/^TX\s*/i,'');
+ let previous;
+ do{previous=text;text=text.replace(/^(?:van|nuit|night|jour|day)\b[\s:._-]*/i,'');}while(text!==previous);
+ return text.trim();
+}
+function searchRank(driver,query){
+ const clean=s=>norm(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr');
+ let q=clean(query);if(!q)return 0;
+ if(/^(?:[a-z]\s+)+[a-z]$/.test(q))q=q.replace(/\s/g,'');
+ const name=clean(driverSearchName(driver.name)),words=name.split(/\s+/);
+ if(name.startsWith(q))return 0;
+ if(words.some(word=>word.startsWith(q)))return 1;
+ const tokens=q.split(/\s+/);if(tokens.length>1&&tokens.every(token=>words.some(word=>word.startsWith(token))))return 1;
+ if(name.includes(q))return 2;
+ const digits=phone(q);return /[0-9]/.test(digits)&&phone(driver.phone).includes(digits)?3:-1;
+}
 function merge(existing,incoming,source,options={}){
  const result=existing.map(normalizeDriver);let added=0,updated=0,unchanged=0;
  for(const c of incoming){
@@ -62,8 +79,8 @@ function parseVcard(text){
 function airportLabel(value){
  const text=String(value??'').trim();
  const key=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toUpperCase();
- if(['BRU','ZAVENTEM','AIRPORT BRU','AEROPORT BRU','AIRPORT BRU (ZAVENTEM)'].includes(key))return 'Airport BRU (Zaventem)';
- if(['CRL','CHARLEROI','AIRPORT CRL','AEROPORT CRL','AIRPORT CRL (CHARLEROI)'].includes(key))return 'Airport CRL (Charleroi)';
+ if(['BRU','ZAVENTEM','AIRPORT BRU','AEROPORT BRU','BRUXELLES AEROPORT (BRU)','AIRPORT BRU (ZAVENTEM)'].includes(key))return 'Airport BRU (Zaventem)';
+ if(['CRL','CHARLEROI','AIRPORT CRL','AEROPORT CRL','CHARLEROI AIRPORT (CRL)','AIRPORT CRL (CHARLEROI)'].includes(key))return 'Airport CRL (Charleroi)';
  return text;
 }
 function fixedPriceLine(value){
@@ -79,20 +96,21 @@ function driverDate(value){
 }
 function courseText(e){
  const p=e.pickup||{};
+ const client=String(e.clientName||p.client||'').trim(),clientPhone=String(e.clientPhone||p.phone||'').trim();
  return [
   fixedPriceLine(e.announcedPrice),
   [driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime].filter(Boolean).join(' à '),
   [p.place?airportLabel(p.place):e.hotel,airportLabel(e.destination==='Autre'?(e.otherDestination||e.destination):e.destination)].filter(Boolean).join(' → '),
   String(e.room??'').trim()&&'Chambre : '+String(e.room).trim(),
   p.timeMode==='arrival'?'Suivi vol / train':'',
-  p.client&&'Client : '+p.client,p.phone&&'Téléphone : '+p.phone,
+  client&&'Client : '+client,clientPhone&&'Téléphone : '+clientPhone,
   p.flight&&'Vol/train : '+p.flight,p.arrival&&'Arrivée : '+p.arrival,
   (e.carCount||e.vanCount)?[e.carCount&&e.carCount+' petite(s) voiture(s)',e.vanCount&&e.vanCount+' van(s)'].filter(Boolean).join(' · '):e.vehicle,
   p.passengers&&'Passagers : '+p.passengers,p.luggage&&'Bagages : '+p.luggage,
   e.note&&'Remarques : '+e.note
  ].filter(Boolean).join('\n');
 }
-const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible};
+const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,searchRank};
 if(typeof module==='object'&&module.exports){module.exports=core;return;}
 root.TaxiDriverDirectoryCore=core;
 const doc=root.document;
@@ -118,9 +136,9 @@ const dialog=doc.createElement('dialog');dialog.id='taxiDrivers';dialog.innerHTM
 <p>Un van peut aussi assurer une petite voiture. Coche Jour et Nuit si le chauffeur travaille dans les deux périodes.</p>
 <div class="drivers-tools"><button type="button" id="driversSave">Enregistrer dans Mon Taxi</button><button type="button" id="driversEditCancel">Annuler</button><button type="button" id="driversPhoneEdit" hidden>Modifier dans le téléphone</button><button type="button" id="driversDelete" hidden>Supprimer</button></div></fieldset>
 <div id="driversContent" hidden>
-<div class="drivers-periods" role="group" aria-label="Période"><button type="button" data-period="all">Tous</button><button type="button" data-period="day">Jour</button><button type="button" data-period="night">Nuit</button></div>
-<label>Rechercher<input id="driversSearch" type="search" placeholder="Nom ou téléphone"></label>
-<div id="driversList"></div>
+<div id="driversPeriodFilters" class="drivers-periods" role="group" aria-label="Période"><button type="button" data-period="all">Tous</button><button type="button" data-period="day">Jour</button><button type="button" data-period="night">Nuit</button></div>
+<label id="driversSearchBox">Rechercher<input id="driversSearch" type="search" placeholder="Prénom, nom ou téléphone — sans TX"></label>
+<div id="driversList"></div><section id="driversDetails" hidden></section>
 <fieldset id="driversSmsPanel" hidden><legend>SMS au chauffeur sélectionné</legend><label>Contenu<select id="driversMessageSource"><option value="free">Message libre / saisie rapide</option><option value="course">Course du Planning / réservation</option></select></label><select id="driversCourse" aria-label="Course" hidden></select><p id="driversPriceAlert" hidden><strong></strong></p><label>Message à vérifier et modifier<textarea id="driversMessage" rows="7"></textarea></label><p id="driversRecipient">Sélectionne un chauffeur dans la liste.</p><button type="button" id="driversSms">Ouvrir l’application SMS</button><p>L’envoi est à confirmer dans l’application SMS.</p></fieldset></div>`;
 doc.body.append(dialog);
 const css=doc.createElement('style');css.textContent=`
@@ -133,7 +151,7 @@ const css=doc.createElement('style');css.textContent=`
 #taxiDrivers .drivers-heading,#taxiDrivers .drivers-tools,#taxiDrivers .drivers-tabs,#taxiDrivers .driver-actions,#taxiDrivers .drivers-periods{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 #taxiDrivers .drivers-heading{justify-content:space-between;gap:8px}#taxiDrivers .drivers-heading button{font-size:13px;padding:8px}
 #taxiDrivers .drivers-tabs{flex-wrap:nowrap;margin:12px 0}#taxiDrivers .drivers-tabs button{flex:1;min-width:0;min-height:56px;font-weight:700}
-#taxiDrivers .driver-row{padding:12px 0;border-bottom:1px solid #34435e;overflow-wrap:anywhere}
+#taxiDrivers .driver-row{padding:0;border-bottom:1px solid #34435e;overflow-wrap:anywhere}#taxiDrivers .driver-name{display:block;width:100%;min-height:44px;padding:11px 6px;border:0;border-radius:0;background:transparent;text-align:left}#taxiDrivers .driver-name:hover,#taxiDrivers .driver-name:focus-visible{background:#203856}#taxiDrivers .driver-detail-phone{font-size:21px;margin:10px 0}#driversDetails .driver-actions{margin:14px 0}#driversDetails h3{margin:16px 0 0}
 #taxiDrivers .driver-row strong,#taxiDrivers .driver-row small{display:block;margin-bottom:7px}#taxiDrivers small{color:#bed0e5}
 #taxiDrivers .drivers-checks{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;font-size:13px}#taxiDrivers .drivers-checks span{flex:none;width:88px;color:#bed0e5;font-size:11px}
 #taxiDrivers .drivers-checks label{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:0}
@@ -143,7 +161,7 @@ const css=doc.createElement('style');css.textContent=`
 #openTaxiDrivers{position:static;grid-column:2 / 4;grid-row:2;justify-self:end;margin-left:auto;width:auto;padding:6px 10px!important;min-height:32px;font-size:12px!important;border:1px solid #7196c4;border-radius:9px;background:#142238;color:white}
 #taxiDrivers [hidden]{display:none!important}`;doc.head.append(css);
 const $=s=>dialog.querySelector('#'+s);
-let active=null,period='all',editing=null,recipient=null,busy=false;
+let active=null,period='all',editing=null,recipient=null,busy=false,selectedDriver=null,listScroll=0;
 const status=t=>{$('driversStatus').textContent=t;};
 function save(){if(readError){status('Le répertoire enregistré est illisible. Exportez une sauvegarde avant toute réparation.');return false;}try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch{status('Enregistrement impossible : espace de stockage indisponible.');return false;}}
 function commit(drivers,deleted=state.deletedNativeIds,metadata={}){const old=state;state={...state,...metadata,version:2,drivers:drivers.map(normalizeDriver),deletedNativeIds:deleted};if(!save()){state=old;return false;}render();updateRecipient();return true;}
@@ -157,24 +175,44 @@ function editOptions(d,changes){
  if(commit(state.drivers.map(x=>x.id===d.id?record:x)))status('Choix du chauffeur enregistrés.');
 }
 function checkboxGroup(title){const group=doc.createElement('div');group.className='drivers-checks';const label=doc.createElement('span');label.textContent=title;group.append(label);return group;}
+function selectDriver(id){
+ listScroll=dialog.scrollTop;selectedDriver=id;render();$('driversDetails').scrollIntoView({block:'start'});
+}
+function returnToNames(){
+ const previous=selectedDriver;selectedDriver=null;$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;render();
+ requestAnimationFrame(()=>{dialog.scrollTop=listScroll;const row=[...$('driversList').children].find(x=>x.dataset.driverId===previous);row?.querySelector('button')?.focus({preventScroll:true});});
+}
+function deleteDriver(d){
+ if(!confirm('Supprimer '+d.name+' du répertoire Mon Taxi ? Le contact du téléphone est conservé.'))return;
+ const deleted=d.nativeId?[...new Set([...state.deletedNativeIds,d.nativeId])]:state.deletedNativeIds;
+ if(commit(state.drivers.filter(x=>x.id!==d.id),deleted)){$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;status('Chauffeur supprimé de Mon Taxi.');}
+}
 function render(){
  $('driversContent').hidden=!active;$('driversChoose').hidden=!!active;
  dialog.querySelectorAll('[data-category]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.category===active));const label=b.dataset.category==='van'?'Van':'Petite voiture';b.textContent=label+' · '+state.drivers.filter(d=>eligible(d,b.dataset.category)).length;});
  dialog.querySelectorAll('[data-period]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.period===period)));
  $('driversLastSync').textContent=state.lastSyncedAt?'Dernière actualisation : '+new Date(state.lastSyncedAt).toLocaleString('fr-BE'):'';
- const list=$('driversList');list.replaceChildren();if(!active)return;
- const query=norm($('driversSearch').value).toLocaleLowerCase('fr');
- const rows=state.drivers.filter(d=>eligible(d,active,period)&&(!query||(d.name+' '+d.phone).toLocaleLowerCase('fr').includes(query)));
+ const list=$('driversList'),details=$('driversDetails');list.replaceChildren();details.replaceChildren();
+ const selected=state.drivers.find(d=>d.id===selectedDriver);if(!selected)selectedDriver=null;
+ list.hidden=!!selectedDriver;details.hidden=!selectedDriver;$('driversPeriodFilters').hidden=!!selectedDriver;$('driversSearchBox').hidden=!!selectedDriver;
+ if(!active)return;
+ if(selected){
+  const back=action('← Retour aux noms',returnToNames);back.id='driversBack';const name=doc.createElement('h3');name.textContent=driverSearchName(selected.name)||selected.name;
+  const num=doc.createElement('p');num.className='driver-detail-phone';num.textContent=selected.phone;
+  const kind=doc.createElement('small');kind.textContent=selected.category==='van'?'Véhicule : Van':'Véhicule : Petite voiture';
+  const actions=doc.createElement('div');actions.className='driver-actions';actions.append(action('Appeler',()=>launch('tel:'+phone(selected.phone))),action('SMS',()=>{recipient=selected.id;updateRecipient();$('driversSmsPanel').hidden=false;$('driversMessage').focus();}),action('Modifier',()=>edit(selected)),action('Supprimer',()=>deleteDriver(selected)));
+  if(selected.nativeId&&root.TaxiContacts)actions.append(action('Modifier dans le téléphone',()=>root.TaxiContacts.edit(selected.nativeId)));
+  const services=checkboxGroup('Courses possibles');services.append(check('Petite voiture',selected.acceptsCar,selected.category==='car',value=>editOptions(selected,{acceptsCar:value,manualServices:true})),check('Van',selected.category==='van',true,()=>{}));
+  const times=checkboxGroup('Disponibilité');times.append(check('Jour',selected.availability.day,false,value=>editOptions(selected,{availability:{...selected.availability,day:value},manualAvailability:true})),check('Nuit',selected.availability.night,false,value=>editOptions(selected,{availability:{...selected.availability,night:value},manualAvailability:true})));
+  details.append(back,name,num,kind,actions,services,times);return;
+ }
+ const query=norm($('driversSearch').value);
+ const rows=state.drivers.map((driver,index)=>({driver,index,rank:searchRank(driver,query)})).filter(x=>eligible(x.driver,active,period)&&x.rank>=0).sort((a,b)=>a.rank-b.rank||a.index-b.index).map(x=>x.driver);
  for(const d of rows){
   const row=doc.createElement('div');row.className='driver-row';row.dataset.driverId=d.id;
-  const name=doc.createElement('strong');name.textContent=d.name;const num=doc.createElement('small');
-  num.textContent=d.phone+' · '+(d.category==='van'?'Van':'Petite voiture')+' · '+(d.availability.day&&d.availability.night?'Jour et nuit':d.availability.night?'Nuit':'Jour');
-  const actions=doc.createElement('div');actions.className='driver-actions';actions.append(action('Appeler',()=>launch('tel:'+phone(d.phone))),action('SMS',()=>{recipient=d.id;updateRecipient();$('driversSmsPanel').hidden=false;$('driversMessage').focus();}),action('Modifier',()=>edit(d)));
-  const services=checkboxGroup('Courses possibles');services.append(check('Petite voiture',d.acceptsCar,d.category==='car',value=>editOptions(d,{acceptsCar:value,manualServices:true})),check('Van',d.category==='van',true,()=>{}));
-  const times=checkboxGroup('Disponibilité');times.append(check('Jour',d.availability.day,false,value=>editOptions(d,{availability:{...d.availability,day:value},manualAvailability:true})),check('Nuit',d.availability.night,false,value=>editOptions(d,{availability:{...d.availability,night:value},manualAvailability:true})));
-  row.append(name,num,actions,services,times);list.append(row);
+  const button=action(driverSearchName(d.name)||d.name,()=>selectDriver(d.id));button.className='driver-name';row.append(button);list.append(row);
  }
- if(!rows.length){const p=doc.createElement('p');p.textContent='Aucun chauffeur pour ce véhicule et cette période.';list.append(p);}
+ if(!rows.length){const p=doc.createElement('p');p.textContent='Aucun chauffeur pour ce véhicule et cette recherche.';list.append(p);}
 }
 function editorServices(){const van=$('driversCategory').value==='van';$('driversCarEligible').disabled=!van;if(!van)$('driversCarEligible').checked=true;$('driversVanEligible').checked=van;}
 function edit(d){
@@ -203,7 +241,7 @@ function importContacts(items,source,fromPhone=false,fullScan=false){
 }
 root.addEventListener('taxi-contacts-result',event=>{
  const d=event.detail||{};if(['sync','tx','refresh'].includes(d.mode)||d.error)setBusy(false);
- if(d.error){status(d.error);return;}
+ if(d.error){if(!dialog.open&&d.mode==='open')root.alert(d.error);else status(d.error);return;}
  if(d.contacts&&d.mode==='refresh')importContacts(d.contacts,'sync',true);
  else if(d.contacts)importContacts(d.contacts,d.mode==='sync'?'sync':d.mode==='tx'?'tx':'chosen',d.mode==='sync'||d.mode==='tx',d.mode==='sync');
 });
@@ -226,19 +264,19 @@ $('driversSave').onclick=()=>{
  const old=state.drivers.find(x=>x.id===editing);
  if(state.drivers.some(x=>x.id!==editing&&phone(x.phone)===number)&&!confirm('Ce numéro existe déjà. Ajouter / conserver une autre fiche avec ce numéro ?'))return;
  const record=normalizeDriver({...old,id:old?.id||id(),name,phone:number,category:cat,acceptsCar:$('driversCarEligible').checked,availability:times,source:old?.source||'manual',manualCategory:true,manualServices:true,manualAvailability:true,localName:old?.localName||!!old&&old.name!==name,localPhone:old?.localPhone||!!old&&old.phone!==number});
- if(commit(old?state.drivers.map(x=>x.id===old.id?record:x):[...state.drivers,record])){active=cat;period='all';$('driversEditor').hidden=true;render();status('Fiche enregistrée dans Mon Taxi.');}
+ if(commit(old?state.drivers.map(x=>x.id===old.id?record:x):[...state.drivers,record])){active=cat;period='all';selectedDriver=record.id;$('driversEditor').hidden=true;render();status('Fiche enregistrée dans Mon Taxi.');}
 };
-$('driversDelete').onclick=()=>{const d=state.drivers.find(x=>x.id===editing);if(!d||!confirm('Supprimer '+d.name+' du répertoire Mon Taxi ? Le contact du téléphone est conservé.'))return;const deleted=d.nativeId?[...new Set([...state.deletedNativeIds,d.nativeId])]:state.deletedNativeIds;if(commit(state.drivers.filter(x=>x.id!==d.id),deleted)){$('driversEditor').hidden=true;status('Chauffeur supprimé de Mon Taxi.');}};
+$('driversDelete').onclick=()=>{const d=state.drivers.find(x=>x.id===editing);if(d)deleteDriver(d);};
 $('driversPhoneEdit').onclick=()=>{const d=state.drivers.find(x=>x.id===editing);if(d?.nativeId&&root.TaxiContacts)root.TaxiContacts.edit(d.nativeId);};
 $('driversSearch').oninput=render;
-dialog.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{active=b.dataset.category;$('driversSearch').value='';$('driversEditor').hidden=true;render();});
-dialog.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{period=b.dataset.period;render();});
+dialog.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{active=b.dataset.category;selectedDriver=null;$('driversSearch').value='';$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;render();});
+dialog.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{period=b.dataset.period;selectedDriver=null;render();});
 dialog.querySelector('[data-close]').onclick=()=>dialog.close();
 $('driversMessageSource').onchange=()=>{const use=$('driversMessageSource').value==='course';$('driversCourse').hidden=!use;pricePreview(null);if(use)refreshCourses();};$('driversCourse').onchange=chooseCourse;
-$('driversSms').onclick=()=>{const d=state.drivers.find(x=>x.id===recipient);if(!d||!validPhone(d.phone))return;if(!$('driversMessage').value.trim()){status('Saisissez ou choisissez le message à envoyer.');return;}launch('sms:'+phone(d.phone)+'?body='+encodeURIComponent($('driversMessage').value));};
+$('driversSms').onclick=()=>{const d=state.drivers.find(x=>x.id===recipient);if(!d||!validPhone(d.phone))return;if(!$('driversMessage').value.trim()){status('Saisissez ou choisissez le message à envoyer.');return;}const url='sms:'+phone(d.phone)+'?body='+encodeURIComponent($('driversMessage').value);dialog.close();root.dispatchEvent(new Event('mon-taxi-close-hotel-planning'));doc.querySelector('.pageBtn[data-page="home"]')?.click();launch(url);};
 $('driversExport').onclick=()=>{const raw=localStorage.getItem(KEY)||JSON.stringify(state);const a=doc.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download='mon-taxi-chauffeurs-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);};
 root.openTaxiDrivers=function(course){
- active=null;period='all';$('driversSearch').value='';$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;pricePreview(null);
+ active=null;period='all';selectedDriver=null;listScroll=0;$('driversSearch').value='';$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;pricePreview(null);
  if(!dialog.open)dialog.showModal();render();updateRecipient();if(readError)status('Le répertoire enregistré est illisible : sauvegardez-le avant réparation.');
  if(course){$('driversMessageSource').value='course';$('driversCourse').hidden=false;refreshCourses(String(course.id));$('driversMessage').value=courseText(course);pricePreview(course);status('Choisis le véhicule, puis le chauffeur pour envoyer cette course.');}
 };

@@ -74,3 +74,18 @@ test('driver dates use day/month/year while stored course dates and times stay u
  assert.match(core.courseText(course),/18\/11\/2026 à 04:30/);assert.equal(course.date,'2026-11-18');
  assert.match(core.courseText({...course,scheduledDate:'2026-11-20',scheduledTime:'05:15'}),/20\/11\/2026 à 05:15/);
 });
+
+test('optional client name and phone are copied independently, including existing pickups',()=>{
+ assert.match(core.courseText({hotel:'Standard',destination:'BRU',clientName:'  Mme Dupont  ',clientPhone:'+32 470 12 34 56'}),/Client : Mme Dupont\nTéléphone : \+32 470 12 34 56/);
+ assert.match(core.courseText({clientName:'M. Dupont'}),/Client : M. Dupont/);assert.doesNotMatch(core.courseText({clientName:'M. Dupont'}),/Téléphone/);
+ assert.match(core.courseText({clientPhone:'0470123456'}),/Téléphone : 0470123456/);assert.doesNotMatch(core.courseText({clientPhone:'0470123456'}),/Client :/);
+ assert.doesNotMatch(core.courseText({contact:'Réceptionniste',clientName:' ',clientPhone:''}),/Client :|Téléphone :/);
+ assert.match(core.courseText({destination:'Hôtel',pickup:{place:'Bruxelles Aéroport (BRU)',client:'Client existant',phone:'0470123456'}}),/Airport BRU \(Zaventem\) → Hôtel\nClient : Client existant\nTéléphone : 0470123456/);
+ assert.equal(core.airportLabel('Charleroi Airport (CRL)'),'Airport CRL (Charleroi)');
+});
+test('name search ignores TX/Van, prioritizes first letters and supports surname and accents',()=>{
+ const van={name:'TX van Yassine Bekay',phone:'0470123456'},car={name:'TX Yacine',phone:'0470234567'},partial={name:'TX Farid Yassine',phone:'0470345678'};
+ for(const q of ['Y','YA','Y A','yassine','Bekay'])assert.ok(core.searchRank(van,q)>=0,q);
+ assert.equal(core.searchRank(van,'Y'),0);assert.equal(core.searchRank(car,'YA'),0);assert.equal(core.searchRank(partial,'ya'),1);assert.equal(core.searchRank(van,'TX'),-1);assert.equal(core.searchRank(van,'van'),-1);
+ assert.equal(core.searchRank({name:'TX Van Éric'},'er'),0);assert.equal(core.searchRank(van,'0470'),3);assert.equal(core.driverSearchName('TX Nuit Van Yassine Bekay'),'Yassine Bekay');
+});
