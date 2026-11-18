@@ -391,6 +391,18 @@ public class MainActivity extends Activity {
      });
     }
    },"TaxiReminder");
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void tap(){
+     runOnUiThread(()->{
+      if(web==null||!web.hasWindowFocus())return;
+      String url=web.getUrl();
+      if(url!=null&&(url.equals(APP_URL)||url.startsWith(APP_URL+"?")||
+          url.startsWith(APP_URL+"#")||url.equals("file:///android_asset/index.html"))){
+       web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+      }
+     });
+    }
+   },"TaxiHaptics");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());

@@ -59,6 +59,38 @@ html.taxi-clean {
 .taxi-clean #home .taxi-summary .work-reference { background: var(--clean-surface); border: 0; border-radius: 0; padding: 8px 4px; }
 .taxi-clean #home .taxi-summary .label { color: var(--clean-muted); }
 .taxi-clean #home .taxi-summary .reference-amount { font-size: clamp(17px, 5vw, 23px); }
+.taxi-clean #home .taxi-summary button.work-reference {
+  position: relative;
+  padding-inline: 3px 14px;
+  cursor: pointer;
+  color: var(--clean-text);
+  font: inherit;
+  text-align: center;
+  touch-action: manipulation;
+}
+.taxi-clean #home .taxi-summary button::after {
+  content: "";
+  position: absolute;
+  inset: 11px 7px auto auto;
+  width: 5px;
+  height: 5px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.taxi-clean #home .taxi-summary button[aria-expanded="true"] {
+  outline: 2px solid var(--clean-accent);
+  outline-offset: -2px;
+}
+.taxi-clean #home .taxi-summary button.workday-average[aria-expanded="true"] { outline-color: var(--clean-average); }
+.taxi-clean #home .taxi-summary button[aria-expanded="true"]::after { transform: rotate(225deg); }
+.taxi-clean #home .taxi-summary button:active { filter: brightness(1.35); }
+.taxi-clean #home .taxi-summary button:focus-visible { outline-offset: -3px; }
+.taxi-clean #home .taxi-summary .work-reference .label { white-space: normal; }
+.taxi-clean #home .summary-detail { scroll-margin-block: 8px; }
+.taxi-clean #home .summary-detail .home-disclosure-body { padding-inline: 0; border-top: 0; }
+.taxi-clean #home .summary-detail .monthly-receipt-heading { margin-top: 6px; color: var(--clean-accent); }
+
 .taxi-clean #home .taxi-summary .workday-average,
 .taxi-clean .details-heading .workday-average {
   background: var(--clean-average-bg);

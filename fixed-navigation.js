@@ -23,7 +23,7 @@ function refresh(){
  dialogs=dialogs.filter(d=>opened.includes(d));for(const d of opened)if(!dialogs.includes(d))dialogs.push(d);
  const top=dialogs.at(-1),host=top||doc.body;if(nav.parentElement!==host)host.append(nav);
  const page=readPage();if(key(page)!==key(current)){history.push(current);current=page;}
- const hidden=!!doc.querySelector('main[hidden]')||doc.body.classList.contains('taxi-intro-pending');if(nav.hidden!==hidden)nav.hidden=hidden;
+ const hidden=(!top&&current.page==='home')||!!doc.querySelector('main[hidden]')||doc.body.classList.contains('taxi-intro-pending');if(nav.hidden!==hidden)nav.hidden=hidden;
  const disabled=!top&&current.page==='home'&&!history.length;if(back.disabled!==disabled)back.disabled=disabled;
 }
 function menus(){for(const id of ['quickMenu','hotelQuickMenu']){const menu=doc.getElementById(id);if(menu&&!menu.hidden){menu.hidden=true;return true;}}return false;}
