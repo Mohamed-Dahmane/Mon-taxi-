@@ -6,7 +6,7 @@ const {normalize} = globalThis.TaxiVehicleAllocations;
 
 test('une course contient voitures et vans attribués à plusieurs chauffeurs', () => {
  const course=normalize([
-  {type:'Petite voiture',quantity:3,driver:'Chauffeur A',commissionUnit:10},
+  {type:'Voiture normale',quantity:3,driver:'Chauffeur A',commissionUnit:10},
   {type:'Van',quantity:2,driver:'Chauffeur B',commissionUnit:15},
   {type:'Van',quantity:1,driver:'Chauffeur A',commissionUnit:0}
  ]);
@@ -32,7 +32,7 @@ test('confirmation impossible sans attribution et sans chauffeur',()=>{
  assert.throws(()=>normalize([{type:'Autobus',quantity:1,driver:'Moi',commissionUnit:10}]));
 });
 test('une quantité non entière et un total hors plage sûre sont refusés',()=>{
- const row={type:'Petite voiture',quantity:1,driver:'Moi',commissionUnit:10};
+ const row={type:'Voiture normale',quantity:1,driver:'Moi',commissionUnit:10};
  assert.throws(()=>normalize([{...row,quantity:1.5}]));
  assert.throws(()=>normalize([{...row,quantity:Number.MAX_SAFE_INTEGER,commissionUnit:10}]));
 });
@@ -48,7 +48,7 @@ test('une attribution confirmée est immuable, y compris ses lignes',()=>{
 
 test('les commissions décimales restent exactes au centime sur plusieurs véhicules',()=>{
  const course=normalize([
-  {type:'Petite voiture',quantity:3,driver:'Moi',commissionUnit:12.35},
+  {type:'Voiture normale',quantity:3,driver:'Moi',commissionUnit:12.35},
   {type:'Van',quantity:2,driver:'Autre',commissionUnit:0},
   {type:'Van',quantity:1,driver:'Moi',commissionUnit:20.10}
  ]);

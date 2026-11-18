@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 require('../vehicle-allocations.js');
 const normalize = globalThis.TaxiVehicleAllocations.normalize;
 const rows = [
-  {type:'Petite voiture',quantity:3,driver:'Alexis',commissionUnit:10},
+  {type:'Voiture normale',quantity:3,driver:'Alexis',commissionUnit:10},
   {type:'Van',quantity:2,driver:'Yassine',commissionUnit:15},
   {type:'Van',quantity:1,driver:'Alexis',commissionUnit:0}
 ];
@@ -15,7 +15,7 @@ assert.equal(result.totalCommission,60);
 assert.equal(result.assignments.length,3);
 assert.equal(result.assignments[2].commissionUnit,0);
 assert.equal(result.assignments[2].driver,'Alexis');
-assert.deepEqual(rows[0],{type:'Petite voiture',quantity:3,driver:'Alexis',commissionUnit:10});
+assert.deepEqual(rows[0],{type:'Voiture normale',quantity:3,driver:'Alexis',commissionUnit:10});
 for(const invalid of [
  [],[{type:'Van',quantity:0,driver:'Moi',commissionUnit:10}],
  [{type:'Van',quantity:1.5,driver:'Moi',commissionUnit:10}],

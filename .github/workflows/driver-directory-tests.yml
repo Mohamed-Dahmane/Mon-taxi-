@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'driver-directory*'
+      - 'fixed-navigation.js'
       - 'index.html'
       - 'app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java'
       - '.github/workflows/driver-directory-tests.yml'

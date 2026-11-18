@@ -8,6 +8,7 @@ on:
       - 'pickup-reservation.html'
       - 'directory-editor.js'
       - 'driver-directory.js'
+      - 'fixed-navigation.js'
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
@@ -43,7 +44,7 @@ jobs:
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets/app
-          cp index.html hotel-sync.js pickup-reservation.html directory-editor.js driver-directory.js vehicle-allocations.js vehicle-allocation-editor.js app/src/main/assets/
+          cp fixed-navigation.js index.html hotel-sync.js pickup-reservation.html directory-editor.js driver-directory.js vehicle-allocations.js vehicle-allocation-editor.js app/src/main/assets/
           cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
       - name: Prepare launcher icon
         run: |
