@@ -99,6 +99,19 @@ html.taxi-clean {
   .taxi-clean #home #quickExpenseNature button { padding-inline: 10px; font-size: 12px; }
 }
 
+@media (max-width: 480px) and (max-height: 620px) {
+  .taxi-clean #home .entry-hub .entry-group-heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .taxi-clean #home .entry-hub .entry-costs { margin-top: 3px; border-top: 1px solid var(--clean-line); }
+  .taxi-clean .taxi-page-navigation { margin-block: 3px 4px; }
+}
 .taxi-clean .hotel-home-actions .button { background: var(--clean-blue); min-height: 44px; }
 .taxi-clean .hotel-home-actions #openHotelPlanning.planning-has-courses { background: #995013; border-color: #d88b40; color: #fff; }
 
