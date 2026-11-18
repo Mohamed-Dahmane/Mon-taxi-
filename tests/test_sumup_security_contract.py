@@ -20,7 +20,7 @@ class SumUpSecurityContract(unittest.TestCase):
             self.assertIn("${{ secrets." + secret + " }}", self.workflow)
 
     def test_http_credentials_never_follow_redirects(self):
-        self.assertIn("curl --noproxy '*' --disable", self.workflow)
+        self.assertIn("curl --disable --noproxy '*'", self.workflow)
         self.assertNotIn("--location", self.workflow)
         self.assertIn("redirect:\"error\"", self.function)
         self.assertIn("class NoRedirect", self.workflow)
