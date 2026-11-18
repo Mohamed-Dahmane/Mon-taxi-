@@ -59,11 +59,19 @@ function parseVcard(text){
  }
  return rows;
 }
+function airportLabel(value){
+ const text=String(value??'').trim();
+ const key=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toUpperCase();
+ if(['BRU','ZAVENTEM','AIRPORT BRU','AEROPORT BRU','AIRPORT BRU (ZAVENTEM)'].includes(key))return 'Airport BRU (Zaventem)';
+ if(['CRL','CHARLEROI','AIRPORT CRL','AEROPORT CRL','AIRPORT CRL (CHARLEROI)'].includes(key))return 'Airport CRL (Charleroi)';
+ return text;
+}
 function courseText(e){
  const p=e.pickup||{};
  return [
   [e.scheduledDate||e.date,e.scheduledTime||e.recordedTime].filter(Boolean).join(' à '),
-  [p.place||e.hotel,e.destination==='Autre'?(e.otherDestination||e.destination):e.destination].filter(Boolean).join(' → '),
+  [p.place?airportLabel(p.place):e.hotel,airportLabel(e.destination==='Autre'?(e.otherDestination||e.destination):e.destination)].filter(Boolean).join(' → '),
+  String(e.room??'').trim()&&'Chambre : '+String(e.room).trim(),
   p.timeMode==='arrival'?'Suivi vol / train':'',
   p.client&&'Client : '+p.client,p.phone&&'Téléphone : '+p.phone,
   p.flight&&'Vol/train : '+p.flight,p.arrival&&'Arrivée : '+p.arrival,
@@ -72,7 +80,7 @@ function courseText(e){
   e.announcedPrice!=null&&e.announcedPrice!==''?'Prix annoncé : '+e.announcedPrice+' €':'',e.note&&'Remarques : '+e.note
  ].filter(Boolean).join('\n');
 }
-const core={merge,parseVcard,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible};
+const core={merge,parseVcard,airportLabel,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible};
 if(typeof module==='object'&&module.exports){module.exports=core;return;}
 root.TaxiDriverDirectoryCore=core;
 const doc=root.document;

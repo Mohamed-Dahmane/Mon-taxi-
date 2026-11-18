@@ -17,7 +17,7 @@ test('manual and selected non-TX contacts are accepted; invalid numbers excluded
 test('vCard handles folding, escaped names and tel URI',()=>{assert.deepEqual(core.parseVcard('BEGIN:VCARD\r\nFN:Karim\\, chauffeur\r\nTEL;TYPE=CELL:tel:+32470\r\n 123456\r\nEND:VCARD'),[{name:'Karim, chauffeur',phone:'+32470123456'}]);});
 test('SMS contains actual booking data and Unicode without inventing absent fields',()=>{
  const text=core.courseText({scheduledDate:'2026-11-19',scheduledTime:'04:30',destination:'Hôtel',carCount:1,vanCount:2,pickup:{place:'BRU',client:'Émilie',phone:'+32470123456',flight:'SN123'},note:'2 sièges'});
- assert.match(text,/2026-11-19 à 04:30/);assert.match(text,/BRU → Hôtel/);assert.match(text,/Émilie/);assert.match(text,/2 van/);assert.doesNotMatch(text,/undefined|Prix annoncé/);
+ assert.match(text,/2026-11-19 à 04:30/);assert.match(text,/Airport BRU \(Zaventem\) → Hôtel/);assert.match(text,/Émilie/);assert.match(text,/2 van/);assert.doesNotMatch(text,/undefined|Prix annoncé/);
 });
 
 test('v1 migration preserves identity and makes vehicle eligibility asymmetric',()=>{
@@ -46,4 +46,15 @@ test('refresh preserves absent contacts and manual period choices despite rename
  const prior=[{id:'1',nativeId:'1',category:'van',name:'TX Van Nuit',phone:'0470112233',manualCategory:true,manualServices:true,acceptsCar:true,availability:{day:true,night:true},manualAvailability:true}];
  const r=core.merge(prior,[{nativeId:'1',name:'Chauffeur renommé sans TX',phone:'0470223344'}],'sync',{fromPhone:true});assert.equal(r.drivers.length,1);assert.equal(r.drivers[0].phone,'0470223344');assert.equal(core.eligible(r.drivers[0],'car','night'),true);
  assert.equal(core.merge(r.drivers,[],'sync',{fromPhone:true}).drivers.length,1);
+});
+
+test('driver messages use explicit airport names and include the entered room only',()=>{
+ for(const [input,label] of [['BRU','Airport BRU (Zaventem)'],['Zaventem','Airport BRU (Zaventem)'],['Airport BRU','Airport BRU (Zaventem)'],['CRL','Airport CRL (Charleroi)'],['Charleroi','Airport CRL (Charleroi)'],['Airport CRL','Airport CRL (Charleroi)']]){
+  assert.equal(core.airportLabel(input),label);assert.equal(core.airportLabel(label),label);
+  assert.match(core.courseText({hotel:'DoubleTree',destination:input,room:'0123'}),/Chambre : 0123/);
+  assert.ok(core.courseText({hotel:'DoubleTree',destination:input}).includes('DoubleTree → '+label));
+ }
+ const pickup=core.courseText({hotel:'Hôtel',destination:'Hôtel',pickup:{place:'CRL'},room:'7A'});assert.match(pickup,/Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickup,/Chambre : 7A/);
+ assert.doesNotMatch(core.courseText({hotel:'Hôtel',destination:'Gare du Midi',room:'  '}),/Chambre|undefined/);
+ assert.equal(core.airportLabel('Gare du Midi'),'Gare du Midi');
 });
