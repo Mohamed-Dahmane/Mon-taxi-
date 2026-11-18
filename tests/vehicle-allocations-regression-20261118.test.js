@@ -36,3 +36,12 @@ test('une quantité non entière et un total hors plage sûre sont refusés',()=
  assert.throws(()=>normalize([{...row,quantity:1.5}]));
  assert.throws(()=>normalize([{...row,quantity:Number.MAX_SAFE_INTEGER,commissionUnit:10}]));
 });
+
+test('une attribution confirmée est immuable, y compris ses lignes',()=>{
+ const confirmed=normalize([{type:'Van',quantity:2,driver:'Moi',commissionUnit:0}]);
+ assert.equal(Object.isFrozen(confirmed),true);
+ assert.equal(Object.isFrozen(confirmed.assignments),true);
+ assert.equal(Object.isFrozen(confirmed.assignments[0]),true);
+ assert.equal(Object.isFrozen(confirmed.vehicleCounts),true);
+ assert.equal(confirmed.totalVehicles,2);
+});
