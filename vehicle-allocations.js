@@ -29,7 +29,7 @@ function normalize(rows){
  const cars=result.filter(r=>r.type==="Petite voiture").reduce((n,r)=>n+r.quantity,0);
  const vans=result.filter(r=>r.type==="Van").reduce((n,r)=>n+r.quantity,0);
  if(!Number.isSafeInteger(cars)||!Number.isSafeInteger(vans))throw Error("Quantité de véhicules trop élevée");
- return {assignments:result,totalVehicles,totalCommission:totalCents/100,vehicleCounts:{cars,vans}};
+ return Object.freeze({assignments:Object.freeze(result.map(row=>Object.freeze(row))),totalVehicles,totalCommission:totalCents/100,vehicleCounts:Object.freeze({cars,vans})});
 }
 root.TaxiVehicleAllocations=Object.freeze({normalize,TYPES:Object.freeze(TYPES)});
 })(typeof window!=="undefined"?window:globalThis);
