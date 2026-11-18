@@ -243,7 +243,27 @@ html.taxi-clean {
   padding-top: calc(max(10px, env(safe-area-inset-top)) + 45px);
 }
 .taxi-clean .taxi-page-navigation #taxiPageLocation { column-gap: 6px; row-gap: 3px; }
-.taxi-clean #taxiDriverShortcut { grid-column: 2; }
+.taxi-clean .taxi-header:has(#taxiDriverShortcut) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+.taxi-clean .taxi-header:has(#taxiDriverShortcut) .date-bar {
+  width: 100%;
+  min-width: 0;
+  transform: none;
+}
+.taxi-clean .taxi-header:has(#taxiDriverShortcut) .calendar-trigger {
+  width: 100%;
+  padding-inline: 4px;
+  gap: 3px;
+  line-height: 1.1;
+  white-space: normal;
+}
+.taxi-clean #taxiDriverShortcut { grid-column: 3; grid-row: 1; min-width: 0; }
+@media (max-width: 480px) {
+  .taxi-clean .taxi-header .taxi-brand-icon { width: 25px; height: 25px; }
+  .taxi-clean .taxi-header .taxi-brand .small { display: none; }
+}
 .taxi-clean #taxiDriverShortcut #openTaxiDrivers {
   width: 100%;
   min-height: 30px;
