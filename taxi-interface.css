@@ -9,6 +9,9 @@ html.taxi-clean {
   --clean-muted: #b6c3d1;
   --clean-blue: #255f9f;
   --clean-accent: #a5d1ff;
+  --clean-average: #9ce7be;
+  --clean-average-bg: #1b302b;
+  --clean-cost: #e9c88e;
   background: var(--clean-bg);
   color: var(--clean-text);
   font-family: system-ui, sans-serif;
@@ -56,6 +59,20 @@ html.taxi-clean {
 .taxi-clean #home .taxi-summary .work-reference { background: var(--clean-surface); border: 0; border-radius: 0; padding: 8px 4px; }
 .taxi-clean #home .taxi-summary .label { color: var(--clean-muted); }
 .taxi-clean #home .taxi-summary .reference-amount { font-size: clamp(17px, 5vw, 23px); }
+.taxi-clean #home .taxi-summary .workday-average,
+.taxi-clean .details-heading .workday-average {
+  background: var(--clean-average-bg);
+  border: 0;
+  box-shadow: inset 3px 0 var(--clean-average);
+}
+.taxi-clean :is(#home, #details) .workday-average .reference-amount { color: var(--clean-average); }
+.taxi-clean .details-heading .workday-average { padding-inline: 10px; }
+.taxi-clean #home .taxi-summary #paymentNetToday,
+.taxi-clean :is(#homeMonthlyRevenue, #v11DetailsCaisse) { color: var(--clean-accent); }
+.taxi-clean :is(#homeCosts, #v11DetailsCosts) { color: var(--clean-cost); }
+.taxi-clean .monthly-overview-values .monthly-result { background: var(--clean-soft); }
+.taxi-clean .monthly-overview-values .monthly-result .green { color: var(--clean-average); }
+
 .taxi-clean .entry-hub :is(.taxi-entry, .entry-costs) { border-color: var(--clean-line); }
 .taxi-clean .entry-hub .entry-heading { margin: 0 0 5px; font-size: 16px; font-weight: 700; }
 .taxi-clean .entry-heading #entryDate { color: var(--clean-muted); font-size: 12px; font-weight: 500; }
