@@ -86,6 +86,26 @@ const details=page=>page.locator('#driversDetails');
  await integrated.goto('http://taxi-app.test/');await integrated.waitForFunction(()=>typeof window.openTaxiDrivers==='function');
  await integrated.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');document.querySelector('main').hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());window.externalActions=[];window.TaxiContacts={open:url=>externalActions.push({url,home:document.querySelector('#home').classList.contains('active'),directoryClosed:!document.querySelector('#taxiDrivers').open,planningClosed:!document.querySelector('#hotelCommissionsDialog').open})};});
  await integrated.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--clean-bg').trim()==='#10151c');
+ const entryFields=['cashInput','appeleInput','invoiceInput','commissionInput','FuelInput','ExpenseInput'];
+ for(const viewport of [{width:320,height:560},{width:360,height:640},{width:390,height:700}]){
+  await integrated.setViewportSize(viewport);
+  await integrated.evaluate(()=>scrollTo(0,0));
+  const geometry=await integrated.evaluate(ids=>{
+   const rect=id=>document.getElementById(id).getBoundingClientRect();
+   const limit=Math.min(innerHeight,rect('taxiQuickNavigation').top);
+   return {fits:ids.every(id=>{const r=rect(id);return r.top>=0&&r.bottom<=limit&&r.height>=42&&r.width>0;}),
+    bottom:rect('ExpenseInput').bottom,limit,scroll:scrollY};
+  },entryFields);
+  assert.ok(geometry.fits,JSON.stringify({viewport,...geometry}));
+  assert.equal(geometry.scroll,0);
+ }
+ await integrated.setViewportSize({width:360,height:640});
+ await integrated.fill('#ExpenseInput','12');
+ assert.equal(await integrated.locator('#quickExpenseName').isVisible(),true);
+ assert.equal(await integrated.locator('#validateExpense').isVisible(),true);
+ await integrated.fill('#ExpenseInput','');
+ await integrated.evaluate(()=>{document.activeElement.blur();scrollTo(0,0);});
+ await integrated.setViewportSize({width:360,height:780});
  const homeAverage=integrated.locator('#home .workday-average .reference-amount');
  const averageColor=await homeAverage.evaluate(el=>getComputedStyle(el).color);
  assert.equal(averageColor,'rgb(156, 231, 190)');

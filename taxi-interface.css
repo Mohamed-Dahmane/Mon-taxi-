@@ -77,6 +77,28 @@ html.taxi-clean {
 .taxi-clean .entry-hub .entry-heading { margin: 0 0 5px; font-size: 16px; font-weight: 700; }
 .taxi-clean .entry-heading #entryDate { color: var(--clean-muted); font-size: 12px; font-weight: 500; }
 .taxi-clean .entry-group-heading { letter-spacing: 0; text-transform: none; }
+.taxi-clean .entry-hub-header { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.taxi-clean .entry-total-label { color: var(--clean-muted); font-size: 11px; text-align: right; }
+.taxi-clean #home .entry-hub .compact-toolbar:has(#undoQuick[hidden]) { display: none; }
+
+@media (max-width: 480px) {
+  .taxi-clean #home .entry-hub { padding: 8px 9px; margin-bottom: 8px; }
+  .taxi-clean #home .entry-hub-header { border-bottom: 1px solid var(--clean-line); padding-bottom: 4px; }
+  .taxi-clean #home .entry-heading { margin: 0; font-size: 14px; }
+  .taxi-clean #home .entry-heading #entryDate { font-size: 11px; }
+  .taxi-clean #home .entry-hub .taxi-entry { grid-template-columns: minmax(0, .96fr) minmax(0, .86fr) minmax(0, 1.18fr); gap: 5px; padding-block: 1px; }
+  .taxi-clean #home .entry-hub .taxi-entry > label { line-height: 1.14; }
+  .taxi-clean #home .entry-hub .invoice-entry label { white-space: normal; }
+  .taxi-clean #home .entry-hub .invoice-entry label small { display: inline-block; }
+  .taxi-clean #home .entry-hub .taxi-entry input { min-height: 42px; padding-block: 4px; }
+  .taxi-clean #home .entry-hub .entry-group-heading { margin: 4px 0 1px; }
+  .taxi-clean #home .entry-hub .entry-costs { border-top: 0; margin-top: 4px; padding-top: 0; }
+  .taxi-clean #home #quickExpenseNature:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; align-items: center; }
+  .taxi-clean #home #quickExpenseNature label { grid-column: 1 / -1; }
+  .taxi-clean #home #quickExpenseNature :is(input, button) { min-height: 42px; margin: 0; }
+  .taxi-clean #home #quickExpenseNature button { padding-inline: 10px; font-size: 12px; }
+}
+
 .taxi-clean .hotel-home-actions .button { background: var(--clean-blue); min-height: 44px; }
 .taxi-clean .hotel-home-actions #openHotelPlanning.planning-has-courses { background: #995013; border-color: #d88b40; color: #fff; }
 
