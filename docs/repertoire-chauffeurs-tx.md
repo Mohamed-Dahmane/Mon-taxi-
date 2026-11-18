@@ -25,3 +25,12 @@
 ## Validation avant production
 - Tests : import TX/TX Van, numéro modifié, reclassement aller-retour, suppression locale / téléphone, refus de permissions, absence de doublons, reprise après fermeture, écran étroit Galaxy Fold, non-régression planning/réservations.
 - Déploiement Chrome puis compilation APK et vérification réelle ; ne déclarer « fait » qu'après ces vérifications.
+
+## Appels et SMS depuis le répertoire et le Planning
+- Sur chaque fiche chauffeur, bouton Appeler : ouvrir le composeur téléphonique avec le numéro sélectionné (tel:), sans lancer un appel silencieux.
+- Bouton SMS : choix « Depuis une réservation », « Depuis une course directe / Planning », « Message libre ».
+- Depuis une course existante, action « Envoyer au chauffeur » qui ouvre le répertoire, conserve l'identifiant de course et permet de sélectionner un ou plusieurs chauffeurs selon les affectations.
+- Générer le SMS à partir des données réelles de la course : date, heure, départ, destination, client, téléphone, véhicules, vol/train et remarques pertinentes ; ne pas inventer les champs absents.
+- Prévisualisation et édition du texte avant l'ouverture de l'application SMS du téléphone (sms:), avec confirmation finale par l'utilisateur ; ne pas envoyer automatiquement.
+- Les contacts de DoubleTree et The Standard qui sont des contacts d'attribution ne deviennent pas des chauffeurs par cette fonctionnalité.
+- Tests Android et Chrome pour liens tel:/sms:, encodage Unicode, numéros internationaux et permissions ; ne pas déclarer l'envoi effectué avant confirmation par le système SMS.
