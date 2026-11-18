@@ -58,3 +58,15 @@ test('driver messages use explicit airport names and include the entered room on
  assert.doesNotMatch(core.courseText({hotel:'Hôtel',destination:'Gare du Midi',room:'  '}),/Chambre|undefined/);
  assert.equal(core.airportLabel('Gare du Midi'),'Gare du Midi');
 });
+
+
+test('course vehicle restriction covers single, grouped and mixed bookings',()=>{
+ for(const e of [{vehicle:'Van'},{vehicleChoice:'Van'},{carCount:0,vanCount:3},{vehicle:'2 × Van'}])assert.equal(core.courseVehicle(e),'van');
+ for(const e of [{vehicle:'Petite voiture'},{carCount:2,vanCount:0},{carCount:1,vanCount:2}])assert.equal(core.courseVehicle(e),'car');
+ assert.equal(core.courseVehicle({vehicle:'Autre'}),null);
+});
+test('passenger count is copied for direct, reservation and pickup courses',()=>{
+ for(const bookingMode of ['Direct','Programmée'])assert.match(core.courseText({bookingMode,passengers:4}),/Passagers : 4/);
+ assert.match(core.courseText({pickup:{passengers:6}}),/Passagers : 6/);
+ assert.doesNotMatch(core.courseText({passengers:null}),/Passagers|undefined/);
+});

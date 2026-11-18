@@ -85,6 +85,28 @@ const row=(page,name)=>page.locator('.driver-row').filter({has:page.locator('str
  assert.match(pickupCopied,/Pick-up · Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);
  await integrated.evaluate(()=>document.querySelector('#hotelCommissionsFrame').contentWindow.parent.openTaxiDrivers({id:'planning',date:'2026-11-20',hotel:'Standard',destination:'CRL'}));assert.equal(await integrated.locator('#taxiDrivers').evaluate(el=>el.open),true);
  await integrated.click('[data-category="car"]');await integrated.locator('.driver-row').getByRole('button',{name:'SMS',exact:true}).click();assert.match(await integrated.inputValue('#driversMessage'),/Standard → Airport CRL \(Charleroi\)/);
+ // The course constrains the directory; opening it independently clears that context.
+ await integrated.evaluate(()=>openTaxiDrivers({id:'van-course',carCount:0,vanCount:2,passengers:6}));
+ assert.equal(await integrated.locator('[data-category="car"]').isDisabled(),true);
+ assert.equal(await integrated.locator('[data-category="van"]').getAttribute('aria-pressed'),'true');
+ await integrated.locator('.driver-row').getByRole('button',{name:'SMS',exact:true}).click();
+ assert.match(await integrated.inputValue('#driversMessage'),/Passagers : 6/);
+ await integrated.evaluate(()=>openTaxiDrivers({id:'car-course',vehicle:'Petite voiture',passengers:3}));
+ assert.equal(await integrated.locator('[data-category="car"]').isDisabled(),false);
+ assert.equal(await integrated.locator('[data-category="car"]').getAttribute('aria-pressed'),'true');
+ await integrated.click('[data-category="van"]');assert.equal(await integrated.locator('.driver-row').count(),1);
+ await integrated.evaluate(()=>openTaxiDrivers());
+ assert.equal(await integrated.locator('[data-category="car"]').isDisabled(),false);
+ assert.equal(await integrated.locator('#driversContent').isVisible(),false);
+ // Check the actual reservation editor restores the count and copied course includes it.
+ const passengers=await integrated.evaluate(async()=>{
+  const frame=document.querySelector('#hotelCommissionsFrame').contentWindow;
+  const entry={id:'passengers-test',bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotelGroup:'DoubleTree by Hilton',hotel:'DoubleTree by Hilton',contact:'Night',destination:'Zaventem',vehicle:'Van',passengers:5,driver:'self'};
+  frame.showReservationForm(entry);
+  await frame.copyCourse(entry);
+  return {value:frame.document.querySelector('#reservationPassengers').value,text:frame.__copiedCourse,direct:!!frame.document.querySelector('#directPassengers')};
+ });
+ assert.equal(passengers.value,'5');assert.equal(passengers.direct,true);assert.match(passengers.text,/Passagers : 5/);
  console.log('Browser passed: quick category choice, car/van asymmetry, day/night dual availability, explicit full refresh including non-TX, denial retention, no duplicates, deletion, calls, SMS, v1 migration, persistence, 360px real app and Planning.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
