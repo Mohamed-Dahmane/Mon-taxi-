@@ -26,7 +26,7 @@ function refresh(){
  nav.dataset.placement=top&&top.id!=='hotelCommissionsDialog'?'dialog':'toolbar';
  if(nav.parentElement!==host)host.prepend(nav);
  const page=readPage();if(key(page)!==key(current)){history.push(current);current=page;}
- const hidden=!!doc.querySelector('main[hidden]')||doc.body.classList.contains('taxi-intro-pending');if(nav.hidden!==hidden)nav.hidden=hidden;
+ const hidden=(!top&&current.page==='home')||!!doc.querySelector('main[hidden]')||doc.body.classList.contains('taxi-intro-pending');if(nav.hidden!==hidden)nav.hidden=hidden;
  const disabled=!top&&current.page==='home'&&!history.length;if(back.disabled!==disabled)back.disabled=disabled;
 }
 function menus(){for(const id of ['quickMenu','hotelQuickMenu']){const menu=doc.getElementById(id);if(menu&&!menu.hidden){menu.hidden=true;return true;}}return false;}

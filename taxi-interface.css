@@ -151,7 +151,7 @@ html.taxi-clean {
 
 .taxi-clean .taxi-page-navigation { margin: 6px 0 10px; }
 .taxi-clean #taxiPageLocation button { background: transparent; border-color: transparent; color: var(--clean-muted); }
-.taxi-clean #taxiPageLocation button.active { background: var(--clean-soft); border-color: var(--clean-line); box-shadow: none; color: var(--clean-text); }
+.taxi-clean #taxiPageLocation button.active { background: #12345d; border-color: #3b6b9f; box-shadow: none; color: var(--clean-text); }
 .taxi-clean .details-overview .details-total { background: transparent; border-radius: 0; border-bottom: 1px solid var(--clean-line); padding-inline: 0; }
 .taxi-clean .details-overview .details-total:last-child { border-bottom: 0; }
 .taxi-clean .financial-disclosure { border-top: 1px solid var(--clean-line); }
@@ -239,38 +239,64 @@ html.taxi-clean {
 .taxi-clean .typeBtn.active { background: var(--clean-blue); border-color: var(--clean-blue); color: var(--clean-text); }
 
 
-.taxi-clean body:has(#taxiQuickNavigation:not([hidden])) main {
+.taxi-clean body:has(.page.active:not(#home)):has(#taxiQuickNavigation:not([hidden])) main {
   padding-top: calc(max(10px, env(safe-area-inset-top)) + 45px);
 }
 .taxi-clean .taxi-page-navigation #taxiPageLocation { column-gap: 6px; row-gap: 3px; }
-.taxi-clean .taxi-header:has(#taxiDriverShortcut) {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.taxi-clean .taxi-home-toolbar {
+  margin-bottom: 8px;
+  padding: 6px;
+  border: 1px solid var(--clean-line);
+  border-radius: 12px;
+  background: var(--clean-surface);
+}
+.taxi-clean .taxi-home-toolbar .taxi-header {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) 38px 38px;
   gap: 5px;
+  margin: 0 0 6px;
 }
-.taxi-clean .taxi-header:has(#taxiDriverShortcut) .date-bar {
-  width: 100%;
-  min-width: 0;
-  transform: none;
+.taxi-clean .taxi-home-toolbar .date-bar { width: 100%; min-width: 0; transform: none; }
+.taxi-clean .taxi-home-toolbar .calendar-trigger {
+  width: 100%; padding-inline: 4px; gap: 3px; line-height: 1.1; white-space: normal;
 }
-.taxi-clean .taxi-header:has(#taxiDriverShortcut) .calendar-trigger {
-  width: 100%;
-  padding-inline: 4px;
-  gap: 3px;
-  line-height: 1.1;
+.taxi-clean .taxi-home-toolbar .taxi-header :is(#refreshLocal, #quickMenuBtn) {
+  position: static !important;
+  width: 38px !important;
+  z-index: auto !important;
+  margin: 0 !important;
+}
+.taxi-clean .taxi-home-toolbar .taxi-header #quickMenuBtn {
+  background: var(--clean-soft) !important;
+  border: 1px solid var(--clean-line) !important;
+  border-radius: 9px;
+}
+.taxi-clean .taxi-home-toolbar .hotel-home-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+.taxi-clean .taxi-home-toolbar .hotel-home-actions .button {
+  padding-inline: 3px;
+  font-size: clamp(9px, 2.8vw, 14px);
   white-space: normal;
 }
-.taxi-clean #taxiDriverShortcut { grid-column: 3; grid-row: 1; min-width: 0; }
-@media (max-width: 480px) {
-  .taxi-clean .taxi-header .taxi-brand-icon { width: 25px; height: 25px; }
-  .taxi-clean .taxi-header .taxi-brand .small { display: none; }
+.taxi-clean .taxi-home-toolbar .taxi-planning-count:not([hidden]) {
+  min-width: 15px !important; height: 15px !important; margin-left: 3px !important; padding-inline: 2px !important;
 }
+.taxi-clean #taxiDriverShortcut { min-width: 0; }
 .taxi-clean #taxiDriverShortcut #openTaxiDrivers {
   width: 100%;
-  min-height: 30px;
-  padding-block: 4px !important;
+  height: 100%;
+  min-height: 44px;
+  padding: 4px 2px !important;
+  font-size: clamp(9px, 2.8vw, 14px) !important;
   border-color: #3a9b68;
   background: #17633d;
   color: #fff;
   font-weight: 700;
+}
+.taxi-clean .taxi-home-toolbar .taxi-page-navigation { margin: 6px 0 0; }
+@media (max-width: 480px) {
+  .taxi-clean .taxi-header .taxi-brand-icon { width: 22px; height: 22px; }
+  .taxi-clean .taxi-header .taxi-brand .small { display: none; }
 }
 .taxi-clean #hotelCommissionsDialog .hotel-commissions-bar { min-height: 56px; }
