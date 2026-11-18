@@ -492,5 +492,5 @@ root.openTaxiDrivers=function(course,options={}){
 };
 root.addEventListener('hotel-commissions-updated',()=>{if(dialog.open)render()});
 root.addEventListener('storage',event=>{if(event.key===HOTEL_DIRECTORY_KEY){if(dialog.open)render();return;}if(event.key!==KEY)return;try{state=readState();readError=false;render();updateRecipient();}catch{readError=true;status('Le répertoire enregistré est illisible : sauvegardez-le avant réparation.');}});
-const open=action('Répertoire',()=>root.openTaxiDrivers());open.id='openTaxiDrivers';open.setAttribute('aria-label','Ouvrir le répertoire chauffeurs');(doc.querySelector('.taxi-header')||doc.querySelector('main'))?.append(open);
+const open=action('Répertoire',()=>root.openTaxiDrivers());open.id='openTaxiDrivers';open.setAttribute('aria-label','Ouvrir le répertoire chauffeurs');(doc.getElementById('taxiDriverShortcut')||doc.querySelector('.taxi-header')||doc.querySelector('main'))?.append(open);
 })(typeof window!=='undefined'?window:globalThis);

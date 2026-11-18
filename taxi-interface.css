@@ -89,7 +89,9 @@ html.taxi-clean {
 .taxi-clean #home .taxi-summary .work-reference .label { white-space: normal; }
 .taxi-clean #home .summary-detail { scroll-margin-block: 8px; }
 .taxi-clean #home .summary-detail .home-disclosure-body { padding-inline: 0; border-top: 0; }
-.taxi-clean #home .summary-detail .monthly-receipt-heading { margin-top: 6px; color: var(--clean-accent); }
+.taxi-clean #home .summary-detail .monthly-overview-values { margin-top: 6px; }
+.taxi-clean #home .summary-detail .monthly-overview-values + .home-disclosure-body { margin-top: 8px; }
+.taxi-clean #home #averageReceiptBaseRow[hidden] { display: none; }
 
 .taxi-clean #home .taxi-summary .workday-average,
 .taxi-clean .details-heading .workday-average {
@@ -235,3 +237,20 @@ html.taxi-clean {
 .taxi-clean #hotelCommissionsDialog .hotel-commissions-bar { min-height: 49px; }
 .taxi-clean #details .details-tabs .tab.active,
 .taxi-clean .typeBtn.active { background: var(--clean-blue); border-color: var(--clean-blue); color: var(--clean-text); }
+
+
+.taxi-clean body:has(> #taxiQuickNavigation:not([hidden])) main {
+  padding-top: calc(max(10px, env(safe-area-inset-top)) + 45px);
+}
+.taxi-clean .taxi-page-navigation #taxiPageLocation { column-gap: 6px; row-gap: 3px; }
+.taxi-clean #taxiDriverShortcut { grid-column: 2; }
+.taxi-clean #taxiDriverShortcut #openTaxiDrivers {
+  width: 100%;
+  min-height: 30px;
+  padding-block: 4px !important;
+  border-color: #3a9b68;
+  background: #17633d;
+  color: #fff;
+  font-weight: 700;
+}
+.taxi-clean #hotelCommissionsDialog .hotel-commissions-bar { min-height: 56px; }
