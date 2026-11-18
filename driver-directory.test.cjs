@@ -89,3 +89,15 @@ test('name search ignores TX/Van, prioritizes first letters and supports surname
  assert.equal(core.searchRank(van,'Y'),0);assert.equal(core.searchRank(car,'YA'),0);assert.equal(core.searchRank(partial,'ya'),1);assert.equal(core.searchRank(van,'TX'),-1);assert.equal(core.searchRank(van,'van'),-1);
  assert.equal(core.searchRank({name:'TX Van Éric'},'er'),0);assert.equal(core.searchRank(van,'0470'),3);assert.equal(core.driverSearchName('TX Nuit Van Yassine Bekay'),'Yassine Bekay');
 });
+
+test('passenger count is optional and shared between direct, reservation and existing pickup messages',()=>{
+ assert.match(core.courseText({passengers:4}),/Passagers : 4/);assert.match(core.courseText({pickup:{passengers:7}}),/Passagers : 7/);assert.match(core.courseText({passengers:3,pickup:{passengers:7}}),/Passagers : 3/);
+ for(const passengers of [null,undefined,'',0,-1,1.5])assert.doesNotMatch(core.courseText({passengers}),/Passagers :/);
+});
+test('course vehicle limits cannot send a van course to a car; car courses allow compatible vans',()=>{
+ const car={category:'car',name:'TX Yacine'},van={category:'van',name:'TX Van Yassine'},both={...van,acceptsCar:true};
+ const vanCourse={vehicle:'Van',carCount:0,vanCount:2},carCourse={vehicle:'Petite voiture',carCount:1,vanCount:0};
+ assert.equal(core.requiredVehicle(vanCourse),'van');assert.equal(core.compatibleWithCourse(car,vanCourse),false);assert.equal(core.compatibleWithCourse(van,vanCourse),true);
+ assert.equal(core.compatibleWithCourse(car,carCourse),true);assert.equal(core.compatibleWithCourse(both,carCourse),true);assert.equal(core.compatibleWithCourse(van,carCourse),false);
+ assert.equal(core.requiredVehicle({carCount:1,vanCount:1,vehicle:'Autre'}),'mixed');assert.equal(core.compatibleWithCourse(car,{carCount:1,vanCount:1}),true);
+});

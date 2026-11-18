@@ -48,7 +48,7 @@ const details=page=>page.locator('#driversDetails');
  await select(page,'Nouveau');page.once('dialog',d=>d.accept());await details(page).getByRole('button',{name:'Supprimer',exact:true}).click();
  await page.click('#driversTx');await respond({mode:'sync',contacts:incoming});assert.equal(await names(page).count(),1);
  const sample={id:'course1',date:'2026-11-19',hotel:'DoubleTree',destination:'BRU',room:'418',announcedPrice:80,clientName:'Mme Dupont',clientPhone:'+32470123456',note:'Bonjour Émilie'};
- await page.evaluate(course=>openTaxiDrivers(course),sample);assert.equal(await page.locator('#driversContent').isVisible(),false);await page.click('[data-category="car"]');await select(page,'Hassan renommé');
+ await page.evaluate(course=>openTaxiDrivers(course),sample);assert.equal(await page.locator('#driversContent').isVisible(),true);await page.click('[data-category="car"]');await select(page,'Hassan renommé');
  await details(page).getByRole('button',{name:'SMS',exact:true}).click();const message=await page.inputValue('#driversMessage');
  assert.match(message,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(message,/Chambre : 418/);assert.match(message,/19\/11\/2026/);assert.match(message,/Client : Mme Dupont/);assert.match(message,/Téléphone : \+32470123456/);
  assert.equal(await page.locator('#driversPriceAlert strong').evaluate(el=>Number(getComputedStyle(el).fontWeight)>=600),true);
@@ -75,28 +75,28 @@ const details=page=>page.locator('#driversDetails');
  const frame=await (await integrated.$('#hotelCommissionsFrame')).contentFrame();
  const copied=await frame.evaluate(async()=>{
   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copiedCourse=text;}}});
-  await copyCourse({bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotel:'DoubleTree',destination:'Zaventem',room:'0123',clientName:'Mme Dupont',clientPhone:'+32470123456',announcedPrice:74.79,amount:10,vehicle:'Van',driver:'self'});return window.__copiedCourse;
+  await copyCourse({bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotel:'DoubleTree',destination:'Zaventem',room:'0123',passengers:4,clientName:'Mme Dupont',clientPhone:'+32470123456',announcedPrice:74.79,amount:10,vehicle:'Van',driver:'self'});return window.__copiedCourse;
  });
- assert.match(copied,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(copied,/Chambre : 0123/);assert.match(copied,/20\/11\/2026 à 05:15/);assert.match(copied,/^ATTENTION — PRIX FIXÉ : 74,79\s€/);assert.match(copied,/Client : Mme Dupont\nTéléphone : \+32470123456/);assert.doesNotMatch(copied,/10,00/);
+ assert.match(copied,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(copied,/Chambre : 0123/);assert.match(copied,/20\/11\/2026 à 05:15/);assert.match(copied,/^ATTENTION — PRIX FIXÉ : 74,79\s€/);assert.match(copied,/Client : Mme Dupont\nTéléphone : \+32470123456/);assert.doesNotMatch(copied,/10,00/);assert.match(copied,/Passagers : 4/);
  const pickupCopied=await frame.evaluate(async()=>{await copyCourse({bookingMode:'Direct',date:'2026-11-20',recordedTime:'05:15',hotel:'Standard',destination:'Hôtel',room:'7A',vehicle:'Van',driver:'self',pickup:{place:'Charleroi Airport (CRL)',client:'Client existant',phone:'0470000000'}});return window.__copiedCourse;});
  assert.match(pickupCopied,/Pick-up · Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);assert.match(pickupCopied,/Client : Client existant/);assert.doesNotMatch(pickupCopied,/PRIX FIXÉ/);
  const direct=await frame.evaluate(()=>{
   const initial=data.length;setDriverChoice('direct','self');$('hotel').value='The Standard';refreshContacts();$('contact').value='Fal';setVehicle('Petite voiture',false);selected=10;
-  $('room').value='0240';$('directClientName').value='Mme Test';$('directClientPhone').value='+32470000000';$('add').onclick();
+  $('room').value='0240';$('directClientName').value='Mme Test';$('directClientPhone').value='+32470000000';$('directPassengers').value='4';$('add').onclick();
   const first=data.at(-1);const count=data.length-initial;const cleared=$('directClientName').value===''&&$('directClientPhone').value==='';
   $('hotel').value='The Standard';refreshContacts();$('contact').value='Fal';setVehicle('Petite voiture',false);selected=10;$('add').onclick();
   return {count,first,second:data.at(-1),cleared,total:data.length-initial,error:$('message').textContent};
  });
- assert.equal(direct.count,1,direct.error);assert.equal(direct.first.clientName,'Mme Test');assert.equal(direct.first.clientPhone,'+32470000000');assert.equal(direct.cleared,true);assert.equal(direct.total,2);assert.equal(direct.second.clientName,'');assert.equal(direct.second.clientPhone,'');
+ assert.equal(direct.count,1,direct.error);assert.equal(direct.first.clientName,'Mme Test');assert.equal(direct.first.clientPhone,'+32470000000');assert.equal(direct.first.passengers,4);assert.equal(direct.cleared,true);assert.equal(direct.total,2);assert.equal(direct.second.clientName,'');assert.equal(direct.second.clientPhone,'');assert.equal(direct.second.passengers,null);
  const reservation=await frame.evaluate(()=>{
   const today=reservationClock().slice(0,10);const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10);
-  const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Petite voiture',vehicleChoice:'Petite voiture',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000'};
+  const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Petite voiture',vehicleChoice:'Petite voiture',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000',passengers:3};
   data.push(original);showReservationForm(original,false);const loaded={name:$('reservationClientName').value,phone:$('reservationClientPhone').value};showReservationStep(reservationSaveStep);
-  $('reservationClientName').value='Nom modifié';$('reservationClientPhone').value='+32470000001';$('reservationForm').onsubmit({preventDefault(){}});
-  const edited=data.find(e=>e.id===original.id);showReservationForm(edited,false);showReservationStep(reservationSaveStep);$('reservationClientName').value='';$('reservationClientPhone').value='';$('reservationForm').onsubmit({preventDefault(){}});
+  $('reservationClientName').value='Nom modifié';$('reservationClientPhone').value='+32470000001';$('reservationPassengers').value='5';$('reservationForm').onsubmit({preventDefault(){}});
+  const edited=data.find(e=>e.id===original.id);showReservationForm(edited,false);showReservationStep(reservationSaveStep);$('reservationClientName').value='';$('reservationClientPhone').value='';$('reservationPassengers').value='';$('reservationForm').onsubmit({preventDefault(){}});
   return {loaded,edited,cleared:data.find(e=>e.id===original.id),error:$('reservationMessage').textContent};
  });
- assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');
+ assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');assert.equal(reservation.edited.passengers,5);assert.equal(reservation.cleared.passengers,null);
  // The real pick-up save handler must also accept blank client fields.
  await integrated.evaluate(()=>{window.pickupSaved=[];openHotelPickup({mode:'Réservation',today:'2026-11-20',hotels:['Test Hôtel'],contacts:{'Test Hôtel':['Contact']},drivers:[],save:form=>{pickupSaved.push(form);return 'Validation du test';}});});
  await integrated.waitForFunction(()=>!!document.querySelector('#hotelPickupFrame')?.contentDocument?.querySelector('#client'));
@@ -110,6 +110,32 @@ const details=page=>page.locator('#driversDetails');
  await integrated.evaluate(()=>openTaxiDrivers({id:'planning',date:'2026-11-20',hotel:'Standard',destination:'CRL',clientName:'Mme Test',clientPhone:'0470000000'}));
  await integrated.click('[data-category="car"]');await select(integrated,'Test intégré');await details(integrated).getByRole('button',{name:'SMS',exact:true}).click();assert.match(await integrated.inputValue('#driversMessage'),/Standard → Airport CRL \(Charleroi\)/);assert.match(await integrated.inputValue('#driversMessage'),/Client : Mme Test/);
  await integrated.click('#driversSms');const sent=await integrated.evaluate(()=>externalActions.at(-1));assert.equal(sent.home,true);assert.equal(sent.directoryClosed,true);assert.equal(sent.planningClosed,true);assert.ok(sent.url.startsWith('sms:'));
+ // Course-linked calls, vehicle filtering, last-driver confirmation and the reverse import path.
+ await integrated.evaluate(()=>window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'sync',contacts:[{nativeId:'81',name:'TX Petit test',phone:'0470101010'},{nativeId:'82',name:'TX Van uniquement',phone:'0470202020'}]}})));
+ const linked=await frame.evaluate(()=>{
+  const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10),today=reservationClock().slice(0,10);
+  const base={bookingMode:'Programmée',reservationBoard:true,reservationStatus:'pending',hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',room:'204',clientName:'Client lié',clientPhone:'+32470000011',passengers:5,amount:10,announcedPrice:90,pricing:'Forfait'};
+  const van={...base,id:'linked-van',vehicle:'Van',vehicleChoice:'Van',carCount:0,vanCount:1};const car={...base,id:'linked-car',vehicle:'Petite voiture',vehicleChoice:'Petite voiture',carCount:1,vanCount:0,destination:'Zaventem'};van.destination='Charleroi';data.push(van,car);save();return {van,car};
+ });
+ await integrated.evaluate(()=>openHotelModule('planning'));
+ const vanRow=frame.locator('.reservation-card[data-entry-id="linked-van"]');await vanRow.getByRole('button',{name:'Répertoire',exact:true}).click();
+ assert.equal(await integrated.locator('[data-category="car"]').isVisible(),false);assert.deepEqual(await integrated.locator('.driver-name').allTextContents(),['Test intégré','uniquement']);
+ await select(integrated,'Test intégré');await details(integrated).getByRole('button',{name:'Appeler',exact:true}).click();
+ const leaveAndReturn=()=>integrated.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));});
+ await leaveAndReturn();await integrated.waitForFunction(()=>document.querySelector('#hotelCommissionsDialog').open&&!document.querySelector('#taxiDrivers').open);
+ await vanRow.locator('.last-called-driver').waitFor();assert.match(await vanRow.locator('.last-called-driver strong').innerText(),/Test intégré/);
+ await vanRow.getByRole('button',{name:'Chauffeur suivant',exact:true}).click();assert.match(await details(integrated).locator('h3').innerText(),/uniquement/);await details(integrated).getByRole('button',{name:'Appeler',exact:true}).click();
+ await leaveAndReturn();await integrated.waitForFunction(()=>!document.querySelector('#taxiDrivers').open);
+ await vanRow.locator('.last-called-driver strong').filter({hasText:'uniquement'}).waitFor();await vanRow.getByRole('button',{name:'J’envoie',exact:true}).click();
+ const linkedSms=await integrated.evaluate(()=>externalActions.at(-1));assert.ok(linkedSms.url.startsWith('sms:0470202020?body='));const linkedText=decodeURIComponent(linkedSms.url);for(const value of ['Airport CRL (Charleroi)','Chambre : 204','Client : Client lié','Téléphone : +32470000011','Passagers : 5','PRIX FIXÉ : 90,00'])assert.ok(linkedText.includes(value),value);assert.equal(linkedSms.home,true);assert.equal(linkedSms.planningClosed,true);
+ await integrated.evaluate(course=>openTaxiDrivers(course),linked.car);assert.equal(await integrated.locator('[data-category="car"]').isVisible(),true);await integrated.click('[data-category="van"]');assert.deepEqual(await integrated.locator('.driver-name').allTextContents(),['Test intégré']);await integrated.locator('#taxiDrivers [data-close]').click();
+ await integrated.evaluate(()=>openTaxiDrivers());await integrated.click('[data-category="car"]');await select(integrated,'Petit test');await details(integrated).getByRole('button',{name:'Importer une course',exact:true}).click();
+ const choices=await integrated.locator('#driversImportCourse option').evaluateAll(options=>options.map(option=>option.value));assert.ok(choices.includes('linked-car'));assert.ok(!choices.includes('linked-van'));
+ await integrated.selectOption('#driversImportCourse','linked-car');await integrated.click('#driversImportConfirm');assert.match(await integrated.inputValue('#driversMessage'),/Client : Client lié/);assert.match(await integrated.locator('#driversRecipient').innerText(),/Petit test/);await integrated.click('#driversSms');assert.ok((await integrated.evaluate(()=>externalActions.at(-1).url)).startsWith('sms:0470101010?body='));
+ // Assignment while encoding uses the same filtered directory and rejects a later incompatible vehicle change.
+ await frame.evaluate(()=>{setVehicle('Van',false);setDriverChoice('direct','other');setDriverMenuOpen('direct',true);});
+ assert.equal(await integrated.locator('[data-category="car"]').isVisible(),false);await select(integrated,'uniquement');await details(integrated).getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();
+ const assignment=await frame.evaluate(()=>{const selected=getDriverChoice('direct');setVehicle('Petite voiture',false);const rejected=getDriverChoice('direct');setDriverChoice('direct','self');return {selected,rejected};});assert.equal(assignment.selected.driverName,'uniquement');assert.equal(assignment.rejected,null);
  console.log('Browser passed: names-only directory, prefix-free ranked search, detail/back flow, vehicle/day/night choices, native refresh, optional client creation/editing, airport/room/fare/date in copied text and SMS, and home return.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
