@@ -169,6 +169,32 @@ const details=page=>page.locator('#driversDetails');
   return [...searchResults.children].map(button=>button.textContent);
  });
  assert.equal(hotelKeySearch[0],'Marriott Hotel (Bourse)');
+ const sophia=await frame.evaluate(()=>{
+  const snapshot=localStorage.getItem(configKey);
+  const old=JSON.parse(snapshot);
+  const fresh=contactsForHotel('The Standard').includes('Sophia');
+  delete old.standardSophiaAdded;
+  old.contacts=old.contacts.filter(name=>name!=='Sophia').concat('Contact local');
+  old.allowedContacts['The Standard']=old.allowedContacts['The Standard'].filter(name=>name!=='Sophia').concat('Contact local');
+  old.hotels['The Standard']='Contact local';
+  localStorage.setItem(configKey,JSON.stringify(old));
+  window.dispatchEvent(new Event('mon-taxi-hotel-sync'));
+  window.dispatchEvent(new Event('mon-taxi-hotel-sync'));
+  const names=contactsForHotel('The Standard');
+  const previousGroup=commissionHotel;commissionHotel='The Standard';renderPots();
+  const result={fresh,names,defaultContact:config.hotels['The Standard'],canDrive:canDrive('Sophia'),commission:$('contactPots').textContent.includes('Sophia')};
+  commissionHotel=previousGroup;
+  localStorage.setItem(configKey,snapshot);
+  window.dispatchEvent(new Event('mon-taxi-hotel-sync'));
+  return result;
+ });
+ assert.equal(sophia.fresh,true);
+ assert.equal(sophia.names.filter(name=>name==='Sophia').length,1);
+ assert.ok(sophia.names.includes('Contact local'));
+ assert.equal(sophia.defaultContact,'Contact local');
+ assert.equal(sophia.canDrive,false);
+ assert.equal(sophia.commission,true);
+
  const copied=await frame.evaluate(async()=>{
   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copiedCourse=text;}}});
   await copyCourse({bookingMode:'Programmée',scheduledDate:'2026-11-20',scheduledTime:'05:15',hotel:'DoubleTree',destination:'Zaventem',room:'0123',passengers:4,clientName:'Mme Dupont',clientPhone:'+32470123456',announcedPrice:74.79,amount:10,vehicle:'Van',driver:'self'});return window.__copiedCourse;
@@ -187,12 +213,14 @@ const details=page=>page.locator('#driversDetails');
  const reservation=await frame.evaluate(()=>{
   const today=reservationClock().slice(0,10);const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10);
   const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000',passengers:3};
-  data.push(original);showReservationForm(original,false);const loaded={name:$('reservationClientName').value,phone:$('reservationClientPhone').value};showReservationStep(reservationSaveStep);
+  data.push(original);showReservationForm(original,false);
+  $('reservationStandardContacts').querySelector('[data-contact="Sophia"]').click();
+  const loaded={name:$('reservationClientName').value,phone:$('reservationClientPhone').value};showReservationStep(reservationSaveStep);
   $('reservationClientName').value='Nom modifié';$('reservationClientPhone').value='+32470000001';$('reservationPassengers').value='5';$('reservationForm').onsubmit({preventDefault(){}});
   const edited=data.find(e=>e.id===original.id);showReservationForm(edited,false);showReservationStep(reservationSaveStep);$('reservationClientName').value='';$('reservationClientPhone').value='';$('reservationPassengers').value='';$('reservationForm').onsubmit({preventDefault(){}});
   return {loaded,edited,cleared:data.find(e=>e.id===original.id),error:$('reservationMessage').textContent};
  });
- assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');assert.equal(reservation.edited.passengers,5);assert.equal(reservation.cleared.passengers,null);
+ assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.edited.contact,'Sophia');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');assert.equal(reservation.edited.passengers,5);assert.equal(reservation.cleared.passengers,null);
  // The real pick-up save handler must also accept blank client fields.
  await integrated.evaluate(()=>{window.pickupSaved=[];openHotelPickup({mode:'Réservation',today:'2026-11-20',hotels:['Test Hôtel'],contacts:{'Test Hôtel':['Contact']},drivers:[],save:form=>{pickupSaved.push(form);return 'Validation du test';}});});
  await integrated.waitForFunction(()=>!!document.querySelector('#hotelPickupFrame')?.contentDocument?.querySelector('#client'));

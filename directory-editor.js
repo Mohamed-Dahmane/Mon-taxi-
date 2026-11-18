@@ -2,7 +2,7 @@
 "use strict";
 const KEY="montaxi:hotel-commissions:directory-v1";
 const norm=s=>String(s||"").trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-const reserved=new Set(["night","day","papa","papas","fal","moncef","djo","jonas","yaguy","celine","adelia","diego","estella","sumira","aline"].map(norm));
+const reserved=new Set(["night","day","papa","papas","fal","moncef","djo","jonas","yaguy","celine","adelia","diego","estella","sumira","aline","sophia"].map(norm));
 function isProtectedHotel(d,name){return /^(?:double\s?tree|the standard)\b/.test(norm(d.tariffNames?.[name]||name))}
 function reservedContacts(d){
   const names=new Set([...reserved,...(d.referralOnlyContacts||[]).map(norm),...(d.standardReceptionNames||[]).map(norm),...Object.values(d.doubleTreeContactNames||{}).map(norm)]);
