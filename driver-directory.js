@@ -550,6 +550,29 @@ function revealLastCall(course){
 }
 root.TaxiDriverCommunication={
  lastFor,
+ exportFromPlanning(courseId){
+  const course=courses().find(item=>String(item.id)===String(courseId));
+  if(!course){
+   const feedback=doc.getElementById('hotelCommissionsFrame')?.contentDocument?.getElementById('reservationBoardMessage');
+   if(feedback)feedback.textContent='Cette course est introuvable dans le Planning.';
+   return;
+  }
+  const name=course.driver==='other'?cleanSearch(course.driverName):'';
+  const matches=name?state.drivers.filter(driver=>validPhone(driver.phone)&&
+   [driver.name,driverSearchName(driver.name)].some(value=>cleanSearch(value)===name)):[];
+  const numbers=new Set(matches.map(driver=>phone(driver.phone)));
+  const driver=matches.find(item=>compatibleWithCourse(item,course));
+  if(numbers.size===1&&driver){
+   openSms(driver,courseText(course));
+   return;
+  }
+  root.openTaxiDrivers(course,{exportCourse:true});
+  if(name){
+   status(numbers.size>1?'Plusieurs numéros correspondent à ce chauffeur. Choisis la bonne fiche.':
+    matches.length?'Le chauffeur attribué ne correspond pas au véhicule indiqué. Vérifie le véhicule de sa fiche.':
+    'Le numéro du chauffeur attribué est introuvable. Choisis sa fiche dans le Répertoire.');
+  }
+ },
  resumeCall(){
   if(!lastCall?.awaitingReturn)return false;
   const course=courses().find(e=>String(e.id)===lastCall.courseId);lastCall.awaitingReturn=false;saveCall();
