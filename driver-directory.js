@@ -148,7 +148,10 @@ function passengerLine(entry){
 }
 function courseText(e){
  const p=e.pickup||{};
- const client=String(e.clientName||p.client||'').trim(),clientPhone=String(e.clientPhone||p.phone||'').trim();
+ const client=String(e.clientName??'').trim()||String(p.client??'').trim();
+ const clientPhone=String(e.clientPhone??'').trim()||String(p.phone??'').trim();
+ const flight=String(p.flight??'').trim()||String(e.flight??'').trim();
+ const company=String(p.company??'').trim()||String(e.company??'').trim();
  return [
   fixedPriceLine(e.announcedPrice),
   [driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime].filter(Boolean).join(' à '),
@@ -157,7 +160,7 @@ function courseText(e){
   String(e.room??'').trim()&&'Chambre : '+String(e.room).trim(),
   p.timeMode==='arrival'?'Suivi vol / train':'',
   client&&'Client : '+client,clientPhone&&'Téléphone : '+clientPhone,
-  p.flight&&'Vol/train : '+p.flight,p.arrival&&'Arrivée : '+p.arrival,
+  flight&&(p.place?'Vol/train : ':'Vol : ')+flight,company&&'Compagnie : '+company,p.arrival&&'Arrivée : '+p.arrival,
   (e.carCount||e.vanCount)?[e.carCount&&e.carCount+' voiture(s) normale(s)',e.vanCount&&e.vanCount+' van(s)'].filter(Boolean).join(' · '):String(e.vehicle||'').replace(/Petite voiture/g,'Voiture normale'),
   passengerLine(e),p.luggage&&'Bagages : '+p.luggage,
   e.note&&'Remarques : '+e.note

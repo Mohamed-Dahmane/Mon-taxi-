@@ -352,24 +352,24 @@ async function checkBookingRoom(frame,id){
  await checkBookingRoom(frame,'room');
  const direct=await frame.evaluate(()=>{
   const initial=data.length;setDriverChoice('direct','self');$('hotel').value='The Standard';refreshContacts();$('contact').value='Fal';setVehicle('Voiture normale',false);selected=10;
-  $('room').value='0240';$('directClientName').value='Mme Test';$('directClientPhone').value='+32470000000';$('directPassengers').value='4';$('add').onclick();
-  const first=data.at(-1);const count=data.length-initial;const cleared=$('directClientName').value===''&&$('directClientPhone').value==='';
+  $('room').value='0240';$('directClientName').value='Mme Test';$('directClientPhone').value='+32470000000';$('directFlight').value='SN123';$('directCompany').value='Brussels Airlines';$('directPassengers').value='4';$('add').onclick();
+  const first=data.at(-1);const count=data.length-initial;const cleared=['directClientName','directClientPhone','directFlight','directCompany'].every(id=>$(id).value==='');
   $('hotel').value='The Standard';refreshContacts();$('contact').value='Fal';setVehicle('Voiture normale',false);selected=10;$('add').onclick();
   return {count,first,second:data.at(-1),cleared,total:data.length-initial,error:$('message').textContent};
  });
- assert.equal(direct.count,1,direct.error);assert.equal(direct.first.room,'0240');assert.equal(direct.first.clientName,'Mme Test');assert.equal(direct.first.clientPhone,'+32470000000');assert.equal(direct.first.passengers,4);assert.equal(direct.cleared,true);assert.equal(direct.total,2);assert.equal(direct.second.clientName,'');assert.equal(direct.second.clientPhone,'');assert.equal(direct.second.passengers,null);
+ assert.equal(direct.count,1,direct.error);assert.equal(direct.first.room,'0240');assert.equal(direct.first.clientName,'Mme Test');assert.equal(direct.first.clientPhone,'+32470000000');assert.equal(direct.first.passengers,4);assert.equal(direct.first.flight,'SN123');assert.equal(direct.first.company,'Brussels Airlines');assert.equal(direct.cleared,true);assert.equal(direct.total,2);assert.equal(direct.second.clientName,'');assert.equal(direct.second.clientPhone,'');assert.equal(direct.second.passengers,null);
  const reservation=await frame.evaluate(()=>{
   openReservations($('openTodayReservations'));
   const today=reservationClock().slice(0,10);const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10);
-  const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000',passengers:3};
+  const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000',flight:'BA388',company:'British Airways',passengers:3};
   data.push(original);showReservationForm(original,false);
   $('reservationStandardContacts').querySelector('[data-contact="Sophia"]').click();
-  const loaded={name:$('reservationClientName').value,phone:$('reservationClientPhone').value};showReservationStep(reservationSaveStep);
+  const loaded={name:$('reservationClientName').value,phone:$('reservationClientPhone').value,flight:$('reservationFlight').value,company:$('reservationCompany').value};showReservationStep(reservationSaveStep);
   $('reservationRoom').value='0240';$('reservationClientName').value='Nom modifié';$('reservationClientPhone').value='+32470000001';$('reservationPassengers').value='5';$('reservationForm').onsubmit({preventDefault(){}});
   const edited=data.find(e=>e.id===original.id);showReservationForm(edited,false);showReservationStep(reservationSaveStep);$('reservationClientName').value='';$('reservationClientPhone').value='';$('reservationPassengers').value='';$('reservationForm').onsubmit({preventDefault(){}});
   return {loaded,edited,cleared:data.find(e=>e.id===original.id),error:$('reservationMessage').textContent};
  });
- assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.edited.room,'0240');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.edited.contact,'Sophia');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');assert.equal(reservation.edited.passengers,5);assert.equal(reservation.cleared.passengers,null);
+ assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.loaded.flight,'BA388');assert.equal(reservation.loaded.company,'British Airways');assert.equal(reservation.edited.flight,'BA388');assert.equal(reservation.edited.company,'British Airways');assert.equal(reservation.edited.room,'0240');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.edited.contact,'Sophia');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');assert.equal(reservation.edited.passengers,5);assert.equal(reservation.cleared.passengers,null);
  await frame.evaluate(id=>{showReservationForm(data.find(course=>course.id===id),false);showReservationStep(reservationSaveStep);},reservation.edited.id);
  await checkBookingRoom(frame,'reservationRoom');
  // The real pick-up save handler must also accept blank client fields.
@@ -413,7 +413,7 @@ async function checkBookingRoom(frame,id){
  await integrated.evaluate(()=>window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'sync',contacts:[{nativeId:'81',name:'TX Petit test',phone:'0470101010'},{nativeId:'82',name:'TX Van uniquement',phone:'0470202020'}]}})));
  const linked=await frame.evaluate(()=>{
   const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10),today=reservationClock().slice(0,10);
-  const base={bookingMode:'Programmée',reservationBoard:true,reservationStatus:'pending',hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',room:'204',clientName:'Client lié',clientPhone:'+32470000011',passengers:5,amount:10,announcedPrice:90,pricing:'Forfait'};
+  const base={bookingMode:'Programmée',reservationBoard:true,reservationStatus:'pending',hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',room:'204',clientName:'Client lié',clientPhone:'+32470000011',flight:'SN123',company:'Brussels Airlines',passengers:5,amount:10,announcedPrice:90,pricing:'Forfait'};
   const van={...base,id:'linked-van',vehicle:'Van',vehicleChoice:'Van',carCount:0,vanCount:1};const car={...base,id:'linked-car',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem'};van.destination='Charleroi';data.push(van,car);save();return {van,car};
  });
  await integrated.evaluate(()=>openHotelModule('planning'));
@@ -637,7 +637,7 @@ async function checkBookingRoom(frame,id){
  await vanRow.getByRole('button',{name:'Chauffeur suivant',exact:true}).click();assert.match(await details(integrated).locator('h3').innerText(),/uniquement/);await details(integrated).getByRole('button',{name:'Appeler',exact:true}).click();
  await leaveAndReturn();await integrated.waitForFunction(()=>!document.querySelector('#taxiDrivers').open);
  await vanRow.locator('.last-called-driver strong').filter({hasText:'uniquement'}).waitFor();await vanRow.getByRole('button',{name:'J’envoie',exact:true}).click();
- const linkedSms=await integrated.evaluate(()=>externalActions.at(-1));assert.ok(linkedSms.url.startsWith('sms:0470202020?body='));const linkedText=decodeURIComponent(linkedSms.url);for(const value of ['Airport CRL (Charleroi)','Chambre : 204','Client : Client lié','Téléphone : +32470000011','Passagers : 5','PRIX FIXÉ : 90,00'])assert.ok(linkedText.includes(value),value);assert.equal(linkedSms.home,true);assert.equal(linkedSms.planningClosed,true);
+ const linkedSms=await integrated.evaluate(()=>externalActions.at(-1));assert.ok(linkedSms.url.startsWith('sms:0470202020?body='));const linkedText=decodeURIComponent(linkedSms.url);for(const value of ['Airport CRL (Charleroi)','Chambre : 204','Client : Client lié','Téléphone : +32470000011','Vol : SN123','Compagnie : Brussels Airlines','Passagers : 5','PRIX FIXÉ : 90,00'])assert.ok(linkedText.includes(value),value);assert.equal(linkedSms.home,true);assert.equal(linkedSms.planningClosed,true);
  assert.deepEqual(await storedCourse('linked-van'),{...linked.van,driver:'other',driverName:'uniquement',driverDirectoryId:driverIds['0470202020']});
  await integrated.evaluate(course=>openTaxiDrivers(course),linked.car);assert.equal(await integrated.locator('#driversVanOnly').isChecked(),false);
  assert.equal(await integrated.locator('#driversVanOnly').isEnabled(),true);
@@ -691,6 +691,7 @@ async function checkBookingRoom(frame,id){
  const directSms=await integrated.evaluate(()=>externalActions.at(-1));
  assert.ok(directSms.url.startsWith('sms:0470123456?body='));
  assert.equal(decodeURIComponent(directSms.url.split('?body=')[1]),planningCopy);
+ assert.match(planningCopy,/Client : Client lié\nTéléphone : \+32470000011\nVol : SN123\nCompagnie : Brussels Airlines/);
  assert.equal(directSms.directoryClosed,true);
  assert.equal(directSms.planningClosed,true);
  assert.doesNotMatch(planningCopy,/Chauffeur :|Test intégré/);

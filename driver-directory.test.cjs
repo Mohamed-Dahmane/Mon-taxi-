@@ -26,8 +26,8 @@ test('manual and selected non-TX contacts are accepted; invalid numbers excluded
 });
 test('vCard handles folding, escaped names and tel URI',()=>{assert.deepEqual(core.parseVcard('BEGIN:VCARD\r\nFN:Karim\\, chauffeur\r\nTEL;TYPE=CELL:tel:+32470\r\n 123456\r\nEND:VCARD'),[{name:'Karim, chauffeur',phone:'+32470123456'}]);});
 test('SMS contains actual booking data and Unicode without inventing absent fields',()=>{
- const text=core.courseText({scheduledDate:'2026-11-19',scheduledTime:'04:30',destination:'Hôtel',carCount:1,vanCount:2,pickup:{place:'BRU',client:'Émilie',phone:'+32470123456',flight:'SN123'},note:'2 sièges'});
- assert.match(text,/19\/11\/2026 à 04:30/);assert.match(text,/Airport BRU \(Zaventem\) → Hôtel/);assert.match(text,/Émilie/);assert.match(text,/2 van/);assert.doesNotMatch(text,/undefined|Prix annoncé/);
+ const text=core.courseText({scheduledDate:'2026-11-19',scheduledTime:'04:30',destination:'Hôtel',carCount:1,vanCount:2,pickup:{place:'BRU',client:'Émilie',phone:'+32470123456',flight:'SN123',company:'Brussels Airlines'},note:'2 sièges'});
+ assert.match(text,/19\/11\/2026 à 04:30/);assert.match(text,/Airport BRU \(Zaventem\) → Hôtel/);assert.match(text,/Client : Émilie\nTéléphone : \+32470123456\nVol\/train : SN123\nCompagnie : Brussels Airlines/);assert.match(text,/2 van/);assert.doesNotMatch(text,/undefined|Prix annoncé/);
 });
 
 test('v1 migration preserves identity and makes vehicle eligibility asymmetric',()=>{
