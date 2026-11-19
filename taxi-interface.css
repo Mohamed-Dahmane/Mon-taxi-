@@ -316,15 +316,30 @@ html.taxi-clean {
   color: var(--clean-muted);
   font-size: 14px;
 }
-.taxi-clean.taxi-hotel #reservationList .reservation-card .course-sms-action {
+.taxi-clean.taxi-hotel #reservationList .reservation-card :is(.course-sms-action, .course-assign-action, .course-remove-action) {
   min-height: 46px;
-  border: 1px solid #a0db70;
-  background: #8bd15a;
-  color: #17290c;
-  font-weight: 800;
+  border: 1px solid var(--planning-action-border);
+  background: var(--planning-action);
+  color: #fff;
+  font-weight: 750;
 }
-.taxi-clean.taxi-hotel #reservationList .reservation-card .course-sms-action:active {
-  background: #a6df7f;
+.taxi-clean.taxi-hotel #reservationList .reservation-card :is(.course-sms-action, .course-assign-action, .course-remove-action):active {
+  background: var(--planning-action-active);
+}
+.taxi-clean.taxi-hotel .course-sms-action {
+  --planning-action: #24733a;
+  --planning-action-border: #70bf87;
+  --planning-action-active: #195b2d;
+}
+.taxi-clean.taxi-hotel .course-assign-action {
+  --planning-action: #265b98;
+  --planning-action-border: #7aaae0;
+  --planning-action-active: #1c4779;
+}
+.taxi-clean.taxi-hotel .course-remove-action {
+  --planning-action: #733740;
+  --planning-action-border: #bb7984;
+  --planning-action-active: #5b2932;
 }
 .taxi-clean.taxi-hotel .course-options { border-top: 1px solid var(--clean-line); margin-top: 8px; padding-top: 3px; }
 .taxi-clean.taxi-hotel .course-options summary { cursor: pointer; min-height: 40px; padding-block: 9px; color: var(--clean-accent); font-weight: 650; }

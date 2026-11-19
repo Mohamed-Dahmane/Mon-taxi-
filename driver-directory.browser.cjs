@@ -348,11 +348,15 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(planningStyles.people,[['Moi','18px'],['Fal','18px']]);
  assert.equal(planningStyles.textSize,'16px');
  assert.ok(planningStyles.narrowFits);
- const smsButton=frame.locator('[data-entry-id="linked-car"]').getByRole('button',{name:'Exporter au chauffeur',exact:true});
- assert.deepEqual(await smsButton.evaluate(button=>{
+ const courseActions=frame.locator('[data-entry-id="linked-car"] .course-contact-actions');
+ assert.deepEqual(await courseActions.getByRole('button').evaluateAll(buttons=>buttons.map(button=>{
   const style=getComputedStyle(button);
-  return [style.backgroundColor,style.color,button.getBoundingClientRect().height>=44];
- }),['rgb(139, 209, 90)','rgb(23, 41, 12)',true]);
+  return [button.textContent,style.backgroundColor,style.color,button.getBoundingClientRect().height>=44];
+ })),[
+  ['Exporter au chauffeur','rgb(36, 115, 58)','rgb(255, 255, 255)',true],
+  ['Attribuer à','rgb(38, 91, 152)','rgb(255, 255, 255)',true],
+  ['Supprimer la course','rgb(115, 55, 64)','rgb(255, 255, 255)',true]
+ ]);
  const references=await frame.evaluate(course=>{
   const date=reservationClock().slice(0,10);
   const {nextReference,referenceCountersKey}=window.parent.TaxiHotels;
