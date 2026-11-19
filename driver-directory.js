@@ -264,6 +264,7 @@ priorityPicker.addEventListener('close',()=>{
 });
 dialog.addEventListener('close',()=>{if(priorityPicker.open)priorityPicker.close()});
 let vanOnly=false,period='all',editing=null,recipient=null,busy=false,selectedDriver=null,listScroll=0,courseContext=null,linkedCourse=null,pickDriverCallback=null;
+let exportCourse=false,changeDriver=false;
 const vanRequired=()=>requiredVehicle(courseContext)==='van';
 const vanFilter=()=>vanOnly||vanRequired();
 const status=t=>{$('driversStatus').textContent=t;};
@@ -280,7 +281,14 @@ function editOptions(d,changes){
 }
 function checkboxGroup(title){const group=doc.createElement('div');group.className='drivers-checks';const label=doc.createElement('span');label.textContent=title;group.append(label);return group;}
 function selectDriver(id){
- listScroll=dialog.scrollTop;selectedDriver=id;render();$('driversDetails').scrollIntoView({block:'start'});
+ listScroll=dialog.scrollTop;selectedDriver=id;render();
+ if(exportCourse){
+  showDriverSms(id);
+  $('driversSmsPanel').scrollIntoView({block:'nearest'});
+ }else $('driversDetails').scrollIntoView({block:'start'});
+}
+function showDriverSms(id){
+ recipient=id;updateRecipient();$('driversSmsPanel').hidden=false;
 }
 function returnToNames(){
  const previous=selectedDriver;selectedDriver=null;$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;$('driversImportPanel').hidden=true;render();
@@ -308,20 +316,20 @@ function render(){
   const num=doc.createElement('p');num.className='driver-detail-phone';num.textContent=selected.phone;
   const call=action('Appeler',()=>callDriver(selected));call.id='driversCall';
   const sms=action('SMS',()=>{
-   recipient=selected.id;updateRecipient();$('driversSmsPanel').hidden=false;$('driversMessage').focus();
+   showDriverSms(selected.id);$('driversMessage').focus();
   });sms.id='driversSmsShortcut';
   const contactActions=doc.createElement('div');contactActions.className='driver-contact-actions';contactActions.append(sms,call);
   const callLine=doc.createElement('div');callLine.className='driver-call-line';callLine.append(num,contactActions);
   const kind=doc.createElement('small');kind.textContent=selected.category==='van'?'Véhicule : Van':'Véhicule : Voiture normale';
   const actions=doc.createElement('div');actions.className='driver-actions';actions.append(action('Modifier',()=>edit(selected)),action('Supprimer',()=>deleteDriver(selected)));
   if(pickDriverCallback)actions.prepend(action('Choisir ce chauffeur',()=>{if(courseContext&&!compatibleWithCourse(selected,courseContext)){status('Ce véhicule ne correspond pas à la course.');return;}if(pickDriverCallback(selected)!==false)dialog.close();else status('Ce nom ne peut pas être attribué comme chauffeur. Choisis une autre fiche.');}));
-  else actions.append(action('Importer une course',()=>showCoursePicker(selected)));
+  else if(!changeDriver&&!exportCourse)actions.append(action('Importer une course',()=>showCoursePicker(selected)));
   if(selected.nativeId&&root.TaxiContacts)actions.append(action('Modifier dans le téléphone',()=>root.TaxiContacts.edit(selected.nativeId)));
   const services=checkboxGroup('Courses possibles');services.append(check('Voiture normale',true,true,value=>editOptions(selected,{acceptsCar:value,manualServices:true})),check('Van',selected.category==='van',true,()=>{}));
   const times=checkboxGroup('Disponibilité');times.append(check('Jour',selected.availability.day,false,value=>editOptions(selected,{availability:{...selected.availability,day:value},manualAvailability:true})),check('Nuit',selected.availability.night,false,value=>editOptions(selected,{availability:{...selected.availability,night:value},manualAvailability:true})));
   details.append(back,name,callLine);
   if(isPendingPlanningCourse(linkedCourse)){
-   const assign=action('Attribuer cette course',()=>{
+   const assign=action(changeDriver?'Choisir ce chauffeur':'Attribuer cette course',()=>{
     if(!assignPlanningCourse(linkedCourse,selected))return;
     dialog.close();
     if(!doc.getElementById('hotelCommissionsDialog')?.open)root.openHotelModule?.('planning');
@@ -331,6 +339,9 @@ function render(){
   }
   details.append(kind,priorityBadge(driverPriority(selected,hotelContacts),true),actions,services,times);return;
  }
+ if(changeDriver)list.append(action('Moi',()=>{
+  if(assignPlanningCourse(linkedCourse,null))dialog.close();
+ }));
  const query=norm($('driversSearch').value);
  const priorityOrder=$('driversSort').value==='priority';
  const rows=orderedDrivers(state.drivers,state.sortMode,hotelContacts)
@@ -377,7 +388,13 @@ function edit(d){
  $('driversDelete').hidden=!d;$('driversPhoneEdit').hidden=!d?.nativeId||!root.TaxiContacts;
  $('driversEditor').hidden=false;$('driversName').focus();
 }
-function updateRecipient(){const d=state.drivers.find(x=>x.id===recipient);$('driversRecipient').textContent=d?'Destinataire : '+d.name+' · '+d.phone:'Sélectionne un chauffeur dans la liste.';$('driversSms').disabled=!d;$('driversSms').textContent=messageCourse()?'J’envoie la course':'Ouvrir l’application SMS';}
+function updateRecipient(){
+ const driver=state.drivers.find(item=>item.id===recipient);
+ $('driversRecipient').textContent=driver?'Destinataire : '+driver.name+' · '+driver.phone:'Sélectionne un chauffeur dans la liste.';
+ $('driversSms').disabled=!driver;
+ const course=messageCourse();
+ $('driversSms').textContent=isPendingPlanningCourse(course)&&exportCourse?'Attribuer et ouvrir le SMS':course?'J’envoie la course':'Ouvrir l’application SMS';
+}
 function launch(url){if(root.TaxiContacts)root.TaxiContacts.open(url);else root.location.href=url;}
 function courses(){try{const raw=JSON.parse(localStorage.getItem(COURSES_KEY)||'[]');return Array.isArray(raw)?raw.filter(e=>e?.id!=null):[];}catch{status('Impossible de lire les courses enregistrées.');return [];}}
 function refreshCourses(selected){const select=$('driversCourse');select.replaceChildren();const blank=doc.createElement('option');blank.value='';blank.textContent='Choisir une course';select.append(blank);for(const e of courses()){const o=doc.createElement('option');o.value=e.id;o.textContent=[driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime,e.pickup?.client||e.hotel,e.destination].filter(Boolean).join(' · ');select.append(o);}select.value=selected||'';}
@@ -484,14 +501,14 @@ function assignPlanningCourse(course,driver){
   }
   return false;
  }
- const driverName=driverSearchName(driver.name)||driver.name;
+ const driverName=driver?(driverSearchName(driver.name)||driver.name):'';
  try{
   const entries=JSON.parse(localStorage.getItem(COURSES_KEY)||'[]');
   const current=entries.find(entry=>entry?.id!=null&&String(entry.id)===String(course.id));
   if(!isPendingPlanningCourse(current))return fail('Cette course n’est plus en attente dans le Planning.');
-  if(!compatibleWithCourse(driver,current))return fail('Ce chauffeur ne peut pas assurer le véhicule de cette course.');
-  if(frame?.contentWindow?.canDrive?.(driverName)===false)return fail('Ce nom est réservé à un contact d’attribution.');
-  current.driver='other';
+  if(driver&&!compatibleWithCourse(driver,current))return fail('Ce chauffeur ne peut pas assurer le véhicule de cette course.');
+  if(driver&&frame?.contentWindow?.canDrive?.(driverName)===false)return fail('Ce nom est réservé à un contact d’attribution.');
+  current.driver=driver?'other':'self';
   current.driverName=driverName;
   localStorage.setItem(COURSES_KEY,JSON.stringify(entries));
  }catch{return fail('Impossible d’enregistrer le chauffeur dans le Planning. Réessaie.');}
@@ -554,6 +571,7 @@ root.taxiDriverNavigateBack=()=>{
 };
 root.openTaxiDrivers=function(course,options={}){
  courseContext=course||null;linkedCourse=options.onSelect?null:course||null;pickDriverCallback=options.onSelect||null;
+ exportCourse=Boolean(linkedCourse&&options.exportCourse);changeDriver=Boolean(isPendingPlanningCourse(linkedCourse)&&options.changeDriver);
  const required=requiredVehicle(course);vanOnly=false;period='all';selectedDriver=null;recipient=null;listScroll=0;
  $('driversSearch').value='';$('driversEditor').hidden=true;$('driversSmsPanel').hidden=true;$('driversImportPanel').hidden=true;pricePreview(null);
  if(options.driverId){const d=state.drivers.find(x=>x.id===options.driverId);if(d&&(!course||compatibleWithCourse(d,course))){selectedDriver=d.id;}}

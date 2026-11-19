@@ -351,9 +351,21 @@ async function checkBookingRoom(frame,id){
  assert.equal(await vanRow.isVisible(),true);
  assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Course supprimée.');
  assert.equal(await frame.evaluate(id=>readCourses(localStorage.getItem(key)).some(course=>course.id===id),temporaryId),false);
- await vanRow.getByRole('button',{name:'Répertoire',exact:true}).click();
+ const earlyDoubleTree={...linked.car,id:'planning-early-papa',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton',contact:'Night',scheduledTime:'06:40'};
+ await frame.evaluate(course=>{data.push(course);save();renderReservations();},earlyDoubleTree);
+ const earlyRow=frame.locator('.reservation-card[data-entry-id="planning-early-papa"]');
+ await earlyRow.getByText('Contact · Night',{exact:true}).waitFor();
+ await earlyRow.getByRole('button',{name:'Papa',exact:true}).click();
+ await earlyRow.getByText('Contact · Papas',{exact:true}).waitFor();
+ assert.equal(await earlyRow.locator('time').innerText(),'06:40');
+ assert.deepEqual(await storedCourse(earlyDoubleTree.id),{...earlyDoubleTree,contact:'Papas',manualReservationShift:'Papas'});
+ assert.equal(await frame.evaluate(()=>doubleTreeReservationContact('23:45','Papas')),'Papas');
+ assert.equal(await vanRow.getByRole('button',{name:'Papa',exact:true}).count(),0);
+ await vanRow.getByRole('button',{name:'Exporter au chauffeur',exact:true}).click();
  assert.equal(await integrated.locator('#driversVanOnly').isChecked(),true);assert.equal(await integrated.locator('#driversVanOnly').isDisabled(),true);assert.deepEqual(await integrated.locator('.driver-name').allTextContents(),['Test intégré','TX Van uniquement']);
  await select(integrated,'Test intégré');
+ assert.equal(await integrated.locator('#driversSmsPanel').isVisible(),true);
+ assert.equal(await integrated.locator('#driversSms').innerText(),'Attribuer et ouvrir le SMS');
  const callButton=details(integrated).getByRole('button',{name:'Appeler',exact:true});
  const callPosition=await callButton.evaluate(button=>({
   rightGap:button.closest('.driver-call-line').getBoundingClientRect().right-button.getBoundingClientRect().right,
@@ -394,19 +406,30 @@ async function checkBookingRoom(frame,id){
  await integrated.evaluate(()=>openHotelModule('planning'));
  await vanRow.getByText('Attribuée à · uniquement',{exact:true}).waitFor();
  const carRow=frame.locator('.reservation-card[data-entry-id="linked-car"]');
- await carRow.getByRole('button',{name:'Répertoire',exact:true}).click();
+ await carRow.getByRole('button',{name:'Changer chauffeur',exact:true}).click();
+ assert.equal(await integrated.locator('#taxiDrivers').isVisible(),true);
+ assert.equal(await integrated.locator('#driversList').getByRole('button',{name:'Moi',exact:true}).isVisible(),true);
  await select(integrated,'Test intégré');
- await details(integrated).getByRole('button',{name:'Attribuer cette course',exact:true}).click();
+ await details(integrated).getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();
  await carRow.getByText('Attribuée à · Test intégré',{exact:true}).waitFor();
  assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré'});
- await carRow.getByRole('button',{name:'Copier la course',exact:true}).click();
+ await carRow.locator('.course-options summary').click();
+ await carRow.getByRole('button',{name:'Copier le texte',exact:true}).click();
  const planningCopy=await frame.evaluate(()=>window.__copiedCourse);
- await carRow.getByRole('button',{name:'Répertoire',exact:true}).click();await select(integrated,'Petit test');
- await details(integrated).getByRole('button',{name:'SMS',exact:true}).click();
+ await carRow.getByRole('button',{name:'Exporter au chauffeur',exact:true}).click();await select(integrated,'Petit test');
+ assert.equal(await integrated.locator('#driversSmsPanel').isVisible(),true);
  assert.equal(planningCopy,await integrated.inputValue('#driversMessage'));
  assert.doesNotMatch(planningCopy,/Chauffeur :|Test intégré/);
  await integrated.selectOption('#driversMessageSource','free');await integrated.fill('#driversMessage','Message libre');await integrated.click('#driversSms');
  assert.equal((await storedCourse('linked-car')).driverName,'Test intégré');
+ await integrated.evaluate(()=>openHotelModule('planning'));
+ await earlyRow.getByRole('button',{name:'Exporter au chauffeur',exact:true}).click();
+ await select(integrated,'Petit test');
+ assert.equal((await storedCourse(earlyDoubleTree.id)).driver,'self');
+ assert.doesNotMatch(await integrated.inputValue('#driversMessage'),/Petit test|Chauffeur :/);
+ await integrated.getByRole('button',{name:'Attribuer et ouvrir le SMS',exact:true}).click();
+ assert.ok((await integrated.evaluate(()=>externalActions.at(-1).url)).startsWith('sms:0470101010?body='));
+ assert.deepEqual(await storedCourse(earlyDoubleTree.id),{...earlyDoubleTree,contact:'Papas',manualReservationShift:'Papas',driver:'other',driverName:'Petit test'});
  // Assignment while encoding uses the same filtered directory and rejects a later incompatible vehicle change.
  await frame.evaluate(()=>{setVehicle('Van',false);setDriverChoice('direct','other');setDriverMenuOpen('direct',true);});
  assert.equal(await integrated.locator('#driversVanOnly').isChecked(),true);assert.equal(await integrated.locator('#driversVanOnly').isDisabled(),true);await select(integrated,'uniquement');await details(integrated).getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();
