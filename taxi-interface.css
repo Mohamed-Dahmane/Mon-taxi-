@@ -8,6 +8,12 @@ html.taxi-clean {
   --clean-text: #eef3f8;
   --clean-muted: #b6c3d1;
   --clean-blue: #255f9f;
+  --clean-direct: #165f66;
+  --clean-direct-line: #5caeb6;
+  --clean-reservation: #62428e;
+  --clean-reservation-line: #ad8adb;
+  --clean-confirm: #24733a;
+  --clean-confirm-line: #70bf87;
   --clean-accent: #a5d1ff;
   --clean-average: #9ce7be;
   --clean-average-bg: #1b302b;
@@ -196,16 +202,6 @@ html.taxi-clean {
   border-color: var(--clean-line);
   box-shadow: none;
 }
-.taxi-clean #taxiDrivers #driversTx { width: auto; min-height: 40px; margin-top: 10px; }
-.taxi-clean #taxiDrivers #driversStatus { margin: 7px 0; }
-.taxi-clean #taxiDrivers #driversStatus:empty,
-.taxi-clean #taxiDrivers #driversLastSync:empty { display: none; }
-.taxi-clean #taxiDrivers .drivers-list-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-block: 8px; }
-.taxi-clean #taxiDrivers .drivers-list-filters :is(#driversPeriodFilters, #driversVanFilter) { margin: 0; }
-.taxi-clean #taxiDrivers .drivers-periods button { min-height: 38px; padding-inline: 9px; }
-.taxi-clean #taxiDrivers #driversSearchBox { margin-block: 8px; }
-.taxi-clean #taxiDrivers #driversSortBox { display: flex; align-items: center; gap: 8px; margin-block: 8px; }
-.taxi-clean #taxiDrivers #driversSortBox select { flex: 1; min-width: 0; margin: 0; }
 .taxi-clean #taxiDrivers .driver-row,
 .taxi-clean #taxiDirectoryEditor .directory-row { border-color: var(--clean-line); }
 
@@ -327,8 +323,8 @@ html.taxi-clean {
   background: var(--planning-action-active);
 }
 .taxi-clean.taxi-hotel .course-sms-action {
-  --planning-action: #24733a;
-  --planning-action-border: #70bf87;
+  --planning-action: var(--clean-confirm);
+  --planning-action-border: var(--clean-confirm-line);
   --planning-action-active: #195b2d;
 }
 .taxi-clean.taxi-hotel .course-assign-action {
@@ -513,3 +509,123 @@ html.taxi-clean {
   .taxi-clean .taxi-header .taxi-brand .small { display: none; }
 }
 .taxi-clean #hotelCommissionsDialog .hotel-commissions-bar { min-height: 56px; }
+
+.taxi-clean :is(#quickMenu, #hotelQuickMenu) nav button {
+  min-height: 44px;
+  padding-block: 8px;
+  line-height: 1.2;
+}
+
+.taxi-clean #fixed .fixed-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.taxi-clean #fixed .fixed-heading h2 { margin: 0; }
+.taxi-clean #fixedSum { color: var(--clean-cost); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.taxi-clean #fixed #addFixed { min-height: 44px; margin-bottom: 8px; }
+.taxi-clean #backup .toolbar button { min-height: 44px; }
+.taxi-clean #backup .backup-options { border-top: 1px solid var(--clean-line); margin-top: 8px; }
+.taxi-clean #backup .backup-options summary {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding-block: 10px;
+  color: var(--clean-accent);
+  cursor: pointer;
+}
+.taxi-clean #backup #reset { background: #733740; border-color: #bb7984; }
+.taxi-clean .financial-history .v11-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+.taxi-clean .financial-history .v11-summary > div { padding: 8px 6px; }
+.taxi-clean .financial-history .v11-summary strong {
+  font-size: clamp(14px, 4vw, 17px);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.taxi-clean #taxiDirectoryEditor .directory-head h2 { margin: 0; }
+.taxi-clean #taxiDirectoryEditor .directory-head button { width: 44px; min-height: 44px; padding: 0; }
+.taxi-clean #taxiDirectoryEditor .directory-filters {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+  margin-block: 6px 4px;
+}
+.taxi-clean #taxiDirectoryEditor .directory-filters:has(details[open]) > * { grid-column: 1 / -1; }
+.taxi-clean #taxiDirectoryEditor .directory-filters input { min-height: 44px; min-width: 0; padding: 7px 9px; }
+.taxi-clean #taxiDirectoryEditor .directory-filters summary {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 10px 5px;
+  color: var(--clean-accent);
+  cursor: pointer;
+}
+.taxi-clean #taxiDirectoryEditor :is(.directory-sort, .directory-add) { gap: 6px; margin: 4px 0; }
+.taxi-clean #taxiDirectoryEditor :is(.directory-actions, .directory-add) button { min-height: 44px; }
+.taxi-clean #taxiDirectoryEditor .directory-actions button { padding-inline: 6px; font-size: 13px; }
+.taxi-clean #taxiDirectoryEditor .directory-row { padding-block: 6px; }
+.taxi-clean #taxiDirectoryEditor .directory-name { overflow-wrap: anywhere; text-align: left; }
+
+.taxi-clean.taxi-hotel .reservation-create-actions,
+.taxi-clean.taxi-hotel .commission-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+.taxi-clean.taxi-hotel #reservationPeriodBox:not([hidden]) {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(85px, auto) minmax(0, 1fr);
+  gap: 6px;
+}
+.taxi-clean.taxi-hotel #reservationPeriodBox :is(label, select) { margin: 0; }
+.taxi-clean.taxi-hotel #commissionFilters summary { min-height: 44px; }
+.taxi-clean .booking-form > :is(h2, p.entry-mini) { margin-block: 0 8px; }
+.taxi-clean .booking-form .booking-client { margin-block: 8px 10px; padding: 9px; }
+.taxi-clean .booking-form .booking-client h3 { margin-bottom: 7px; }
+.taxi-clean .booking-form .booking-room { margin-bottom: 8px; padding: 8px 10px; }
+.taxi-clean.taxi-pickup .booking-form .grid { gap: 7px 10px; }
+.taxi-clean.taxi-pickup .booking-form section { padding: 10px; }
+.taxi-clean.taxi-pickup .booking-form section > h2 { margin-bottom: 7px; }
+
+@media (max-width: 480px) {
+  .taxi-clean :is(#monthlyJournal, #daily .details-overview, #history, #backup, #fixed) { padding: 9px; }
+  .taxi-clean #monthlyJournal .journal-actions .button { min-height: 44px; }
+  .taxi-clean #monthlyJournal .journal-guide { margin-block: 4px; }
+  .taxi-clean #fixed .fixedrow { gap: 7px; margin-bottom: 6px; }
+  .taxi-clean #fixed .fixedrow input { min-height: 44px; padding-block: 6px; }
+  .taxi-clean.taxi-hotel .wrap { padding-top: 9px; }
+  .taxi-clean.taxi-hotel :is(#reservationBoard, #reservationForm, #directCourseForm, #potsCard, #historyCard) { padding: 10px; }
+  .taxi-clean.taxi-hotel .reservation-create-actions { margin-block: 5px; }
+  .taxi-clean.taxi-hotel .reservation-status-filters { margin-block: 5px; }
+  .taxi-clean.taxi-hotel .commission-actions { margin-block: 6px; }
+}
+
+.taxi-clean .hotel-home-actions #openHotelCommissions,
+.taxi-clean.taxi-hotel :is(#homeActions, #reservationBoard) :is(#openDirectCourse, #newDirectFromReservations),
+.taxi-clean .booking-form #continueDirectContact:not(:disabled) {
+  background: var(--clean-direct);
+  border-color: var(--clean-direct-line);
+  color: #fff;
+}
+.taxi-clean .hotel-home-actions #openHotelReservationQuick,
+.taxi-clean.taxi-hotel :is(#homeActions, #reservationBoard) :is(#startReservation, #newReservation),
+.taxi-clean .booking-form #nextReservationStep:not(:disabled) {
+  background: var(--clean-reservation);
+  border-color: var(--clean-reservation-line);
+  color: #fff;
+}
+.taxi-clean .booking-form :is(#add, #saveReservation, #save):not(:disabled) {
+  background: var(--clean-confirm);
+  border-color: var(--clean-confirm-line);
+  color: #fff;
+}
+.taxi-clean #home .entry-hub .cash-entry :is(label, .entry-euro-symbol) { color: #8ddfc3; }
+.taxi-clean #home .entry-hub .cash-entry input {
+  background: #182a28;
+  border-color: #599f8c;
+}

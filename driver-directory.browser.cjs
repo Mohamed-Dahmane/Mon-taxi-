@@ -6,6 +6,10 @@ const code=fs.readFileSync(__dirname+'/driver-directory.js','utf8');
 const reorderCode=fs.readFileSync(__dirname+'/hold-reorder.js','utf8');
 async function holdDrag(page,from,to){await from.scrollIntoViewIfNeeded();await to.scrollIntoViewIfNeeded();const a=await from.boundingBox(),b=await to.boundingBox();await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(550);await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:10});await page.mouse.up();}
 async function touchDrag(page,from,to){await from.scrollIntoViewIfNeeded();await to.scrollIntoViewIfNeeded();const a=await from.boundingBox(),b=await to.boundingBox(),cdp=await page.context().newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:a.x+a.width/2,y:a.y+a.height/2}]});await page.waitForTimeout(550);for(let step=1;step<=8;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:a.x+a.width/2+(b.x+b.width/2-a.x-a.width/2)*step/8,y:a.y+a.height/2+(b.y+b.height/2-a.y-a.height/2)*step/8}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();}
+const openDriverOptions=async page=>{
+ const options=page.locator('#driversManagement');
+ if(await options.getAttribute('open')===null)await options.locator('summary').click();
+};
 const names=page=>page.locator('#driversList .driver-row');
 const select=async(page,name)=>page.locator('#driversList .driver-name').filter({hasText:name}).click();
 const back=async page=>page.click('#driversBack');
@@ -48,6 +52,9 @@ async function checkBookingRoom(frame,id){
  await page.uncheck('#driversVanOnly');assert.equal(await names(page).count(),3);
  await page.click('[data-period="night"]');assert.equal(await names(page).count(),1);
  await page.click('[data-period="day"]');assert.equal(await names(page).count(),3);
+ await openDriverOptions(page);
+ assert.equal(await page.locator('#driversPriorityLegend').isVisible(),true);
+ assert.equal(await page.locator('#driversExport').isVisible(),true);
  await page.click('#driversTx');assert.equal(await page.locator('#driversTx').isDisabled(),true);
  assert.deepEqual(await page.evaluate(()=>nativeCalls.filter(x=>x.type==='sync')[0].ids.sort()),['1','2','3']);
  const incoming=[{nativeId:'1',name:'TX Alexis actualisé',phone:'0470998877'},{nativeId:'2',name:'TX Van Hassan renommé',phone:'0470887766'},{nativeId:'3',name:'Karim nouveau',phone:'0470776655'},{nativeId:'4',name:'TX Nuit Van Nouveau',phone:'0470665544'},{nativeId:'99',name:'Autre contact privé',phone:'0470554433'}];
@@ -72,11 +79,12 @@ async function checkBookingRoom(frame,id){
  await page.reload();await page.addScriptTag({content:reorderCode});await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');await page.click('[data-period="night"]');assert.equal(await names(page).count(),1);
  const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);assert.equal(saved.version,2);assert.equal(saved.drivers.find(d=>d.id==='van').priority,4);assert.ok(saved.lastSyncedAt);
  // Sorting works on displayed names, persists and preserves manual relevance.
- await page.click('[data-period="all"]');await page.fill('#driversSearch','');await page.selectOption('#driversSort','az');
+ await page.click('[data-period="all"]');await page.fill('#driversSearch','');await openDriverOptions(page);await page.selectOption('#driversSort','az');
  assert.deepEqual(await page.locator('.driver-name').allTextContents(),['TX Alexis actualisé','TX Van Hassan renommé','Karim nouveau']);
  await page.selectOption('#driversSort','za');
  assert.deepEqual(await page.locator('.driver-name').allTextContents(),['Karim nouveau','TX Van Hassan renommé','TX Alexis actualisé']);
  await page.reload();await page.addScriptTag({content:reorderCode});await page.addScriptTag({content:code});await page.click('#openTaxiDrivers');
+ await openDriverOptions(page);
  assert.equal(await page.inputValue('#driversSort'),'za');await page.selectOption('#driversSort','priority');
  const priorOrder=await page.locator('.driver-name').allTextContents();
  await holdDrag(page,page.locator('.driver-name').nth(0),page.locator('.driver-name').nth(1));
@@ -177,6 +185,9 @@ async function checkBookingRoom(frame,id){
  const actions=await homeActions.locator('button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
  assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','openHotelReservationQuick','openHotelCommissions','openTaxiDrivers']);
  assert.equal(new Set(actions.map(action=>action.top)).size,1);
+ assert.deepEqual(await homeActions.locator('button').evaluateAll(buttons=>buttons.slice(1).map(button=>getComputedStyle(button).backgroundColor)),
+  ['rgb(98, 66, 142)','rgb(22, 95, 102)','rgb(23, 99, 61)']);
+
  const header=await integrated.locator('.taxi-header').evaluate(el=>{
   const rect=el.getBoundingClientRect();
   return [...el.querySelectorAll('.taxi-brand,#calendarTrigger,#refreshLocal,#quickMenuBtn')].every(control=>{
@@ -199,7 +210,41 @@ async function checkBookingRoom(frame,id){
  assert.equal(await financial.locator('#detailsCashReal').isVisible(),true);
  assert.equal(await integrated.locator('#v11DetailsCosts').isVisible(),true);
  await integrated.locator('#taxiPageLocation [data-location="home"]').click();
- await integrated.click('#openTaxiDrivers');await integrated.check('#driversVanOnly');await integrated.locator('.drivers-management summary').click();await integrated.click('#driversAdd');
+ await integrated.setViewportSize({width:320,height:560});
+ await integrated.evaluate(key=>{
+  const book=JSON.parse(localStorage.getItem(key)||'{"drivers":[],"deletedNativeIds":[]}');
+  window.restoreDriverFixture=localStorage.getItem(key);
+  book.lastSyncedAt='2026-11-19T15:00:00Z';
+  book.drivers=Array.from({length:14},(_,index)=>({id:'compact-'+index,name:'TX Chauffeur '+index,phone:'04701234'+String(index).padStart(2,'0'),category:'car'}));
+  localStorage.setItem(key,JSON.stringify(book));window.dispatchEvent(new StorageEvent('storage',{key}));
+ },KEY);
+ await integrated.click('#openTaxiDrivers');
+ assert.equal(await integrated.locator('#driversSearch').isVisible(),true);
+ for(const id of ['driversLastSync','driversSort','driversPriorityLegend','driversTx']){
+  assert.equal(await integrated.locator('#'+id).isVisible(),false);
+ }
+ const compact=await integrated.locator('#taxiDrivers').evaluate(dialog=>{
+  const area=dialog.getBoundingClientRect();
+  const list=dialog.querySelector('#driversList');
+  const rows=[...list.children].filter(row=>row.getBoundingClientRect().bottom<=area.bottom);
+  const filters=[...dialog.querySelectorAll('#driversVanFilter,#driversPeriodFilters,#driversManagement summary')];
+  return { visible:rows.length,first:list.getBoundingClientRect().top-area.top,overflow:dialog.scrollWidth>dialog.clientWidth,
+   filterLine:Math.max(...filters.map(el=>el.getBoundingClientRect().top))-Math.min(...filters.map(el=>el.getBoundingClientRect().top))<2,
+   keyboard:document.activeElement===dialog.querySelector('#driversSearch') };
+ });
+ assert.ok(compact.visible>=4&&compact.first<225&&!compact.overflow&&compact.filterLine&&!compact.keyboard,JSON.stringify(compact));
+ await openDriverOptions(integrated);
+ assert.equal(await integrated.locator('#driversLastSync').isVisible(),true);
+ assert.equal(await integrated.evaluate(()=>taxiDriverNavigateBack()),true);
+ assert.equal(await integrated.locator('#driversManagement').getAttribute('open'),null);
+ await integrated.locator('#taxiDrivers [data-close]').click();
+ await integrated.evaluate(key=>{
+  if(window.restoreDriverFixture===null)localStorage.removeItem(key);
+  else localStorage.setItem(key,window.restoreDriverFixture);
+  window.dispatchEvent(new StorageEvent('storage',{key}));
+ },KEY);
+ await integrated.setViewportSize({width:360,height:780});
+ await integrated.click('#openTaxiDrivers');await integrated.check('#driversVanOnly');await openDriverOptions(integrated);await integrated.click('#driversAdd');
  await integrated.fill('#driversName','Test intégré');await integrated.fill('#driversPhone','0470123456');await integrated.check('#driversCarEligible');await integrated.check('#driversNight');await integrated.click('#driversSave');await back(integrated);
  assert.equal(await names(integrated).count(),1);assert.equal(await integrated.locator('#taxiDrivers').evaluate(el=>el.scrollWidth>el.clientWidth),false);
  await integrated.uncheck('#driversVanOnly');await integrated.click('[data-period="night"]');assert.equal(await names(integrated).count(),1);await integrated.locator('#taxiDrivers [data-close]').click();
@@ -605,6 +650,7 @@ async function checkBookingRoom(frame,id){
  await fresh.evaluate(()=>openTaxiDirectory('hotels'));
  const freshRows=fresh.locator('#directoryRows .directory-row');
  await freshRows.first().waitFor();
+ await fresh.locator('#directoryOptions summary').click();
  await fresh.fill('#directoryNew','Hôtel test');
  await fresh.click('#directoryAdd');
  const newHotel=freshRows.filter({hasText:'Hôtel test'});
@@ -633,6 +679,7 @@ async function checkBookingRoom(frame,id){
   await holdDrag(integrated,rows.nth(0),rows.nth(1));const reordered=await rows.allTextContents();assert.deepEqual(reordered.slice(0,3),[original[1],original[0],original[2]]);
   assert.equal(await integrated.locator('#directoryRows button').filter({hasText:/^[↑↓]$/}).count(),0);
   await integrated.click('#directoryClose');await integrated.evaluate(mode=>openTaxiDirectory(mode),mode);assert.deepEqual(await rows.allTextContents(),reordered);
+  await integrated.locator('#directoryOptions summary').click();
   await integrated.selectOption('#directorySort','az');const alphabetical=await rows.allTextContents();await holdDrag(integrated,rows.nth(0),rows.nth(1));assert.deepEqual(await rows.allTextContents(),alphabetical);
   await integrated.click('#directoryClose');
  }
@@ -678,6 +725,7 @@ async function checkBookingRoom(frame,id){
  await picker.getByRole('button',{name:'3 · Chauffeur standard'}).click();
  assert.equal(await picker.isVisible(),false);
  assert.deepEqual(await priorities(),['2','3']);
+ await openDriverOptions(integrated);
  await integrated.selectOption('#driversSort','az');
  const heldName=integrated.locator('.driver-name').filter({hasText:'Test intégré'});
  await touchDrag(integrated,heldName,heldName);
