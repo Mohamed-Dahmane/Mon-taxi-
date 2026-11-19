@@ -239,7 +239,7 @@ async function checkBookingRoom(frame,id){
  });
  assert.match(copied,/DoubleTree → Airport BRU \(Zaventem\)/);assert.match(copied,/Chambre : 0123/);assert.match(copied,/20\/11\/2026 à 05:15/);assert.match(copied,/^ATTENTION — PRIX FIXÉ : 74,79\s€/);assert.match(copied,/Client : Mme Dupont\nTéléphone : \+32470123456/);assert.doesNotMatch(copied,/10,00/);assert.match(copied,/Passagers : 4/);
  const pickupCopied=await frame.evaluate(async()=>{await copyCourse({bookingMode:'Direct',date:'2026-11-20',recordedTime:'05:15',hotel:'Standard',destination:'Hôtel',room:'7A',vehicle:'Van',driver:'self',pickup:{place:'Charleroi Airport (CRL)',client:'Client existant',phone:'0470000000'}});return window.__copiedCourse;});
- assert.match(pickupCopied,/Pick-up · Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);assert.match(pickupCopied,/Client : Client existant/);assert.doesNotMatch(pickupCopied,/PRIX FIXÉ/);
+ assert.match(pickupCopied,/Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);assert.match(pickupCopied,/Client : Client existant/);assert.doesNotMatch(pickupCopied,/PRIX FIXÉ|Chauffeur :/);
  await integrated.setViewportSize({width:320,height:620});
  await integrated.evaluate(()=>openHotelModule('direct'));
  await frame.click('#rideDropoff');
@@ -399,8 +399,12 @@ async function checkBookingRoom(frame,id){
  await details(integrated).getByRole('button',{name:'Attribuer cette course',exact:true}).click();
  await carRow.getByText('Attribuée à · Test intégré',{exact:true}).waitFor();
  assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré'});
+ await carRow.getByRole('button',{name:'Copier la course',exact:true}).click();
+ const planningCopy=await frame.evaluate(()=>window.__copiedCourse);
  await carRow.getByRole('button',{name:'Répertoire',exact:true}).click();await select(integrated,'Petit test');
  await details(integrated).getByRole('button',{name:'SMS',exact:true}).click();
+ assert.equal(planningCopy,await integrated.inputValue('#driversMessage'));
+ assert.doesNotMatch(planningCopy,/Chauffeur :|Test intégré/);
  await integrated.selectOption('#driversMessageSource','free');await integrated.fill('#driversMessage','Message libre');await integrated.click('#driversSms');
  assert.equal((await storedCourse('linked-car')).driverName,'Test intégré');
  // Assignment while encoding uses the same filtered directory and rejects a later incompatible vehicle change.
