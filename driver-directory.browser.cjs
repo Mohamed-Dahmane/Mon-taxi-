@@ -425,7 +425,7 @@ async function checkBookingRoom(frame,id){
   const previousPlaces=config.otherPickupPlaces;
   config.otherPickupPlaces=['Hôtel Dolce','Bureau'];
   const hotels=[
-   {...course,id:'color-doubletree',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton'},
+   {...course,id:'color-doubletree',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton',destination:'Airport BRU'},
    {...course,id:'color-moxy',hotel:'Moxy',hotelGroup:'Autre',driver:'other',driverName:'ChauffeurAvecUnNomExceptionnellementLongPourVérifierLeRetourÀLaLigne'},
    {...course,id:'color-pickup',hotel:'The Standard',pickup:{place:'BRU',passengers:1},destination:'The Standard'},
    {...course,id:'station-pickup',hotel:'The Standard',pickup:{place:'Gare Centrale',passengers:1},destination:'The Standard'},
@@ -436,7 +436,8 @@ async function checkBookingRoom(frame,id){
    {...course,id:'office-pickup',hotel:'The Standard',destination:'Bureau',pickup:{place:'BRU'}},
    {...course,id:'crl-pickup',destination:'The Standard',pickup:{place:'Charleroi Airport (CRL)'}},
    {...course,id:'station-dropoff',destination:'Gare du Midi'},
-   {...course,id:'other-dropoff',destination:'Autre',otherDestination:'Palais des congrès'}
+   {...course,id:'other-dropoff',destination:'Autre',otherDestination:'Palais des congrès'},
+   {...course,id:'long-route',hotel:'Hôtel de la très longue avenue des grands boulevards de Bruxelles',destination:'Adresse particulièrement longue sans abréviation à Anderlecht'}
   ];
   data.push(...hotels);
   renderReservations();
@@ -458,8 +459,14 @@ async function checkBookingRoom(frame,id){
    doubleTree:style(title('color-doubletree').lastElementChild),
    moxyColor,moxyAfterRender:style(title('color-moxy').lastElementChild)[0],
    titles:Object.fromEntries(['color-pickup','crl-pickup','station-pickup','station-dropoff','dolce-dropoff','dolce-pickup','linked-van','office-pickup','other-dropoff'].map(id=>[id,title(id).querySelector('.planning-route-title').textContent])),
-   titleBesideTime:title('dolce-pickup').querySelector('.planning-route-title').getBoundingClientRect().left
-    >=title('dolce-pickup').querySelector('time').getBoundingClientRect().right,
+
+   routeFit:Object.fromEntries(['color-doubletree','dolce-pickup','crl-pickup','station-pickup','long-route'].map(id=>{
+    const route=title(id).querySelector('.planning-route-title');
+    const text=route.firstElementChild;
+    return [id,{width:route.clientWidth,content:route.scrollWidth,font:Number.parseFloat(getComputedStyle(text).fontSize),
+     noWrap:getComputedStyle(route).whiteSpace==='nowrap',
+     title:route.title,scrollable:route.tabIndex===0}];
+   })),
    routeSummary:title('color-pickup').parentElement.querySelector('.reservation-card-route').textContent,
    pickupDetails:title('color-pickup').parentElement.textContent,
    people:[...title('linked-van').parentElement.querySelectorAll('.reservation-card-people strong')].map(el=>[el.textContent,style(el)[1]]),
@@ -471,7 +478,7 @@ async function checkBookingRoom(frame,id){
   renderReservations();
   return result;
  },linked.car);
- assert.deepEqual(planningStyles.time,['rgb(165, 209, 255)','22px']);
+ assert.deepEqual(planningStyles.time,['rgb(165, 209, 255)','18px']);
  assert.deepEqual(planningStyles.directions,[
   ['🏨 → ✈︎','Dépose : hôtel vers aéroport',true,'rgb(165, 237, 221)'],
   ['✈︎ → 🏨','Pick-up : aéroport vers hôtel',true,'rgb(231, 215, 255)'],
@@ -494,7 +501,13 @@ async function checkBookingRoom(frame,id){
   'office-pickup':'Airport BRU → Bureau',
   'other-dropoff':'The Standard → Palais des congrès'
  });
- assert.equal(planningStyles.titleBesideTime,true);
+ for(const id of ['color-doubletree','dolce-pickup','crl-pickup','station-pickup']){
+  const fit=planningStyles.routeFit[id];
+  assert.ok(fit.noWrap&&fit.content<=fit.width&&fit.font>=11&&fit.font<=19,JSON.stringify({id,...fit}));
+ }
+ const longRoute=planningStyles.routeFit['long-route'];
+ assert.ok(longRoute.scrollable&&longRoute.noWrap&&longRoute.content>longRoute.width&&longRoute.font===11);
+ assert.match(longRoute.title,/Hôtel de la très longue avenue/);
  assert.doesNotMatch(planningStyles.routeSummary,/Airport|→/);
  assert.match(planningStyles.pickupDetails,/Contact · Fal/);
  assert.deepEqual(planningStyles.people,[['Moi','18px'],['Fal','18px']]);

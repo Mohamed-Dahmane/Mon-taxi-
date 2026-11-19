@@ -343,6 +343,14 @@ html.taxi-clean {
   row-gap: 3px;
 }
 .taxi-clean.taxi-hotel .planning-route-title { min-width: 0; }
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .planning-route-title {
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .planning-route-text {
+  display: inline-block;
+}
 .taxi-clean.taxi-hotel .reservation-card-title .reservation-card-reference {
   align-self: center;
   padding: 3px 7px;
@@ -357,11 +365,32 @@ html.taxi-clean {
 @media (max-width: 480px) {
   .taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-title {
     grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 6px;
+  }
+  .taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-title time { font-size: 18px; }
+  .taxi-clean.taxi-hotel .planning-route-time { gap: 4px; }
+  .taxi-clean.taxi-hotel .planning-route-icon {
+    min-height: 19px;
+    padding-inline: 3px;
+    font-size: 11px;
   }
   .taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-reference {
     grid-column: 2;
     justify-self: start;
   }
+}
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .planning-title-wide .planning-route-title {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .planning-title-wide > :is(time, .planning-route-time) {
+  grid-column: 1;
+  grid-row: 2;
+}
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .planning-title-wide .reservation-card-reference {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  justify-self: end;
 }
 .taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-route {
   display: block;
