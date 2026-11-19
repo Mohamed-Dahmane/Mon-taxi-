@@ -563,7 +563,16 @@ root.TaxiDriverCommunication={
   const numbers=new Set(matches.map(driver=>phone(driver.phone)));
   const driver=matches.find(item=>compatibleWithCourse(item,course));
   if(numbers.size===1&&driver){
-   openSms(driver,courseText(course));
+   const text=courseText(course);
+   if(root.navigator.userAgent.includes(' MonTaxiDirectSms/1')&&text.length<=4000&&/^\+?[0-9]{7,15}$/.test(phone(driver.phone))){
+    const link=doc.createElement('a');
+    link.href='montaxi-sms:'+phone(driver.phone)+'?body='+encodeURIComponent(text);
+    doc.body.append(link);
+    link.click();
+    link.remove();
+   }else{
+    openSms(driver,text);
+   }
    return;
   }
   root.openTaxiDrivers(course,{exportCourse:true});

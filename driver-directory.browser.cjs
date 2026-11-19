@@ -436,6 +436,23 @@ async function checkBookingRoom(frame,id){
  assert.equal(directSms.planningClosed,true);
  assert.doesNotMatch(planningCopy,/Chauffeur :|Test intégré/);
  assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré'});
+ await integrated.evaluate(()=>{
+  const originalUserAgent=navigator.userAgent;
+  Object.defineProperty(navigator,'userAgent',{configurable:true,value:originalUserAgent+' MonTaxiDirectSms/1'});
+  window.nativeSmsRequests=[];
+  document.addEventListener('click',event=>{
+   const link=event.target.closest('a[href^="montaxi-sms:"]');
+   if(!link)return;
+   event.preventDefault();
+   nativeSmsRequests.push({url:link.href,userGesture:navigator.userActivation.isActive});
+  });
+ });
+ await integrated.evaluate(()=>openHotelModule('planning'));
+ await carRow.getByRole('button',{name:'Exporter au chauffeur',exact:true}).click();
+ const nativeSmsRequests=await integrated.evaluate(()=>nativeSmsRequests);
+ assert.deepEqual(nativeSmsRequests,[{url:'montaxi-sms:0470123456?body='+encodeURIComponent(planningCopy),userGesture:true}]);
+ assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré'});
+ await integrated.evaluate(()=>{delete navigator.userAgent;});
  await integrated.evaluate(course=>openTaxiDrivers(course,{exportCourse:true}),await storedCourse('linked-car'));
  await select(integrated,'Petit test');
  assert.equal(await integrated.locator('#driversSmsPanel').isVisible(),true);

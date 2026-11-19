@@ -21,7 +21,7 @@ public final class TaxiContactsBridge {
  private java.util.Set<String> pendingIds=java.util.Collections.emptySet();
  private boolean reading=false;
  TaxiContactsBridge(Activity activity,WebView web){this.activity=activity;this.web=web;}
- private boolean trusted(){
+ boolean trusted(){
   String url=web.getUrl();if(url==null)return false;
   Uri uri=Uri.parse(url);
   return ("https".equals(uri.getScheme())&&"mohamed-dahmane.github.io".equals(uri.getHost())&&"/Mon-taxi-/".equals(uri.getPath())&&(uri.getPort()==-1||uri.getPort()==443))||url.equals("file:///android_asset/index.html");
