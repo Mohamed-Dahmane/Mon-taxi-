@@ -241,7 +241,9 @@ async function checkBookingRoom(frame,id){
  const pickupCopied=await frame.evaluate(async()=>{await copyCourse({bookingMode:'Direct',date:'2026-11-20',recordedTime:'05:15',hotel:'Standard',destination:'Hôtel',room:'7A',vehicle:'Van',driver:'self',pickup:{place:'Charleroi Airport (CRL)',client:'Client existant',phone:'0470000000'}});return window.__copiedCourse;});
  assert.match(pickupCopied,/Pick-up · Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);assert.match(pickupCopied,/Client : Client existant/);assert.doesNotMatch(pickupCopied,/PRIX FIXÉ/);
  await integrated.setViewportSize({width:320,height:620});
- await frame.evaluate(()=>{openDirectDropoff();showStep('details');});
+ await integrated.evaluate(()=>openHotelModule('direct'));
+ await frame.click('#rideDropoff');
+ await frame.evaluate(()=>showStep('details'));
  await checkBookingRoom(frame,'room');
  const direct=await frame.evaluate(()=>{
   const initial=data.length;setDriverChoice('direct','self');$('hotel').value='The Standard';refreshContacts();$('contact').value='Fal';setVehicle('Voiture normale',false);selected=10;
@@ -252,6 +254,7 @@ async function checkBookingRoom(frame,id){
  });
  assert.equal(direct.count,1,direct.error);assert.equal(direct.first.room,'0240');assert.equal(direct.first.clientName,'Mme Test');assert.equal(direct.first.clientPhone,'+32470000000');assert.equal(direct.first.passengers,4);assert.equal(direct.cleared,true);assert.equal(direct.total,2);assert.equal(direct.second.clientName,'');assert.equal(direct.second.clientPhone,'');assert.equal(direct.second.passengers,null);
  const reservation=await frame.evaluate(()=>{
+  openReservations($('openTodayReservations'));
   const today=reservationClock().slice(0,10);const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10);
   const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000',passengers:3};
   data.push(original);showReservationForm(original,false);
