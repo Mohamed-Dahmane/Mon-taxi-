@@ -6,6 +6,16 @@ const code=fs.readFileSync(__dirname+'/driver-directory.js','utf8');
 const reorderCode=fs.readFileSync(__dirname+'/hold-reorder.js','utf8');
 async function holdDrag(page,from,to){await from.scrollIntoViewIfNeeded();await to.scrollIntoViewIfNeeded();const a=await from.boundingBox(),b=await to.boundingBox();await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(550);await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:10});await page.mouse.up();}
 async function touchDrag(page,from,to){await from.scrollIntoViewIfNeeded();await to.scrollIntoViewIfNeeded();const a=await from.boundingBox(),b=await to.boundingBox(),cdp=await page.context().newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:a.x+a.width/2,y:a.y+a.height/2}]});await page.waitForTimeout(550);for(let step=1;step<=8;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:a.x+a.width/2+(b.x+b.width/2-a.x-a.width/2)*step/8,y:a.y+a.height/2+(b.y+b.height/2-a.y-a.height/2)*step/8}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();}
+async function swipeScreen(page,x,y,dy){
+ const cdp=await page.context().newCDPSession(page);
+ try{
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+  for(let step=1;step<=8;step++){
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y+dy*step/8}]});
+  }
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ }finally{await cdp.detach();}
+}
 const openDriverOptions=async page=>{
  const options=page.locator('#driversManagement');
  if(await options.getAttribute('open')===null)await options.locator('summary').click();
@@ -181,6 +191,23 @@ async function checkBookingRoom(frame,id){
  assert.equal(await integrated.locator('#paymentNetToday').evaluate(el=>getComputedStyle(el).color),'rgb(165, 209, 255)');
  assert.equal(await integrated.locator('#homeCosts').evaluate(el=>getComputedStyle(el).color),'rgb(233, 200, 142)');
  assert.equal(await integrated.locator('#taxiPagePrev').isVisible(),false);
+ await integrated.evaluate(()=>{
+  window.refreshGestureCalls=[];
+  window.refreshGestureObserver=new MutationObserver(records=>{
+   if(records.some(record=>record.oldValue!==null)&&!document.querySelector('#fullRefreshIndicator').hidden){
+    refreshGestureCalls.push(document.querySelector('.page.active').id);
+   }
+  });
+  refreshGestureObserver.observe(document.querySelector('#fullRefreshIndicator'),{attributes:true,attributeFilter:['hidden'],attributeOldValue:true});
+  scrollTo(0,0);
+ });
+ const quickTitle=await integrated.locator('#home .entry-heading').boundingBox();
+ await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,36);
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]);
+ await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,115);
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home']);
+ // The standard refresh indicator stays active for at least 900 ms.
+ await integrated.waitForTimeout(950);
  const homeActions=integrated.locator('.hotel-home-actions');
  const actions=await homeActions.locator('button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
  assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','openHotelReservationQuick','openHotelCommissions','openTaxiDrivers']);
@@ -209,6 +236,27 @@ async function checkBookingRoom(frame,id){
  await financial.locator('summary').click();
  assert.equal(await financial.locator('#detailsCashReal').isVisible(),true);
  assert.equal(await integrated.locator('#v11DetailsCosts').isVisible(),true);
+ const journal=integrated.locator('#monthlyJournal');
+ const journalSummary=journal.locator('summary').first();
+ assert.equal(await journal.getAttribute('open'),null);
+ assert.equal(await journal.locator('#dayRows').isVisible(),false);
+ assert.ok((await journalSummary.boundingBox()).height>=44);
+ await journalSummary.click();
+ assert.equal(await journal.locator('#dayRows').isVisible(),true);
+ assert.equal(await journal.getByRole('button',{name:'+ Carburant'}).isVisible(),true);
+ await journalSummary.press('Enter');
+ assert.equal(await journal.locator('#dayRows').isVisible(),false);
+ await integrated.evaluate(()=>scrollTo(0,0));
+ const bilanTitle=await integrated.locator('#detailsHeading').boundingBox();
+ await swipeScreen(integrated,bilanTitle.x+10,bilanTitle.y+7,115);
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home','details']);
+ assert.equal(await journal.getAttribute('open'),null);
+ await integrated.waitForTimeout(950);
+ await integrated.evaluate(()=>{
+  refreshGestureObserver.disconnect();
+  document.body.classList.remove('taxi-refreshing','taxi-refresh-error');
+  document.querySelector('#fullRefreshIndicator').hidden=true;
+ });
  await integrated.locator('#taxiPageLocation [data-location="home"]').click();
  await integrated.setViewportSize({width:320,height:560});
  await integrated.evaluate(key=>{

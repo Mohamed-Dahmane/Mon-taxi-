@@ -629,3 +629,29 @@ html.taxi-clean {
   background: #182a28;
   border-color: #599f8c;
 }
+
+.taxi-clean #monthlyJournal { padding-block: 0 9px; }
+.taxi-clean #monthlyJournal:not([open]) { padding-bottom: 0; }
+.taxi-clean #journalHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 16px;
+  font-weight: 750;
+  list-style: none;
+  cursor: pointer;
+}
+.taxi-clean #journalHeading::-webkit-details-marker { display: none; }
+.taxi-clean #journalHeading::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-inline: 4px;
+  border: solid var(--clean-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.taxi-clean #monthlyJournal[open] > #journalHeading::after { transform: rotate(225deg); }
+.taxi-clean #monthlyJournal .journal-heading { border-top: 1px solid var(--clean-line); padding-top: 5px; }
