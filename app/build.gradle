@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'be.montaxi.gestion'
  compileSdk 35
- defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 56; versionName 'V 6/11.47 - Infos SMS chauffeur' }
+ defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 57; versionName 'V 6/11.48 - Pictogrammes transferts' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
