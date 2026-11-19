@@ -228,11 +228,11 @@ async function checkBookingRoom(frame,id){
   const list=dialog.querySelector('#driversList');
   const rows=[...list.children].filter(row=>row.getBoundingClientRect().bottom<=area.bottom);
   const filters=[...dialog.querySelectorAll('#driversVanFilter,#driversPeriodFilters,#driversManagement summary')];
-  return { visible:rows.length,first:list.getBoundingClientRect().top-area.top,overflow:dialog.scrollWidth>dialog.clientWidth,
+  return { visible:rows.length,listGap:list.getBoundingClientRect().top-dialog.querySelector('#driversListControls').getBoundingClientRect().bottom,overflow:dialog.scrollWidth>dialog.clientWidth,
    filterLine:Math.max(...filters.map(el=>el.getBoundingClientRect().top))-Math.min(...filters.map(el=>el.getBoundingClientRect().top))<2,
    keyboard:document.activeElement===dialog.querySelector('#driversSearch') };
  });
- assert.ok(compact.visible>=4&&compact.first<225&&!compact.overflow&&compact.filterLine&&!compact.keyboard,JSON.stringify(compact));
+ assert.ok(compact.visible>=4&&compact.listGap>=0&&compact.listGap<=12&&!compact.overflow&&compact.filterLine&&!compact.keyboard,JSON.stringify(compact));
  await openDriverOptions(integrated);
  assert.equal(await integrated.locator('#driversLastSync').isVisible(),true);
  assert.equal(await integrated.evaluate(()=>taxiDriverNavigateBack()),true);
