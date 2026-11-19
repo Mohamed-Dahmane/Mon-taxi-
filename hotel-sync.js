@@ -106,6 +106,10 @@
     .map(entry => [String(entry.id), entry]));
   const referenceCountersKey = "montaxi:course-reference-counters:v1";
   const referenceParts = reference => /^(\d{6})\.(\d{2,})$/.exec(reference ?? "");
+  const courseDate = course => course.bookingMode === "Programmée" && course.scheduledDate
+    ? course.scheduledDate : course.date;
+  const referenceDay = date => /^\d{4}-\d{2}-\d{2}$/.test(date ?? "")
+    ? date.slice(2).replaceAll("-", "") : null;
   const validSequence = number => Number.isSafeInteger(number) && number > 0;
   const formatReference = (day, number) => day + "." + String(number).padStart(2, "0");
 
@@ -127,10 +131,10 @@
   }
 
   function nextReference(date, courses, referenceCounters) {
-    const day = date.slice(2).replaceAll("-", "");
+    const day = referenceDay(date);
     const counters = collectReferenceCounters({ courses, referenceCounters });
     const sequence = (counters[day] ?? 0) + 1;
-    if (!/^\d{6}$/.test(day) || !validSequence(sequence)) throw Error("Référence de course invalide");
+    if (!day || !validSequence(sequence)) throw Error("Référence de course invalide");
     counters[day] = sequence;
     return { reference: formatReference(day, sequence), referenceCounters: counters };
   }
@@ -144,17 +148,22 @@
     for (const id of Object.keys(courses).sort()) {
       const course = courses[id];
       const remoteReference = published.courses?.[id]?.reference;
-      if (referenceParts(remoteReference) && !claimed.has(remoteReference)) {
+      const remoteParts = referenceParts(remoteReference);
+      const day = referenceDay(courseDate(course));
+      if (remoteParts && (!day || remoteParts[1] === day) && !claimed.has(remoteReference)) {
         claimed.add(remoteReference);
         if (course.reference !== remoteReference) courses[id] = { ...course, reference: remoteReference };
       } else if (referenceParts(course.reference)) {
         pending.push(id);
       }
     }
+    // Give existing courses their new daily number in original reference order.
+    pending.sort((a, b) => courses[a].reference.localeCompare(courses[b].reference, "fr", { numeric: true }));
     for (const id of pending) {
       const course = courses[id];
-      const [, day, sequence] = referenceParts(course.reference);
-      if (!claimed.has(course.reference) && Number(sequence) > (publishedCounters[day] ?? 0)) {
+      const [, originalDay, sequence] = referenceParts(course.reference);
+      const day = referenceDay(courseDate(course)) ?? originalDay;
+      if (day === originalDay && !claimed.has(course.reference) && Number(sequence) > (publishedCounters[day] ?? 0)) {
         claimed.add(course.reference);
         continue;
       }
@@ -204,5 +213,5 @@
         })).filter(item => item.at > now))
       .sort((a, b) => a.at - b.at);
   }
-  global.TaxiHotels = { equal, merge, applyPartnerDirectory, courseMap, reminders, referenceCountersKey, nextReference, reconcileReferences };
+  global.TaxiHotels = { equal, merge, applyPartnerDirectory, courseMap, courseDate, reminders, referenceCountersKey, nextReference, reconcileReferences };
 })(globalThis);

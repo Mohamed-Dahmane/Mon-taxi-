@@ -468,7 +468,7 @@ async function checkBookingRoom(frame,id){
   ['Supprimer la course','rgb(115, 55, 64)','rgb(255, 255, 255)',true]
  ]);
  const references=await frame.evaluate(course=>{
-  const date=reservationClock().slice(0,10);
+  const date=course.scheduledDate;
   const {nextReference,referenceCountersKey}=window.parent.TaxiHotels;
   const counters=JSON.parse(localStorage.getItem(referenceCountersKey)||'{}');
   const firstExpected=nextReference(date,data,counters).reference;
@@ -482,6 +482,19 @@ async function checkBookingRoom(frame,id){
   const secondSaved=saveNewCourse(second);
   const savedSecond=data.find(item=>item.id===second.id);
   renderReservations();
+  const migratedInput={courses:{
+   pickup:{bookingMode:'Programmée',date:'2026-11-19',scheduledDate:'2026-11-22',reference:'261119.02'},
+   dropoff:{bookingMode:'Programmée',date:'2026-11-19',scheduledDate:'2026-11-23',reference:'261119.03'},
+   direct:{bookingMode:'Direct',date:'2026-11-19',reference:'261119.01'},
+   legacy:{bookingMode:'Programmée',date:'2026-11-19',scheduledDate:'2026-11-22'}
+  }};
+  const migrate=window.parent.TaxiHotels.reconcileReferences;
+  const corrected=migrate(migratedInput,migratedInput);
+  const changedDate={...corrected,courses:{...corrected.courses,
+   pickup:{...corrected.courses.pickup,scheduledDate:'2026-11-23'}
+  }};
+  const rescheduled=migrate(changedDate,corrected);
+  const idempotent=window.parent.TaxiHotels.equal(corrected,migrate(corrected,corrected));
   const displayed=$('reservationList').querySelector('[data-entry-id="second-reference"] .reservation-card-reference').textContent;
   const legacy=$('reservationList').querySelector('[data-entry-id="linked-car"] .reservation-card-reference');
   const sms=window.parent.TaxiDriverDirectoryCore.courseText(savedSecond);
@@ -494,10 +507,16 @@ async function checkBookingRoom(frame,id){
   save();
   renderReservations();
   return {firstExpected,emptyDay,firstSaved,secondSaved,firstReference,secondReference:savedSecond.reference,displayed,
-   legacy:legacy===null,sms,third,reconciled};
+   legacy:legacy===null,sms,third,reconciled,corrected,rescheduled,idempotent};
  },linked.car);
  assert.equal(references.firstSaved&&references.secondSaved,true);
  assert.equal(references.emptyDay,'261119.01');
+ assert.equal(references.corrected.courses.pickup.reference,'261122.01');
+ assert.equal(references.corrected.courses.dropoff.reference,'261123.01');
+ assert.equal(references.corrected.courses.direct.reference,'261119.01');
+ assert.equal(references.corrected.courses.legacy.reference,undefined);
+ assert.equal(references.rescheduled.courses.pickup.reference,'261123.02');
+ assert.equal(references.idempotent,true);
  assert.equal(references.firstReference,references.firstExpected);
  assert.equal(Number(references.secondReference.split('.')[1]),Number(references.firstReference.split('.')[1])+1);
  assert.equal(references.displayed,'Réf. '+references.secondReference);
