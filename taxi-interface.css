@@ -245,6 +245,37 @@ html.taxi-clean {
 .taxi-clean.taxi-hotel [data-hotel-color="3"] { --planning-hotel-color: #ffb6a0; }
 .taxi-clean.taxi-hotel [data-hotel-color="4"] { --planning-hotel-color: #d0e79e; }
 .taxi-clean.taxi-hotel #reservationList .entry.reservation-card { border-radius: 10px; box-shadow: none; }
+.taxi-clean.taxi-hotel #reservationList .reservation-card {
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.taxi-clean.taxi-hotel .reservation-card .reservation-card-info > small {
+  font-size: 16px;
+  line-height: 1.45;
+  margin-block: 5px;
+}
+.taxi-clean.taxi-hotel .reservation-card-info .reservation-card-status { font-weight: 700; }
+.taxi-clean.taxi-hotel .reservation-card-people {
+  display: grid;
+  gap: 4px;
+  margin-block: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--clean-soft);
+  color: var(--clean-muted);
+  font-size: 16px;
+}
+.taxi-clean.taxi-hotel .reservation-card-people strong {
+  color: var(--clean-text);
+  font-size: 18px;
+  font-weight: 750;
+}
+.taxi-clean.taxi-hotel #reservationList .reservation-card :is(button, summary) {
+  font-size: 15px;
+  min-height: 44px;
+  white-space: normal;
+}
+.taxi-clean.taxi-hotel #reservationList .reservation-card .last-called-driver strong { font-size: 18px; }
 .taxi-clean.taxi-hotel .course-contact-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .taxi-clean.taxi-hotel .course-contact-actions button { margin: 0; }
 .taxi-clean.taxi-hotel .course-options { border-top: 1px solid var(--clean-line); margin-top: 8px; padding-top: 3px; }
