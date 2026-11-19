@@ -226,6 +226,30 @@ html.taxi-clean {
   color: var(--clean-accent);
   font-size: 22px;
 }
+/* Keep the direction and time together when the hotel name wraps. */
+.taxi-clean.taxi-hotel .planning-route-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.taxi-clean.taxi-hotel .planning-route-icon {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 5px;
+  border: 1px solid #407c78;
+  border-radius: 5px;
+  background: #1b3839;
+  color: #a5eddd;
+  font-size: 13px;
+  line-height: 1;
+}
+.taxi-clean.taxi-hotel .planning-route-icon[data-direction="pickup"] {
+  border-color: #775d9a;
+  background: #35264d;
+  color: #e7d7ff;
+}
 .taxi-clean.taxi-hotel .reservation-card-title [data-hotel-color] {
   color: var(--planning-hotel-color, var(--clean-text));
   font-size: 19px;

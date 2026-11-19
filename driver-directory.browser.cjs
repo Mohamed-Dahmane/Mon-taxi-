@@ -425,7 +425,8 @@ async function checkBookingRoom(frame,id){
   const hotels=[
    {...course,id:'color-doubletree',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton'},
    {...course,id:'color-moxy',hotel:'Moxy',hotelGroup:'Autre',driver:'other',driverName:'ChauffeurAvecUnNomExceptionnellementLongPourVérifierLeRetourÀLaLigne'},
-   {...course,id:'color-pickup',hotel:'The Standard',pickup:{place:'BRU',passengers:1},destination:'The Standard'}
+   {...course,id:'color-pickup',hotel:'The Standard',pickup:{place:'BRU',passengers:1},destination:'The Standard'},
+   {...course,id:'station-pickup',hotel:'The Standard',pickup:{place:'Gare Centrale',passengers:1},destination:'The Standard'}
   ];
   data.push(...hotels);
   renderReservations();
@@ -434,7 +435,15 @@ async function checkBookingRoom(frame,id){
   const moxyColor=style(title('color-moxy').lastElementChild)[0];
   data.reverse();renderReservations();data.reverse();
   const result={
-   time:style(title('linked-van').firstElementChild),
+   time:style(title('linked-van').querySelector('time')),
+   directions:['linked-van','color-pickup'].map(id=>{
+    const cardTitle=title(id);
+    const icon=cardTitle.querySelector('.planning-route-icon');
+    const time=cardTitle.querySelector('time');
+    return [icon?.textContent,icon?.getAttribute('aria-label'),
+     Boolean(icon&&icon.getBoundingClientRect().right<=time.getBoundingClientRect().left),style(icon)[0]];
+   }),
+   stationHasAirportIcon:Boolean(title('station-pickup').querySelector('.planning-route-icon')),
    standard:style(title('linked-van').lastElementChild),
    doubleTree:style(title('color-doubletree').lastElementChild),
    moxyColor,moxyAfterRender:style(title('color-moxy').lastElementChild)[0],
@@ -449,6 +458,11 @@ async function checkBookingRoom(frame,id){
   return result;
  },linked.car);
  assert.deepEqual(planningStyles.time,['rgb(165, 209, 255)','22px']);
+ assert.deepEqual(planningStyles.directions,[
+  ['🏨 → ✈︎','Dépose : hôtel vers aéroport',true,'rgb(165, 237, 221)'],
+  ['✈︎ → 🏨','Pick-up : aéroport vers hôtel',true,'rgb(231, 215, 255)']
+ ]);
+ assert.equal(planningStyles.stationHasAirportIcon,false);
  assert.deepEqual(planningStyles.standard,['rgb(213, 186, 255)','19px']);
  assert.deepEqual(planningStyles.doubleTree,['rgb(255, 210, 134)','19px']);
  assert.equal(planningStyles.moxyColor,planningStyles.moxyAfterRender);
