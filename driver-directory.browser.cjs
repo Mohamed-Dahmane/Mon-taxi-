@@ -422,8 +422,6 @@ async function checkBookingRoom(frame,id){
  const storedCourse=id=>integrated.evaluate(id=>JSON.parse(localStorage.getItem('montaxi:hotel-commissions:courses-v1')).find(course=>course.id===id),id);
  await integrated.setViewportSize({width:320,height:680});
  const planningStyles=await frame.evaluate(course=>{
-  const previousPlaces=config.otherPickupPlaces;
-  config.otherPickupPlaces=['Hôtel Dolce','Bureau'];
   const hotels=[
    {...course,id:'color-doubletree',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton',destination:'Airport BRU'},
    {...course,id:'color-moxy',hotel:'Moxy',hotelGroup:'Autre',driver:'other',driverName:'ChauffeurAvecUnNomExceptionnellementLongPourVérifierLeRetourÀLaLigne'},
@@ -431,8 +429,6 @@ async function checkBookingRoom(frame,id){
    {...course,id:'station-pickup',hotel:'The Standard',pickup:{place:'Gare Centrale',passengers:1},destination:'The Standard'},
    {...course,id:'dolce-dropoff',hotel:'Hôtel Dolce',destination:'Airport BRU'},
    {...course,id:'dolce-pickup',hotel:'Hôtel Dolce',destination:'Hôtel Dolce',pickup:{place:'Bruxelles Aéroport (BRU)'}},
-   {...course,id:'custom-hotel-pickup',hotel:'The Standard',destination:'Hôtel Dolce',pickup:{place:'BRU'}},
-   {...course,id:'office-dropoff',hotel:'Bureau',destination:'Airport BRU'},
    {...course,id:'office-pickup',hotel:'The Standard',destination:'Bureau',pickup:{place:'BRU'}},
    {...course,id:'crl-pickup',destination:'The Standard',pickup:{place:'Charleroi Airport (CRL)'}},
    {...course,id:'station-dropoff',destination:'Gare du Midi'},
@@ -447,14 +443,8 @@ async function checkBookingRoom(frame,id){
   data.reverse();renderReservations();data.reverse();
   const result={
    time:style(title('linked-van').querySelector('time')),
-   directions:['linked-van','color-pickup','dolce-dropoff','dolce-pickup','custom-hotel-pickup'].map(id=>{
-    const cardTitle=title(id);
-    const icon=cardTitle.querySelector('.planning-route-icon');
-    const time=cardTitle.querySelector('time');
-    return [icon?.textContent,icon?.getAttribute('aria-label'),
-     Boolean(icon&&icon.getBoundingClientRect().right<=time.getBoundingClientRect().left),style(icon)[0]];
-   }),
-   nonHotelHasBadge:['station-pickup','office-dropoff','office-pickup'].some(id=>title(id).querySelector('.planning-route-icon')),
+   hasRouteIcons:hotels.some(({id})=>title(id).querySelector('img, [role="img"]')),
+   hasClock:hotels.every(({id})=>title(id).firstElementChild.tagName==='TIME'),
    standard:style(title('linked-van').lastElementChild),
    doubleTree:style(title('color-doubletree').lastElementChild),
    moxyColor,moxyAfterRender:style(title('color-moxy').lastElementChild)[0],
@@ -474,19 +464,12 @@ async function checkBookingRoom(frame,id){
    narrowFits:document.querySelector('[data-entry-id="color-moxy"]').scrollWidth<=document.querySelector('[data-entry-id="color-moxy"]').clientWidth
   };
   data.splice(-hotels.length);
-  config.otherPickupPlaces=previousPlaces;
   renderReservations();
   return result;
  },linked.car);
  assert.deepEqual(planningStyles.time,['rgb(165, 209, 255)','18px']);
- assert.deepEqual(planningStyles.directions,[
-  ['🏨 → ✈︎','Dépose : hôtel vers aéroport',true,'rgb(165, 237, 221)'],
-  ['✈︎ → 🏨','Pick-up : aéroport vers hôtel',true,'rgb(231, 215, 255)'],
-  ['🏨 → ✈︎','Dépose : hôtel vers aéroport',true,'rgb(165, 237, 221)'],
-  ['✈︎ → 🏨','Pick-up : aéroport vers hôtel',true,'rgb(231, 215, 255)'],
-  ['✈︎ → 🏨','Pick-up : aéroport vers hôtel',true,'rgb(231, 215, 255)']
- ]);
- assert.equal(planningStyles.nonHotelHasBadge,false);
+ assert.equal(planningStyles.hasRouteIcons,false);
+ assert.equal(planningStyles.hasClock,true);
  assert.deepEqual(planningStyles.standard,['rgb(213, 186, 255)','19px']);
  assert.deepEqual(planningStyles.doubleTree,['rgb(255, 210, 134)','19px']);
  assert.equal(planningStyles.moxyColor,planningStyles.moxyAfterRender);
