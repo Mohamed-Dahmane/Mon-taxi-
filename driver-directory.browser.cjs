@@ -488,6 +488,33 @@ async function checkBookingRoom(frame,id){
  assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'sms:+32470000011');
  assert.equal(await integrated.evaluate(()=>externalActions.at(-1).planningClosed),false);
  await integrated.evaluate(()=>delete window.TaxiContacts.openWhatsApp);
+ const clientLinks=await frame.evaluate(course=>{
+  const previousFilter=reservationBoardStatus;
+  const examples=[
+   {...course,id:'client-direct',bookingMode:'Direct',clientPhone:'0470 12 34 56'},
+   {...course,id:'client-transfer',destination:'Gare du Midi',clientPhone:'0044 7700 900123'},
+   {...course,id:'client-historical',reservationStatus:'validated'},
+   {...course,id:'client-legacy-pickup',clientPhone:'',pickup:{place:'BRU',client:'Client existant',phone:'+33 6 12 34 56 78'}},
+   {...course,id:'client-no-phone',clientPhone:''}
+  ];
+  data.push(...examples);
+  reservationBoardStatus='all';
+  renderReservations();
+  const links=Object.fromEntries(examples.map(({id})=>[
+   id,[...$('reservationList').querySelectorAll('[data-entry-id="'+id+'"] .planning-client-actions a')].map(link=>link.getAttribute('href'))
+  ]));
+  reservationBoardStatus=previousFilter;
+  data.splice(-examples.length);
+  renderReservations();
+  return links;
+ },linked.car);
+ assert.deepEqual(clientLinks,{
+  'client-direct':['https://wa.me/32470123456','sms:+32470123456'],
+  'client-transfer':['https://wa.me/447700900123','sms:+447700900123'],
+  'client-historical':['https://wa.me/32470000011','sms:+32470000011'],
+  'client-legacy-pickup':['https://wa.me/33612345678','sms:+33612345678'],
+  'client-no-phone':[]
+ });
  const courseActions=frame.locator('[data-entry-id="linked-car"] .course-contact-actions');
  assert.deepEqual(await courseActions.getByRole('button').evaluateAll(buttons=>buttons.map(button=>{
   const style=getComputedStyle(button);
