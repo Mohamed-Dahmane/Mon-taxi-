@@ -95,7 +95,8 @@ async function checkBookingRoom(frame,id){
  await integrated.goto('http://taxi-app.test/');await integrated.waitForFunction(()=>typeof window.openTaxiDrivers==='function');
  await integrated.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');document.querySelector('main').hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());window.externalActions=[];window.TaxiContacts={open:url=>externalActions.push({url,home:document.querySelector('#home').classList.contains('active'),directoryClosed:!document.querySelector('#taxiDrivers').open,planningClosed:!document.querySelector('#hotelCommissionsDialog').open})};});
  await integrated.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--clean-bg').trim()==='#10151c');
- const entryFields=['cashInput','appeleInput','invoiceInput','commissionInput','FuelInput','ExpenseInput'];
+ const entryFields=['commissionInput','cashInput','appeleInput','invoiceInput','FuelInput','ExpenseInput'];
+ assert.deepEqual(await integrated.locator('.entry-hub .taxi-entry input').evaluateAll(fields=>fields.map(field=>field.id)),entryFields);
  for(const viewport of [{width:320,height:560},{width:360,height:640},{width:390,height:700}]){
   await integrated.setViewportSize(viewport);
   await integrated.evaluate(()=>scrollTo(0,0));
@@ -127,6 +128,17 @@ async function checkBookingRoom(frame,id){
  await manualCommission.fill('12,50');
  await manualCommission.press('Enter');
  assert.match(await integrated.locator('#commissionToday').innerText(),/25,00/);
+ const cashEntry=integrated.locator('#cashInput');
+ assert.equal(await cashEntry.getAttribute('enterkeyhint'),'done');
+ await cashEntry.fill('32,75');
+ await cashEntry.press('Enter');
+ assert.equal(await cashEntry.inputValue(),'');
+ assert.equal(await integrated.evaluate(()=>document.activeElement.tagName),'BODY');
+ assert.match(await integrated.locator('#cashToday').innerText(),/32,75/);
+ await cashEntry.fill('7,25');
+ await cashEntry.press('Enter');
+ assert.equal(await integrated.evaluate(()=>document.activeElement.tagName),'BODY');
+ assert.match(await integrated.locator('#cashToday').innerText(),/40,00/);
  await integrated.fill('#ExpenseInput','12');
  assert.equal(await integrated.locator('#quickExpenseName').isVisible(),true);
  assert.equal(await integrated.locator('#validateExpense').isVisible(),true);

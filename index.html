@@ -397,15 +397,15 @@ input,select,textarea{accent-color:#7098ff}
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Bilan</button></div>
 <section class="page active" id="home">
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="entry-hub-header"><h2 class="entry-heading">Saisie du jour <span id="entryDate"></span></h2><span class="entry-total-label">Total TTC</span></div>
-<div role="group" aria-labelledby="entryIncomeHeading">
-<h3 class="entry-group-heading" id="entryIncomeHeading">Entrées</h3>
-<div class="taxi-entry"><label for="cashInput">Cash</label><div class="entry-euro-field"><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-entry"><label for="appeleInput">Applis</label><div class="entry-euro-field"><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-<div class="taxi-entry invoice-entry"><label for="invoiceInput">Facturation <small>TVA 6 %</small></label><div class="invoice-input"><input id="invoiceInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un montant facturé hors TVA"><small aria-hidden="true">HT</small><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong class="invoice-total"><span id="invoiceToday">—</span></strong><button type="button" class="payment-pencil" id="editInvoice" aria-label="Corriger le montant facturé hors TVA" title="Corriger la facturation HT"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
-</div>
-<div class="entry-costs" role="group" aria-labelledby="entryOutflowHeading">
-<h3 class="entry-group-heading" id="entryOutflowHeading">Sorties</h3>
+<div role="group" aria-labelledby="entryFrequentHeading">
+<h3 class="entry-group-heading" id="entryFrequentHeading">Saisie rapide</h3>
 <div class="taxi-entry commission-entry"><label for="commissionInput">Commission manuelle</label><div class="entry-euro-field"><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry cash-entry"><label for="cashInput">Cash</label><div class="entry-euro-field"><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div class="taxi-entry"><label for="appeleInput">Applis</label><div class="entry-euro-field"><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+</div>
+<div class="entry-costs" role="group" aria-labelledby="entryOtherHeading">
+<h3 class="entry-group-heading" id="entryOtherHeading">Autres montants</h3>
+<div class="taxi-entry invoice-entry"><label for="invoiceInput">Facturation <small>TVA 6 %</small></label><div class="invoice-input"><input id="invoiceInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un montant facturé hors TVA"><small aria-hidden="true">HT</small><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong class="invoice-total"><span id="invoiceToday">—</span></strong><button type="button" class="payment-pencil" id="editInvoice" aria-label="Corriger le montant facturé hors TVA" title="Corriger la facturation HT"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="FuelInput">Carburant</label><div class="entry-euro-field"><input id="FuelInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter carburant"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="homeFuel">—</span></strong><button type="button" class="payment-pencil" id="editEntryFuel" aria-label="Corriger carburant du jour" title="Corriger carburant du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="ExpenseInput">Dépenses</label><div class="entry-euro-field"><input id="ExpenseInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter dépenses"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="homeExtra">—</span></strong><button type="button" class="payment-pencil" id="editEntryExpense" aria-label="Corriger dépenses du jour" title="Corriger dépenses du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div id="quickExpenseNature" hidden><label class="label" for="quickExpenseName">Nature de la dépense</label><input id="quickExpenseName" type="text" placeholder="Ex. Réparation, parking"><button type="button" class="button" id="validateExpense">Ajouter la dépense</button></div>
@@ -1526,11 +1526,11 @@ function correctPayment(field,label,adjustment=false){
 }
 const paymentInputs=[
  {field:"cash",label:"Cash",input:$("cashInput"),editId:"editCash"},
- {field:"appele",label:"Appli",input:$("appeleInput"),editId:"editAppele"},
- {field:"invoiceHt",label:"Facturation HT",input:$("invoiceInput"),editId:"editInvoice",adjustable:false},
+ {field:"appele",label:"Appli",input:$("appeleInput"),editId:"editAppele",nextInput:"invoiceInput"},
+ {field:"invoiceHt",label:"Facturation HT",input:$("invoiceInput"),editId:"editInvoice",adjustable:false,nextInput:"FuelInput"},
  {field:"commission",label:"Com",input:$("commissionInput"),editId:"editCommission"}
 ];
-paymentInputs.forEach(({field,label,input,editId,adjustable=true},index)=>{
+paymentInputs.forEach(({field,label,input,editId,adjustable=true,nextInput})=>{
  $(editId).addEventListener("click",()=>correctPayment(field,label));
  if(adjustable)$(editId+"Adjustment").addEventListener("click",()=>correctPayment(field,label,true));
  input.addEventListener("blur",()=>addPayment(field,input));
@@ -1538,8 +1538,8 @@ paymentInputs.forEach(({field,label,input,editId,adjustable=true},index)=>{
   if(event.key!=="Enter"||event.isComposing) return;
   event.preventDefault();
   if(!event.repeat&&addPayment(field,input)){
-   if(field==="commission")input.blur();
-   else paymentInputs[index+1]?.input.focus();
+   if(nextInput)$(nextInput).focus();
+   else input.blur();
   }
  });
 });
@@ -2195,5 +2195,5 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 <script src="driver-directory.js?v=20261119-export-planning"></script>
 <script src="fixed-navigation.js?v=20261118-home-toolbar"></script>
 
-<link rel="stylesheet" href="taxi-interface.css?v=20261119-lisibilite-planning">
+<link rel="stylesheet" href="taxi-interface.css?v=20261119-saisie-rapide">
 </body></html>
