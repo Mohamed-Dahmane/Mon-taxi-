@@ -217,6 +217,10 @@ html.taxi-clean {
 }
 .taxi-clean.taxi-hotel .wrap { padding-inline: clamp(10px, 3vw, 20px); }
 .taxi-clean.taxi-hotel #reservationBoardTitle { margin: 0 0 8px; }
+/* The fixed navigation bar handles back and home in the planning list. */
+.taxi-clean.taxi-hotel #reservationsOverlay:has(#reservationBoard[data-schedule-only="true"]:not([hidden])) #closeReservations {
+  display: none;
+}
 .taxi-clean.taxi-hotel #reservationBoard[data-schedule-only="true"] #reservationBoardTitle { margin-bottom: 4px; }
 .taxi-clean.taxi-hotel #reservationBoard[data-schedule-only="true"] #reservationList [data-group-heading="day"]:first-child {
   margin-top: 0;

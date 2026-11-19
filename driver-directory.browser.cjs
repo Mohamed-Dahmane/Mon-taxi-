@@ -428,6 +428,7 @@ async function checkBookingRoom(frame,id){
   const first=list.querySelector('.reservation-card:not([hidden])');
   const compact={
    filterHidden:getComputedStyle(filter).display==='none',
+   localBackHidden:getComputedStyle($('closeReservations')).display==='none',
    monthCount:list.querySelectorAll('[data-group-heading="month"]').length,
    firstDayVisible:!first.previousElementSibling.hidden&&first.previousElementSibling.dataset.groupHeading==='day',
    offset:first.getBoundingClientRect().top-heading.getBoundingClientRect().top
@@ -444,6 +445,14 @@ async function checkBookingRoom(frame,id){
   return {compact,archives};
  },linked.car);
  assert.equal(planningHeader.compact.filterHidden,true);
+ assert.equal(planningHeader.compact.localBackHidden,true);
+ const fixedNavigation=integrated.locator('#taxiQuickNavigation');
+ const fixedBack=fixedNavigation.getByRole('button',{name:'Page précédente',exact:true});
+ assert.equal(await fixedBack.isVisible(),true);
+ assert.equal(await fixedNavigation.getByRole('button',{name:'Retour à l’accueil',exact:true}).isVisible(),true);
+ await fixedBack.click();
+ assert.equal(await frame.locator('#reservationsOverlay').isVisible(),false);
+ await integrated.evaluate(()=>openHotelModule('planning'));
  assert.equal(planningHeader.compact.monthCount,0);
  assert.equal(planningHeader.compact.firstDayVisible,true);
  assert.ok(planningHeader.compact.offset>0&&planningHeader.compact.offset<100,JSON.stringify(planningHeader));
