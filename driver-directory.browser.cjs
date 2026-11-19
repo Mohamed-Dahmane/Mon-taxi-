@@ -462,9 +462,34 @@ async function checkBookingRoom(frame,id){
  await integrated.evaluate(()=>openHotelModule('planning'));
  await vanRow.getByText('Attribuée à · uniquement',{exact:true}).waitFor();
  const carRow=frame.locator('.reservation-card[data-entry-id="linked-car"]');
- await carRow.getByRole('button',{name:'Changer chauffeur',exact:true}).click();
- assert.equal(await integrated.locator('#taxiDrivers').isVisible(),true);
+ const originalDirectory=await integrated.evaluate(key=>localStorage.getItem(key),KEY);
+ await integrated.evaluate(({key,ids})=>{
+  const directory=JSON.parse(localStorage.getItem(key));
+  directory.sortMode='za';
+  const priorities=new Map([[ids['0470101010'],1],[ids['0470202020'],2],[ids['0470123456'],3]]);
+  for(const driver of directory.drivers)driver.priorityClass=priorities.get(driver.id);
+  localStorage.setItem(key,JSON.stringify(directory));
+  window.dispatchEvent(new StorageEvent('storage',{key}));
+ },{key:KEY,ids:driverIds});
+ await vanRow.getByRole('button',{name:'Attribuer à',exact:true}).click();
+ assert.equal(await details(integrated).locator('h3').innerText(),'TX Van uniquement');
+ assert.equal((await storedCourse('linked-van')).driverName,'uniquement');
+ await back(integrated);
+ assert.equal(await integrated.locator('#driversVanOnly').isDisabled(),true);
+ assert.deepEqual(await integrated.locator('.driver-name').allTextContents(),['TX Van uniquement','Test intégré']);
+ await integrated.locator('#taxiDrivers [data-close]').click();
+ await carRow.getByRole('button',{name:'Attribuer à',exact:true}).click();
+ assert.equal(await details(integrated).locator('h3').innerText(),'TX Petit test');
+ assert.equal((await storedCourse('linked-car')).driverName,'Petit test');
+ await back(integrated);
+ assert.equal(await integrated.inputValue('#driversSort'),'priority');
  assert.equal(await integrated.locator('#driversList').getByRole('button',{name:'Moi',exact:true}).isVisible(),true);
+ assert.deepEqual(await integrated.locator('.driver-name').allTextContents(),['TX Petit test','TX Van uniquement','Test intégré']);
+ assert.equal(await integrated.evaluate(key=>JSON.parse(localStorage.getItem(key)).sortMode,KEY),'za');
+ await integrated.evaluate(({key,originalDirectory})=>{
+  localStorage.setItem(key,originalDirectory);
+  window.dispatchEvent(new StorageEvent('storage',{key}));
+ },{key:KEY,originalDirectory});
  await select(integrated,'Test intégré');
  await details(integrated).getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();
  await carRow.getByText('Attribuée à · Test intégré',{exact:true}).waitFor();
