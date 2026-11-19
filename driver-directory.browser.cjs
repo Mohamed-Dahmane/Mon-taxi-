@@ -421,6 +421,33 @@ async function checkBookingRoom(frame,id){
  const driverIds=await integrated.evaluate(key=>Object.fromEntries(JSON.parse(localStorage.getItem(key)).drivers.map(driver=>[driver.phone,driver.id])),KEY);
  const storedCourse=id=>integrated.evaluate(id=>JSON.parse(localStorage.getItem('montaxi:hotel-commissions:courses-v1')).find(course=>course.id===id),id);
  await integrated.setViewportSize({width:320,height:680});
+ const planningHeader=await frame.evaluate(course=>{
+  const list=$('reservationList');
+  const filter=$('reservationPeriodBox');
+  const heading=$('reservationBoardTitle');
+  const first=list.querySelector('.reservation-card:not([hidden])');
+  const compact={
+   filterHidden:getComputedStyle(filter).display==='none',
+   monthCount:list.querySelectorAll('[data-group-heading="month"]').length,
+   firstDayVisible:!first.previousElementSibling.hidden&&first.previousElementSibling.dataset.groupHeading==='day',
+   offset:first.getBoundingClientRect().top-heading.getBoundingClientRect().top
+  };
+  data.push({...course,id:'compact-header-archived',reservationStatus:'validated',validatedAt:course.receivedAt});
+  selectReservationBoardStatus('history');
+  const archives={
+   filterVisible:filter.getClientRects().length>0,
+   hasMonthHeading:!!list.querySelector('[data-group-heading="month"]'),
+   hasMonthSearch:!!filter.querySelector('button')
+  };
+  data.pop();
+  openScheduleBoard('upcoming');
+  return {compact,archives};
+ },linked.car);
+ assert.equal(planningHeader.compact.filterHidden,true);
+ assert.equal(planningHeader.compact.monthCount,0);
+ assert.equal(planningHeader.compact.firstDayVisible,true);
+ assert.ok(planningHeader.compact.offset>0&&planningHeader.compact.offset<100,JSON.stringify(planningHeader));
+ assert.deepEqual(planningHeader.archives,{filterVisible:true,hasMonthHeading:true,hasMonthSearch:true});
  const planningStyles=await frame.evaluate(course=>{
   const hotels=[
    {...course,id:'color-doubletree',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton',destination:'Airport BRU'},

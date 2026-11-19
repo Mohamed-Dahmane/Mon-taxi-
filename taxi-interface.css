@@ -217,6 +217,14 @@ html.taxi-clean {
 }
 .taxi-clean.taxi-hotel .wrap { padding-inline: clamp(10px, 3vw, 20px); }
 .taxi-clean.taxi-hotel #reservationBoardTitle { margin: 0 0 8px; }
+.taxi-clean.taxi-hotel #reservationBoard[data-schedule-only="true"] #reservationBoardTitle { margin-bottom: 4px; }
+.taxi-clean.taxi-hotel #reservationBoard[data-schedule-only="true"] #reservationList [data-group-heading="day"]:first-child {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+.taxi-clean.taxi-hotel #reservationBoard[data-schedule-only="true"] #reservationList [data-group-heading="day"]:first-child + .reservation-card {
+  margin-top: 4px;
+}
 .taxi-clean.taxi-hotel .reservation-create-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
 .taxi-clean.taxi-hotel .reservation-create-actions button { min-height: 44px; padding: 5px; line-height: 1.2; }
 .taxi-clean.taxi-hotel .reservation-status-filters { gap: 5px; }
