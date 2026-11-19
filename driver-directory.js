@@ -32,6 +32,15 @@ function driverSearchName(name){
  return text.trim();
 }
 const cleanSearch=s=>norm(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr');
+function assignedNameMatches(drivers,name){
+ const normalized=value=>cleanSearch(driverSearchName(value)||value).replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+ const key=normalized(name);
+ if(!key)return [];
+ const exact=drivers.filter(driver=>normalized(driver.name)===key||cleanSearch(driver.name)===cleanSearch(name));
+ if(exact.length||!key.includes(' '))return exact;
+ const tokens=value=>value.split(' ').sort().join(' ');
+ return drivers.filter(driver=>tokens(normalized(driver.name))===tokens(key));
+}
 function nameSearchRank(name,query){
  let q=cleanSearch(query);if(!q)return 0;
  if(/^(?:[a-z]\s+)+[a-z]$/.test(q))q=q.replace(/\s/g,'');
@@ -263,6 +272,7 @@ priorityPicker.addEventListener('close',()=>{
  priorityDriverId=null;
 });
 dialog.addEventListener('close',()=>{if(priorityPicker.open)priorityPicker.close()});
+let pendingDriverLookup=null;
 let vanOnly=false,period='all',editing=null,recipient=null,busy=false,selectedDriver=null,listScroll=0,courseContext=null,linkedCourse=null,pickDriverCallback=null;
 let exportCourse=false,changeDriver=false;
 const vanRequired=()=>requiredVehicle(courseContext)==='van';
@@ -412,7 +422,9 @@ function importContacts(items,source,fromPhone=false,fullScan=false){
  }
 }
 root.addEventListener('taxi-contacts-result',event=>{
- const d=event.detail||{};if(['sync','tx','refresh'].includes(d.mode)||d.error)setBusy(false);
+ const d=event.detail||{};
+ if(d.mode==='driver-lookup'){finishDriverLookup(d);return;}
+ if(['sync','tx','refresh'].includes(d.mode)||d.error)setBusy(false);
  if(d.error){if(d.mode==='open'&&lastCall?.awaitingReturn){lastCall.awaitingReturn=false;saveCall();}if(!dialog.open&&d.mode==='open')root.alert(d.error);else status(d.error);return;}
  if(d.contacts&&d.mode==='refresh')importContacts(d.contacts,'sync',true);
  else if(d.contacts)importContacts(d.contacts,d.mode==='sync'?'sync':d.mode==='tx'?'tx':'chosen',d.mode==='sync'||d.mode==='tx',d.mode==='sync');
@@ -510,6 +522,8 @@ function assignPlanningCourse(course,driver){
   if(driver&&frame?.contentWindow?.canDrive?.(driverName)===false)return fail('Ce nom est réservé à un contact d’attribution.');
   current.driver=driver?'other':'self';
   current.driverName=driverName;
+  if(driver)current.driverDirectoryId=driver.id;
+  else delete current.driverDirectoryId;
   localStorage.setItem(COURSES_KEY,JSON.stringify(entries));
  }catch{return fail('Impossible d’enregistrer le chauffeur dans le Planning. Réessaie.');}
  if(lastCall?.courseId===String(course.id)){lastCall=null;saveCall();}
@@ -548,6 +562,23 @@ function revealLastCall(course){
  const reveal=()=>frame?.contentWindow?.revealLastCalledDriver?.(String(course.id));
  if(frame?.contentWindow?.revealLastCalledDriver)reveal();else frame?.addEventListener('load',reveal,{once:true});
 }
+function finishDriverLookup(response){
+ const previous=pendingDriverLookup;
+ pendingDriverLookup=null;
+ if(!previous||!dialog.open||selectedDriver||String(linkedCourse?.id)!==previous.id)return;
+ const course=courses().find(item=>String(item.id)===previous.id);
+ if(!course||course.driver!=='other'||norm(course.driverName)!==previous.name)return;
+ const contacts=Array.isArray(response.contacts)?response.contacts.filter(contact=>
+  !state.deletedNativeIds.includes(String(contact.nativeId))&&validPhone(contact.phone)):[];
+ const matches=assignedNameMatches(contacts,previous.name);
+ const numbers=new Set(matches.map(driver=>phone(driver.phone)));
+ if(numbers.size===1){
+  openSms(matches[0],courseText(course));
+  return;
+ }
+ status(response.error||(numbers.size>1?'Plusieurs numéros correspondent à '+previous.name+'. Choisis sa fiche.':
+  'Numéro introuvable pour '+previous.name+'. Importe sa fiche depuis les contacts.'));
+}
 root.TaxiDriverCommunication={
  lastFor,
  exportFromPlanning(courseId){
@@ -557,30 +588,29 @@ root.TaxiDriverCommunication={
    if(feedback)feedback.textContent='Cette course est introuvable dans le Planning.';
    return;
   }
-  const name=course.driver==='other'?cleanSearch(course.driverName):'';
-  const matches=name?state.drivers.filter(driver=>validPhone(driver.phone)&&
-   [driver.name,driverSearchName(driver.name)].some(value=>cleanSearch(value)===name)):[];
-  const numbers=new Set(matches.map(driver=>phone(driver.phone)));
-  const driver=matches.find(item=>compatibleWithCourse(item,course));
+  const name=course.driver==='other'?norm(course.driverName):'';
+  const stored=course.driver==='other'?state.drivers.find(driver=>driver.id===course.driverDirectoryId):null;
+  const matches=stored?[stored]:assignedNameMatches(state.drivers,name);
+  const reachable=matches.filter(driver=>validPhone(driver.phone));
+  const numbers=new Set(reachable.map(driver=>phone(driver.phone)));
+  const driver=reachable.find(item=>compatibleWithCourse(item,course));
   if(numbers.size===1&&driver){
-   const text=courseText(course);
-   if(root.navigator.userAgent.includes(' MonTaxiDirectSms/1')&&text.length<=4000&&/^\+?[0-9]{7,15}$/.test(phone(driver.phone))){
-    const link=doc.createElement('a');
-    link.href='montaxi-sms:'+phone(driver.phone)+'?body='+encodeURIComponent(text);
-    doc.body.append(link);
-    link.click();
-    link.remove();
-   }else{
-    openSms(driver,text);
-   }
+   openSms(driver,courseText(course));
    return;
   }
   root.openTaxiDrivers(course,{exportCourse:true});
-  if(name){
-   status(numbers.size>1?'Plusieurs numéros correspondent à ce chauffeur. Choisis la bonne fiche.':
-    matches.length?'Le chauffeur attribué ne correspond pas au véhicule indiqué. Vérifie le véhicule de sa fiche.':
-    'Le numéro du chauffeur attribué est introuvable. Choisis sa fiche dans le Répertoire.');
+  if(!name)return;
+  $('driversSearch').value=name;
+  render();
+  if(!matches.length&&typeof root.TaxiContacts?.findDriver==='function'&&name.length<=160&&!pendingDriverLookup){
+   pendingDriverLookup={id:String(course.id),name};
+   status('Recherche de '+name+' dans les contacts du téléphone…');
+   root.TaxiContacts.findDriver(name);
+   return;
   }
+  status(numbers.size>1?'Plusieurs numéros correspondent à '+name+'. Choisis sa fiche.':
+   reachable.length?'La fiche de '+name+' ne correspond pas au véhicule demandé.':
+   'Numéro introuvable pour '+name+'. Importe sa fiche depuis les contacts.');
  },
  resumeCall(){
   if(!lastCall?.awaitingReturn)return false;
@@ -591,7 +621,7 @@ root.TaxiDriverCommunication={
  sendToLast(course){const actual=courses().find(e=>String(e.id)===String(course.id))||course;const d=lastFor(course);if(!d)return;const profile=state.drivers.find(x=>x.id===d.id);openSms(profile,courseText(actual),course);},
  nextFor(course){const compatible=orderedDrivers(state.drivers,'priority',hotelDriverContacts()).filter(d=>compatibleWithCourse(d,course));if(!compatible.length){root.openTaxiDrivers(course);return;}const current=compatible.findIndex(d=>d.id===lastCall?.driverId);root.openTaxiDrivers(course,{driverId:compatible[(current+1)%compatible.length].id});},
  namesForCourse(course){return [...new Set(state.drivers.filter(d=>compatibleWithCourse(d,course)).map(d=>driverSearchName(d.name)||d.name))];},
- canAssignName(name,course){if(['moi','self'].includes(String(name).toLocaleLowerCase('fr')))return true;const key=norm(name).toLocaleLowerCase('fr');const matches=state.drivers.filter(d=>[d.name,driverSearchName(d.name)].some(n=>norm(n).toLocaleLowerCase('fr')===key));return matches.length?matches.some(d=>compatibleWithCourse(d,course)):requiredVehicle(course)!=='van';}
+ canAssignName(name,course){if(['moi','self'].includes(String(name).toLocaleLowerCase('fr')))return true;const matches=assignedNameMatches(state.drivers,name);return matches.length?matches.some(d=>compatibleWithCourse(d,course)):requiredVehicle(course)!=='van';}
 };
 
 root.taxiDriverNavigateBack=()=>{

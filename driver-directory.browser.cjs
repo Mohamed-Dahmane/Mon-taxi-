@@ -308,6 +308,7 @@ async function checkBookingRoom(frame,id){
  });
  await integrated.evaluate(()=>openHotelModule('planning'));
  const vanRow=frame.locator('.reservation-card[data-entry-id="linked-van"]');
+ const driverIds=await integrated.evaluate(key=>Object.fromEntries(JSON.parse(localStorage.getItem(key)).drivers.map(driver=>[driver.phone,driver.id])),KEY);
  const storedCourse=id=>integrated.evaluate(id=>JSON.parse(localStorage.getItem('montaxi:hotel-commissions:courses-v1')).find(course=>course.id===id),id);
  await integrated.setViewportSize({width:320,height:680});
  const planningStyles=await frame.evaluate(course=>{
@@ -404,7 +405,7 @@ async function checkBookingRoom(frame,id){
  await leaveAndReturn();await integrated.waitForFunction(()=>!document.querySelector('#taxiDrivers').open);
  await vanRow.locator('.last-called-driver strong').filter({hasText:'uniquement'}).waitFor();await vanRow.getByRole('button',{name:'J’envoie',exact:true}).click();
  const linkedSms=await integrated.evaluate(()=>externalActions.at(-1));assert.ok(linkedSms.url.startsWith('sms:0470202020?body='));const linkedText=decodeURIComponent(linkedSms.url);for(const value of ['Airport CRL (Charleroi)','Chambre : 204','Client : Client lié','Téléphone : +32470000011','Passagers : 5','PRIX FIXÉ : 90,00'])assert.ok(linkedText.includes(value),value);assert.equal(linkedSms.home,true);assert.equal(linkedSms.planningClosed,true);
- assert.deepEqual(await storedCourse('linked-van'),{...linked.van,driver:'other',driverName:'uniquement'});
+ assert.deepEqual(await storedCourse('linked-van'),{...linked.van,driver:'other',driverName:'uniquement',driverDirectoryId:driverIds['0470202020']});
  await integrated.evaluate(course=>openTaxiDrivers(course),linked.car);assert.equal(await integrated.locator('#driversVanOnly').isChecked(),false);
  assert.equal(await integrated.locator('#driversVanOnly').isEnabled(),true);
  assert.equal(await names(integrated).count(),3);
@@ -414,7 +415,7 @@ async function checkBookingRoom(frame,id){
  await integrated.selectOption('#driversImportCourse','linked-car');await integrated.click('#driversImportConfirm');assert.match(await integrated.inputValue('#driversMessage'),/Client : Client lié/);assert.match(await integrated.locator('#driversRecipient').innerText(),/Petit test/);
  assert.equal((await storedCourse('linked-car')).driverName,'Petit test');
  await integrated.click('#driversSms');assert.ok((await integrated.evaluate(()=>externalActions.at(-1).url)).startsWith('sms:0470101010?body='));
- assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Petit test'});
+ assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Petit test',driverDirectoryId:driverIds['0470101010']});
  await integrated.evaluate(()=>openHotelModule('planning'));
  await vanRow.getByText('Attribuée à · uniquement',{exact:true}).waitFor();
  const carRow=frame.locator('.reservation-card[data-entry-id="linked-car"]');
@@ -424,7 +425,7 @@ async function checkBookingRoom(frame,id){
  await select(integrated,'Test intégré');
  await details(integrated).getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();
  await carRow.getByText('Attribuée à · Test intégré',{exact:true}).waitFor();
- assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré'});
+ assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré',driverDirectoryId:driverIds['0470123456']});
  await carRow.locator('.course-options summary').click();
  await carRow.getByRole('button',{name:'Copier le texte',exact:true}).click();
  const planningCopy=await frame.evaluate(()=>window.__copiedCourse);
@@ -435,24 +436,36 @@ async function checkBookingRoom(frame,id){
  assert.equal(directSms.directoryClosed,true);
  assert.equal(directSms.planningClosed,true);
  assert.doesNotMatch(planningCopy,/Chauffeur :|Test intégré/);
- assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré'});
+ await integrated.evaluate(()=>openHotelModule('planning'));
+ assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré',driverDirectoryId:driverIds['0470123456']});
+ await frame.evaluate(()=>{
+  const course=data.find(item=>item.id==='linked-car');
+  course.driverName='Mathieu Lille';
+  delete course.driverDirectoryId;
+  save();
+  renderReservations();
+ });
  await integrated.evaluate(()=>{
-  const originalUserAgent=navigator.userAgent;
-  Object.defineProperty(navigator,'userAgent',{configurable:true,value:originalUserAgent+' MonTaxiDirectSms/1'});
-  window.nativeSmsRequests=[];
-  document.addEventListener('click',event=>{
-   const link=event.target.closest('a[href^="montaxi-sms:"]');
-   if(!link)return;
-   event.preventDefault();
-   nativeSmsRequests.push({url:link.href,userGesture:navigator.userActivation.isActive});
-  });
+  TaxiContacts.findDriver=name=>{
+   window.lookedUpDriver=name;
+   window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{
+    mode:'driver-lookup',contacts:[{nativeId:'225',name:'TX Lille Mathieu',phone:'0470225000'}]
+   }}));
+  };
  });
  await integrated.evaluate(()=>openHotelModule('planning'));
  await carRow.getByRole('button',{name:'Exporter au chauffeur',exact:true}).click();
- const nativeSmsRequests=await integrated.evaluate(()=>nativeSmsRequests);
- assert.deepEqual(nativeSmsRequests,[{url:'montaxi-sms:0470123456?body='+encodeURIComponent(planningCopy),userGesture:true}]);
- assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré'});
- await integrated.evaluate(()=>{delete navigator.userAgent;});
+ assert.equal(await integrated.evaluate(()=>lookedUpDriver),'Mathieu Lille');
+ const recoveredSms=await integrated.evaluate(()=>externalActions.at(-1));
+ assert.equal(recoveredSms.url,'sms:0470225000?body='+encodeURIComponent(planningCopy));
+ assert.equal((await storedCourse('linked-car')).driverName,'Mathieu Lille');
+ await integrated.evaluate(()=>{delete TaxiContacts.findDriver;});
+ await integrated.evaluate(()=>openHotelModule('planning'));
+ await frame.evaluate(driverDirectoryId=>{
+  Object.assign(data.find(item=>item.id==='linked-car'),{driverName:'Test intégré',driverDirectoryId});
+  save();
+  renderReservations();
+ },driverIds['0470123456']);
  await integrated.evaluate(course=>openTaxiDrivers(course,{exportCourse:true}),await storedCourse('linked-car'));
  await select(integrated,'Petit test');
  assert.equal(await integrated.locator('#driversSmsPanel').isVisible(),true);
@@ -465,7 +478,7 @@ async function checkBookingRoom(frame,id){
  assert.doesNotMatch(await integrated.inputValue('#driversMessage'),/Petit test|Chauffeur :/);
  await integrated.getByRole('button',{name:'Attribuer et ouvrir le SMS',exact:true}).click();
  assert.ok((await integrated.evaluate(()=>externalActions.at(-1).url)).startsWith('sms:0470101010?body='));
- assert.deepEqual(await storedCourse(earlyDoubleTree.id),{...earlyDoubleTree,contact:'Papas',manualReservationShift:'Papas',driver:'other',driverName:'Petit test'});
+ assert.deepEqual(await storedCourse(earlyDoubleTree.id),{...earlyDoubleTree,contact:'Papas',manualReservationShift:'Papas',driver:'other',driverName:'Petit test',driverDirectoryId:driverIds['0470101010']});
  // Assignment while encoding uses the same filtered directory and rejects a later incompatible vehicle change.
  await frame.evaluate(()=>{setVehicle('Van',false);setDriverChoice('direct','other');setDriverMenuOpen('direct',true);});
  assert.equal(await integrated.locator('#driversVanOnly').isChecked(),true);assert.equal(await integrated.locator('#driversVanOnly').isDisabled(),true);await select(integrated,'uniquement');await details(integrated).getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();

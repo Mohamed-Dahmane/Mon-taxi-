@@ -21,7 +21,7 @@ public final class TaxiContactsBridge {
  private java.util.Set<String> pendingIds=java.util.Collections.emptySet();
  private boolean reading=false;
  TaxiContactsBridge(Activity activity,WebView web){this.activity=activity;this.web=web;}
- boolean trusted(){
+ private boolean trusted(){
   String url=web.getUrl();if(url==null)return false;
   Uri uri=Uri.parse(url);
   return ("https".equals(uri.getScheme())&&"mohamed-dahmane.github.io".equals(uri.getHost())&&"/Mon-taxi-/".equals(uri.getPath())&&(uri.getPort()==-1||uri.getPort()==443))||url.equals("file:///android_asset/index.html");
@@ -44,6 +44,12 @@ public final class TaxiContactsBridge {
   if(nativeId==null||!nativeId.matches("[0-9]{1,20}"))return;
   beginRead("refresh",java.util.Collections.singleton(nativeId));
  }
+ @JavascriptInterface public void findDriver(String name){
+  if(name==null)return;
+  String query=name.trim();
+  if(query.isEmpty()||query.length()>160)return;
+  beginRead("driver-lookup",java.util.Collections.singleton(query));
+ }
  private void beginRead(String mode,java.util.Set<String> ids){activity.runOnUiThread(()->{
   if(!trusted())return;
   if(reading||pendingMode!=null){result(mode,null,"Une analyse du répertoire est déjà en cours.");return;}
@@ -62,16 +68,19 @@ public final class TaxiContactsBridge {
    JSONArray contacts=new JSONArray();java.util.Set<String> seen=new java.util.HashSet<>();
    String[] columns={ContactsContract.CommonDataKinds.Phone.CONTACT_ID,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER};
    boolean single="refresh".equals(mode);
+   boolean lookup="driver-lookup".equals(mode);
+   Uri source=lookup?Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,Uri.encode(linked.iterator().next()))
+     :ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
    String selection=single?ContactsContract.CommonDataKinds.Phone.CONTACT_ID+"=?":null;
    String[] args=single?new String[]{linked.iterator().next()}:null;
-   try(Cursor c=activity.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,columns,selection,args,ContactsContract.CommonDataKinds.Phone.IS_SUPER_PRIMARY+" DESC")){
+   try(Cursor c=activity.getContentResolver().query(source,columns,selection,args,ContactsContract.CommonDataKinds.Phone.IS_SUPER_PRIMARY+" DESC")){
     if(c==null)throw new IllegalStateException();
     while(c.moveToNext()){
      String nativeId=c.getString(0),name=c.getString(1),number=c.getString(2);
      if(name==null||number==null)continue;
      boolean tx=name.trim().toUpperCase(java.util.Locale.ROOT).startsWith("TX");
-     if(!(linked.contains(nativeId)||(!single&&tx)))continue;
-     if(!number.replaceAll("[\\s().-]", "").matches("\\+?[0-9]{3,20}")||!seen.add(nativeId))continue;
+     if(!lookup&&!(linked.contains(nativeId)||(!single&&tx)))continue;
+     if(!number.replaceAll("[\\s().-]", "").matches("\\+?[0-9]{3,20}")||(!lookup&&!seen.add(nativeId)))continue;
      JSONObject item=new JSONObject();item.put("nativeId",nativeId);item.put("name",name);item.put("phone",number);contacts.put(item);
     }
     if(single&&contacts.length()==0)result(mode,null,"Contact introuvable. La fiche Mon Taxi est conservée.");

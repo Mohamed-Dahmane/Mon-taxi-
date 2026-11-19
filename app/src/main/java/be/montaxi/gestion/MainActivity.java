@@ -46,7 +46,6 @@ import android.util.Base64;
 public class MainActivity extends Activity {
  private WebView web;
  private TaxiContactsBridge taxiContacts;
- private TaxiDirectSms taxiDirectSms;
  private boolean recoveryShown=false;
  private final Handler webHealthHandler=new Handler(Looper.getMainLooper());
  private void verifyWebContent(){
@@ -336,19 +335,11 @@ public class MainActivity extends Activity {
    web=new WebView(this);
    web.setBackgroundColor(SPLASH_BACKGROUND);
    WebSettings settings=web.getSettings();
-   settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash MonTaxiDirectSms/1");
+   settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
     @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame()){view.loadUrl("file:///android_asset/index.html");webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);}}
-    @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){
-     if("montaxi-sms".equals(req.getUrl().getScheme())){
-      if(unlocked&&resumed&&view.hasWindowFocus()&&req.isForMainFrame()&&req.hasGesture()&&taxiContacts.trusted()){
-       taxiDirectSms.request(req.getUrl());
-      }
-      return true;
-     }
-     return !req.getUrl().toString().startsWith(APP_URL);
-    }
+    @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith(APP_URL);}
    });
    web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
     try{
@@ -413,7 +404,6 @@ public class MainActivity extends Activity {
     }
    },"TaxiHaptics");
    taxiContacts=new TaxiContactsBridge(this,web);
-   taxiDirectSms=new TaxiDirectSms(this,taxiContacts);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
@@ -644,7 +634,6 @@ public class MainActivity extends Activity {
  @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){
   super.onRequestPermissionsResult(code,permissions,results);
   if(code==TaxiContactsBridge.CONTACT_PERMISSION&&taxiContacts!=null)taxiContacts.permissionResult(results);
-  if(code==TaxiDirectSms.SMS_PERMISSION&&taxiDirectSms!=null)taxiDirectSms.permissionResult(results,unlocked);
   if(code==36&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED){
    enableExactTaxiReminders();
   }
