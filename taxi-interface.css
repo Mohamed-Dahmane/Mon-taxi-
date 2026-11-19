@@ -655,3 +655,91 @@ html.taxi-clean {
 }
 .taxi-clean #monthlyJournal[open] > #journalHeading::after { transform: rotate(225deg); }
 .taxi-clean #monthlyJournal .journal-heading { border-top: 1px solid var(--clean-line); padding-top: 5px; }
+
+.pickup-redesign {
+  color-scheme: dark;
+}
+.taxi-clean.pickup-redesign main {
+  max-width: 650px;
+  padding: 10px 10px 20px;
+}
+.taxi-clean.pickup-redesign .booking-form :is(.pickup-card, .pickup-details) {
+  padding: 10px 12px;
+  margin: 0 0 8px;
+  border: 1px solid var(--clean-line);
+  border-radius: 12px;
+  background: var(--clean-surface);
+}
+.taxi-clean.pickup-redesign .booking-form .pickup-assignment { border-inline-start: 3px solid #9b82d2; }
+.taxi-clean.pickup-redesign .booking-form .pickup-journey { border-inline-start: 3px solid #5c9fd8; }
+.pickup-redesign .pickup-assignment h2 { color: #e1d4ff; }
+.pickup-redesign .pickup-journey h2 { color: var(--clean-accent); }
+.pickup-redesign .pickup-card h2 { font-size: 17px; line-height: 1.2; }
+.taxi-clean.pickup-redesign .booking-form .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 9px;
+}
+.pickup-redesign .grid > div { min-width: 0; }
+.pickup-redesign .pickup-wide { grid-column: 1 / -1; }
+.pickup-redesign .pickup-card label,
+.pickup-redesign .pickup-details label { margin: 0 0 4px; font-weight: 650; }
+.pickup-redesign .pickup-card :is(input, select, button),
+.pickup-redesign .pickup-details :is(input, select) {
+  min-height: 44px;
+  font-size: 16px;
+  padding: 7px 8px;
+}
+.pickup-redesign .pickup-driver > div:first-child {
+  display: grid;
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 7px;
+}
+.pickup-redesign .pickup-driver label { grid-column: 1 / -1; }
+.taxi-clean.pickup-redesign button.pickup-directory {
+  background: #362958;
+  color: #f2eaff;
+  border: 1px solid #7964a3;
+  font-size: 14px;
+}
+.pickup-redesign .pickup-kinds {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.taxi-clean.pickup-redesign .pickup-kinds button {
+  border: 1px solid var(--clean-line);
+  color: var(--clean-muted);
+  background: var(--clean-field);
+}
+.taxi-clean.pickup-redesign .pickup-kinds button[aria-pressed="true"] {
+  border-color: #629bd0;
+  background: #244f79;
+  color: #fff;
+}
+.taxi-clean.pickup-redesign .pickup-kinds button[data-pickup-kind="station"][aria-pressed="true"] {
+  border-color: #ac8fd8;
+  background: #49346e;
+}
+.pickup-redesign .pickup-schedule { margin-top: 7px; }
+.pickup-redesign #dateChoose { width: 100%; font-size: 14px; }
+.pickup-redesign .clock { gap: 4px; }
+.taxi-clean.pickup-redesign .clock input { width: min(46%, 65px); min-width: 0; font-size: 19px; padding-inline: 3px; }
+.pickup-redesign #calendar button { min-height: 40px; }
+.pickup-redesign .pickup-details summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+  font-weight: 650;
+  font-size: 15px;
+}
+.taxi-clean.pickup-redesign .booking-form .pickup-details { padding-block: 0; }
+.pickup-redesign .pickup-details[open] > .grid { padding: 4px 0 12px; }
+.pickup-redesign .pickup-reminders { display: flex; flex-wrap: wrap; gap: 6px; }
+.pickup-redesign .pickup-reminders label { display: flex; align-items: center; min-height: 44px; gap: 5px; padding: 0 5px; }
+.pickup-redesign .pickup-reminders input { width: 18px; min-height: 18px; accent-color: #5686bc; }
+.pickup-redesign .pickup-actions { display: grid; gap: 6px; }
+.taxi-clean.pickup-redesign .booking-form #save { background: #205f39; color: #fff; border: 1px solid #4a9266; }
+.pickup-redesign #reset { justify-self: center; min-height: 44px; font-size: 14px; }
+.pickup-redesign #pickupError { margin: 0; color: #ffbcac; }

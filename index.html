@@ -1736,7 +1736,7 @@ function openHotelPickup(context){
  hotelPickupContext=context;
  hotelCommissionsFrame.inert=true;
  hotelPickup.hidden=false;
- hotelPickupFrame.src="pickup-reservation.html?client=optional&v=21";
+ hotelPickupFrame.src="pickup-reservation.html?client=optional&v=22";
  $("closeHotelPickup").focus({preventScroll:true});
 }
 function closeHotelPickup(){
@@ -1918,7 +1918,7 @@ window.addEventListener("hotel-commissions-updated",refreshHotelCommissions);
 window.addEventListener("storage",event=>{
  if(event.key===hotelCommissionStorageKey||event.key===null)refreshHotelCommissions();
 });
-const siteBuild="taxi-v6-11-41-journal-actualisation";
+const siteBuild="taxi-v6-11-42-pickup";
 const hotelDirectoryKey="montaxi:hotel-commissions:directory-v1";
 const hotelSyncKey="montaxi:hotel-sync:baseline-v1";
 let hotelSyncJob=null,hotelAudio=null,hotelReminderTimer=null;
@@ -2205,5 +2205,5 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 <script src="driver-directory.js?v=20261119-repertoire-compact"></script>
 <script src="fixed-navigation.js?v=20261118-home-toolbar"></script>
 
-<link rel="stylesheet" href="taxi-interface.css?v=20261119-journal-actualisation">
+<link rel="stylesheet" href="taxi-interface.css?v=20261119-pickup">
 </body></html>

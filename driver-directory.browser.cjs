@@ -377,6 +377,23 @@ async function checkBookingRoom(frame,id){
  await integrated.waitForFunction(()=>!!document.querySelector('#hotelPickupFrame')?.contentDocument?.querySelector('#client'));
  const pickupFrame=await (await integrated.$('#hotelPickupFrame')).contentFrame();
  await pickupFrame.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--clean-bg').trim()==='#10151c');
+ const pickupPlace=pickupFrame.locator('#place');
+ assert.deepEqual(await pickupPlace.locator('option').allTextContents(),['Bruxelles Aéroport (BRU)','Charleroi Airport (CRL)']);
+ await pickupPlace.selectOption('Charleroi Airport (CRL)');
+ await pickupFrame.getByRole('button',{name:'Gare',exact:true}).click();
+ assert.deepEqual(await pickupPlace.locator('option').allTextContents(),['Gare du Midi','Gare du Nord','Gare Centrale']);
+ assert.equal(await pickupFrame.getByLabel('Numéro de train').isVisible(),true);
+ await pickupPlace.selectOption('Gare du Nord');
+ await pickupFrame.getByRole('button',{name:'Aéroport',exact:true}).click();
+ assert.equal(await pickupPlace.inputValue(),'Charleroi Airport (CRL)');
+ await pickupFrame.getByRole('button',{name:'Gare',exact:true}).click();
+ assert.equal(await pickupPlace.inputValue(),'Gare du Nord');
+ await pickupFrame.getByRole('button',{name:'Autre',exact:true}).click();
+ assert.equal(await pickupPlace.isVisible(),false);
+ assert.equal(await pickupFrame.getByLabel('Lieu de prise en charge').isVisible(),true);
+ await pickupFrame.getByRole('button',{name:'Gare',exact:true}).click();
+ assert.equal(await pickupFrame.locator('.pickup-details[open]').count(),0);
+ await pickupFrame.getByText('Client, bagages et rappels',{exact:true}).click();
  await checkBookingRoom(pickupFrame,'room');
  await pickupFrame.fill('#room','0204');
  await pickupFrame.fill('#hotelSearch','hot te');
@@ -384,10 +401,10 @@ async function checkBookingRoom(frame,id){
  assert.equal(await pickupFrame.inputValue('#hotelSearch'),'Test Hôtel');
  const pickupOptional=await pickupFrame.evaluate(()=>{
   window.alert=message=>{throw Error(message)};window.confirm=()=>true;
-  $('date').value='2026-11-20';$('timeMode').value='fixed';$('time').value='05:15';$('hotelSearch').value='Test Hôtel';$('contactSearch').value='Contact';$('driverSearch').value='Moi';$('flight').value='SN123';$('vans').value='1';$('passengers').value='1';$('commissionUnit').value='10';$('client').value='';$('phone').value='';
+  $('date').value='2026-11-20';$('timeMode').value='fixed';$('time').value='05:15';$('hotelSearch').value='Test Hôtel';$('contactSearch').value='Contact';$('driverSearch').value='Moi';$('flight').value='9123';$('vans').value='1';$('passengers').value='1';$('commissionUnit').value='10';$('client').value='';$('phone').value='';
   const optional=!$('client').required&&!$('phone').required;$('save').onclick();return optional;
  });
- assert.equal(pickupOptional,true);const pickupSaved=await integrated.evaluate(()=>pickupSaved);assert.equal(pickupSaved.length,1);assert.equal(pickupSaved[0].client,'');assert.equal(pickupSaved[0].phone,'');assert.equal(pickupSaved[0].room,'0204');await integrated.evaluate(()=>document.getElementById('closeHotelPickup').click());
+ assert.equal(pickupOptional,true);const pickupSaved=await integrated.evaluate(()=>pickupSaved);assert.equal(pickupSaved.length,1);assert.equal(pickupSaved[0].client,'');assert.equal(pickupSaved[0].phone,'');assert.equal(pickupSaved[0].room,'0204');assert.equal(pickupSaved[0].place,'Gare du Nord');await integrated.evaluate(()=>document.getElementById('closeHotelPickup').click());
  await integrated.setViewportSize({width:360,height:780});
  await integrated.evaluate(()=>openTaxiDrivers({id:'planning',date:'2026-11-20',hotel:'Standard',destination:'CRL',clientName:'Mme Test',clientPhone:'0470000000'}));
  await select(integrated,'Test intégré');await details(integrated).getByRole('button',{name:'SMS',exact:true}).click();assert.match(await integrated.inputValue('#driversMessage'),/Standard → Airport CRL \(Charleroi\)/);assert.match(await integrated.inputValue('#driversMessage'),/Client : Mme Test/);
