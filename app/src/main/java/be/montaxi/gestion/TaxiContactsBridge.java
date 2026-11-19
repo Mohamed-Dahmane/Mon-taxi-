@@ -2,6 +2,8 @@ package be.montaxi.gestion;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -109,6 +111,22 @@ public final class TaxiContactsBridge {
   if(!trusted()||nativeId==null||!nativeId.matches("[0-9]{1,20}"))return;
   try{Intent intent=new Intent(Intent.ACTION_EDIT,Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI,nativeId));activity.startActivity(intent);}
   catch(Exception e){result("edit",null,"Impossible d’ouvrir le contact téléphone.");}
+ });}
+ @JavascriptInterface public void openWhatsApp(String number){activity.runOnUiThread(()->{
+  if(!trusted()||number==null||!number.matches("\\+[1-9][0-9]{7,14}"))return;
+  Uri chat=Uri.parse("https://wa.me/"+number.substring(1));
+  for(String app:new String[]{"com.whatsapp","com.whatsapp.w4b"}){
+   try{
+    activity.startActivity(new Intent(Intent.ACTION_VIEW,chat).setPackage(app));
+    return;
+   }catch(ActivityNotFoundException|SecurityException ignored){}
+  }
+  new AlertDialog.Builder(activity)
+   .setTitle("WhatsApp indisponible")
+   .setMessage("Ouvrir les SMS pour contacter ce client ?")
+   .setNegativeButton("Annuler",null)
+   .setPositiveButton("Ouvrir SMS",(dialog,which)->open("sms:"+number))
+   .show();
  });}
  @JavascriptInterface public void open(String url){activity.runOnUiThread(()->{
   if(!trusted()||url==null)return;

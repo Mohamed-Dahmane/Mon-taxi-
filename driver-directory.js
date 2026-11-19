@@ -7,6 +7,14 @@ const priorityLabels=['','Contact d’hôtel','Chauffeur de confiance','Chauffeu
 const norm=s=>String(s||'').trim().replace(/\s+/g,' ');
 const phone=s=>String(s||'').trim().replace(/[\s().-]/g,'');
 const validPhone=s=>/^\+?[0-9]{3,20}$/.test(phone(s));
+function clientContactPhone(value){
+ const raw=String(value??'').trim();
+ const compact=phone(raw.startsWith('+')||raw.startsWith('00')?raw.replace('(0)',''):raw);
+ const international=compact.startsWith('00')?'+'+compact.slice(2)
+  :compact.startsWith('0')?'+32'+compact.slice(1)
+  :/^32[1-9][0-9]{7,8}$/.test(compact)?'+'+compact:compact;
+ return /^\+[1-9][0-9]{7,14}$/.test(international)?international:'';
+}
 const category=name=>/^TX\s*Van\b/i.test(norm(name))||/^TX\b.*\bVan\b/i.test(norm(name))?'van':'car';
 const isTx=name=>/^TX/i.test(norm(name));
 const id=()=>root.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2);
@@ -155,7 +163,7 @@ function courseText(e){
   e.note&&'Remarques : '+e.note
  ].filter(Boolean).join('\n');
 }
-const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,driverPriority,orderedDrivers};
+const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,clientContactPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,driverPriority,orderedDrivers};
 if(typeof module==='object'&&module.exports){module.exports=core;return;}
 root.TaxiDriverDirectoryCore=core;
 const doc=root.document;

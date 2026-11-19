@@ -296,6 +296,34 @@ html.taxi-clean {
   white-space: normal;
 }
 .taxi-clean.taxi-hotel #reservationList .reservation-card .last-called-driver strong { font-size: 18px; }
+.taxi-clean.taxi-hotel .planning-client-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.taxi-clean.taxi-hotel .planning-client-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 5px 11px;
+  border: 1px solid #52718b;
+  border-radius: 8px;
+  background: var(--clean-field);
+  color: var(--clean-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+.taxi-clean.taxi-hotel .planning-client-actions .planning-client-whatsapp {
+  border-color: #4a9266;
+  background: #205f39;
+  color: #fff;
+}
+.taxi-clean.taxi-hotel .planning-client-notice {
+  flex-basis: 100%;
+  color: var(--clean-muted);
+  font-size: 14px;
+}
 .taxi-clean.taxi-hotel .course-contact-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .taxi-clean.taxi-hotel .course-contact-actions button { margin: 0; }
 

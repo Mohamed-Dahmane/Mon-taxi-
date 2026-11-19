@@ -1,4 +1,14 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const core=require('./driver-directory.js');
+test('client messaging uses an international phone number',()=>{
+ for(const [typed,expected] of [
+  ['0470 12 34 56','+32470123456'],
+  ['+32 (0)470 12 34 56','+32470123456'],
+  ['32470123456','+32470123456'],
+  ['0044 7952 477781','+447952477781'],
+  ['+44 7952 477781','+447952477781'],
+  ['0470',''],['0470 12 34 56 poste 1',''],['','']
+ ])assert.equal(core.clientContactPhone(typed),expected,typed);
+});
 test('TX import classification, repeat import and same-phone different contacts',()=>{
  const list=[{nativeId:'1',name:'tx van Yacine',phone:'+32 470 12 34 56'},{nativeId:'2',name:'TX Alexis',phone:'+32470123456'},{nativeId:'3',name:'Autre',phone:'0470112233'}];
  const a=core.merge([],list,'tx');assert.equal(a.added,2);assert.equal(a.drivers[0].category,'van');assert.equal(a.drivers[1].category,'car');

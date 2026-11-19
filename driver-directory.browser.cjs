@@ -472,6 +472,22 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(planningStyles.people,[['Moi','18px'],['Fal','18px']]);
  assert.equal(planningStyles.textSize,'16px');
  assert.ok(planningStyles.narrowFits);
+ const contactCard=frame.locator('[data-entry-id="linked-car"] .planning-client-contact');
+ const whatsApp=contactCard.getByRole('link',{name:'WhatsApp'});
+ const clientSms=contactCard.getByRole('link',{name:'SMS'});
+ assert.equal(await whatsApp.getAttribute('href'),'https://wa.me/32470000011');
+ assert.equal(await whatsApp.getAttribute('target'),'_blank');
+ assert.equal(await clientSms.getAttribute('href'),'sms:+32470000011');
+ await whatsApp.click();
+ assert.match(await contactCard.getByRole('status').innerText(),/WhatsApp indisponible/);
+ await integrated.evaluate(()=>{window.TaxiContacts.openWhatsApp=number=>window.clientChat=number});
+ await frame.evaluate(()=>renderReservations());
+ await whatsApp.click();
+ assert.equal(await integrated.evaluate(()=>window.clientChat),'+32470000011');
+ await clientSms.click();
+ assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'sms:+32470000011');
+ assert.equal(await integrated.evaluate(()=>externalActions.at(-1).planningClosed),false);
+ await integrated.evaluate(()=>delete window.TaxiContacts.openWhatsApp);
  const courseActions=frame.locator('[data-entry-id="linked-car"] .course-contact-actions');
  assert.deepEqual(await courseActions.getByRole('button').evaluateAll(buttons=>buttons.map(button=>{
   const style=getComputedStyle(button);
