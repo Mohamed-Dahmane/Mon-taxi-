@@ -433,7 +433,10 @@ async function checkBookingRoom(frame,id){
    {...course,id:'dolce-pickup',hotel:'Hôtel Dolce',destination:'Hôtel Dolce',pickup:{place:'Bruxelles Aéroport (BRU)'}},
    {...course,id:'custom-hotel-pickup',hotel:'The Standard',destination:'Hôtel Dolce',pickup:{place:'BRU'}},
    {...course,id:'office-dropoff',hotel:'Bureau',destination:'Airport BRU'},
-   {...course,id:'office-pickup',hotel:'The Standard',destination:'Bureau',pickup:{place:'BRU'}}
+   {...course,id:'office-pickup',hotel:'The Standard',destination:'Bureau',pickup:{place:'BRU'}},
+   {...course,id:'crl-pickup',destination:'The Standard',pickup:{place:'Charleroi Airport (CRL)'}},
+   {...course,id:'station-dropoff',destination:'Gare du Midi'},
+   {...course,id:'other-dropoff',destination:'Autre',otherDestination:'Palais des congrès'}
   ];
   data.push(...hotels);
   renderReservations();
@@ -454,7 +457,10 @@ async function checkBookingRoom(frame,id){
    standard:style(title('linked-van').lastElementChild),
    doubleTree:style(title('color-doubletree').lastElementChild),
    moxyColor,moxyAfterRender:style(title('color-moxy').lastElementChild)[0],
-   pickupHotel:title('color-pickup').lastElementChild.textContent,
+   titles:Object.fromEntries(['color-pickup','crl-pickup','station-pickup','station-dropoff','dolce-dropoff','dolce-pickup','linked-van','office-pickup','other-dropoff'].map(id=>[id,title(id).querySelector('.planning-route-title').textContent])),
+   titleBesideTime:title('dolce-pickup').querySelector('.planning-route-title').getBoundingClientRect().left
+    >=title('dolce-pickup').querySelector('time').getBoundingClientRect().right,
+   routeSummary:title('color-pickup').parentElement.querySelector('.reservation-card-route').textContent,
    pickupDetails:title('color-pickup').parentElement.textContent,
    people:[...title('linked-van').parentElement.querySelectorAll('.reservation-card-people strong')].map(el=>[el.textContent,style(el)[1]]),
    textSize:style(title('linked-van').parentElement.querySelector('.reservation-card-info > small'))[1],
@@ -477,8 +483,19 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(planningStyles.standard,['rgb(213, 186, 255)','19px']);
  assert.deepEqual(planningStyles.doubleTree,['rgb(255, 210, 134)','19px']);
  assert.equal(planningStyles.moxyColor,planningStyles.moxyAfterRender);
- assert.equal(planningStyles.pickupHotel,'The Standard');
- assert.match(planningStyles.pickupDetails,/Pick-up · BRU → The Standard/);
+ assert.deepEqual(planningStyles.titles,{
+  'color-pickup':'Airport BRU → The Standard',
+  'crl-pickup':'Airport CRL (Charleroi) → The Standard',
+  'station-pickup':'Gare Centrale → The Standard',
+  'station-dropoff':'The Standard → Gare du Midi',
+  'dolce-dropoff':'Hôtel Dolce → Airport BRU',
+  'dolce-pickup':'Airport BRU → Hôtel Dolce',
+  'linked-van':'The Standard → Airport CRL (Charleroi)',
+  'office-pickup':'Airport BRU → Bureau',
+  'other-dropoff':'The Standard → Palais des congrès'
+ });
+ assert.equal(planningStyles.titleBesideTime,true);
+ assert.doesNotMatch(planningStyles.routeSummary,/Airport|→/);
  assert.match(planningStyles.pickupDetails,/Contact · Fal/);
  assert.deepEqual(planningStyles.people,[['Moi','18px'],['Fal','18px']]);
  assert.equal(planningStyles.textSize,'16px');
