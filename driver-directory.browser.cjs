@@ -348,6 +348,49 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(planningStyles.people,[['Moi','18px'],['Fal','18px']]);
  assert.equal(planningStyles.textSize,'16px');
  assert.ok(planningStyles.narrowFits);
+ const smsButton=frame.locator('[data-entry-id="linked-car"]').getByRole('button',{name:'Exporter au chauffeur',exact:true});
+ assert.deepEqual(await smsButton.evaluate(button=>{
+  const style=getComputedStyle(button);
+  return [style.backgroundColor,style.color,button.getBoundingClientRect().height>=44];
+ }),['rgb(139, 209, 90)','rgb(23, 41, 12)',true]);
+ const references=await frame.evaluate(course=>{
+  const date=reservationClock().slice(0,10);
+  const {nextReference,referenceCountersKey}=window.parent.TaxiHotels;
+  const counters=JSON.parse(localStorage.getItem(referenceCountersKey)||'{}');
+  const firstExpected=nextReference(date,data,counters).reference;
+  const emptyDay=nextReference('2026-11-19',[],{}).reference;
+  const first={...course,id:'first-reference'};
+  const second={...course,id:'second-reference'};
+  const firstSaved=saveNewCourse(first);
+  const firstReference=data.find(item=>item.id===first.id).reference;
+  data=data.filter(item=>item.id!==first.id);
+  save();
+  const secondSaved=saveNewCourse(second);
+  const savedSecond=data.find(item=>item.id===second.id);
+  renderReservations();
+  const displayed=$('reservationList').querySelector('[data-entry-id="second-reference"] .reservation-card-reference').textContent;
+  const legacy=$('reservationList').querySelector('[data-entry-id="linked-car"] .reservation-card-reference');
+  const sms=window.parent.TaxiDriverDirectoryCore.courseText(savedSecond);
+  const third=window.parent.TaxiHotels.nextReference('2026-11-19',[],{'261119':99}).reference;
+  const published={courses:{remote:{reference:'261119.01'}},referenceCounters:{'261119':2}};
+  const reconciled=window.parent.TaxiHotels.reconcileReferences({
+   courses:{...published.courses,local:{reference:'261119.02'},untouched:{}}
+  },published);
+  data=data.filter(item=>item.id!==second.id);
+  save();
+  renderReservations();
+  return {firstExpected,emptyDay,firstSaved,secondSaved,firstReference,secondReference:savedSecond.reference,displayed,
+   legacy:legacy===null,sms,third,reconciled};
+ },linked.car);
+ assert.equal(references.firstSaved&&references.secondSaved,true);
+ assert.equal(references.emptyDay,'261119.01');
+ assert.equal(references.firstReference,references.firstExpected);
+ assert.equal(Number(references.secondReference.split('.')[1]),Number(references.firstReference.split('.')[1])+1);
+ assert.equal(references.displayed,'Réf. '+references.secondReference);
+ assert.ok(references.legacy);
+ assert.ok(references.sms.includes('Réf. '+references.secondReference));
+ assert.equal(references.third,'261119.100');
+ assert.deepEqual(references.reconciled.courses,{remote:{reference:'261119.01'},local:{reference:'261119.03'},untouched:{}});
  await integrated.setViewportSize({width:360,height:780});
  const temporaryId='planning-removal';
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},{...linked.car,id:temporaryId});

@@ -278,6 +278,54 @@ html.taxi-clean {
 .taxi-clean.taxi-hotel #reservationList .reservation-card .last-called-driver strong { font-size: 18px; }
 .taxi-clean.taxi-hotel .course-contact-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .taxi-clean.taxi-hotel .course-contact-actions button { margin: 0; }
+
+.taxi-clean.taxi-hotel #reservationList [data-group-heading="day"] {
+  border-left-width: 4px;
+  padding-block: 9px;
+  font-size: 16px;
+}
+.taxi-clean.taxi-hotel #reservationList .entry.reservation-card[data-status="pending"] {
+  margin-top: 9px;
+  padding: 12px;
+}
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-title {
+  column-gap: 10px;
+  row-gap: 3px;
+}
+.taxi-clean.taxi-hotel .reservation-card-title .reservation-card-reference {
+  align-self: center;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--clean-soft);
+  color: var(--clean-accent);
+  font-size: 13px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-route {
+  display: block;
+  margin-block: 7px;
+  color: var(--clean-text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-reminders {
+  display: block;
+  color: var(--clean-muted);
+  font-size: 14px;
+}
+.taxi-clean.taxi-hotel #reservationList .reservation-card .course-sms-action {
+  min-height: 46px;
+  border: 1px solid #a0db70;
+  background: #8bd15a;
+  color: #17290c;
+  font-weight: 800;
+}
+.taxi-clean.taxi-hotel #reservationList .reservation-card .course-sms-action:active {
+  background: #a6df7f;
+}
 .taxi-clean.taxi-hotel .course-options { border-top: 1px solid var(--clean-line); margin-top: 8px; padding-top: 3px; }
 .taxi-clean.taxi-hotel .course-options summary { cursor: pointer; min-height: 40px; padding-block: 9px; color: var(--clean-accent); font-weight: 650; }
 .taxi-clean.taxi-hotel .course-options > div { display: flex; flex-wrap: wrap; gap: 6px; }

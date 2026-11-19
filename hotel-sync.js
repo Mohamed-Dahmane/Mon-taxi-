@@ -104,6 +104,69 @@
   const courseMap = entries => Object.fromEntries(entries
     .filter(entry => isRecord(entry) && entry.id != null)
     .map(entry => [String(entry.id), entry]));
+  const referenceCountersKey = "montaxi:course-reference-counters:v1";
+  const referenceParts = reference => /^(\d{6})\.(\d{2,})$/.exec(reference ?? "");
+  const validSequence = number => Number.isSafeInteger(number) && number > 0;
+  const formatReference = (day, number) => day + "." + String(number).padStart(2, "0");
+
+  function collectReferenceCounters(...states) {
+    const counters = {};
+    const keep = (day, number) => {
+      if (/^\d{6}$/.test(day) && validSequence(number)) {
+        counters[day] = Math.max(counters[day] ?? 0, number);
+      }
+    };
+    for (const state of states) {
+      for (const [day, number] of Object.entries(state.referenceCounters ?? {})) keep(day, number);
+      for (const course of Object.values(state.courses ?? {})) {
+        const parts = referenceParts(course.reference);
+        if (parts) keep(parts[1], Number(parts[2]));
+      }
+    }
+    return counters;
+  }
+
+  function nextReference(date, courses, referenceCounters) {
+    const day = date.slice(2).replaceAll("-", "");
+    const counters = collectReferenceCounters({ courses, referenceCounters });
+    const sequence = (counters[day] ?? 0) + 1;
+    if (!/^\d{6}$/.test(day) || !validSequence(sequence)) throw Error("Référence de course invalide");
+    counters[day] = sequence;
+    return { reference: formatReference(day, sequence), referenceCounters: counters };
+  }
+
+  function reconcileReferences(state, published, ...previous) {
+    const publishedCounters = collectReferenceCounters(published);
+    const counters = collectReferenceCounters(state, published, ...previous);
+    const courses = { ...state.courses };
+    const claimed = new Set();
+    const pending = [];
+    for (const id of Object.keys(courses).sort()) {
+      const course = courses[id];
+      const remoteReference = published.courses?.[id]?.reference;
+      if (referenceParts(remoteReference) && !claimed.has(remoteReference)) {
+        claimed.add(remoteReference);
+        if (course.reference !== remoteReference) courses[id] = { ...course, reference: remoteReference };
+      } else if (referenceParts(course.reference)) {
+        pending.push(id);
+      }
+    }
+    for (const id of pending) {
+      const course = courses[id];
+      const [, day, sequence] = referenceParts(course.reference);
+      if (!claimed.has(course.reference) && Number(sequence) > (publishedCounters[day] ?? 0)) {
+        claimed.add(course.reference);
+        continue;
+      }
+      const next = (counters[day] ?? 0) + 1;
+      if (!validSequence(next)) throw Error("Compteur de références invalide");
+      counters[day] = next;
+      courses[id] = { ...course, reference: formatReference(day, next) };
+      claimed.add(courses[id].reference);
+    }
+    return { ...state, courses, referenceCounters: counters };
+  }
+
   const dateTime = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Brussels", year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", hourCycle: "h23"
@@ -141,5 +204,5 @@
         })).filter(item => item.at > now))
       .sort((a, b) => a.at - b.at);
   }
-  global.TaxiHotels = { equal, merge, applyPartnerDirectory, courseMap, reminders };
+  global.TaxiHotels = { equal, merge, applyPartnerDirectory, courseMap, reminders, referenceCountersKey, nextReference, reconcileReferences };
 })(globalThis);

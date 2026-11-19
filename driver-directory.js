@@ -144,6 +144,7 @@ function courseText(e){
  return [
   fixedPriceLine(e.announcedPrice),
   [driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime].filter(Boolean).join(' à '),
+  /^\d{6}\.\d{2,}$/.test(e.reference??'')&&'Réf. '+e.reference,
   [p.place?airportLabel(p.place):e.hotel,airportLabel(e.destination==='Autre'?(e.otherDestination||e.destination):e.destination)].filter(Boolean).join(' → '),
   String(e.room??'').trim()&&'Chambre : '+String(e.room).trim(),
   p.timeMode==='arrival'?'Suivi vol / train':'',
