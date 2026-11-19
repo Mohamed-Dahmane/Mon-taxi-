@@ -22,5 +22,7 @@ function move(d,name,offset){if(sortMode[mode]!=="priority")return;const order=m
 $("directorySort").onchange=()=>{sortMode[mode]=$("directorySort").value;render()};
 $("directoryClose").onclick=()=>dialog.close();$("directoryAdd").onclick=()=>{const d=load(),name=$("directoryNew").value.trim();if(!d||!name)return;const existing=mode==="hotels"?hotelNames(d):drivers(d);if(existing.some(n=>norm(n)===norm(name))||(mode==="drivers"&&isAttributionContact(d,name))||(mode==="hotels"&&protectedHotels.has(norm(name)))){alert("Ce nom existe déjà ou est réservé aux contacts d’attribution.");return}if(mode==="hotels"){d.hotels[name]="";d.hotelSequence=[...new Set([...(d.hotelSequence||[]),name])];d.deletedHotels=(d.deletedHotels||[]).filter(n=>norm(n)!==norm(name));d.allowedContacts=d.allowedContacts||{};d.allowedContacts[name]=[]}else{d.deletedDriverNames=(d.deletedDriverNames||[]).filter(n=>norm(n)!==norm(name));d.contacts=[...new Set([...(d.contacts||[]),name])];d.driverOrder=[...new Set([...(d.driverOrder||[]),name])]}$("directoryNew").value="";save(d)};
 $("directoryNew").addEventListener("keydown",e=>{if(e.key==="Enter")$("directoryAdd").click()});
+window.addEventListener("storage",e=>{if(e.key===KEY&&dialog.open)render()});
+window.addEventListener("hotel-commissions-updated",()=>{if(dialog.open)render()});
 window.openTaxiDirectory=function(which){mode=which==="drivers"?"drivers":"hotels";render();if(!dialog.open)dialog.showModal()};
 })();
