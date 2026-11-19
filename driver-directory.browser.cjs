@@ -108,6 +108,16 @@ const details=page=>page.locator('#driversDetails');
   assert.equal(geometry.scroll,0);
  }
  await integrated.setViewportSize({width:360,height:640});
+ const manualCommission=integrated.locator('#commissionInput');
+ assert.equal(await manualCommission.getAttribute('enterkeyhint'),'done');
+ await manualCommission.fill('12,50');
+ await manualCommission.press('Enter');
+ assert.equal(await manualCommission.inputValue(),'');
+ assert.equal(await integrated.evaluate(()=>document.activeElement.tagName),'BODY');
+ assert.match(await integrated.locator('#commissionToday').innerText(),/12,50/);
+ await manualCommission.fill('12,50');
+ await manualCommission.press('Enter');
+ assert.match(await integrated.locator('#commissionToday').innerText(),/25,00/);
  await integrated.fill('#ExpenseInput','12');
  assert.equal(await integrated.locator('#quickExpenseName').isVisible(),true);
  assert.equal(await integrated.locator('#validateExpense').isVisible(),true);
@@ -266,6 +276,36 @@ const details=page=>page.locator('#driversDetails');
  });
  await integrated.evaluate(()=>openHotelModule('planning'));
  const vanRow=frame.locator('.reservation-card[data-entry-id="linked-van"]');
+ const planningStyles=await frame.evaluate(course=>{
+  const hotels=[
+   {...course,id:'color-doubletree',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton'},
+   {...course,id:'color-moxy',hotel:'Moxy',hotelGroup:'Autre'},
+   {...course,id:'color-pickup',hotel:'The Standard',pickup:{place:'BRU',passengers:1},destination:'The Standard'}
+  ];
+  data.push(...hotels);
+  renderReservations();
+  const title=id=>$('reservationList').querySelector('[data-entry-id="'+id+'"] .reservation-card-title');
+  const style=el=>{const computed=getComputedStyle(el);return [computed.color,computed.fontSize];};
+  const moxyColor=style(title('color-moxy').lastElementChild)[0];
+  data.reverse();renderReservations();data.reverse();
+  const result={
+   time:style(title('linked-van').firstElementChild),
+   standard:style(title('linked-van').lastElementChild),
+   doubleTree:style(title('color-doubletree').lastElementChild),
+   moxyColor,moxyAfterRender:style(title('color-moxy').lastElementChild)[0],
+   pickupHotel:title('color-pickup').lastElementChild.textContent,
+   pickupDetails:title('color-pickup').parentElement.textContent
+  };
+  data.splice(-hotels.length);
+  renderReservations();
+  return result;
+ },linked.car);
+ assert.deepEqual(planningStyles.time,['rgb(165, 209, 255)','22px']);
+ assert.deepEqual(planningStyles.standard,['rgb(213, 186, 255)','19px']);
+ assert.deepEqual(planningStyles.doubleTree,['rgb(255, 210, 134)','19px']);
+ assert.equal(planningStyles.moxyColor,planningStyles.moxyAfterRender);
+ assert.equal(planningStyles.pickupHotel,'The Standard');
+ assert.match(planningStyles.pickupDetails,/Pick-up · BRU → The Standard/);
  const temporaryId='planning-removal';
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},{...linked.car,id:temporaryId});
  const temporaryRow=frame.locator(`.reservation-card[data-entry-id="${temporaryId}"]`);

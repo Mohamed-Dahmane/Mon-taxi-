@@ -111,6 +111,15 @@ html.taxi-clean {
 .taxi-clean #home .entry-hub .taxi-entry { padding-block: 5px; }
 .taxi-clean #home .entry-hub .taxi-entry > label { font-size: clamp(12px, calc(3.3vw + 1px), 15px); }
 .taxi-clean #home .entry-hub .taxi-entry input { font-size: 17px; }
+.taxi-clean #home .entry-hub .commission-entry > label {
+  color: var(--clean-cost);
+  font-weight: 750;
+}
+.taxi-clean #home .entry-hub .commission-entry input {
+  background: #28231b;
+  border-color: #a68a58;
+}
+.taxi-clean #home .entry-hub .commission-entry .entry-euro-symbol { color: var(--clean-cost); }
 .taxi-clean #home .entry-hub .taxi-amount strong { font-size: clamp(13px, calc(3.6vw + 1px), 17px); }
 .taxi-clean .entry-hub .entry-heading { margin: 0 0 5px; font-size: 17px; font-weight: 700; }
 .taxi-clean .entry-heading #entryDate { color: var(--clean-muted); font-size: 12px; font-weight: 500; }
@@ -217,6 +226,24 @@ html.taxi-clean {
 .taxi-clean.taxi-hotel .reservation-status-filters { gap: 5px; }
 .taxi-clean.taxi-hotel .reservation-status-filters button { min-height: 42px; padding-inline: 6px; white-space: normal; }
 .taxi-clean.taxi-hotel .reservation-card-title { align-items: baseline; flex-wrap: wrap; }
+.taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .reservation-card-title time {
+  color: var(--clean-accent);
+  font-size: 22px;
+}
+.taxi-clean.taxi-hotel .reservation-card-title [data-hotel-color] {
+  color: var(--planning-hotel-color, var(--clean-text));
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.taxi-clean.taxi-hotel [data-hotel-color="standard"] { --planning-hotel-color: #d5baff; }
+.taxi-clean.taxi-hotel [data-hotel-color="doubletree"] { --planning-hotel-color: #ffd286; }
+.taxi-clean.taxi-hotel [data-hotel-color="0"] { --planning-hotel-color: #9ce7be; }
+.taxi-clean.taxi-hotel [data-hotel-color="1"] { --planning-hotel-color: #ffb7cf; }
+.taxi-clean.taxi-hotel [data-hotel-color="2"] { --planning-hotel-color: #a5e4ea; }
+.taxi-clean.taxi-hotel [data-hotel-color="3"] { --planning-hotel-color: #ffb6a0; }
+.taxi-clean.taxi-hotel [data-hotel-color="4"] { --planning-hotel-color: #d0e79e; }
 .taxi-clean.taxi-hotel #reservationList .entry.reservation-card { border-radius: 10px; box-shadow: none; }
 .taxi-clean.taxi-hotel .course-contact-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .taxi-clean.taxi-hotel .course-contact-actions button { margin: 0; }
