@@ -382,6 +382,8 @@ html.taxi-clean {
 .taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .planning-title-wide .planning-route-title {
   grid-column: 1 / -1;
   grid-row: 1;
+  margin-inline: -9px;
+  letter-spacing: -0.025em;
 }
 .taxi-clean.taxi-hotel .reservation-card[data-status="pending"] .planning-title-wide > :is(time, .planning-route-time) {
   grid-column: 1;
