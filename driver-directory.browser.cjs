@@ -837,7 +837,7 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(await frame.evaluate(()=>[6,25,50,10.5].map(amount=>planningCommissionMessage({hotel:'Moxy',amount}))),
   ['Moxy 6','Moxy 25','Moxy 50','Moxy 11']);
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
- await otherRow.locator('summary').click();
+ await otherRow.locator('.course-options > summary').click();
  assert.equal(await otherRow.getByRole('button',{name:'Effectuée',exact:true}).isVisible(),true);
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},chargeOther.id);
  await frame.evaluate(ids=>{data=data.filter(course=>!ids.includes(course.id));save();renderReservations();},papaVariants.map(course=>course.id));
