@@ -408,7 +408,9 @@ async function checkBookingRoom(frame,id){
  await frame.evaluate(()=>openPickupEditor('Réservation'));
  const pickupPapa=pickupFrame.getByRole('button',{name:'Papa',exact:true});
  await pickupFrame.locator('#hotelSearch').fill('DoubleTree');
- await pickupFrame.getByRole('button',{name:'DoubleTree by Hilton',exact:true}).click();
+ await pickupFrame.getByRole('button',{name:'DoubleTree',exact:true}).click();
+ assert.equal(await pickupFrame.inputValue('#hotelSearch'),'DoubleTree');
+ assert.equal(await pickupFrame.inputValue('#hotel'),'DoubleTree by Hilton');
  const pickupShift=pickupFrame.locator('#pickupAutoContact');
  await pickupFrame.locator('#timeHour').fill('06');
  await pickupFrame.locator('#timeMinute').fill('59');
@@ -504,7 +506,7 @@ async function checkBookingRoom(frame,id){
    standard:style(title('linked-van').lastElementChild),
    doubleTree:style(title('color-doubletree').lastElementChild),
    moxyColor,moxyAfterRender:style(title('color-moxy').lastElementChild)[0],
-   titles:Object.fromEntries(['color-pickup','crl-pickup','station-pickup','station-dropoff','dolce-dropoff','dolce-pickup','linked-van','office-pickup','other-dropoff'].map(id=>[id,title(id).querySelector('.planning-route-title').textContent])),
+   titles:Object.fromEntries(['color-doubletree','color-pickup','crl-pickup','station-pickup','station-dropoff','dolce-dropoff','dolce-pickup','linked-van','office-pickup','other-dropoff'].map(id=>[id,title(id).querySelector('.planning-route-title').textContent])),
 
    routeFit:Object.fromEntries(['color-doubletree','dolce-pickup','crl-pickup','station-pickup','long-route'].map(id=>{
     const route=title(id).querySelector('.planning-route-title');
@@ -530,6 +532,7 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(planningStyles.doubleTree,['rgb(255, 210, 134)','19px']);
  assert.equal(planningStyles.moxyColor,planningStyles.moxyAfterRender);
  assert.deepEqual(planningStyles.titles,{
+  'color-doubletree':'DoubleTree → Airport BRU',
   'color-pickup':'Airport BRU → The Standard',
   'crl-pickup':'Airport CRL (Charleroi) → The Standard',
   'station-pickup':'Gare Centrale → The Standard',
@@ -707,6 +710,7 @@ async function checkBookingRoom(frame,id){
  await frame.evaluate(courses=>{data.push(...courses);save();renderReservations();},papaVariants);
  for(const course of papaVariants){
   const row=frame.locator('.reservation-card[data-entry-id="'+course.id+'"]');
+  assert.equal(await row.locator('.planning-route-title').textContent(),course.pickup?'Airport BRU → DoubleTree':'DoubleTree → Airport BRU');
   const quickDriver=row.getByRole('combobox',{name:'Changer le chauffeur'});
   await quickDriver.selectOption({label:'TX Petit test'});
   assert.deepEqual(await storedCourse(course.id),{...course,driver:'other',driverName:'Petit test',driverDirectoryId:driverIds['0470101010']});

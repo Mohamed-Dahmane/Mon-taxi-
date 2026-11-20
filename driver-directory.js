@@ -124,6 +124,10 @@ function parseVcard(text){
  }
  return rows;
 }
+function hotelDisplayName(value){
+ const name=String(value??'').trim();
+ return /^DoubleTree by Hilton(?: Brussels City)?$/i.test(name)?'DoubleTree':name;
+}
 function airportLabel(value){
  const text=String(value??'').trim();
  const key=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toUpperCase();
@@ -156,7 +160,7 @@ function courseText(e){
   fixedPriceLine(e.announcedPrice),
   [driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime].filter(Boolean).join(' à '),
   /^\d{6}\.\d{2,}$/.test(e.reference??'')&&'Réf. '+e.reference,
-  [p.place?airportLabel(p.place):e.hotel,airportLabel(e.destination==='Autre'?(e.otherDestination||e.destination):e.destination)].filter(Boolean).join(' → '),
+  [hotelDisplayName(p.place?airportLabel(p.place):e.hotel),hotelDisplayName(airportLabel(e.destination==='Autre'?(e.otherDestination||e.destination):e.destination))].filter(Boolean).join(' → '),
   String(e.room??'').trim()&&'Chambre : '+String(e.room).trim(),
   p.timeMode==='arrival'?'Suivi vol / train':'',
   client&&'Client : '+client,clientPhone&&'Téléphone : '+clientPhone,
@@ -166,7 +170,7 @@ function courseText(e){
   e.note&&'Remarques : '+e.note
  ].filter(Boolean).join('\n');
 }
-const core={merge,parseVcard,airportLabel,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,clientContactPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,driverPriority,orderedDrivers};
+const core={merge,parseVcard,airportLabel,hotelDisplayName,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,clientContactPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,driverPriority,orderedDrivers};
 if(typeof module==='object'&&module.exports){module.exports=core;return;}
 root.TaxiDriverDirectoryCore=core;
 const doc=root.document;
@@ -531,7 +535,7 @@ const CALL_KEY='montaxi:driver-directory:last-call:v1';
 let lastCall=null;
 try{const saved=JSON.parse(localStorage.getItem(CALL_KEY)||'null');if(saved&&Date.now()-saved.at<14400000)lastCall=saved;}catch{}
 function saveCall(){try{localStorage.setItem(CALL_KEY,JSON.stringify(lastCall));}catch{}}
-function courseTitle(e){return [driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime,(e.pickup?.place?airportLabel(e.pickup.place):e.hotel)+' → '+airportLabel(e.destination)].filter(Boolean).join(' · ');}
+function courseTitle(e){return [driverDate(e.scheduledDate||e.date),e.scheduledTime||e.recordedTime,hotelDisplayName(e.pickup?.place?airportLabel(e.pickup.place):e.hotel)+' → '+hotelDisplayName(airportLabel(e.destination))].filter(Boolean).join(' · ');}
 function callDriver(d){
  if(linkedCourse&&!compatibleWithCourse(d,linkedCourse)){status('Ce chauffeur ne peut pas assurer ce véhicule.');return;}
  if(linkedCourse&&linkedCourse.id!=null){lastCall={courseId:String(linkedCourse.id),driverId:d.id,at:Date.now(),awaitingReturn:true};saveCall();}
