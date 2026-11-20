@@ -285,6 +285,9 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 #hotelPickup[hidden]{display:none}
 #hotelPickup{position:absolute;inset:0;z-index:1110;display:flex;flex-direction:column;background:#0b1322}
 #hotelPickupBar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 14px;background:#111c30;border-bottom:1px solid #344c6d}
+/* Garder le titre Pick-up visible à droite des boutons flottants de retour. */
+#hotelPickupBar>strong{padding-left:104px;min-width:0;font-size:14px;white-space:nowrap}
+
 #hotelPickupFrame{border:0;flex:1;min-height:0;width:100%}
 #hotelCommissionsFrame{flex:1 1 auto;width:100%;min-height:0;border:0;overscroll-behavior:contain}
 </style><style>\n#reservationBoard.archive-only .reservation-create-actions,#reservationBoard.archive-only #showTodayReservations,#reservationBoard.archive-only #showAllPendingReservations,#reservationBoard.archive-only #planningOverdueAlert{display:none!important}\n
