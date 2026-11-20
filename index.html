@@ -2099,28 +2099,15 @@ async function checkPublishedBuild(){
  }catch(e){}
 }
 setInterval(()=>{followToday();checkPublishedBuild()},10000);
-function returnToHomeAfterLeaving(){
- if(window.TaxiDriverCommunication?.resumeCall())return;
- const home=document.querySelector('.pageBtn[data-page="home"]');
- if(home)home.click();
- const hotelDialog=document.getElementById("hotelCommissionsDialog");
- if(hotelDialog?.open)hotelDialog.close();
- const menu=document.getElementById("quickMenu");
- if(menu)menu.hidden=true;
- const hotelMenu=document.getElementById("hotelQuickMenu");
- if(hotelMenu)hotelMenu.hidden=true;
- window.scrollTo(0,0);
-}
-let leftMonTaxi=false;
+// Le passage vers Contacts, SMS, Téléphone ou une autre application ne change
+// ni la page affichée ni les formulaires ouverts. Android garde la WebView en place.
 document.addEventListener("visibilitychange",()=>{
- if(document.visibilityState==="hidden"){leftMonTaxi=true;return}
  if(document.visibilityState==="visible"){
-  if(leftMonTaxi){leftMonTaxi=false;returnToHomeAfterLeaving()}
-  followToday();checkPublishedBuild();
+  followToday();
+  // Ne pas recharger une vue active lors du retour d'une autre application.
+  if(safeToReload()&&document.querySelector('.pageBtn[data-page="home"]')?.classList.contains("active"))checkPublishedBuild();
  }
 });
-window.addEventListener("pagehide",()=>{leftMonTaxi=true});
-window.addEventListener("pageshow",()=>{if(leftMonTaxi){leftMonTaxi=false;returnToHomeAfterLeaving()}});
 })();
 </script>
 <style>
