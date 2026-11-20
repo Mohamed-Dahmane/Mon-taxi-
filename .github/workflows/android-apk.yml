@@ -182,19 +182,44 @@ jobs:
           printf '%s  %s\n' "$checksum" apk-release/Mon-Taxi.apk | sha256sum -c
           file=Mon-Taxi-6-11-69.apk
           cp apk-release/Mon-Taxi.apk "$file"
-          tag=mon-taxi-6-11-69
-          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$tag" "$file" --repo "$GITHUB_REPOSITORY" --target 743a4c0ba691d3150fbe9cbe24933e145128779c --title "Mon Taxi 6/11.69" --notes "Mise à jour Android signée. Trajets du planning affichés à 14 px par défaut." --latest=false
-          fi
-          url=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq ".assets[] | select(.name == \"$file\") | .url")
-          test -n "$url"
-          curl --fail --silent --show-error --location --retry 4 --dump-header headers.txt "$url" --output downloaded.apk
-          grep -i '^content-disposition:.*attachment.*Mon-Taxi-6-11-69.apk' headers.txt
-          printf '%s  %s\n' "$checksum" downloaded.apk | sha256sum -c
           branch=apk-download-info
+          route="repos/$GITHUB_REPOSITORY/contents/$file"
+          existing=$(gh api "$route?ref=$branch" --jq .sha 2>/dev/null || true)
+          if [[ -z "$existing" ]]; then
+            base64 -w0 "$file" > apk.b64
+            commit=$(jq -n --arg branch "$branch" --rawfile bytes apk.b64 '{message:"Publier le fichier Mon Taxi 6/11.69", branch:$branch, content:$bytes}' |
+              gh api "$route" --method PUT --input - --jq .commit.sha)
+          else
+            commit=$(gh api "repos/$GITHUB_REPOSITORY/branches/$branch" --jq .commit.sha)
+          fi
+          url="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$commit/$file"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors "$url" --output downloaded.apk
+          printf '%s  %s\n' "$checksum" downloaded.apk | sha256sum -c
+          npm install --prefix "$RUNNER_TEMP/apk-browser" --no-save playwright
+          export APK_URL="$url"
+          export NODE_PATH="$RUNNER_TEMP/apk-browser/node_modules"
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ channel: 'chrome', args: ['--no-sandbox'] });
+            try {
+              const page = await browser.newPage();
+              await page.setContent('<a>Télécharger Mon Taxi</a>');
+              const link = page.getByRole('link').or(page.locator('a'));
+              await link.evaluate((element, url) => { element.href = url; }, process.env.APK_URL);
+              const [file] = await Promise.all([page.waitForEvent('download', { timeout: 20000 }), link.click()]);
+              assert.equal(file.suggestedFilename(), 'Mon-Taxi-6-11-69.apk');
+              assert.equal(await file.failure(), null);
+              assert.equal(page.url(), 'about:blank');
+            } finally {
+              await browser.close();
+            }
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
           route="repos/$GITHUB_REPOSITORY/contents/mon-taxi-install.json"
           previous=$(gh api "$route?ref=$branch" --jq .sha 2>/dev/null || true)
-          payload=$(jq -nc --arg run "$GITHUB_RUN_ID" --arg url "$url" --arg sha256 "$checksum" '{version:"6/11.69", run:$run, url:$url, sha256:$sha256}' | base64 -w0)
+          payload=$(jq -nc --arg run "$GITHUB_RUN_ID" --arg url "$url" --arg sha256 "$checksum" '{version:"6/11.69", run:$run, url:$url, sha256:$sha256, chrome:"download"}' | base64 -w0)
           args=()
           if [[ -n "$previous" ]]; then args=(-f "sha=$previous"); fi
           gh api "$route" --method PUT -f "branch=$branch" -f "message=Enregistrer le téléchargement Android vérifié" -f "content=$payload" "${args[@]}" --jq .content.path
