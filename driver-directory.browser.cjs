@@ -498,7 +498,16 @@ async function checkBookingRoom(frame,id){
  assert.equal(editedPickup.pickup.quantity,2);
  assert.equal(editedPickup.amount,24);
  assert.equal(editedPickup.hotel,editablePickup.hotel);
- await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},editablePickup.id);
+ await editCourseField('Hôtel qui attribue','NH (Atlanta)',false,pickupEditGroup);
+ const pickupWithNewHotel=await storedCourse(editablePickup.id);
+ assert.equal(pickupWithNewHotel.hotel,'NH Collection (Atlanta)');
+ assert.equal(pickupWithNewHotel.pickup.place,'Gare du Midi');
+ await frame.evaluate(id=>{
+  data=data.filter(course=>course.id!==id);
+  save();
+  $('reservationBoardMessage').textContent='';
+  renderReservations();
+ },editablePickup.id);
  await integrated.setViewportSize({width:320,height:680});
  const planningHeader=await frame.evaluate(course=>{
   const list=$('reservationList');
