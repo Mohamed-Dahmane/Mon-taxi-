@@ -2218,6 +2218,56 @@ for(const {btn,menu} of pairs){
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 })();
 </script>
+<script>
+/* Brouillons locaux : restaurer les champs non validés après destruction Android.
+   Aucune donnée n'est envoyée au serveur. */
+(function(){
+ const key='montaxi:unsaved-drafts:v1';
+ const excluded=/password|token|secret|auth|cardnumber|cvv/i;
+ let timer;
+ function collect(doc){
+  const fields={};
+  doc.querySelectorAll('input[id],textarea[id],select[id]').forEach(el=>{
+   if(excluded.test(el.id)||el.type==='password'||el.type==='file'||el.type==='hidden'||el.disabled)return;
+   if(!el.closest('form')&&!el.closest('[data-reservation-step]'))return;
+   fields[el.id]=el.type==='checkbox'||el.type==='radio'?el.checked:el.value;
+  });
+  return fields;
+ }
+ function save(){
+  try{
+   const page=document.querySelector('.pageBtn.active')?.dataset.page||'home';
+   const snapshot={at:Date.now(),page,fields:collect(document),scrollY:window.scrollY};
+   localStorage.setItem(key,JSON.stringify(snapshot));
+  }catch(e){console.warn('Brouillon non sauvegardé',e)}
+ }
+ function schedule(){clearTimeout(timer);timer=setTimeout(save,180)}
+ document.addEventListener('input',schedule,true);
+ document.addEventListener('change',schedule,true);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+ window.addEventListener('pagehide',save);
+ // Un formulaire validé ne doit pas être réinjecté comme nouveau brouillon.
+ document.addEventListener('submit',event=>{
+  if(event.target?.matches('form'))setTimeout(save,500);
+ },true);
+ let snapshot;
+ try{snapshot=JSON.parse(localStorage.getItem(key)||'null')}catch{}
+ if(!snapshot||Date.now()-snapshot.at>7*86400000)return;
+ const restore=()=>{
+  try{
+   if(snapshot.page&&snapshot.page!=='home')document.querySelector('.pageBtn[data-page="'+snapshot.page+'"]')?.click();
+   for(const [id,value] of Object.entries(snapshot.fields||{})){
+    const el=document.getElementById(id);
+    if(!el||excluded.test(id)||el.type==='password'||el.type==='file')continue;
+    if(el.type==='checkbox'||el.type==='radio')el.checked=Boolean(value);
+    else el.value=value;
+   }
+   if(snapshot.scrollY)window.scrollTo(0,snapshot.scrollY);
+  }catch(e){console.warn('Restauration du brouillon incomplète',e)}
+ };
+ window.addEventListener('load',()=>setTimeout(restore,350),{once:true});
+})();
+</script>
 <script src="directory-editor.js?v=20261120-repertoire-samsung"></script>
 <script src="driver-directory.js?v=20261120-repertoire-samsung"></script>
 <script src="fixed-navigation.js?v=20261120-retour-tactile"></script>
