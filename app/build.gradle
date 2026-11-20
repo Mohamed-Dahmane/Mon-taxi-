@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'be.montaxi.gestion'
  compileSdk 35
- defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 70; versionName 'V 6/11.61 - Contact attribution' }
+ defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 71; versionName 'V 6/11.62 - Modification directe' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
