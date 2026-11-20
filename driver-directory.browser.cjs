@@ -405,6 +405,26 @@ async function checkBookingRoom(frame,id){
   const optional=!$('client').required&&!$('phone').required;$('save').onclick();return optional;
  });
  assert.equal(pickupOptional,true);const pickupSaved=await integrated.evaluate(()=>pickupSaved);assert.equal(pickupSaved.length,1);assert.equal(pickupSaved[0].client,'');assert.equal(pickupSaved[0].phone,'');assert.equal(pickupSaved[0].room,'0204');assert.equal(pickupSaved[0].place,'Gare du Nord');await integrated.evaluate(()=>document.getElementById('closeHotelPickup').click());
+ await frame.evaluate(()=>openPickupEditor('Réservation'));
+ const pickupPapa=pickupFrame.getByRole('button',{name:'Papa',exact:true});
+ await pickupFrame.locator('#hotelSearch').fill('DoubleTree');
+ await pickupFrame.getByRole('button',{name:'DoubleTree by Hilton',exact:true}).click();
+ const pickupShift=pickupFrame.locator('#pickupAutoContact');
+ await pickupFrame.locator('#timeHour').fill('06');
+ await pickupFrame.locator('#timeMinute').fill('59');
+ assert.equal(await pickupShift.innerText(),'Night');
+ await pickupPapa.click();
+ assert.equal(await pickupShift.innerText(),'Papas');
+ await pickupFrame.locator('#timeHour').fill('07');
+ await pickupFrame.locator('#timeMinute').fill('00');
+ assert.equal(await pickupShift.innerText(),'Papas');
+ await pickupPapa.click();
+ assert.equal(await pickupShift.innerText(),'Day');
+ await pickupFrame.locator('#timeMode').selectOption('arrival');
+ await pickupFrame.locator('#arrivalHour').fill('23');
+ await pickupFrame.locator('#arrivalMinute').fill('00');
+ assert.equal(await pickupShift.innerText(),'Night');
+ await integrated.evaluate(()=>document.getElementById('closeHotelPickup').click());
  await integrated.setViewportSize({width:360,height:780});
  await integrated.evaluate(()=>openTaxiDrivers({id:'planning',date:'2026-11-20',hotel:'Standard',destination:'CRL',clientName:'Mme Test',clientPhone:'0470000000'}));
  await select(integrated,'Test intégré');await details(integrated).getByRole('button',{name:'SMS',exact:true}).click();assert.match(await integrated.inputValue('#driversMessage'),/Standard → Airport CRL \(Charleroi\)/);assert.match(await integrated.inputValue('#driversMessage'),/Client : Mme Test/);
@@ -661,12 +681,40 @@ async function checkBookingRoom(frame,id){
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},earlyDoubleTree);
  const earlyRow=frame.locator('.reservation-card[data-entry-id="planning-early-papa"]');
  await earlyRow.getByText('Contact · Night',{exact:true}).waitFor();
- await earlyRow.getByRole('button',{name:'Papa',exact:true}).click();
+ const earlyPapa=earlyRow.getByRole('button',{name:'Papa',exact:true});
+ const earlyContact=earlyRow.getByText('Contact · Night',{exact:true});
+ const [papaBox,contactBox]=await Promise.all([earlyPapa.boundingBox(),earlyContact.boundingBox()]);
+ assert.ok(papaBox.x>=contactBox.x+contactBox.width&&papaBox.y<contactBox.y+contactBox.height&&papaBox.width<80,JSON.stringify({papaBox,contactBox}));
+ await earlyPapa.click();
+ await earlyRow.getByText('Contact · Papas',{exact:true}).waitFor();
+ assert.equal(await earlyPapa.getAttribute('aria-pressed'),'true');
+ await earlyPapa.click();
+ await earlyContact.waitFor();
+ assert.equal(await earlyPapa.getAttribute('aria-pressed'),'false');
+ assert.deepEqual(await storedCourse(earlyDoubleTree.id),{...earlyDoubleTree,manualReservationShift:''});
+ await earlyPapa.click();
  await earlyRow.getByText('Contact · Papas',{exact:true}).waitFor();
  assert.equal(await earlyRow.locator('time').innerText(),'06:40');
  assert.deepEqual(await storedCourse(earlyDoubleTree.id),{...earlyDoubleTree,contact:'Papas',manualReservationShift:'Papas'});
  assert.equal(await frame.evaluate(()=>doubleTreeReservationContact('23:45','Papas')),'Papas');
  assert.equal(await vanRow.getByRole('button',{name:'Papa',exact:true}).count(),0);
+ const papaVariants=[
+  {...earlyDoubleTree,id:'planning-papa-pickup',scheduledTime:'07:00',contact:'Day',destination:'DoubleTree by Hilton',pickup:{place:'BRU'}},
+  {...earlyDoubleTree,id:'planning-papa-direct',bookingMode:'Direct',recordedTime:'23:00',contact:'Night'}
+ ];
+ await frame.evaluate(courses=>{data.push(...courses);save();renderReservations();},papaVariants);
+ for(const course of papaVariants){
+  const row=frame.locator('.reservation-card[data-entry-id="'+course.id+'"]');
+  const papa=row.getByRole('button',{name:'Papa',exact:true});
+  await papa.click();
+  await row.getByText('Contact · Papas',{exact:true}).waitFor();
+  assert.equal((await storedCourse(course.id)).contact,'Papas');
+  await papa.click();
+  await row.getByText('Contact · '+course.contact,{exact:true}).waitFor();
+  assert.equal((await storedCourse(course.id)).contact,course.contact);
+ }
+ await frame.evaluate(ids=>{data=data.filter(course=>!ids.includes(course.id));save();renderReservations();},papaVariants.map(course=>course.id));
+
  await vanRow.getByRole('button',{name:'Exporter au chauffeur',exact:true}).click();
  assert.equal(await integrated.locator('#driversVanOnly').isChecked(),true);assert.equal(await integrated.locator('#driversVanOnly').isDisabled(),true);assert.deepEqual(await integrated.locator('.driver-name').allTextContents(),['Test intégré','TX Van uniquement']);
  await select(integrated,'Test intégré');

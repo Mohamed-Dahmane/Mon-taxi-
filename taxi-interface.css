@@ -273,6 +273,36 @@ html.taxi-clean {
   color: var(--clean-muted);
   font-size: 16px;
 }
+.taxi-clean .planning-contact-with-papa,
+.taxi-clean .pickup-doubletree-contact:not([hidden]) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.taxi-clean.taxi-hotel .doubletree-direct-contacts:not([hidden]) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.taxi-clean.taxi-hotel .doubletree-direct-contacts > .papa-toggle { margin-inline-start: 2px; }
+.taxi-clean.taxi-hotel #reservationList .reservation-card button.papa-toggle,
+.taxi-clean.taxi-hotel .booking-form button.papa-toggle,
+.taxi-clean.taxi-pickup .booking-form button.papa-toggle {
+  width: auto;
+  min-width: 44px;
+  min-height: 34px;
+  padding: 4px 9px;
+  font-size: 13px;
+  font-weight: 750;
+  margin-block: 0;
+}
+.taxi-clean.taxi-hotel #reservationList .reservation-card button.papa-toggle[aria-pressed="true"],
+.taxi-clean .booking-form button.papa-toggle[aria-pressed="true"] {
+  background: #255f9f;
+  color: #fff;
+}
 .taxi-clean.taxi-hotel .reservation-card-people strong {
   color: var(--clean-text);
   font-size: 18px;
