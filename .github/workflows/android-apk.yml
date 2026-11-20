@@ -157,3 +157,44 @@ jobs:
           args=()
           if [[ -n "$previous" ]]; then args=(-f "sha=$previous"); fi
           gh api "$route" --method PUT -f "branch=$branch" -f "message=Actualiser le lien de téléchargement Android" -f "content=$payload" "${args[@]}" --jq .content.path
+  telechargement-6-11-69:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: telechargement-mon-taxi-6-11-69
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Récupérer l’APK 6/11.69 signé
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: 14618577631
+          run-id: 44714532623
+          github-token: ${{ github.token }}
+          path: apk-release
+      - name: Publier le téléchargement direct
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          checksum=689da68a84f5685a1ad86b9230e55363bfbc0ae58d17baedf8692fd37d781510
+          printf '%s  %s\n' "$checksum" apk-release/Mon-Taxi.apk | sha256sum -c
+          file=Mon-Taxi-6-11-69.apk
+          cp apk-release/Mon-Taxi.apk "$file"
+          tag=mon-taxi-6-11-69
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" "$file" --repo "$GITHUB_REPOSITORY" --target 743a4c0ba691d3150fbe9cbe24933e145128779c --title "Mon Taxi 6/11.69" --notes "Mise à jour Android signée. Trajets du planning affichés à 14 px par défaut." --latest=false
+          fi
+          url=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq ".assets[] | select(.name == \"$file\") | .url")
+          test -n "$url"
+          curl --fail --silent --show-error --location --retry 4 --dump-header headers.txt "$url" --output downloaded.apk
+          grep -i '^content-disposition:.*attachment.*Mon-Taxi-6-11-69.apk' headers.txt
+          printf '%s  %s\n' "$checksum" downloaded.apk | sha256sum -c
+          branch=apk-download-info
+          route="repos/$GITHUB_REPOSITORY/contents/mon-taxi-install.json"
+          previous=$(gh api "$route?ref=$branch" --jq .sha 2>/dev/null || true)
+          payload=$(jq -nc --arg run "$GITHUB_RUN_ID" --arg url "$url" --arg sha256 "$checksum" '{version:"6/11.69", run:$run, url:$url, sha256:$sha256}' | base64 -w0)
+          args=()
+          if [[ -n "$previous" ]]; then args=(-f "sha=$previous"); fi
+          gh api "$route" --method PUT -f "branch=$branch" -f "message=Enregistrer le téléchargement Android vérifié" -f "content=$payload" "${args[@]}" --jq .content.path
