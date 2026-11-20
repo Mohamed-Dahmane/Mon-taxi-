@@ -2086,7 +2086,7 @@ function safeToReload(){
  const a=document.activeElement;
  const typing=a&&["INPUT","TEXTAREA","SELECT"].includes(a.tagName);
  const pending=fuelInput.value.trim()||expenseInput.value.trim()||(!$("quickExpenseNature").hidden&&$("quickExpenseName").value.trim())||$("extraName").value.trim()||$("extraAmount").value.trim();
- return document.visibilityState==="visible"&&!typing&&!pending&&calendarDialog.hidden&&!costDialog.open&&!costPicker.open&&!hotelCommissionsDialog.open;
+ return document.visibilityState==="visible"&&Boolean(document.querySelector('.pageBtn[data-page="home"].active'))&&!typing&&!pending&&calendarDialog.hidden&&!costDialog.open&&!costPicker.open&&!hotelCommissionsDialog.open;
 }
 async function checkPublishedBuild(){
  try{
