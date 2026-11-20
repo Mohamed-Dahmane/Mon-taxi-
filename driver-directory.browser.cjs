@@ -453,9 +453,25 @@ async function checkBookingRoom(frame,id){
  const editGroup=fieldDialog.getByRole('group',{name:'Champs à modifier'});
  assert.equal(await editGroup.isVisible(),false);
  const openCourseFields=row=>row.getByRole('button',{name:'Modifier la course',exact:true}).click();
+ const planningShortcuts=fieldDialog.locator('#planningEditActions button');
+ const otherFields=fieldDialog.locator('#planningOtherFields');
+ const showOtherFields=()=>otherFields.locator('summary').click();
+ await openCourseFields(editRow);
+ assert.deepEqual(await planningShortcuts.allTextContents(),[
+  'Heure','Date','Chauffeur','Destination','Contact','Chambre','Véhicules','Commission'
+ ]);
+ assert.equal(await otherFields.evaluate(el=>el.open),false);
+ assert.equal(await otherFields.getByRole('button',{name:'Départ',exact:true}).count(),0);
+ const feedbackBefore=await integrated.evaluate(()=>window.testHaptics);
+ await showOtherFields();
+ assert.equal(await integrated.evaluate(()=>window.testHaptics),feedbackBefore+1);
+ assert.equal(await otherFields.getByRole('button',{name:'Départ',exact:true}).isVisible(),true);
+ assert.equal(await otherFields.getByRole('button',{name:'Nom du client',exact:true}).isVisible(),true);
+ await fieldDialog.getByRole('button',{name:'Annuler',exact:true}).click();
  async function editCourseField(label,value,choice=false,row=editRow){
   await openCourseFields(row);
-  assert.ok(await editGroup.getByRole('button').count()>5);
+  assert.equal(await otherFields.evaluate(el=>el.open),false);
+  if(!await planningShortcuts.filter({hasText:label}).count())await showOtherFields();
   await editGroup.getByRole('button',{name:label,exact:true}).click();
   assert.equal(await editGroup.isVisible(),false);
   if(choice)await fieldDialog.locator('select').selectOption({label:value});
@@ -498,6 +514,11 @@ async function checkBookingRoom(frame,id){
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},editablePickup);
  const pickupEditRow=frame.locator('[data-entry-id="field-edit-pickup"]');
  assert.equal(await pickupEditRow.getByRole('button',{name:'Modifier le pick-up',exact:true}).count(),0);
+ await openCourseFields(pickupEditRow);
+ assert.deepEqual(await planningShortcuts.allTextContents(),[
+  'Heure','Date','Chauffeur','Destination','Contact','N° de vol ou de train','Véhicules','Commission par véhicule'
+ ]);
+ await fieldDialog.getByRole('button',{name:'Annuler',exact:true}).click();
  await editCourseField('Heure','17:30',false,pickupEditRow);
  await editCourseField('Départ','Gare du Midi',false,pickupEditRow);
  await editCourseField('Commission par véhicule','12',false,pickupEditRow);

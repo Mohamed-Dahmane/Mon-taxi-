@@ -56,10 +56,25 @@ function goBack(){
  else goHome();
 }
 back.onclick=goBack;home.onclick=goHome;
+const buttonControls='button, input:is([type=button], [type=submit], [type=reset], [type=image]), summary, [role=button]';
+function buttonFeedback(event){
+ if(!event.isTrusted)return;
+ const button=event.target.closest?.(buttonControls);
+ if(!button||button.matches(':disabled')||button.closest('[aria-disabled="true"], [inert]'))return;
+ if(!root.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  button.animate?.([{filter:'brightness(1.4)'},{filter:'brightness(1)'}],{duration:160,easing:'ease-out'});
+ }
+ try{
+  if(root.TaxiHaptics?.tap)root.TaxiHaptics.tap();
+  else root.navigator.vibrate?.(12);
+ }catch{}
+}
+doc.addEventListener('click',buttonFeedback,true);
 // Reserve room under scrolling forms so the last field remains reachable.
 function prepareFrame(frame){
  const page=frame.contentDocument;if(!page?.head||page.getElementById('taxiNavigationSpacing'))return;
  const padding=page.createElement('style');padding.id='taxiNavigationSpacing';padding.textContent='body{padding-bottom:80px!important}#reservationsOverlay,#manageOverlay,#commissionOverlay{padding-bottom:80px!important}';page.head.append(padding);
+ page.addEventListener('click',buttonFeedback,true);
 }
 for(const frame of doc.querySelectorAll('iframe')){frame.addEventListener('load',()=>prepareFrame(frame));prepareFrame(frame);}
 new MutationObserver(refresh).observe(doc.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open','hidden','class']});

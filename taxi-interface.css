@@ -898,3 +898,45 @@ html.taxi-clean {
 .taxi-clean.pickup-redesign .booking-form #save { background: #205f39; color: #fff; border: 1px solid #4a9266; }
 .pickup-redesign #reset { justify-self: center; min-height: 44px; font-size: 14px; }
 .pickup-redesign #pickupError { margin: 0; color: #ffbcac; }
+
+.taxi-clean :is(button, input:is([type=button], [type=submit], [type=reset], [type=image]), summary, [role=button]):not(:disabled):not([aria-disabled="true"]):active {
+  filter: brightness(1.35);
+}
+.taxi-clean.taxi-hotel #planningEditActions button {
+  background: #203a58;
+  border-color: #41658c;
+}
+.taxi-clean.taxi-hotel #planningEditActions button:first-child {
+  background: #1d4c78;
+  border-color: #6a9fcd;
+}
+.taxi-clean.taxi-hotel #planningOtherFields {
+  margin-top: 8px;
+}
+.taxi-clean.taxi-hotel #planningOtherFields summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 9px;
+  border: 1px solid #52779b;
+  border-radius: 8px;
+  background: #18334e;
+  color: var(--clean-text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.taxi-clean.taxi-hotel #planningOtherFields summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border: solid var(--clean-accent);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-2px) rotate(45deg);
+}
+.taxi-clean.taxi-hotel #planningOtherFields[open] summary::after {
+  transform: translateY(2px) rotate(225deg);
+}
