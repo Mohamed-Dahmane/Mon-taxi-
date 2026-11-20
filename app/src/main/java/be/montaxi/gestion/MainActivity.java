@@ -338,7 +338,31 @@ public class MainActivity extends Activity {
    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
     @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
-    @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame()){view.loadUrl("file:///android_asset/index.html");webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);}}
+    @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){
+     if(!req.isForMainFrame())return;
+     android.net.Uri uri=req.getUrl();
+     // Une ressource secondaire indisponible ne doit pas remplacer toute la page.
+     if(uri==null||!uri.toString().startsWith(APP_URL))return;
+     if(!"file".equals(view.getUrl()==null?"":android.net.Uri.parse(view.getUrl()).getScheme())){
+      view.loadUrl("file:///android_asset/index.html");
+      webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);
+     }
+    }
+    @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){
+     // Le processus WebView est mort : ne jamais réutiliser cette instance.
+     webHealthHandler.removeCallbacksAndMessages(null);
+     if(view.getParent() instanceof android.view.ViewGroup)
+      ((android.view.ViewGroup)view.getParent()).removeView(view);
+     view.destroy();
+     if(web==view)web=null;
+     recoveryShown=false;
+     runOnUiThread(()->{
+      if(isFinishing()||isDestroyed())return;
+      Toast.makeText(MainActivity.this,"Affichage interrompu. Rouvre Mon Taxi pour récupérer tes saisies sauvegardées.",Toast.LENGTH_LONG).show();
+      showLock();
+     });
+     return true;
+    }
     @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith(APP_URL);}
    });
    web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
