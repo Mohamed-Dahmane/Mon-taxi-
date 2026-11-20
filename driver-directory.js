@@ -49,6 +49,25 @@ function assignedNameMatches(drivers,name){
  const tokens=value=>value.split(' ').sort().join(' ');
  return drivers.filter(driver=>tokens(normalized(driver.name))===tokens(key));
 }
+function referrerPhoneNumbers(contacts,contact,hotel,internationalOnly=false){
+ const normalize=value=>cleanSearch(value).replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+ const key=normalize(contact);
+ if(!key)return [];
+ const hotelKey=normalize(hotelDisplayName(hotel));
+ const aliases=hotelKey==='the standard'?['the standard','standard']:hotelKey?[hotelKey]:[];
+ const qualified=new Set(aliases.flatMap(alias=>[key+' '+alias,alias+' '+key]));
+ const candidates=contacts.map(item=>({
+  ...item,name:normalize(item.name),
+  number:clientContactPhone(item.phone)||(!internationalOnly&&validPhone(item.phone)?phone(item.phone):'')
+ })).filter(item=>item.number);
+ const hotelMatches=candidates.filter(item=>qualified.has(item.name));
+ const matches=hotelMatches.length?hotelMatches:candidates.filter(item=>item.name===key);
+ const preferred=new Set(matches.filter(item=>item.preferred).map(item=>item.number));
+ if(matches.length&&matches.every(item=>item.nativeId&&item.nativeId===matches[0].nativeId)&&preferred.size===1){
+  return [...preferred];
+ }
+ return [...new Set(matches.map(item=>item.number))];
+}
 function nameSearchRank(name,query){
  let q=cleanSearch(query);if(!q)return 0;
  if(/^(?:[a-z]\s+)+[a-z]$/.test(q))q=q.replace(/\s/g,'');
@@ -172,7 +191,7 @@ function courseText(e){
   e.note&&'Remarques : '+e.note
  ].filter(Boolean).join('\n');
 }
-const core={merge,parseVcard,airportLabel,hotelDisplayName,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,clientContactPhone,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,driverPriority,orderedDrivers};
+const core={merge,parseVcard,airportLabel,hotelDisplayName,fixedPriceLine,driverDate,passengerLine,courseText,phone,validPhone,clientContactPhone,referrerPhoneNumbers,category,isTx,availability,normalizeDriver,eligible,driverSearchName,nameSearchRank,searchRank,requiredVehicle,compatibleWithCourse,courseVehicle,driverPriority,orderedDrivers};
 if(typeof module==='object'&&module.exports){module.exports=core;return;}
 root.TaxiDriverDirectoryCore=core;
 const doc=root.document;
@@ -475,6 +494,7 @@ function importContacts(items,source,fromPhone=false,fullScan=false){
 root.addEventListener('taxi-contacts-result',event=>{
  const d=event.detail||{};
  if(d.mode==='driver-lookup'){finishDriverLookup(d);return;}
+ if(d.mode==='referrer-lookup')return;
  if(['sync','tx','refresh'].includes(d.mode)||d.error)setBusy(false);
  if(d.error){if(d.mode==='open'&&lastCall?.awaitingReturn){lastCall.awaitingReturn=false;saveCall();}if(!dialog.open&&d.mode==='open')root.alert(d.error);else status(d.error);return;}
  if(d.contacts&&d.mode==='refresh')importContacts(d.contacts,'sync',true);

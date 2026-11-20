@@ -9,6 +9,20 @@ test('client messaging uses an international phone number',()=>{
   ['0470',''],['0470 12 34 56 poste 1',''],['','']
  ])assert.equal(core.clientContactPhone(typed),expected,typed);
 });
+test('referrer lookup keeps hotel-qualified names and requires an unambiguous number',()=>{
+ const contacts=[
+  {nativeId:'1',name:'Céline',phone:'0470000011'},
+  {nativeId:'2',name:'Celine - Standard',phone:'0470000022',preferred:true},
+  {nativeId:'2',name:'Celine - Standard',phone:'0470000033'},
+  {nativeId:'3',name:'Céline Moxy',phone:'0470000044'}
+ ];
+ assert.deepEqual(core.referrerPhoneNumbers(contacts,'Céline','The Standard',true),['+32470000022']);
+ assert.deepEqual(core.referrerPhoneNumbers(contacts,'Céline','Moxy'),['+32470000044']);
+ assert.deepEqual(core.referrerPhoneNumbers(contacts,'Céline','Autre'),['+32470000011']);
+ assert.equal(core.referrerPhoneNumbers([...contacts,{nativeId:'4',name:'Céline Standard',phone:'0470000055'}],
+  'Céline','The Standard',true).length,3);
+ assert.deepEqual(core.referrerPhoneNumbers(contacts,'Cé','The Standard',true),[]);
+});
 test('TX import classification, repeat import and same-phone different contacts',()=>{
  const list=[{nativeId:'1',name:'tx van Yacine',phone:'+32 470 12 34 56'},{nativeId:'2',name:'TX Alexis',phone:'+32470123456'},{nativeId:'3',name:'Autre',phone:'0470112233'}];
  const a=core.merge([],list,'tx');assert.equal(a.added,2);assert.equal(a.drivers[0].category,'van');assert.equal(a.drivers[1].category,'car');

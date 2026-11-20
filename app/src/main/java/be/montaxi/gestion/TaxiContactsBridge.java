@@ -46,11 +46,13 @@ public final class TaxiContactsBridge {
   if(nativeId==null||!nativeId.matches("[0-9]{1,20}"))return;
   beginRead("refresh",java.util.Collections.singleton(nativeId));
  }
- @JavascriptInterface public void findDriver(String name){
+ @JavascriptInterface public void findDriver(String name){findNamedContact("driver-lookup",name);}
+ @JavascriptInterface public void findReferrer(String name){findNamedContact("referrer-lookup",name);}
+ private void findNamedContact(String mode,String name){
   if(name==null)return;
   String query=name.trim();
   if(query.isEmpty()||query.length()>160)return;
-  beginRead("driver-lookup",java.util.Collections.singleton(query));
+  beginRead(mode,java.util.Collections.singleton(query));
  }
  private void beginRead(String mode,java.util.Set<String> ids){activity.runOnUiThread(()->{
   if(!trusted())return;
@@ -62,15 +64,16 @@ public final class TaxiContactsBridge {
   if(pendingMode==null)return;
   String mode=pendingMode;java.util.Set<String> ids=pendingIds;pendingMode=null;pendingIds=java.util.Collections.emptySet();
   if(grants.length>0&&grants[0]==PackageManager.PERMISSION_GRANTED&&trusted())readContacts(mode,ids);
-  else result(mode,null,"Accès aux contacts refusé. Les chauffeurs déjà enregistrés sont conservés.");
+  else result(mode,null,"referrer-lookup".equals(mode)?"Accès aux contacts du téléphone refusé.":"Accès aux contacts refusé. Les chauffeurs déjà enregistrés sont conservés.");
  }
  private void readContacts(String mode,java.util.Set<String> linked){
   reading=true;
   new Thread(()->{
    JSONArray contacts=new JSONArray();java.util.Set<String> seen=new java.util.HashSet<>();
-   String[] columns={ContactsContract.CommonDataKinds.Phone.CONTACT_ID,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER};
+   String[] columns={ContactsContract.CommonDataKinds.Phone.CONTACT_ID,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER,ContactsContract.CommonDataKinds.Phone.IS_SUPER_PRIMARY};
    boolean single="refresh".equals(mode);
-   boolean lookup="driver-lookup".equals(mode);
+   boolean referrerLookup="referrer-lookup".equals(mode);
+   boolean lookup=referrerLookup||"driver-lookup".equals(mode);
    Uri source=lookup?Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,Uri.encode(linked.iterator().next()))
      :ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
    String selection=single?ContactsContract.CommonDataKinds.Phone.CONTACT_ID+"=?":null;
@@ -83,7 +86,9 @@ public final class TaxiContactsBridge {
      boolean tx=name.trim().toUpperCase(java.util.Locale.ROOT).startsWith("TX");
      if(!lookup&&!(linked.contains(nativeId)||(!single&&tx)))continue;
      if(!number.replaceAll("[\\s().-]", "").matches("\\+?[0-9]{3,20}")||(!lookup&&!seen.add(nativeId)))continue;
-     JSONObject item=new JSONObject();item.put("nativeId",nativeId);item.put("name",name);item.put("phone",number);contacts.put(item);
+     JSONObject item=new JSONObject();item.put("nativeId",nativeId);item.put("name",name);item.put("phone",number);
+     if(referrerLookup)item.put("preferred",c.getInt(3)==1);
+     contacts.put(item);
     }
     if(single&&contacts.length()==0)result(mode,null,"Contact introuvable. La fiche Mon Taxi est conservée.");
     else result(mode,contacts,null);

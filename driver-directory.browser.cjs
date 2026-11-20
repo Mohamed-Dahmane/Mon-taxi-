@@ -817,21 +817,42 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(doubleTreeDirect.id)).reservationStatus,'validated');
  assert.equal(await integrated.evaluate(()=>externalActions.length),externalCount);
  assert.equal(await referrerPhone.isVisible(),false);
- const chargeStandard=vanRow.getByRole('button',{name:'Charger',exact:true});
- await integrated.evaluate(()=>{window.TaxiContacts.openWhatsAppMessage=(number,text)=>{window.commissionChat={number,text}}});
+ const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline'};
+ await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
+ const chargeStandard=frame.locator('[data-entry-id="planning-charge-celine"]').getByRole('button',{name:'Charger',exact:true});
  await chargeStandard.click();
- await referrerPhone.getByRole('textbox',{name:/Fal/}).fill('0470 00 00 33');
- await referrerPhone.getByRole('button',{name:'Enregistrer et ouvrir WhatsApp'}).click();
+ assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Aucun numéro enregistré pour Céline.');
+ assert.equal(await referrerPhone.isVisible(),false);
+ await integrated.evaluate(()=>{
+  window.TaxiContacts.openWhatsAppMessage=(number,text)=>{window.commissionChat={number,text}};
+  window.TaxiContacts.findReferrer=name=>{window.lookedUpReferrer=name};
+ });
+ await chargeStandard.click();
+ assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
+ const referrerLookup=contacts=>integrated.evaluate(contacts=>
+  window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'referrer-lookup',contacts}})),contacts);
+ await referrerLookup([{nativeId:'81',name:'Céline',phone:'0470000021'},{nativeId:'82',name:'Céline',phone:'0470000022'}]);
+ assert.match(await frame.locator('#reservationBoardMessage').textContent(),/Plusieurs numéros.*Céline/);
+ assert.equal(await integrated.evaluate(()=>window.commissionChat),undefined);
+ await chargeStandard.click();
+ await referrerLookup([{nativeId:'81',name:'Céline',phone:'0470000021'},
+  {nativeId:'83',name:'Celine Standard',phone:'0470000033'}]);
  const commissionChat=await integrated.evaluate(()=>window.commissionChat);
  assert.equal(commissionChat.number,'+32470000033');
  assert.equal(commissionChat.text,'The Standard 10');
- assert.equal((await storedCourse('linked-van')).reservationStatus,'pending');
+ assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
+ assert.equal(await referrerPhone.isVisible(),false);
+ await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
  const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Alexis',amount:10};
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},chargeOther);
  const otherRow=frame.locator('[data-entry-id="planning-charge-other"]');
- await otherRow.getByRole('button',{name:'Charger',exact:true}).click();
+ await otherRow.locator('.planning-edit-menu > summary').click();
+ await otherRow.getByRole('button',{name:'Téléphone du contact',exact:true}).click();
  await referrerPhone.getByRole('textbox',{name:/Alexis/}).fill('0470 00 00 44');
- await referrerPhone.getByRole('button',{name:'Enregistrer et ouvrir le SMS'}).click();
+ await referrerPhone.getByRole('button',{name:'Enregistrer',exact:true}).click();
+ await otherRow.getByRole('button',{name:'Charger',exact:true}).click();
+ assert.equal(await referrerPhone.isVisible(),false);
+ assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
  assert.equal(decodeURIComponent(await integrated.evaluate(()=>externalActions.at(-1).url)),
   'sms:+32470000044?body=Moxy 10');
  assert.deepEqual(await frame.evaluate(()=>[6,25,50,10.5].map(amount=>planningCommissionMessage({hotel:'Moxy',amount}))),
