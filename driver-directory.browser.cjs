@@ -600,7 +600,7 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(planningHeader.archives,{filterVisible:true,hasMonthHeading:true,hasMonthSearch:true});
  const planningStyles=await frame.evaluate(course=>{
   const hotels=[
-   {...course,id:'color-doubletree',hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton',destination:'Airport BRU'},
+   {...course,id:'color-doubletree',scheduledDate:course.date,hotel:'DoubleTree by Hilton',hotelGroup:'DoubleTree by Hilton',destination:'Airport BRU'},
    {...course,id:'color-moxy',hotel:'Moxy',hotelGroup:'Autre',driver:'other',driverName:'ChauffeurAvecUnNomExceptionnellementLongPourVérifierLeRetourÀLaLigne'},
    {...course,id:'color-pickup',hotel:'The Standard',pickup:{place:'BRU',passengers:1},destination:'The Standard'},
    {...course,id:'station-pickup',hotel:'The Standard',pickup:{place:'Gare Centrale',passengers:1},destination:'The Standard'},
@@ -627,7 +627,7 @@ async function checkBookingRoom(frame,id){
    moxyColor,moxyAfterRender:style(title('color-moxy').lastElementChild)[0],
    titles:Object.fromEntries(['color-doubletree','color-pickup','crl-pickup','station-pickup','station-dropoff','dolce-dropoff','dolce-pickup','linked-van','office-pickup','other-dropoff'].map(id=>[id,title(id).querySelector('.planning-route-title').textContent])),
 
-   routeFit:Object.fromEntries(['color-doubletree','dolce-pickup','crl-pickup','station-pickup','long-route'].map(id=>{
+   routeFit:Object.fromEntries(['linked-car','color-doubletree','dolce-pickup','crl-pickup','station-pickup','long-route'].map(id=>{
     const route=title(id).querySelector('.planning-route-title');
     const text=route.firstElementChild;
     return [id,{width:route.clientWidth,content:route.scrollWidth,font:Number.parseFloat(getComputedStyle(text).fontSize),
@@ -647,8 +647,8 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(planningStyles.time,['rgb(165, 209, 255)','18px']);
  assert.equal(planningStyles.hasRouteIcons,false);
  assert.equal(planningStyles.hasClock,true);
- assert.deepEqual(planningStyles.standard,['rgb(213, 186, 255)','19px']);
- assert.deepEqual(planningStyles.doubleTree,['rgb(255, 210, 134)','19px']);
+ assert.deepEqual(planningStyles.standard,['rgb(213, 186, 255)','14px']);
+ assert.deepEqual(planningStyles.doubleTree,['rgb(255, 210, 134)','14px']);
  assert.equal(planningStyles.moxyColor,planningStyles.moxyAfterRender);
  assert.deepEqual(planningStyles.titles,{
   'color-doubletree':'DoubleTree → Airport BRU',
@@ -662,9 +662,11 @@ async function checkBookingRoom(frame,id){
   'office-pickup':'Airport BRU → Bureau',
   'other-dropoff':'The Standard → Palais des congrès'
  });
+ assert.equal(planningStyles.routeFit['linked-car'].font,14);
+ assert.equal(planningStyles.routeFit['color-doubletree'].font,14);
  for(const id of ['color-doubletree','dolce-pickup','crl-pickup','station-pickup']){
   const fit=planningStyles.routeFit[id];
-  assert.ok(fit.noWrap&&fit.content<=fit.width&&fit.font>=11&&fit.font<=19,JSON.stringify({id,...fit}));
+  assert.ok(fit.noWrap&&fit.content<=fit.width&&fit.font>=11&&fit.font<=14,JSON.stringify({id,...fit}));
  }
  const longRoute=planningStyles.routeFit['long-route'];
  assert.ok(longRoute.scrollable&&longRoute.noWrap&&longRoute.content>longRoute.width&&longRoute.font===11);

@@ -240,7 +240,7 @@ html.taxi-clean {
 }
 .taxi-clean.taxi-hotel .reservation-card-title [data-hotel-color] {
   color: var(--planning-hotel-color, var(--clean-text));
-  font-size: 19px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.2;
   overflow-wrap: anywhere;
