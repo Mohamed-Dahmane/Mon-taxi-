@@ -754,16 +754,18 @@ async function checkBookingRoom(frame,id){
  await referrerPhone.getByRole('button',{name:'Enregistrer et ouvrir WhatsApp'}).click();
  const commissionChat=await integrated.evaluate(()=>window.commissionChat);
  assert.equal(commissionChat.number,'+32470000033');
- assert.match(commissionChat.text,/Bonjour Fal, la commission .*10,00/);
+ assert.equal(commissionChat.text,'The Standard\n10');
  assert.equal((await storedCourse('linked-van')).reservationStatus,'pending');
- const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Alexis'};
+ const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Alexis',amount:10.10};
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},chargeOther);
  const otherRow=frame.locator('[data-entry-id="planning-charge-other"]');
  await otherRow.getByRole('button',{name:'Charger',exact:true}).click();
  await referrerPhone.getByRole('textbox',{name:/Alexis/}).fill('0470 00 00 44');
  await referrerPhone.getByRole('button',{name:'Enregistrer et ouvrir le SMS'}).click();
- assert.match(decodeURIComponent(await integrated.evaluate(()=>externalActions.at(-1).url)),
-  /^sms:\+32470000044\?body=Bonjour Alexis, la commission .*10,00/);
+ assert.equal(decodeURIComponent(await integrated.evaluate(()=>externalActions.at(-1).url)),
+  'sms:+32470000044?body=Moxy\n10,10');
+ assert.deepEqual(await frame.evaluate(()=>[25,50].map(amount=>planningCommissionMessage({hotel:'Moxy',amount}))),
+  ['Moxy\n25','Moxy\n50']);
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
  await otherRow.locator('summary').click();
  assert.equal(await otherRow.getByRole('button',{name:'Effectuée',exact:true}).isVisible(),true);
