@@ -2237,13 +2237,25 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  function save(){
   try{
    const page=document.querySelector('.pageBtn.active')?.dataset.page||'home';
-   const snapshot={at:Date.now(),page,fields:collect(document),scrollY:window.scrollY};
+   const scrolls={};
+   document.querySelectorAll('[id]').forEach(el=>{
+    if(el.scrollTop>0||el.scrollLeft>0)scrolls[el.id]={top:el.scrollTop,left:el.scrollLeft};
+   });
+   const selections={};
+   document.querySelectorAll('input[id],textarea[id]').forEach(el=>{
+    if(typeof el.selectionStart==='number'&&el.selectionStart!==el.selectionEnd)
+     selections[el.id]={start:el.selectionStart,end:el.selectionEnd};
+   });
+   const snapshot={at:Date.now(),page,fields:collect(document),scrollY:window.scrollY,scrollX:window.scrollX,scrolls,selections};
    localStorage.setItem(key,JSON.stringify(snapshot));
   }catch(e){console.warn('Brouillon non sauvegardé',e)}
  }
  function schedule(){clearTimeout(timer);timer=setTimeout(save,180)}
  document.addEventListener('input',schedule,true);
  document.addEventListener('change',schedule,true);
+ document.addEventListener('scroll',schedule,true);
+ window.addEventListener('scroll',schedule,{passive:true});
+ document.addEventListener('click',schedule,true);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
  window.addEventListener('pagehide',save);
  // Un formulaire validé ne doit pas être réinjecté comme nouveau brouillon.
@@ -2262,7 +2274,16 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
     if(el.type==='checkbox'||el.type==='radio')el.checked=Boolean(value);
     else el.value=value;
    }
-   if(snapshot.scrollY)window.scrollTo(0,snapshot.scrollY);
+   const restoreScroll=()=>{
+    for(const [id,pos] of Object.entries(snapshot.scrolls||{})){
+     const el=document.getElementById(id);
+     if(el){el.scrollTop=pos.top||0;el.scrollLeft=pos.left||0}
+    }
+    window.scrollTo(snapshot.scrollX||0,snapshot.scrollY||0);
+   };
+   restoreScroll();
+   requestAnimationFrame(()=>requestAnimationFrame(restoreScroll));
+   setTimeout(restoreScroll,700);
   }catch(e){console.warn('Restauration du brouillon incomplète',e)}
  };
  window.addEventListener('load',()=>setTimeout(restore,350),{once:true});
