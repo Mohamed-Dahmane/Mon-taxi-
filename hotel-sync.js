@@ -213,5 +213,13 @@
         })).filter(item => item.at > now))
       .sort((a, b) => a.at - b.at);
   }
-  global.TaxiHotels = { equal, merge, applyPartnerDirectory, courseMap, courseDate, reminders, referenceCountersKey, nextReference, reconcileReferences };
+  function commissionPostedAt(entry) {
+    const status = entry.reservationStatus;
+    if (["cancelled", "non_effectuee", "non-effectuee"].includes(status)) return "";
+    const postedAt = status === "validated" ? entry.validatedAt : entry.commissionChargedAt;
+    if (typeof postedAt !== "string" || !postedAt) return "";
+    if (entry.bookingMode === "Programmée" && entry.scheduledDate > postedAt.slice(0, 10)) return "";
+    return postedAt;
+  }
+  global.TaxiHotels = { equal, merge, applyPartnerDirectory, courseMap, courseDate, reminders, referenceCountersKey, nextReference, reconcileReferences, commissionPostedAt };
 })(globalThis);

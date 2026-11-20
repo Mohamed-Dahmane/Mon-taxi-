@@ -828,24 +828,26 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(doubleTreeDirect.id)).reservationStatus,'validated');
  assert.equal(await integrated.evaluate(()=>externalActions.length),externalCount);
  assert.equal(await referrerPhone.isVisible(),false);
- const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline'};
+ const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline',scheduledDate:linked.van.date};
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
- const chargeStandard=frame.locator('[data-entry-id="planning-charge-celine"]').getByRole('button',{name:'Charger',exact:true});
- await chargeStandard.click();
+ const celineRow=frame.locator('[data-entry-id="planning-charge-celine"]');
+ await celineRow.getByRole('button',{name:'Charger',exact:true}).click();
+ const retryStandard=celineRow.getByRole('button',{name:'Rouvrir le message',exact:true});
+ assert.ok((await storedCourse(celineCourse.id)).commissionChargedAt);
  assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Aucun numéro enregistré pour Céline.');
  assert.equal(await referrerPhone.isVisible(),false);
  await integrated.evaluate(()=>{
   window.TaxiContacts.openWhatsAppMessage=(number,text)=>{window.commissionChat={number,text}};
   window.TaxiContacts.findReferrer=name=>{window.lookedUpReferrer=name};
  });
- await chargeStandard.click();
+ await retryStandard.click();
  assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
  const referrerLookup=contacts=>integrated.evaluate(contacts=>
   window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'referrer-lookup',contacts}})),contacts);
  await referrerLookup([{nativeId:'81',name:'Céline',phone:'0470000021'},{nativeId:'82',name:'Céline',phone:'0470000022'}]);
  assert.match(await frame.locator('#reservationBoardMessage').textContent(),/Plusieurs numéros.*Céline/);
  assert.equal(await integrated.evaluate(()=>window.commissionChat),undefined);
- await chargeStandard.click();
+ await retryStandard.click();
  await referrerLookup([{nativeId:'81',name:'Céline',phone:'0470000021'},
   {nativeId:'83',name:'Celine Standard',phone:'0470000033'}]);
  const commissionChat=await integrated.evaluate(()=>window.commissionChat);
@@ -853,10 +855,18 @@ async function checkBookingRoom(frame,id){
  assert.equal(commissionChat.text,'The Standard 10');
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
  assert.equal(await referrerPhone.isVisible(),false);
+ await celineRow.getByRole('button',{name:'WhatsApp envoyé',exact:true}).click();
+ assert.equal(await celineRow.isVisible(),false);
+ assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'validated');
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
- const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Alexis',amount:10};
+ const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Alexis',amount:10,scheduledDate:linked.car.date};
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},chargeOther);
  const otherRow=frame.locator('[data-entry-id="planning-charge-other"]');
+ const commissionOnDay=()=>integrated.evaluate(date=>{
+  const [year,month,day]=date.split('-');
+  return hotelCommissionCents(Number(day),year+'-'+(Number(month)-1));
+ },chargeOther.scheduledDate);
+ const commissionBeforeCharging=await commissionOnDay();
  await openCourseFields(otherRow);
  await editGroup.getByRole('button',{name:'Téléphone du contact',exact:true}).click();
  await referrerPhone.getByRole('textbox',{name:/Alexis/}).fill('0470 00 00 44');
@@ -869,8 +879,16 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(await frame.evaluate(()=>[6,25,50,10.5].map(amount=>planningCommissionMessage({hotel:'Moxy',amount}))),
   ['Moxy 6','Moxy 25','Moxy 50','Moxy 11']);
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
- await otherRow.locator('.course-options > summary').click();
- assert.equal(await otherRow.getByRole('button',{name:'Effectuée',exact:true}).isVisible(),true);
+ assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
+ assert.equal(await frame.evaluate(id=>reportEntries('all').filter(entry=>entry.id===id).length,chargeOther.id),1);
+ await otherRow.getByRole('button',{name:'Rouvrir le message',exact:true}).click();
+ assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
+ await otherRow.getByRole('button',{name:'SMS envoyé',exact:true}).click();
+ assert.equal(await otherRow.isVisible(),false);
+ const archivedCharge=await storedCourse(chargeOther.id);
+ assert.equal(archivedCharge.reservationStatus,'validated');
+ assert.equal(archivedCharge.commissionChargedAt,undefined);
+ assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},chargeOther.id);
  await frame.evaluate(ids=>{data=data.filter(course=>!ids.includes(course.id));save();renderReservations();},papaVariants.map(course=>course.id));
 
