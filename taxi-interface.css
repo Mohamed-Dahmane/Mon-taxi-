@@ -273,12 +273,29 @@ html.taxi-clean {
   color: var(--clean-muted);
   font-size: 16px;
 }
+.taxi-clean .planning-driver-inline,
 .taxi-clean .planning-contact-with-papa,
 .taxi-clean .pickup-doubletree-contact:not([hidden]) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+}
+.taxi-clean.taxi-hotel .planning-driver-inline { margin: 0; }
+.taxi-clean.taxi-hotel .planning-driver-inline .planning-quick-driver {
+  width: auto;
+  max-width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 5px 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.taxi-clean.taxi-hotel #reservationList .reservation-card .planning-referrer-sms {
+  min-height: 36px;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 14px;
 }
 .taxi-clean.taxi-hotel .doubletree-direct-contacts:not([hidden]) {
   display: flex;

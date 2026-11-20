@@ -515,7 +515,7 @@ async function checkBookingRoom(frame,id){
    })),
    routeSummary:title('color-pickup').parentElement.querySelector('.reservation-card-route').textContent,
    pickupDetails:title('color-pickup').parentElement.textContent,
-   people:[...title('linked-van').parentElement.querySelectorAll('.reservation-card-people strong')].map(el=>[el.textContent,style(el)[1]]),
+   people:[...title('linked-van').parentElement.querySelectorAll('.reservation-card-people :is(select,strong)')].map(el=>[el.selectedOptions?.[0].textContent||el.textContent,style(el)[1]]),
    textSize:style(title('linked-van').parentElement.querySelector('.reservation-card-info > small'))[1],
    narrowFits:document.querySelector('[data-entry-id="color-moxy"]').scrollWidth<=document.querySelector('[data-entry-id="color-moxy"]').clientWidth
   };
@@ -698,6 +698,8 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(await storedCourse(earlyDoubleTree.id),{...earlyDoubleTree,contact:'Papas',manualReservationShift:'Papas'});
  assert.equal(await frame.evaluate(()=>doubleTreeReservationContact('23:45','Papas')),'Papas');
  assert.equal(await vanRow.getByRole('button',{name:'Papa',exact:true}).count(),0);
+ const quickVan=vanRow.getByRole('combobox',{name:'Changer le chauffeur'});
+ assert.equal(await quickVan.locator('option').filter({hasText:'TX Petit test'}).count(),0);
  const papaVariants=[
   {...earlyDoubleTree,id:'planning-papa-pickup',scheduledTime:'07:00',contact:'Day',destination:'DoubleTree by Hilton',pickup:{place:'BRU'}},
   {...earlyDoubleTree,id:'planning-papa-direct',bookingMode:'Direct',recordedTime:'23:00',contact:'Night'}
@@ -705,6 +707,11 @@ async function checkBookingRoom(frame,id){
  await frame.evaluate(courses=>{data.push(...courses);save();renderReservations();},papaVariants);
  for(const course of papaVariants){
   const row=frame.locator('.reservation-card[data-entry-id="'+course.id+'"]');
+  const quickDriver=row.getByRole('combobox',{name:'Changer le chauffeur'});
+  await quickDriver.selectOption({label:'TX Petit test'});
+  assert.deepEqual(await storedCourse(course.id),{...course,driver:'other',driverName:'Petit test',driverDirectoryId:driverIds['0470101010']});
+  await quickDriver.selectOption({label:'Moi'});
+  assert.deepEqual(await storedCourse(course.id),{...course,driverName:''});
   const papa=row.getByRole('button',{name:'Papa',exact:true});
   await papa.click();
   await row.getByText('Contact · Papas',{exact:true}).waitFor();
@@ -713,6 +720,24 @@ async function checkBookingRoom(frame,id){
   await row.getByText('Contact · '+course.contact,{exact:true}).waitFor();
   assert.equal((await storedCourse(course.id)).contact,course.contact);
  }
+ const referrerSms=earlyRow.getByRole('button',{name:'SMS au contact',exact:true});
+ await referrerSms.click();
+ const referrerPhone=frame.getByRole('dialog',{name:'Téléphone du contact'});
+ await referrerPhone.getByRole('textbox',{name:/Papas/}).fill('0470 00 00 22');
+ await referrerPhone.getByRole('button',{name:'Enregistrer et ouvrir le SMS'}).click();
+ assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'sms:+32470000022');
+ for(const course of papaVariants){
+  const row=frame.locator('.reservation-card[data-entry-id="'+course.id+'"]');
+  await row.getByRole('button',{name:'Papa',exact:true}).click();
+  await row.getByRole('button',{name:'SMS au contact',exact:true}).click();
+  assert.equal(await referrerPhone.isVisible(),false);
+  assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'sms:+32470000022');
+ }
+ await earlyPapa.click();
+ await referrerSms.click();
+ assert.equal(await referrerPhone.getByRole('textbox',{name:/Night/}).inputValue(),'');
+ await referrerPhone.getByRole('button',{name:'Annuler'}).click();
+ await earlyPapa.click();
  await frame.evaluate(ids=>{data=data.filter(course=>!ids.includes(course.id));save();renderReservations();},papaVariants.map(course=>course.id));
 
  await vanRow.getByRole('button',{name:'Exporter au chauffeur',exact:true}).click();

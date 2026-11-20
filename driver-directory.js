@@ -554,7 +554,7 @@ function isPendingPlanningCourse(course){
 function planningCourses(driver){
  return courses().filter(course=>isPendingPlanningCourse(course)&&(!driver||compatibleWithCourse(driver,course)));
 }
-function assignPlanningCourse(course,driver){
+function assignPlanningCourse(course,driver,listedName=''){
  const frame=doc.getElementById('hotelCommissionsFrame');
  function fail(message){
   if(dialog.open)status(message);
@@ -564,14 +564,15 @@ function assignPlanningCourse(course,driver){
   }
   return false;
  }
- const driverName=driver?(driverSearchName(driver.name)||driver.name):'';
+ const driverName=driver?(driverSearchName(driver.name)||driver.name):listedName;
  try{
   const entries=JSON.parse(localStorage.getItem(COURSES_KEY)||'[]');
   const current=entries.find(entry=>entry?.id!=null&&String(entry.id)===String(course.id));
   if(!isPendingPlanningCourse(current))return fail('Cette course n’est plus en attente dans le Planning.');
   if(driver&&!compatibleWithCourse(driver,current))return fail('Ce chauffeur ne peut pas assurer le véhicule de cette course.');
-  if(driver&&frame?.contentWindow?.canDrive?.(driverName)===false)return fail('Ce nom est réservé à un contact d’attribution.');
-  current.driver=driver?'other':'self';
+  if(driverName&&frame?.contentWindow?.canDrive?.(driverName)===false)return fail('Ce nom est réservé à un contact d’attribution.');
+  if(listedName&&!root.TaxiDriverCommunication.canAssignName(listedName,current))return fail('Ce chauffeur ne peut pas assurer le véhicule de cette course.');
+  current.driver=driverName?'other':'self';
   current.driverName=driverName;
   if(driver)current.driverDirectoryId=driver.id;
   else delete current.driverDirectoryId;
@@ -671,6 +672,16 @@ root.TaxiDriverCommunication={
  },
  sendToLast(course){const actual=courses().find(e=>String(e.id)===String(course.id))||course;const d=lastFor(course);if(!d)return;const profile=state.drivers.find(x=>x.id===d.id);openSms(profile,courseText(actual),course);},
  nextFor(course){const compatible=orderedDrivers(state.drivers,'priority',hotelDriverContacts()).filter(d=>compatibleWithCourse(d,course));if(!compatible.length){root.openTaxiDrivers(course);return;}const current=compatible.findIndex(d=>d.id===lastCall?.driverId);root.openTaxiDrivers(course,{driverId:compatible[(current+1)%compatible.length].id});},
+ planningDriverChoices(course){
+  return orderedDrivers(state.drivers,'priority',hotelDriverContacts())
+   .filter(driver=>compatibleWithCourse(driver,course))
+   .map(driver=>({id:driver.id,name:driverSearchName(driver.name)||driver.name,label:driver.name}));
+ },
+ changePlanningDriver(course,choice){
+  const driver=choice.id?state.drivers.find(item=>item.id===choice.id):null;
+  if(choice.id&&!driver)return false;
+  return assignPlanningCourse(course,driver,choice.id?'':choice.name);
+ },
  namesForCourse(course){return [...new Set(state.drivers.filter(d=>compatibleWithCourse(d,course)).map(d=>driverSearchName(d.name)||d.name))];},
  canAssignName(name,course){if(['moi','self'].includes(String(name).toLocaleLowerCase('fr')))return true;const matches=assignedNameMatches(state.drivers,name);return matches.length?matches.some(d=>compatibleWithCourse(d,course)):requiredVehicle(course)!=='van';}
 };
