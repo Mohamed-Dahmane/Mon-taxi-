@@ -862,10 +862,8 @@ async function checkBookingRoom(frame,id){
  const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Alexis',amount:10,scheduledDate:linked.car.date};
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},chargeOther);
  const otherRow=frame.locator('[data-entry-id="planning-charge-other"]');
- const commissionOnDay=()=>integrated.evaluate(date=>{
-  const [year,month,day]=date.split('-');
-  return hotelCommissionCents(Number(day),year+'-'+(Number(month)-1));
- },chargeOther.scheduledDate);
+ const commissionOnDay=async()=>Math.round(Number((await integrated.locator('#commissionMonthCard').textContent())
+  .replace(/[^\d,\-]/g,'').replace(',','.'))*100);
  const commissionBeforeCharging=await commissionOnDay();
  await openCourseFields(otherRow);
  await editGroup.getByRole('button',{name:'Téléphone du contact',exact:true}).click();
