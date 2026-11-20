@@ -1093,6 +1093,30 @@ async function checkBookingRoom(frame,id){
  await fresh.reload();
  await fresh.evaluate(()=>openTaxiDirectory('hotels'));
  assert.equal(await defaultContact.inputValue(),'Alexis');
+ await fresh.click('#directoryClose');
+ await fresh.evaluate(()=>window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'chosen',contacts:[
+  {nativeId:'501',name:'TX Alexis test',phone:'0470120051'},
+  {nativeId:'502',name:'TX Céline',phone:'0470120052'}
+ ]}})));
+ await fresh.evaluate(()=>openTaxiDirectory('drivers'));
+ const alexisRow=freshRows.filter({has:fresh.getByRole('button',{name:'Alexis',exact:true})});
+ await alexisRow.getByRole('button',{name:'Modifier',exact:true}).click();
+ assert.deepEqual(await fresh.locator('#driversList .driver-name').allTextContents(),['TX Alexis test']);
+ await fresh.getByRole('button',{name:'TX Alexis test',exact:true}).click();
+ await fresh.getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();
+ assert.equal(await fresh.locator('#taxiDrivers').isVisible(),false);
+ assert.equal(await fresh.locator('#taxiDirectoryEditor').isVisible(),true);
+ const linkedRow=freshRows.filter({has:fresh.getByRole('button',{name:'TX Alexis test',exact:true})});
+ assert.match(await linkedRow.innerText(),/Fiche du répertoire associée/);
+ const linkedSettings=await fresh.evaluate(key=>JSON.parse(localStorage.getItem(key)),directoryKey);
+ assert.equal(linkedSettings.hotels['Hôtel test'],'TX Alexis test');
+ assert.ok(linkedSettings.allowedContacts['Hôtel test'].includes('TX Alexis test'));
+ const linkedId=linkedSettings.driverDirectoryLinks['tx alexis test'];
+ assert.ok(linkedId);
+ assert.equal(await fresh.evaluate(id=>TaxiDriverCommunication.referrerNumber('TX Alexis test',id),linkedId),'+32470120051');
+ await fresh.click('#directoryClose');
+ await fresh.evaluate(()=>openTaxiDirectory('hotels'));
+ assert.equal(await defaultContact.inputValue(),'TX Alexis test');
  fresh.once('dialog',dialog=>dialog.accept());
  await newHotel.getByRole('button',{name:'Supprimer'}).click();
  assert.equal(await newHotel.count(),0);

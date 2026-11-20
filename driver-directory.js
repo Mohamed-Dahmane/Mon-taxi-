@@ -342,11 +342,12 @@ priorityPicker.addEventListener('close',()=>{
 dialog.addEventListener('close',()=>{if(priorityPicker.open)priorityPicker.close()});
 let pendingDriverLookup=null;
 let vanOnly=false,period='all',editing=null,recipient=null,busy=false,selectedDriver=null,listScroll=0,courseContext=null,linkedCourse=null,pickDriverCallback=null;
+let pickDriverFilter=null;
 let exportCourse=false,changeDriver=false,courseSort=null;
 const vanRequired=()=>requiredVehicle(courseContext)==='van';
 const vanFilter=()=>vanOnly||vanRequired();
 const compatibleDrivers=(sort,hotelContacts)=>orderedDrivers(state.drivers,sort,hotelContacts)
- .filter(driver=>eligible(driver,vanFilter()?'van':'car',period)&&compatibleWithCourse(driver,courseContext));
+ .filter(driver=>(!pickDriverFilter||pickDriverFilter(driver))&&eligible(driver,vanFilter()?'van':'car',period)&&compatibleWithCourse(driver,courseContext));
 const status=t=>{$('driversStatus').textContent=t;};
 function save(){if(readError){status('Le répertoire enregistré est illisible. Exportez une sauvegarde avant toute réparation.');return false;}try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch{status('Enregistrement impossible : espace de stockage indisponible.');return false;}}
 function commit(drivers,deleted=state.deletedNativeIds,metadata={}){const old=state;state={...state,...metadata,version:2,drivers:drivers.map(normalizeDriver),deletedNativeIds:deleted};if(!save()){state=old;return false;}render();updateRecipient();return true;}
@@ -709,9 +710,12 @@ root.TaxiDriverCommunication={
   return assignPlanningCourse(course,driver,choice.id?'':choice.name);
  },
  namesForCourse(course){return [...new Set(state.drivers.filter(d=>compatibleWithCourse(d,course)).map(d=>driverSearchName(d.name)||d.name))];},
- referrerNumber(name){
+ referrerNumber(name,directoryId){
   const key=cleanSearch(name);
-  const numbers=new Set(state.drivers.filter(driver=>cleanSearch(driverSearchName(driver.name)||driver.name)===key)
+  const linked=directoryId&&state.drivers.find(driver=>driver.id===directoryId);
+  const matches=linked?[linked]:state.drivers.filter(driver=>cleanSearch(driver.name)===key||
+    !directoryId&&cleanSearch(driverSearchName(driver.name)||driver.name)===key);
+  const numbers=new Set(matches
    .map(driver=>clientContactPhone(driver.phone)||phone(driver.phone)).filter(validPhone));
   return numbers.size===1?[...numbers][0]:'';
  },
@@ -729,6 +733,7 @@ root.taxiDriverNavigateBack=()=>{
 };
 root.openTaxiDrivers=function(course,options={}){
  courseContext=course||null;linkedCourse=options.onSelect?null:course||null;pickDriverCallback=options.onSelect||null;
+ pickDriverFilter=pickDriverCallback&&typeof options.filter==='function'?options.filter:null;
  exportCourse=Boolean(linkedCourse&&options.exportCourse);changeDriver=Boolean(isPendingPlanningCourse(linkedCourse)&&options.changeDriver);
  const required=requiredVehicle(course);vanOnly=false;period='all';selectedDriver=null;recipient=null;listScroll=0;
  courseSort=changeDriver&&options.firstByPriority?'priority':null;
@@ -740,7 +745,7 @@ root.openTaxiDrivers=function(course,options={}){
  if(linkedCourse){$('driversMessageSource').value='course';$('driversCourse').hidden=false;refreshCourses(String(course.id));$('driversMessage').value=courseText(course);pricePreview(course);status(required==='van'?'Course Van : chauffeurs Van uniquement.':'Course conservée : choisis un chauffeur compatible.');}
  else{
   $('driversMessageSource').value='free';$('driversCourse').hidden=true;$('driversMessage').value='';
-  if(pickDriverCallback&&!readError)status('Choisis le chauffeur pour cette course.');
+  if(pickDriverCallback&&!readError)status(options.selectionHint||'Choisis le chauffeur pour cette course.');
   else if(!readError&&!busy)status('');
  }
  updateRecipient();

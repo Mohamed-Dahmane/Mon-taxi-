@@ -60,12 +60,39 @@ function hotelNames(d){return [...new Set([...(d.hotelSequence||[]),...Object.ke
 function orderedNames(d){const base=mode==="hotels"?hotelNames(d):drivers(d);if(sortMode[mode]==="az")return base.slice().sort(collator.compare);if(sortMode[mode]==="za")return base.slice().sort((a,b)=>collator.compare(b,a));return base}
 function button(label,fn){const b=document.createElement("button");b.type="button";b.textContent=label;b.addEventListener("click",fn);return b}
 function rename(d,oldName,newName,isHotel){newName=newName.trim();if(!newName||norm(oldName)===norm(newName))return false;if(isHotel){if(hotelNames(d).some(n=>norm(n)===norm(newName)))return false;Object.defineProperty(d.hotels,newName,{value:d.hotels[oldName],writable:true,enumerable:true,configurable:true});delete d.hotels[oldName];for(const field of ["allowedContacts","tariffNames"]){if(d[field]&&Object.hasOwn(d[field],oldName)){Object.defineProperty(d[field],newName,{value:d[field][oldName],writable:true,enumerable:true,configurable:true});delete d[field][oldName]}}for(const field of ["hotelSequence","inactiveCommissionHotels","deletedHotels"]){if(Array.isArray(d[field]))d[field]=d[field].map(n=>n===oldName?newName:n)}}else{if(drivers(d).some(n=>norm(n)===norm(newName))||reservedContacts(d).has(norm(newName)))return false;for(const field of ["contacts","driverOrder","archivedDriverNames","contactGroupSequence"]){if(Array.isArray(d[field]))d[field]=d[field].map(n=>n===oldName?newName:n)}for(const [h,n] of Object.entries(d.hotels))if(n===oldName)d.hotels[h]=newName;for(const h of Object.keys(d.allowedContacts||{}))d.allowedContacts[h]=(d.allowedContacts[h]||[]).map(n=>n===oldName?newName:n)}return true}
+function linkDirectoryDriver(oldName){
+  const eligible=profile=>{
+    const directory=load();
+    const core=window.TaxiDriverDirectoryCore;
+    const name=profile.name.trim();
+    if(!directory||!core.validPhone(profile.phone)||!name)return false;
+    const reservedNames=reservedContacts(directory);
+    if(reservedNames.has(norm(name))||reservedNames.has(norm(core.driverSearchName(name))))return false;
+    return !drivers(directory).some(existing=>existing!==oldName&&norm(existing)===norm(name));
+  };
+  window.openTaxiDrivers(null,{
+    filter:eligible,
+    selectionHint:"Choisis dans le répertoire la fiche à associer à "+oldName+".",
+    onSelect:profile=>{
+      const directory=load();
+      if(!directory||!drivers(directory).includes(oldName)||!eligible(profile))return false;
+      const name=profile.name.trim();
+      if(name!==oldName&&!rename(directory,oldName,name,false))return false;
+      const links={...directory.driverDirectoryLinks};
+      delete links[norm(oldName)];
+      links[norm(name)]=profile.id;
+      directory.driverDirectoryLinks=links;
+      try{save(directory)}catch{return false}
+      return true;
+    }
+  });
+}
 function render(){const d=load();$("directoryRows").replaceChildren();$("directoryTitle").textContent=mode==="hotels"?"Liste des hôtels":"Liste des chauffeurs";$("directoryInfo").textContent="";if(!d){$("directoryInfo").textContent="Chargement des listes…";return}$("directorySort").value=sortMode[mode];const base=orderedNames(d);
 const query=$("directorySearch").value.trim();
 const names=query?base.map(name=>({name,rank:window.TaxiDriverDirectoryCore.nameSearchRank(name,query)})).filter(item=>item.rank>=0).sort((a,b)=>a.rank-b.rank).map(item=>item.name):base;
 const people=drivers(d);
 if(!names.length)$("directoryRows").textContent=mode==="hotels"?"Aucun hôtel trouvé.":"Aucun chauffeur trouvé.";
-names.forEach(name=>{const row=document.createElement("div");row.className="directory-row";const info=document.createElement("div");row.dataset.reorderKey=name;const strong=document.createElement("button");strong.type="button";strong.className="directory-name taxi-hold-handle";strong.textContent=mode==="hotels"?window.TaxiDriverDirectoryCore.hotelDisplayName(name):name;strong.title="Maintenir puis déplacer pour changer l’ordre de pertinence";info.append(strong);if(mode==="hotels"){if(isProtectedHotel(d,name)){const sm=document.createElement("small");sm.textContent=d.hotels[name]?"Contact par défaut · "+d.hotels[name]:"Contacts d’attribution";info.append(sm);info.append(button("Gérer les contacts",()=>{dialog.close();window.openHotelModule("module",name)}))}else{const sel=document.createElement("select");sel.setAttribute("aria-label","Chauffeur par défaut pour "+name);const blank=document.createElement("option");blank.value="";blank.textContent="Aucun chauffeur par défaut";sel.append(blank);for(const p of people){const o=document.createElement("option");o.value=p;o.textContent=p;sel.append(o)}sel.value=people.includes(d.hotels[name])?d.hotels[name]:"";sel.onchange=()=>{
+names.forEach(name=>{const row=document.createElement("div");row.className="directory-row";const info=document.createElement("div");row.dataset.reorderKey=name;const strong=document.createElement("button");strong.type="button";strong.className="directory-name taxi-hold-handle";strong.textContent=mode==="hotels"?window.TaxiDriverDirectoryCore.hotelDisplayName(name):name;strong.title="Maintenir puis déplacer pour changer l’ordre de pertinence";info.append(strong);if(mode==="drivers"&&d.driverDirectoryLinks?.[norm(name)]){const linked=document.createElement("small");linked.textContent="Fiche du répertoire associée";info.append(linked)}if(mode==="hotels"){if(isProtectedHotel(d,name)){const sm=document.createElement("small");sm.textContent=d.hotels[name]?"Contact par défaut · "+d.hotels[name]:"Contacts d’attribution";info.append(sm);info.append(button("Gérer les contacts",()=>{dialog.close();window.openHotelModule("module",name)}))}else{const sel=document.createElement("select");sel.setAttribute("aria-label","Chauffeur par défaut pour "+name);const blank=document.createElement("option");blank.value="";blank.textContent="Aucun chauffeur par défaut";sel.append(blank);for(const p of people){const o=document.createElement("option");o.value=p;o.textContent=p;sel.append(o)}sel.value=people.includes(d.hotels[name])?d.hotels[name]:"";sel.onchange=()=>{
   const current=load();
   if(!current||!Object.hasOwn(current.hotels,name))return;
   current.hotels[name]=sel.value;
@@ -74,7 +101,7 @@ names.forEach(name=>{const row=document.createElement("div");row.className="dire
     current.allowedContacts[name]=[...new Set([sel.value,...(current.allowedContacts[name]||[])])];
   }
   save(current);
-};info.append(sel)}}const actions=document.createElement("div");actions.className="directory-actions";if(!(mode==="hotels"&&isProtectedHotel(d,name))){actions.append(button("Modifier",()=>{const next=prompt("Nouveau nom",name);if(next===null)return;if(!rename(d,name,next,mode==="hotels")){alert("Nom invalide ou déjà utilisé.");return}save(d)}));actions.append(button("Supprimer",()=>{if(!confirm("Supprimer « "+name+" » du référentiel ?"))return;if(mode==="hotels"){delete d.hotels[name];d.hotelSequence=(d.hotelSequence||[]).filter(n=>n!==name);delete d.allowedContacts?.[name];d.deletedHotels=[...new Set([...(d.deletedHotels||[]),name])]}else{d.driverOrder=(d.driverOrder||[]).filter(n=>n!==name);d.contacts=(d.contacts||[]).filter(n=>norm(n)!==norm(name));d.archivedDriverNames=(d.archivedDriverNames||[]).filter(n=>norm(n)!==norm(name));d.contactGroupSequence=(d.contactGroupSequence||[]).filter(n=>norm(n)!==norm(name));for(const h of Object.keys(d.hotels))if(d.hotels[h]===name)d.hotels[h]="";for(const h of Object.keys(d.allowedContacts||{}))d.allowedContacts[h]=d.allowedContacts[h].filter(n=>n!==name)}save(d)}))}row.append(info,actions);$("directoryRows").append(row)})}
+};info.append(sel)}}const actions=document.createElement("div");actions.className="directory-actions";if(!(mode==="hotels"&&isProtectedHotel(d,name))){actions.append(button("Modifier",()=>{if(mode==="drivers"){linkDirectoryDriver(name);return}const next=prompt("Nouveau nom",name);if(next===null)return;if(!rename(d,name,next,true)){alert("Nom invalide ou déjà utilisé.");return}save(d)}));actions.append(button("Supprimer",()=>{if(!confirm("Supprimer « "+name+" » du référentiel ?"))return;if(mode==="hotels"){delete d.hotels[name];d.hotelSequence=(d.hotelSequence||[]).filter(n=>n!==name);delete d.allowedContacts?.[name];d.deletedHotels=[...new Set([...(d.deletedHotels||[]),name])]}else{delete d.driverDirectoryLinks?.[norm(name)];d.driverOrder=(d.driverOrder||[]).filter(n=>n!==name);d.contacts=(d.contacts||[]).filter(n=>norm(n)!==norm(name));d.archivedDriverNames=(d.archivedDriverNames||[]).filter(n=>norm(n)!==norm(name));d.contactGroupSequence=(d.contactGroupSequence||[]).filter(n=>norm(n)!==norm(name));for(const h of Object.keys(d.hotels))if(d.hotels[h]===name)d.hotels[h]="";for(const h of Object.keys(d.allowedContacts||{}))d.allowedContacts[h]=d.allowedContacts[h].filter(n=>n!==name)}save(d)}))}row.append(info,actions);$("directoryRows").append(row)})}
 window.TaxiHoldReorder.bind($("directoryRows"),{item:'.directory-row',handle:'.directory-name',enabled:()=>sortMode[mode]==='priority'&&!$('directorySearch').value.trim(),onDrop(order){const d=load();if(!d)return false;if(mode==='hotels'){d.hotelSequence=order;d.manualHotelOrder=true}else d.driverOrder=order;save(d);return true;}});
 $("directorySearch").oninput=render;
 $("directorySort").onchange=()=>{sortMode[mode]=$("directorySort").value;render()};
