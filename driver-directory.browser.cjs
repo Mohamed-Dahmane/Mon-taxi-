@@ -450,12 +450,14 @@ async function checkBookingRoom(frame,id){
  const editRow=frame.locator('[data-entry-id="field-edit-direct"]');
  assert.equal(await editRow.locator('.planning-route-title').textContent(),'NH (Atlanta) → Airport BRU');
  const editGroup=editRow.getByRole('group',{name:'Modifier la course'});
- assert.equal(await editGroup.getByRole('button').count(),5);
+ assert.equal(await editGroup.isVisible(),false);
+ await editRow.locator('.planning-edit-menu > summary').click();
+ assert.ok(await editGroup.getByRole('button').count()>5);
  const fieldDialog=frame.locator('#planningFieldDialog');
- async function editCourseField(label,value,choice=false){
-  await editGroup.getByRole('button',{name:label,exact:true}).click();
+ async function editCourseField(label,value,choice=false,group=editGroup){
+  await group.getByRole('button',{name:label,exact:true}).click();
   if(choice)await fieldDialog.locator('select').selectOption({label:value});
-  else await fieldDialog.locator('input').fill(value);
+  else await fieldDialog.locator('#planningFieldInput').fill(value);
   await fieldDialog.getByRole('button',{name:'Enregistrer',exact:true}).click();
   assert.equal(await fieldDialog.isVisible(),false);
  }
@@ -464,6 +466,7 @@ async function checkBookingRoom(frame,id){
  await editCourseField('Modifier le départ','Moxy');
  await editCourseField('Modifier le contact','Karim');
  await editCourseField('Modifier le chauffeur','TX Petit test',true);
+ await editCourseField('Nom du client','Client modifié');
  const editedDirect=await storedCourse(editableDirect.id);
  assert.equal(editedDirect.bookingMode,'Direct');
  assert.equal(editedDirect.recordedTime,'05:20');
@@ -471,13 +474,31 @@ async function checkBookingRoom(frame,id){
  assert.equal(editedDirect.destination,'Charleroi');
  assert.equal(editedDirect.contact,'Karim');
  assert.equal(editedDirect.driverName,'Petit test');
+ assert.equal(editedDirect.clientName,'Client modifié');
  assert.equal(editedDirect.room,'204');
  assert.equal(editedDirect.amount,editableDirect.amount);
  await editGroup.getByRole('button',{name:'Modifier le contact'}).click();
- await fieldDialog.locator('input').fill('Changement annulé');
+ await fieldDialog.locator('#planningFieldInput').fill('Changement annulé');
  await fieldDialog.getByRole('button',{name:'Annuler',exact:true}).click();
  assert.equal((await storedCourse(editableDirect.id)).contact,'Karim');
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},editableDirect.id);
+ const editablePickup={...linked.car,id:'field-edit-pickup',pickup:{place:'BRU',timeMode:'arrival',arrival:linked.car.scheduledTime,quantity:1,commissionUnit:10}};
+ await frame.evaluate(course=>{data.push(course);save();renderReservations();},editablePickup);
+ const pickupEditRow=frame.locator('[data-entry-id="field-edit-pickup"]');
+ await pickupEditRow.locator('.planning-edit-menu > summary').click();
+ const pickupEditGroup=pickupEditRow.getByRole('group',{name:'Modifier la course'});
+ await editCourseField('Modifier l’heure','17:30',false,pickupEditGroup);
+ await editCourseField('Modifier le départ','Gare du Midi',false,pickupEditGroup);
+ await editCourseField('Commission par véhicule','12',false,pickupEditGroup);
+ await editCourseField('Nombre de véhicules','2',false,pickupEditGroup);
+ const editedPickup=await storedCourse(editablePickup.id);
+ assert.equal(editedPickup.scheduledTime,'17:30');
+ assert.equal(editedPickup.pickup.arrival,'17:30');
+ assert.equal(editedPickup.pickup.place,'Gare du Midi');
+ assert.equal(editedPickup.pickup.quantity,2);
+ assert.equal(editedPickup.amount,24);
+ assert.equal(editedPickup.hotel,editablePickup.hotel);
+ await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},editablePickup.id);
  await integrated.setViewportSize({width:320,height:680});
  const planningHeader=await frame.evaluate(course=>{
   const list=$('reservationList');
