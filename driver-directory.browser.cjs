@@ -859,21 +859,22 @@ async function checkBookingRoom(frame,id){
  assert.equal(await celineRow.isVisible(),false);
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'validated');
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
- const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Alexis',amount:10,scheduledDate:linked.car.date};
+ const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Petit test',amount:10,scheduledDate:linked.car.date};
+ assert.deepEqual(await frame.evaluate(()=>{
+  const van={vehicle:'Van',vanCount:1};
+  return [directoryNames(true).includes('Petit test'),referrersForHotel('Moxy').includes('Petit test'),
+   referrersForHotel('The Standard').includes('Petit test'),directoryNames(false,van).includes('Petit test')];
+ }),[true,true,false,false]);
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},chargeOther);
  const otherRow=frame.locator('[data-entry-id="planning-charge-other"]');
  const commissionOnDay=async()=>Math.round(Number((await integrated.locator('#commissionMonthCard').textContent())
   .replace(/[^\d,\-]/g,'').replace(',','.'))*100);
  const commissionBeforeCharging=await commissionOnDay();
- await openCourseFields(otherRow);
- await editGroup.getByRole('button',{name:'Téléphone du contact',exact:true}).click();
- await referrerPhone.getByRole('textbox',{name:/Alexis/}).fill('0470 00 00 44');
- await referrerPhone.getByRole('button',{name:'Enregistrer',exact:true}).click();
  await otherRow.getByRole('button',{name:'Charger',exact:true}).click();
  assert.equal(await referrerPhone.isVisible(),false);
  assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
  assert.equal(decodeURIComponent(await integrated.evaluate(()=>externalActions.at(-1).url)),
-  'sms:+32470000044?body=Moxy 10');
+  'sms:+32470101010?body=Moxy 10');
  assert.deepEqual(await frame.evaluate(()=>[6,25,50,10.5].map(amount=>planningCommissionMessage({hotel:'Moxy',amount}))),
   ['Moxy 6','Moxy 25','Moxy 50','Moxy 11']);
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');

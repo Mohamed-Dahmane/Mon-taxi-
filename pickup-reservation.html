@@ -199,7 +199,18 @@ function shortDate(value){const d=new Date(value+"T12:00:00");if(Number.isNaN(d.
   destination.append($("pickupArrivalWrap"))
   $("pickupScheduleArrival").hidden = !follow;
   $("pickupOptionalArrival").hidden = follow;
-  $("arrival").required=follow;$("time").required=!follow;syncPickupDoubleTreeContact()} $("timeMode").onchange=syncTimeMode;function refreshContacts(){let v=$("contact").value;let a=integrated?.contacts[$("hotel").value]||[]; options($("contact"),[...a,"Autre"]);if(a.includes(v))$("contact").value=v;else $("contact").value=a.length?a[0]:"Autre";syncPickupDoubleTreeContact();syncOther()} $("hotel").addEventListener("change",refreshContacts);refreshContacts();function reset(){edit=null;pickupPapaSelected=false;
+  $("arrival").required=follow;$("time").required=!follow;syncPickupDoubleTreeContact()} $("timeMode").onchange=syncTimeMode;function refreshContacts(){
+  const hotel=$("hotel").value;
+  const select=$("contact");
+  const previous=select.dataset.hotel===hotel?select.value:"";
+  const names=integrated?.contactsForHotel?.(hotel)??integrated?.contacts?.[hotel]??[];
+  const preferred=integrated?.defaultContactForHotel?.(hotel)??names[0]??"";
+  options(select,[...names,"Autre"]);
+  select.dataset.hotel=hotel;
+  select.value=names.includes(previous)?previous:names.includes(preferred)?preferred:"Autre";
+  syncPickupDoubleTreeContact();
+  syncOther();
+} $("hotel").addEventListener("change",refreshContacts);refreshContacts();function reset(){edit=null;pickupPapaSelected=false;
   for (const kind of Object.keys(selectedPickupPlaces)) delete selectedPickupPlaces[kind]
   selectPickupKind("airport")
   $("calendar").classList.add("hidden")
@@ -308,7 +319,7 @@ if(!integrated){
 function pickupDriverCourse(){const vehicle=$("vehicle").value;const count=Number($("vans").value)||1;return {vehicleChoice:vehicle,vehicle,carCount:vehicle==="Voiture normale"?count:0,vanCount:vehicle==="Van"?count:0};}
 function syncCompatibleDrivers(){
  if(!integrated||!parent.TaxiDriverCommunication)return;
- const previous=$("driver").value;const values=["Moi",...parent.TaxiDriverCommunication.namesForCourse(pickupDriverCourse())];
+ const previous=$("driver").value;const values=["Moi",...(integrated.driversForCourse?.(pickupDriverCourse())??parent.TaxiDriverCommunication.namesForCourse(pickupDriverCourse()))];
  options($("driver"),[...values,"Autre"]);$("driver").value=values.includes(previous)?previous:"";$("driverSearch").value=$("driver").value;
  $("driverSuggestions").replaceChildren(...values.map(name=>new Option(name,name)));
 }

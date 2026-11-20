@@ -709,6 +709,12 @@ root.TaxiDriverCommunication={
   return assignPlanningCourse(course,driver,choice.id?'':choice.name);
  },
  namesForCourse(course){return [...new Set(state.drivers.filter(d=>compatibleWithCourse(d,course)).map(d=>driverSearchName(d.name)||d.name))];},
+ referrerNumber(name){
+  const key=cleanSearch(name);
+  const numbers=new Set(state.drivers.filter(driver=>cleanSearch(driverSearchName(driver.name)||driver.name)===key)
+   .map(driver=>clientContactPhone(driver.phone)||phone(driver.phone)).filter(validPhone));
+  return numbers.size===1?[...numbers][0]:'';
+ },
  canAssignName(name,course){if(['moi','self'].includes(String(name).toLocaleLowerCase('fr')))return true;const matches=assignedNameMatches(state.drivers,name);return matches.length?matches.some(d=>compatibleWithCourse(d,course)):requiredVehicle(course)!=='van';}
 };
 
