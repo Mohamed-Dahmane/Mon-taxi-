@@ -20,6 +20,9 @@ on:
 jobs:
   android:
     runs-on: ubuntu-24.04
+    outputs:
+      direct_artifact: ${{ steps.direct_apk.outputs.artifact-id }}
+      direct_url: ${{ steps.direct_apk.outputs.artifact-url }}
     permissions:
       contents: read
     env:
@@ -126,9 +129,31 @@ jobs:
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         run: cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/Mon-Taxi.apk"
       - name: Publier le fichier APK sans archive
+        id: direct_apk
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           path: ${{ runner.temp }}/Mon-Taxi.apk
           archive: false
           retention-days: 30
+  lien-android:
+    needs: android
+    if: ${{ needs.android.outputs.direct_artifact != '' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Enregistrer le lien vers l’APK signé
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_URL: ${{ needs.android.outputs.direct_url }}
+          APK_ID: ${{ needs.android.outputs.direct_artifact }}
+        run: |
+          set -euo pipefail
+          branch=apk-download-info
+          route="repos/$GITHUB_REPOSITORY/contents/mon-taxi-apk.json"
+          previous=$(gh api "$route?ref=$branch" --jq .sha 2>/dev/null || true)
+          payload=$(jq -nc --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg id "$APK_ID" --arg url "$APK_URL" '{commit:$sha, run:$run, artifact:$id, url:$url}' | base64 -w0)
+          args=()
+          if [[ -n "$previous" ]]; then args=(-f "sha=$previous"); fi
+          gh api "$route" --method PUT -f "branch=$branch" -f "message=Actualiser le lien de téléchargement Android" -f "content=$payload" "${args[@]}" --jq .content.path
