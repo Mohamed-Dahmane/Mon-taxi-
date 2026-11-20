@@ -106,31 +106,78 @@ function compatibleWithCourse(driver,course){
  const required=requiredVehicle(course);
  return required==='van'?normalizeDriver(driver).category==='van':required==='car'?eligible(driver,'car'):true;
 }
+const contactNumber=value=>clientContactPhone(value)||phone(value);
+function phoneContacts(existing,incoming){
+ const grouped=new Map();
+ for(const contact of incoming){
+  if(!norm(contact.name)||!validPhone(contact.phone))continue;
+  const key=contact.nativeId?'id:'+contact.nativeId:'name:'+cleanSearch(contact.name);
+  if(!grouped.has(key))grouped.set(key,[]);
+  grouped.get(key).push(contact);
+ }
+ const contacts=[];
+ let ambiguous=0;
+ for(const entries of grouped.values()){
+  const first=entries[0];
+  const preferred=entries.filter(contact=>contact.preferred);
+  const numbers=new Map((preferred.length?preferred:entries).map(contact=>[contactNumber(contact.phone),contact]));
+  const old=existing.find(driver=>first.nativeId&&driver.nativeId===String(first.nativeId));
+  const selected=numbers.size===1?numbers.values().next().value:old&&numbers.get(contactNumber(old.phone));
+  if(selected)contacts.push(selected);
+  else ambiguous++;
+ }
+ return {contacts,ambiguous};
+}
 function merge(existing,incoming,source,options={}){
- const result=existing.map(normalizeDriver);let added=0,updated=0,unchanged=0;
- for(const c of incoming){
+ const result=existing.map(normalizeDriver);let added=0,updated=0,unchanged=0,phoneChanges=0;
+ const {contacts,ambiguous}=options.fromPhone?phoneContacts(existing,incoming):{contacts:incoming,ambiguous:0};
+ const checked=[];
+ for(const c of contacts){
   if(!norm(c.name)||!validPhone(c.phone))continue;
   const nativeId=c.nativeId?String(c.nativeId):'';
   let old=nativeId?result.find(x=>x.nativeId===nativeId):null;
-  // Browser contact files have no stable phone ID. Only match a unique exact name.
-  if(!nativeId){const matches=result.filter(x=>!x.nativeId&&norm(x.name).toLocaleLowerCase('fr')===norm(c.name).toLocaleLowerCase('fr'));old=matches.length===1?matches[0]:matches.find(x=>phone(x.phone)===phone(c.phone));}
+  if(!old&&options.fromPhone){
+   const name=cleanSearch(c.name);
+   const candidates=result.filter(driver=>!nativeId||!driver.nativeId);
+   const matches=candidates.filter(driver=>cleanSearch(driver.name)===name);
+   const sources=incoming.filter(contact=>cleanSearch(contact.name)===name);
+   const identities=new Set(sources.map(contact=>contact.nativeId||contactNumber(contact.phone)));
+   if(matches.length===1&&identities.size===1)old=matches[0];
+   if(!old&&nativeId&&isTx(c.name)&&!matches.length){
+    const shortName=cleanSearch(driverSearchName(c.name));
+    const aliases=result.filter(driver=>cleanSearch(driverSearchName(driver.name))===shortName);
+    const matchingIds=new Set(incoming.filter(contact=>cleanSearch(driverSearchName(contact.name))===shortName).map(contact=>contact.nativeId));
+    if(shortName&&aliases.length===1&&!aliases[0].nativeId&&matchingIds.size===1)old=aliases[0];
+   }
+  }else if(!nativeId&&!options.fromPhone){
+   const matches=result.filter(driver=>!driver.nativeId&&norm(driver.name).toLocaleLowerCase('fr')===norm(c.name).toLocaleLowerCase('fr'));
+   old=matches.length===1?matches[0]:matches.find(driver=>phone(driver.phone)===phone(c.phone));
+  }
   if(source==='tx'&&!isTx(c.name))continue;
   if(source==='sync'&&!old&&!isTx(c.name))continue;
   if(old){
    const fingerprint=d=>JSON.stringify([d.name,d.phone,d.category,d.acceptsCar,d.availability]);
    const before=fingerprint(old);
    if(options.fromPhone||!old.localName)old.name=norm(c.name);
-   if(options.fromPhone||!old.localPhone)old.phone=phone(c.phone);
-   if(options.fromPhone){old.localName=false;old.localPhone=false;}
+   const changedNumber=contactNumber(old.phone)!==contactNumber(c.phone);
+   if(!options.fromPhone&&!old.localPhone||options.fromPhone&&changedNumber)old.phone=phone(c.phone);
+   if(options.fromPhone){
+    if(changedNumber)phoneChanges++;
+    if(nativeId)old.nativeId=nativeId;
+    old.localName=false;old.localPhone=false;
+    checked.push(old);
+   }
    if(!old.manualCategory){old.category=category(c.name);if(!old.manualServices)old.acceptsCar=old.category==='car';}
    if(!old.manualAvailability)old.availability=availability(c.name);
    Object.assign(old,normalizeDriver(old));
    if(fingerprint(old)!==before)updated++;else unchanged++;
   }else{
-   result.push(normalizeDriver({id:id(),name:norm(c.name),phone:phone(c.phone),nativeId,category:category(c.name),source:source==='sync'?'tx':source,manualCategory:source==='chosen'}));added++;
+   const driver=normalizeDriver({id:id(),name:norm(c.name),phone:phone(c.phone),nativeId,category:category(c.name),source:source==='sync'?'tx':source,manualCategory:source==='chosen'});
+   result.push(driver);added++;
+   if(options.fromPhone)checked.push(driver);
   }
  }
- return {drivers:result,added,updated,unchanged};
+ return {drivers:result,added,updated,unchanged,phoneChanges,checked,ambiguous};
 }
 function parseVcard(text){
  const unfolded=String(text).replace(/\r?\n[ \t]/g,'');const rows=[];
@@ -489,7 +536,14 @@ function importContacts(items,source,fromPhone=false,fullScan=false){
  if(source==='chosen'){for(const c of result.drivers)if(!state.drivers.some(x=>x.id===c.id)){c.category=vanFilter()?'van':category(c.name);c.acceptsCar=c.category==='car';c.manualCategory=true;}}
  const missing=fullScan?state.drivers.filter(d=>d.nativeId&&!items.some(c=>String(c.nativeId)===d.nativeId)).length:0;
  if(commit(result.drivers,state.deletedNativeIds,fromPhone?{lastSyncedAt:new Date().toISOString()}:{})){
-  status(result.added+' ajouté(s), '+result.updated+' modifié(s), '+result.unchanged+' inchangé(s).'+(missing?' '+missing+' contact(s) introuvable(s), fiche(s) conservée(s).':''));
+  const links=fromPhone?root.syncTaxiDriverLinks?.(result.checked,result.drivers):null;
+  status(result.added+' fiche(s) ajoutée(s), '+result.updated+' modifiée(s), '+result.unchanged+' inchangée(s).'
+   +(fromPhone?' '+result.phoneChanges+' numéro(s) corrigé(s).':'')
+   +(links?.updated?' '+links.updated+' chauffeur(s) actualisé(s) dans la liste.':'')
+   +(links?.ambiguous?' '+links.ambiguous+' rapprochement(s) à vérifier dans la liste des chauffeurs.':'')
+   +(links?.failed?' Mise à jour de la liste des chauffeurs impossible. Réessaie.':'')
+   +(result.ambiguous?' '+result.ambiguous+' contact(s) avec plusieurs numéros à vérifier.':'')
+   +(missing?' '+missing+' contact(s) introuvable(s), fiche(s) conservée(s).':''));
  }
 }
 root.addEventListener('taxi-contacts-result',event=>{
@@ -509,7 +563,15 @@ async function browserImport(sync){
 $('driversTx').onclick=()=>{
  if(busy)return;if(readError){status('Le répertoire enregistré est illisible : sauvegardez-le avant réparation.');return;}
  setBusy(true);status('Analyse des nouveaux contacts TX et des chauffeurs déjà importés…');
- try{if(root.TaxiContacts?.sync)root.TaxiContacts.sync(JSON.stringify(state.drivers.filter(d=>d.nativeId).map(d=>d.nativeId)));else if(root.TaxiContacts)root.TaxiContacts.importTx();else browserImport(true);}catch{setBusy(false);status('Actualisation impossible. Les fiches existantes sont conservées.');}
+ try{
+  const ids=JSON.stringify(state.drivers.filter(driver=>driver.nativeId).map(driver=>driver.nativeId));
+  if(root.TaxiContacts?.syncDirectory){
+   const names=JSON.stringify(state.drivers.filter(driver=>!driver.nativeId).map(driver=>driver.name));
+   root.TaxiContacts.syncDirectory(ids,names);
+  }else if(root.TaxiContacts?.sync)root.TaxiContacts.sync(ids);
+  else if(root.TaxiContacts)root.TaxiContacts.importTx();
+  else browserImport(true);
+ }catch{setBusy(false);status('Actualisation impossible. Les fiches existantes sont conservées.');}
 };
 $('driversPick').onclick=()=>{if(root.TaxiContacts)root.TaxiContacts.pick();else browserImport(false);};
 $('driversAdd').onclick=()=>edit(null);$('driversEditCancel').onclick=()=>{$('driversEditor').hidden=true;};$('driversCategory').onchange=()=>{if($('driversCategory').value==='van')$('driversCarEligible').checked=false;editorServices();};

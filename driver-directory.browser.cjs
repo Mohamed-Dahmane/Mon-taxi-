@@ -69,11 +69,11 @@ async function checkBookingRoom(frame,id){
  assert.deepEqual(await page.evaluate(()=>nativeCalls.filter(x=>x.type==='sync')[0].ids.sort()),['1','2','3']);
  const incoming=[{nativeId:'1',name:'TX Alexis actualisé',phone:'0470998877'},{nativeId:'2',name:'TX Van Hassan renommé',phone:'0470887766'},{nativeId:'3',name:'Karim nouveau',phone:'0470776655'},{nativeId:'4',name:'TX Nuit Van Nouveau',phone:'0470665544'},{nativeId:'99',name:'Autre contact privé',phone:'0470554433'}];
  const respond=detail=>page.evaluate(d=>window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:d})),detail);
- await respond({mode:'sync',contacts:incoming});assert.equal(await page.locator('#driversTx').isDisabled(),false);assert.match(await page.locator('#driversStatus').innerText(),/1 ajouté\(s\), 3 modifié\(s\)/);
+ await respond({mode:'sync',contacts:incoming});assert.equal(await page.locator('#driversTx').isDisabled(),false);assert.match(await page.locator('#driversStatus').innerText(),/1 fiche\(s\) ajoutée\(s\), 3 modifiée\(s\)/);
  await select(page,'Alexis actualisé');assert.match(await details(page).innerText(),/0470998877/);await back(page);
  await select(page,'Karim nouveau');assert.match(await details(page).innerText(),/0470776655/);await back(page);
  await select(page,'Hassan renommé');for(const name of ['Voiture normale','Van','Jour','Nuit'])assert.equal(await details(page).getByRole('checkbox',{name,exact:true}).isChecked(),true);await back(page);
- await page.click('#driversTx');await respond({mode:'sync',contacts:incoming});assert.match(await page.locator('#driversStatus').innerText(),/0 ajouté\(s\), 0 modifié\(s\)/);
+ await page.click('#driversTx');await respond({mode:'sync',contacts:incoming});assert.match(await page.locator('#driversStatus').innerText(),/0 fiche\(s\) ajoutée\(s\), 0 modifiée\(s\)/);
  await page.click('#driversTx');await respond({mode:'sync',error:'Accès aux contacts refusé. Les fiches sont conservées.'});assert.equal(await page.locator('#driversTx').isDisabled(),false);assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).drivers.length,KEY),4);
  await page.check('#driversVanOnly');await page.click('[data-period="all"]');assert.equal(await names(page).count(),2);
  await select(page,'Nouveau');page.once('dialog',d=>d.accept());await details(page).getByRole('button',{name:'Supprimer',exact:true}).click();
@@ -1117,6 +1117,17 @@ async function checkBookingRoom(frame,id){
  await fresh.click('#directoryClose');
  await fresh.evaluate(()=>openTaxiDirectory('hotels'));
  assert.equal(await defaultContact.inputValue(),'TX Alexis test');
+ await fresh.evaluate(()=>window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'sync',contacts:[
+  {nativeId:'501',name:'TX Alexis Samsung',phone:'0470120091',preferred:true},
+  {nativeId:'502',name:'TX Céline',phone:'0470120052'},
+  {nativeId:'503',name:'TX Van Hassan',phone:'0470120053'}
+ ]}})));
+ assert.equal(await defaultContact.inputValue(),'TX Alexis Samsung');
+ const syncedSettings=await fresh.evaluate(key=>JSON.parse(localStorage.getItem(key)),directoryKey);
+ assert.equal(syncedSettings.driverDirectoryLinks['tx alexis samsung'],linkedId);
+ assert.ok(syncedSettings.driverDirectoryLinks['tx van hassan']);
+ assert.equal(syncedSettings.driverDirectoryLinks['tx céline'],undefined);
+ assert.equal(await fresh.evaluate(id=>TaxiDriverCommunication.referrerNumber('TX Alexis Samsung',id),linkedId),'+32470120091');
  fresh.once('dialog',dialog=>dialog.accept());
  await newHotel.getByRole('button',{name:'Supprimer'}).click();
  assert.equal(await newHotel.count(),0);

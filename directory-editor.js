@@ -59,7 +59,44 @@ function drivers(d){
 function hotelNames(d){return [...new Set([...(d.hotelSequence||[]),...Object.keys(d.hotels||{})])].filter(n=>Object.hasOwn(d.hotels,n))}
 function orderedNames(d){const base=mode==="hotels"?hotelNames(d):drivers(d);if(sortMode[mode]==="az")return base.slice().sort(collator.compare);if(sortMode[mode]==="za")return base.slice().sort((a,b)=>collator.compare(b,a));return base}
 function button(label,fn){const b=document.createElement("button");b.type="button";b.textContent=label;b.addEventListener("click",fn);return b}
-function rename(d,oldName,newName,isHotel){newName=newName.trim();if(!newName||norm(oldName)===norm(newName))return false;if(isHotel){if(hotelNames(d).some(n=>norm(n)===norm(newName)))return false;Object.defineProperty(d.hotels,newName,{value:d.hotels[oldName],writable:true,enumerable:true,configurable:true});delete d.hotels[oldName];for(const field of ["allowedContacts","tariffNames"]){if(d[field]&&Object.hasOwn(d[field],oldName)){Object.defineProperty(d[field],newName,{value:d[field][oldName],writable:true,enumerable:true,configurable:true});delete d[field][oldName]}}for(const field of ["hotelSequence","inactiveCommissionHotels","deletedHotels"]){if(Array.isArray(d[field]))d[field]=d[field].map(n=>n===oldName?newName:n)}}else{if(drivers(d).some(n=>norm(n)===norm(newName))||reservedContacts(d).has(norm(newName)))return false;for(const field of ["contacts","driverOrder","archivedDriverNames","contactGroupSequence"]){if(Array.isArray(d[field]))d[field]=d[field].map(n=>n===oldName?newName:n)}for(const [h,n] of Object.entries(d.hotels))if(n===oldName)d.hotels[h]=newName;for(const h of Object.keys(d.allowedContacts||{}))d.allowedContacts[h]=(d.allowedContacts[h]||[]).map(n=>n===oldName?newName:n)}return true}
+function rename(d,oldName,newName,isHotel){newName=newName.trim();if(!newName||oldName===newName)return false;if(isHotel){if(hotelNames(d).some(n=>norm(n)===norm(newName)))return false;Object.defineProperty(d.hotels,newName,{value:d.hotels[oldName],writable:true,enumerable:true,configurable:true});delete d.hotels[oldName];for(const field of ["allowedContacts","tariffNames"]){if(d[field]&&Object.hasOwn(d[field],oldName)){Object.defineProperty(d[field],newName,{value:d[field][oldName],writable:true,enumerable:true,configurable:true});delete d[field][oldName]}}for(const field of ["hotelSequence","inactiveCommissionHotels","deletedHotels"]){if(Array.isArray(d[field]))d[field]=d[field].map(n=>n===oldName?newName:n)}}else{if(drivers(d).some(n=>n!==oldName&&norm(n)===norm(newName))||reservedContacts(d).has(norm(newName)))return false;for(const field of ["contacts","driverOrder","archivedDriverNames","contactGroupSequence"]){if(Array.isArray(d[field]))d[field]=d[field].map(n=>n===oldName?newName:n)}for(const [h,n] of Object.entries(d.hotels))if(n===oldName)d.hotels[h]=newName;for(const h of Object.keys(d.allowedContacts||{}))d.allowedContacts[h]=(d.allowedContacts[h]||[]).map(n=>n===oldName?newName:n)}return true}
+window.syncTaxiDriverLinks=function(checked,profiles){
+  const d=load();
+  if(!d||!checked.length)return {updated:0};
+  const core=window.TaxiDriverDirectoryCore;
+  const searchable=name=>norm(core.driverSearchName(name)).replace(/\s+/g," ");
+  const reservedNames=reservedContacts(d);
+  const links={...d.driverDirectoryLinks};
+  const verified=new Set(checked.map(profile=>profile.id));
+  let updated=0,ambiguous=0;
+  for(const oldName of drivers(d)){
+    const key=norm(oldName);
+    const linkedId=links[key];
+    let profile;
+    if(linkedId){
+      profile=checked.find(item=>item.id===linkedId);
+    }else{
+      const exact=profiles.filter(item=>norm(item.name)===key);
+      const matches=exact.length?exact:profiles.filter(item=>searchable(item.name)===searchable(oldName));
+      if(matches.length>1){ambiguous++;continue}
+      profile=matches[0];
+    }
+    if(!profile||!verified.has(profile.id))continue;
+    const name=profile.name.trim(),next=norm(name);
+    if(reservedNames.has(next)||reservedNames.has(searchable(name)))continue;
+    if(Object.entries(links).some(([other,id])=>other!==key&&id===profile.id))continue;
+    if(oldName!==name&&!rename(d,oldName,name,false))continue;
+    if(linkedId===profile.id&&oldName===name)continue;
+    delete links[key];
+    links[next]=profile.id;
+    updated++;
+  }
+  if(updated){
+    d.driverDirectoryLinks=links;
+    try{save(d)}catch{return {updated:0,failed:true,ambiguous}}
+  }
+  return {updated,ambiguous};
+};
 function linkDirectoryDriver(oldName){
   const eligible=profile=>{
     const directory=load();

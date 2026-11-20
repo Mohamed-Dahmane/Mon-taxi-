@@ -163,3 +163,43 @@ test('driver priorities support hotel matching, manual overrides and stable orde
  assert.equal(core.driverPriority(refreshed.drivers[0],hotels),2);
  assert.equal(core.driverPriority({...drivers[1],priorityClass:null},hotels),1);
 });
+
+test('Samsung corrects manual numbers, keeps profile IDs, and recognizes equivalent Belgian formats',()=>{
+ const prior=[
+  {id:'manual',name:'Karim',phone:'0470120001',localPhone:true,priorityClass:1},
+  {id:'linked',nativeId:'20',name:'TX Alex',phone:'0470120002'},
+  {id:'missing',name:'TX Autre',phone:'0470120003'}
+ ];
+ const result=core.merge(prior,[
+  {nativeId:'19',name:'Karim',phone:'0470120011',preferred:true},
+  {nativeId:'19',name:'Karim',phone:'0470120012'},
+  {nativeId:'20',name:'TX Alex',phone:'+32 470 12 00 02'}
+ ],'sync',{fromPhone:true});
+ assert.equal(result.phoneChanges,1);
+ assert.deepEqual(result.checked.map(driver=>driver.id),['manual','linked']);
+ assert.deepEqual(result.drivers.map(driver=>driver.phone),['0470120011','0470120002','0470120003']);
+ assert.equal(result.drivers[0].nativeId,'19');
+ assert.equal(result.drivers[0].priorityClass,1);
+ assert.equal(result.drivers[0].localPhone,false);
+});
+
+test('Samsung leaves a linked number alone when several replacements lack a primary number',()=>{
+ const prior=[{id:'linked',nativeId:'20',name:'TX Alex',phone:'0470120001'}];
+ const result=core.merge(prior,[
+  {nativeId:'20',name:'TX Alex',phone:'0470120002'},
+  {nativeId:'20',name:'TX Alex',phone:'0470120003'}
+ ],'sync',{fromPhone:true});
+ assert.equal(result.ambiguous,1);
+ assert.equal(result.phoneChanges,0);
+ assert.equal(result.drivers[0].phone,'0470120001');
+});
+
+test('Samsung links a unique manual driver to its TX contact without creating a duplicate',()=>{
+ const result=core.merge([{id:'saved',name:'Hassan',phone:'0470120001'}],[
+  {nativeId:'19',name:'TX Van Hassan',phone:'0470120011'}
+ ],'sync',{fromPhone:true});
+ assert.equal(result.added,0);
+ assert.equal(result.phoneChanges,1);
+ assert.equal(result.drivers[0].id,'saved');
+ assert.equal(result.drivers[0].name,'TX Van Hassan');
+});
