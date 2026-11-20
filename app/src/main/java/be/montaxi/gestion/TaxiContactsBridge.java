@@ -112,14 +112,29 @@ public final class TaxiContactsBridge {
   try{Intent intent=new Intent(Intent.ACTION_EDIT,Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI,nativeId));activity.startActivity(intent);}
   catch(Exception e){result("edit",null,"Impossible d’ouvrir le contact téléphone.");}
  });}
- @JavascriptInterface public void openWhatsApp(String number){activity.runOnUiThread(()->{
+ @JavascriptInterface public void openWhatsApp(String number){openWhatsAppChat(number,null);}
+ @JavascriptInterface public void openWhatsAppMessage(String number,String message){
+  if(message==null||message.length()>1000)return;
+  openWhatsAppChat(number,message);
+ }
+ private void openWhatsAppChat(String number,String message){activity.runOnUiThread(()->{
   if(!trusted()||number==null||!number.matches("\\+[1-9][0-9]{7,14}"))return;
-  Uri chat=Uri.parse("https://wa.me/"+number.substring(1));
+  Uri.Builder address=Uri.parse("https://wa.me/"+number.substring(1)).buildUpon();
+  if(message!=null)address.appendQueryParameter("text",message);
+  Uri chat=address.build();
   for(String app:new String[]{"com.whatsapp","com.whatsapp.w4b"}){
    try{
     activity.startActivity(new Intent(Intent.ACTION_VIEW,chat).setPackage(app));
     return;
    }catch(ActivityNotFoundException|SecurityException ignored){}
+  }
+  if(message!=null){
+   try{
+    activity.startActivity(new Intent(Intent.ACTION_VIEW,chat));
+   }catch(ActivityNotFoundException|SecurityException e){
+    result("open",null,"Impossible d’ouvrir WhatsApp.");
+   }
+   return;
   }
   new AlertDialog.Builder(activity)
    .setTitle("WhatsApp indisponible")
