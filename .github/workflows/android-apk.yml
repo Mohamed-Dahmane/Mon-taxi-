@@ -122,3 +122,13 @@ jobs:
           name: Mon-Taxi-APK-signe
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+      - name: Préparer le téléchargement direct
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        run: cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/Mon-Taxi.apk"
+      - name: Publier le fichier APK sans archive
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/Mon-Taxi.apk
+          archive: false
+          retention-days: 30
