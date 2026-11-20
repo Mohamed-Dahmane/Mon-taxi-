@@ -806,7 +806,7 @@ async function checkBookingRoom(frame,id){
  await integrated.click('#driversSms');assert.ok((await integrated.evaluate(()=>externalActions.at(-1).url)).startsWith('sms:0470101010?body='));
  assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Petit test',driverDirectoryId:driverIds['0470101010']});
  await integrated.evaluate(()=>openHotelModule('planning'));
- await vanRow.getByText('Attribuée à · uniquement',{exact:true}).waitFor();
+ assert.equal(await vanRow.locator('.planning-quick-driver option:checked').textContent(),'TX Van uniquement');
  const carRow=frame.locator('.reservation-card[data-entry-id="linked-car"]');
  const originalDirectory=await integrated.evaluate(key=>localStorage.getItem(key),KEY);
  await integrated.evaluate(({key,ids})=>{
@@ -838,7 +838,7 @@ async function checkBookingRoom(frame,id){
  },{key:KEY,originalDirectory});
  await select(integrated,'Test intégré');
  await details(integrated).getByRole('button',{name:'Choisir ce chauffeur',exact:true}).click();
- await carRow.getByText('Attribuée à · Test intégré',{exact:true}).waitFor();
+ assert.equal(await carRow.locator('.planning-quick-driver option:checked').textContent(),'Test intégré');
  assert.deepEqual(await storedCourse('linked-car'),{...linked.car,driver:'other',driverName:'Test intégré',driverDirectoryId:driverIds['0470123456']});
  await carRow.locator('.course-options summary').click();
  await carRow.getByRole('button',{name:'Copier le texte',exact:true}).click();
