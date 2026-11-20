@@ -19,6 +19,7 @@ function bind(container,options){
  function position(){
   const s=state;if(!s?.dragging)return;
   s.ghost.style.left=(s.x-s.offsetX)+'px';s.ghost.style.top=(s.y-s.offsetY)+'px';
+  if(options.groups&&!s.moved)return;
   const group=groups.find(group=>{
    const rect=group.getBoundingClientRect();
    return rect.height>0&&s.x>=rect.left&&s.x<=rect.right&&(!options.groups||s.y>=rect.top&&s.y<=rect.bottom);

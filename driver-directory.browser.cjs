@@ -462,6 +462,11 @@ async function checkBookingRoom(frame,id){
  ]);
  assert.equal(await otherFields.evaluate(el=>el.open),false);
  assert.equal(await otherFields.getByRole('button',{name:'Départ',exact:true}).count(),0);
+ const originalShortcuts=await planningShortcuts.allTextContents();
+ const commissionShortcut=planningShortcuts.filter({hasText:/^Commission$/});
+ await holdDrag(integrated,commissionShortcut,commissionShortcut);
+ assert.deepEqual(await planningShortcuts.allTextContents(),originalShortcuts);
+ assert.equal(await otherFields.evaluate(el=>el.open),false);
  const feedbackBefore=await integrated.evaluate(()=>window.testHaptics);
  await showOtherFields();
  assert.equal(await integrated.evaluate(()=>window.testHaptics),feedbackBefore+1);
