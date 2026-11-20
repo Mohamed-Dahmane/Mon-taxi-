@@ -940,3 +940,13 @@ html.taxi-clean {
 .taxi-clean.taxi-hotel #planningOtherFields[open] summary::after {
   transform: translateY(2px) rotate(225deg);
 }
+
+.taxi-clean.taxi-hotel .planning-edit-reordering .planning-edit-actions {
+  min-height: 46px;
+  outline: 1px dashed var(--clean-accent);
+  outline-offset: 2px;
+  border-radius: 7px;
+}
+.taxi-clean.taxi-hotel #planningEditActions:empty {
+  margin-top: 0;
+}

@@ -467,7 +467,23 @@ async function checkBookingRoom(frame,id){
  assert.equal(await integrated.evaluate(()=>window.testHaptics),feedbackBefore+1);
  assert.equal(await otherFields.getByRole('button',{name:'Départ',exact:true}).isVisible(),true);
  assert.equal(await otherFields.getByRole('button',{name:'Nom du client',exact:true}).isVisible(),true);
+ const planningEditOrderKey='montaxi:planning-edit-order:v1';
+ const byField=key=>fieldDialog.locator('button[data-reorder-key="'+key+'"]');
+ await touchDrag(integrated,byField('date'),byField('time'));
+ assert.deepEqual((await planningShortcuts.allTextContents()).slice(0,2),['Date','Heure']);
+ await holdDrag(integrated,byField('origin'),byField('vehicles'));
+ assert.equal(await planningShortcuts.filter({hasText:/^Départ$/}).count(),1);
+ await holdDrag(integrated,byField('commission'),byField('client'));
+ assert.equal(await otherFields.getByRole('button',{name:'Commission',exact:true}).isVisible(),true);
  await fieldDialog.getByRole('button',{name:'Annuler',exact:true}).click();
+ await openCourseFields(editRow);
+ assert.deepEqual((await planningShortcuts.allTextContents()).slice(0,2),['Date','Heure']);
+ assert.equal(await planningShortcuts.filter({hasText:/^Départ$/}).count(),1);
+ assert.equal(await planningShortcuts.filter({hasText:/^Commission$/}).count(),0);
+ await showOtherFields();
+ assert.equal(await otherFields.getByRole('button',{name:'Commission',exact:true}).isVisible(),true);
+ await fieldDialog.getByRole('button',{name:'Annuler',exact:true}).click();
+ await integrated.evaluate(key=>localStorage.removeItem(key),planningEditOrderKey);
  async function editCourseField(label,value,choice=false,row=editRow){
   await openCourseFields(row);
   assert.equal(await otherFields.evaluate(el=>el.open),false);
@@ -1237,6 +1253,11 @@ async function checkBookingRoom(frame,id){
   const logout=menu.getByRole('button',{name:'Déconnexion',exact:true});
   assert.equal(await logout.isVisible(),false);
   await integrated.locator(hotelMenu?'#hotelQuickMenuBtn':'#quickMenuBtn').click();
+  const items=menu.locator('.quick-menu-items button');
+  if(!hotelMenu){
+   await holdDrag(integrated,items.nth(1),items.nth(0));
+  }
+  assert.equal(await items.first().getAttribute('data-quick'),'fixedPage');
   await logout.click();
   assert.equal(await integrated.locator('main').isVisible(),false);
   assert.equal(await integrated.locator('#privateForm').isVisible(),true);

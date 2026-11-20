@@ -4,19 +4,32 @@ const doc=root.document;
 const style=doc.createElement('style');style.textContent='.taxi-hold-handle{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y;cursor:grab}.taxi-hold-moving{opacity:.35;outline:2px solid #78baff}.taxi-hold-preview{position:fixed!important;z-index:2147483001!important;pointer-events:none!important;margin:0!important;box-sizing:border-box;background:#234a76!important;color:#fff!important;border:2px solid #78baff!important;border-radius:10px;padding:10px;box-shadow:0 8px 25px #0007;overflow:hidden}';doc.head.append(style);
 function bind(container,options){
  let state=null,blockedUntil=0;
- const items=()=>[...container.querySelectorAll(options.item)];
- const keys=()=>items().map(row=>row.getAttribute('data-reorder-key'));
+ const groups=options.groups||[container];
+ const items=(group=container)=>[...group.children].filter(row=>row.matches(options.item));
+ const key=row=>row.dataset.reorderKey;
+ const keys=()=>groups.map(group=>items(group).map(key));
+ const drop=order=>options.onDrop(options.groups?order:order[0]);
  const enabled=()=>!options.enabled||options.enabled();
  let heldHandle=null;
  function scroller(row){for(let el=row.parentElement;el&&el!==doc.body;el=el.parentElement)if(/auto|scroll/.test(root.getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight)return el;return root;}
- function restore(order){const map=new Map(items().map(row=>[row.getAttribute('data-reorder-key'),row]));for(const key of order)if(map.has(key))container.append(map.get(key));}
+ function restore(order){
+  const map=new Map(groups.flatMap(group=>items(group)).map(row=>[key(row),row]));
+  order.forEach((list,index)=>{for(const name of list)if(map.has(name))groups[index].append(map.get(name));});
+ }
  function position(){
   const s=state;if(!s?.dragging)return;
   s.ghost.style.left=(s.x-s.offsetX)+'px';s.ghost.style.top=(s.y-s.offsetY)+'px';
-  const bounds=container.getBoundingClientRect();if(s.x<bounds.left||s.x>bounds.right)return;
-  const rows=items();let nearest=null,distance=Infinity;
+  const group=groups.find(group=>{
+   const rect=group.getBoundingClientRect();
+   return rect.height>0&&s.x>=rect.left&&s.x<=rect.right&&(!options.groups||s.y>=rect.top&&s.y<=rect.bottom);
+  });
+  s.overGroup=group;
+  if(!group)return;
+  const rows=items(group);
+  let nearest=null,distance=Infinity;
   for(const row of rows){const r=row.getBoundingClientRect(),d=Math.hypot(s.x-r.left-r.width/2,s.y-r.top-r.height/2);if(d<distance){nearest=row;distance=d;}}
-  if(nearest&&nearest!==s.row){const from=rows.indexOf(s.row),to=rows.indexOf(nearest);container.insertBefore(s.row,from<to?nearest.nextSibling:nearest);}
+  if(s.row.parentElement!==group){group.insertBefore(s.row,nearest);return;}
+  if(nearest&&nearest!==s.row){const from=rows.indexOf(s.row),to=rows.indexOf(nearest);group.insertBefore(s.row,from<to?nearest.nextSibling:nearest);}
  }
  function autoScroll(){
   const s=state;if(!s?.dragging)return;
@@ -30,16 +43,19 @@ function bind(container,options){
   if(!s.held)return;
   blockedUntil=Date.now()+600;heldHandle=s.handle;
   if(s.dragging){
-   const order=keys(),changed=order.some((key,index)=>key!==s.order[index]);
-   if(!commit||!enabled())restore(s.order);
-   else if(changed){if(options.onDrop(order)===false)restore(s.order);return;}
+   const order=keys();
+   const changed=order.some((list,index)=>list.length!==s.order[index].length||list.some((name,position)=>name!==s.order[index][position]));
+   const saved=commit&&enabled()&&changed&&(!options.groups||Boolean(s.overGroup))&&drop(order)!==false;
+   if(changed&&!saved)restore(s.order);
+   options.onDragEnd?.(saved);
+   if(saved)return;
   }
   if(commit&&!s.moved)options.onHold?.(s.row);
  }
  function press(event,point,kind){
   if(state||(!enabled()&&!options.onHold))return;
   const handle=event.target.closest(options.handle);if(!handle||!container.contains(handle))return;
-  const row=handle.closest(options.item);if(!row||row.parentElement!==container)return;
+  const row=handle.closest(options.item);if(!row||!groups.includes(row.parentElement))return;
   const s=state={row,handle,id:point.id,kind,x:point.x,y:point.y,startX:point.x,startY:point.y,held:false,dragging:false,moved:false,scroll:scroller(row)};
   s.timer=root.setTimeout(()=>{
    if(state!==s||(!enabled()&&!options.onHold))return;
@@ -47,13 +63,15 @@ function bind(container,options){
    if(s.kind==='mouse')container.setPointerCapture(s.id);
    if(enabled()){
     const rect=row.getBoundingClientRect();s.dragging=true;s.order=keys();
+    options.onDragStart?.();
+    s.scroll=scroller(row);
     s.offsetX=s.startX-rect.left;s.offsetY=s.startY-rect.top;
     s.ghost=row.cloneNode(true);s.ghost.removeAttribute('id');s.ghost.removeAttribute('data-reorder-key');
     s.ghost.className='taxi-hold-preview';s.ghost.style.width=rect.width+'px';s.ghost.style.height=rect.height+'px';
     s.ghost.setAttribute('aria-hidden','true');(row.closest('dialog')||doc.body).append(s.ghost);
     row.classList.add('taxi-hold-moving');position();autoScroll();
    }
-   try{root.navigator.vibrate?.(30);}catch{}
+   try{if(root.TaxiHaptics?.tap)root.TaxiHaptics.tap();else root.navigator.vibrate?.(30);}catch{}
   },450);
  }
  function move(event,point){
@@ -75,7 +93,25 @@ function bind(container,options){
  container.addEventListener('click',e=>{if(Date.now()<blockedUntil&&e.target.closest(options.handle)===heldHandle){e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
  container.addEventListener('contextmenu',e=>{if(e.target.closest(options.handle))e.preventDefault();});
  root.addEventListener('blur',()=>finish(false));container.closest('dialog')?.addEventListener('close',()=>finish(false));
- container.addEventListener('keydown',e=>{if(!enabled()||!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;const handle=e.target.closest(options.handle),row=handle?.closest(options.item),rows=items(),index=rows.indexOf(row),target=index+(e.key==='ArrowUp'?-1:1);if(index<0||target<0||target>=rows.length)return;e.preventDefault();const before=keys();container.insertBefore(row,e.key==='ArrowUp'?rows[target]:rows[target].nextSibling);if(options.onDrop(keys())===false)restore(before);});
+ container.addEventListener('keydown',e=>{
+  const directions=options.groups?['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']:['ArrowUp','ArrowDown'];
+  if(!enabled()||!e.altKey||!directions.includes(e.key))return;
+  const row=e.target.closest(options.handle)?.closest(options.item);
+  const group=row?.parentElement;
+  if(!groups.includes(group))return;
+  const rows=items(group),index=rows.indexOf(row);
+  const previous=['ArrowLeft','ArrowUp'].includes(e.key);
+  const target=rows[index+(previous?-1:1)];
+  const nextGroup=groups[groups.indexOf(group)+(previous?-1:1)];
+  if(!target&&!nextGroup)return;
+  e.preventDefault();
+  const before=keys();
+  if(target)group.insertBefore(row,previous?target:target.nextSibling);
+  else nextGroup.insertBefore(row,previous?null:nextGroup.firstChild);
+  if(drop(keys())===false)restore(before);
+  row.closest('details')?.setAttribute('open','');
+  row.focus();
+ });
 }
 root.TaxiHoldReorder={bind};
 })(window);
