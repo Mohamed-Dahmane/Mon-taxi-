@@ -442,6 +442,42 @@ async function checkBookingRoom(frame,id){
  const vanRow=frame.locator('.reservation-card[data-entry-id="linked-van"]');
  const driverIds=await integrated.evaluate(key=>Object.fromEntries(JSON.parse(localStorage.getItem(key)).drivers.map(driver=>[driver.phone,driver.id])),KEY);
  const storedCourse=id=>integrated.evaluate(id=>JSON.parse(localStorage.getItem('montaxi:hotel-commissions:courses-v1')).find(course=>course.id===id),id);
+ const editableDirect={...linked.car,id:'field-edit-direct',bookingMode:'Direct',hotel:'NH Collection (Atlanta)',
+  hotelGroup:'Autre',contact:'Yassine',recordedTime:'04:30',room:'204'};
+ delete editableDirect.scheduledDate;
+ delete editableDirect.scheduledTime;
+ await frame.evaluate(course=>{data.push(course);save();renderReservations();},editableDirect);
+ const editRow=frame.locator('[data-entry-id="field-edit-direct"]');
+ assert.equal(await editRow.locator('.planning-route-title').textContent(),'NH (Atlanta) → Airport BRU');
+ const editGroup=editRow.getByRole('group',{name:'Modifier la course'});
+ assert.equal(await editGroup.getByRole('button').count(),5);
+ const fieldDialog=frame.locator('#planningFieldDialog');
+ async function editCourseField(label,value,choice=false){
+  await editGroup.getByRole('button',{name:label,exact:true}).click();
+  if(choice)await fieldDialog.locator('select').selectOption({label:value});
+  else await fieldDialog.locator('input').fill(value);
+  await fieldDialog.getByRole('button',{name:'Enregistrer',exact:true}).click();
+  assert.equal(await fieldDialog.isVisible(),false);
+ }
+ await editCourseField('Modifier l’heure','05:20');
+ await editCourseField('Modifier la destination','Airport CRL');
+ await editCourseField('Modifier le départ','Moxy');
+ await editCourseField('Modifier le contact','Karim');
+ await editCourseField('Modifier le chauffeur','TX Petit test',true);
+ const editedDirect=await storedCourse(editableDirect.id);
+ assert.equal(editedDirect.bookingMode,'Direct');
+ assert.equal(editedDirect.recordedTime,'05:20');
+ assert.equal(editedDirect.hotel,'Moxy');
+ assert.equal(editedDirect.destination,'Charleroi');
+ assert.equal(editedDirect.contact,'Karim');
+ assert.equal(editedDirect.driverName,'Petit test');
+ assert.equal(editedDirect.room,'204');
+ assert.equal(editedDirect.amount,editableDirect.amount);
+ await editGroup.getByRole('button',{name:'Modifier le contact'}).click();
+ await fieldDialog.locator('input').fill('Changement annulé');
+ await fieldDialog.getByRole('button',{name:'Annuler',exact:true}).click();
+ assert.equal((await storedCourse(editableDirect.id)).contact,'Karim');
+ await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},editableDirect.id);
  await integrated.setViewportSize({width:320,height:680});
  const planningHeader=await frame.evaluate(course=>{
   const list=$('reservationList');

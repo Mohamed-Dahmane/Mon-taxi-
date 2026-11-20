@@ -126,7 +126,9 @@ function parseVcard(text){
 }
 function hotelDisplayName(value){
  const name=String(value??'').trim();
- return /^DoubleTree by Hilton(?: Brussels City)?$/i.test(name)?'DoubleTree':name;
+ if(/^DoubleTree by Hilton(?: Brussels City)?$/i.test(name))return 'DoubleTree';
+ if(/^NH Collection (?:\(Atlanta\)|Atlanta|Brussels Centre)$/i.test(name))return 'NH (Atlanta)';
+ return name;
 }
 function airportLabel(value){
  const text=String(value??'').trim();
