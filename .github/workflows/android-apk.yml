@@ -184,15 +184,22 @@ jobs:
           cp apk-release/Mon-Taxi.apk "$file"
           branch=apk-download-info
           route="repos/$GITHUB_REPOSITORY/contents/$file"
-          existing=$(gh api "$route?ref=$branch" --jq .sha 2>/dev/null || true)
-          if [[ -z "$existing" ]]; then
-            base64 -w0 "$file" > apk.b64
-            commit=$(jq -n --arg branch "$branch" --rawfile bytes apk.b64 '{message:"Publier le fichier Mon Taxi 6/11.69", branch:$branch, content:$bytes}' |
-              gh api "$route" --method PUT --input - --jq .commit.sha)
-          else
+          if existing=$(gh api "$route?ref=$branch" --jq .sha 2>/dev/null) && [[ "$existing" =~ ^[[:xdigit:]]{40}$ ]]; then
             commit=$(gh api "repos/$GITHUB_REPOSITORY/branches/$branch" --jq .commit.sha)
+            blob="$existing"
+          else
+            base64 -w0 "$file" > apk.b64
+            result=$(jq -n --arg branch "$branch" --rawfile bytes apk.b64 '{message:"Publier le fichier Mon Taxi 6/11.69", branch:$branch, content:$bytes}' |
+              gh api "$route" --method PUT --input -)
+            commit=$(jq -er .commit.sha <<< "$result")
+            blob=$(jq -er .content.sha <<< "$result")
           fi
           url="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$commit/$file"
+          receipt=$(jq -nc --arg run "$GITHUB_RUN_ID" --arg url "$url" --arg blob "$blob" '{run:$run,url:$url,blob:$blob}' | base64 -w0)
+          pointer="repos/$GITHUB_REPOSITORY/contents/mon-taxi-apk-bytes.json"
+          if ! gh api "$pointer?ref=$branch" >/dev/null 2>&1; then
+            gh api "$pointer" --method PUT -f "branch=$branch" -f "message=Enregistrer le fichier APK" -f "content=$receipt" --jq .content.path
+          fi
           curl --fail --silent --show-error --location --retry 5 --retry-all-errors "$url" --output downloaded.apk
           printf '%s  %s\n' "$checksum" downloaded.apk | sha256sum -c
           npm install --prefix "$RUNNER_TEMP/apk-browser" --no-save playwright
