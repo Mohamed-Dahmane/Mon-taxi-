@@ -307,7 +307,7 @@ main { padding-top: max(10px, env(safe-area-inset-top)); }
 
 #refreshLocal,#refreshHotelPage{transition:background-color .15s,box-shadow .15s,transform .15s}
 #refreshLocal:active,#refreshHotelPage:active,#refreshLocal.refresh-tapped,#refreshHotelPage.refresh-tapped{background:#2676b8!important;box-shadow:0 0 0 3px #65b5ff77!important;transform:scale(.92)}
-/* Un unique anneau de progression centré, sans ancien pseudo-élément ovale. */
+/* Le défilement vertical ne doit pas déclencher le pull-to-refresh navigateur. */ html,body{overscroll-behavior-y:none} #hotelCommissionsFrame{overscroll-behavior-y:contain} /* Un unique anneau de progression centré, sans ancien pseudo-élément ovale. */
 #fullRefreshIndicator,#hotelRefreshIndicator{box-sizing:border-box!important;position:fixed!important;inset:auto!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:52px!important;height:52px!important;min-width:52px!important;min-height:52px!important;padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;pointer-events:none;align-items:center;justify-content:center;z-index:2147483646!important}
 #fullRefreshIndicator[hidden],#hotelRefreshIndicator[hidden]{display:none!important}
 #fullRefreshIndicator:before,#hotelRefreshIndicator:before{content:none!important}
@@ -1127,10 +1127,8 @@ for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElem
    e.target.closest("dialog,.taxi-splash"))return;
   const t=e.touches[0];
   const page=activePage();
-  const pullPage=window.scrollY<=1&&pages.includes(page)&&
-   !e.target.closest("input,select,textarea,[contenteditable=true],#quickMenu")&&
-   document.getElementById("quickMenu")?.hidden!==false?page:null;
-  gesture={id:t.identifier,x:t.clientX,y:t.clientY,axis:null,pullPage};
+  // Le glissement vertical reste réservé au défilement, jamais à l'actualisation.
+  gesture={id:t.identifier,x:t.clientX,y:t.clientY,axis:null};
  },{capture:true,passive:true});
  document.addEventListener("touchmove",e=>{
   if(!gesture||e.touches.length!==1)return;
@@ -1138,8 +1136,7 @@ for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElem
   if(!t){reset();return;}
   const dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
   if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>=8)gesture.axis=Math.abs(dx)>Math.abs(dy)*1.1?"horizontal":"vertical";
-  const pullingDown=gesture.axis==="vertical"&&gesture.pullPage&&dy>0&&window.scrollY<=1;
-  if((gesture.axis==="horizontal"||pullingDown)&&e.cancelable)e.preventDefault();
+  if(gesture.axis==="horizontal"&&e.cancelable)e.preventDefault();
  },{capture:true,passive:false});
  document.addEventListener("touchend",e=>{
   const g=gesture;reset();
@@ -1150,9 +1147,6 @@ for(const [id,step] of [["taxiPagePrev",-1],["taxiPageNext",1]])document.getElem
   if(pointerHandled){pointerHandled=false;return;}
   if(Math.abs(dx)>=30&&Math.abs(dx)>Math.abs(dy)*1.05){
    navigate(dx<0?1:-1);
-  }else if(g.pullPage===activePage()&&g.axis!=="horizontal"&&dy>=72&&dy>Math.abs(dx)*1.4&&
-   window.scrollY<=1&&!document.querySelector("dialog[open]")){
-   void refreshEntireTaxi();
   }
  },{capture:true,passive:true});
  document.addEventListener("touchcancel",reset,{capture:true,passive:true});
