@@ -64,7 +64,10 @@ jobs:
           TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
         run: |
           set -o pipefail
-          gradle :app:assembleDebug --stacktrace --no-daemon\n          if test -s "$RUNNER_TEMP/taxi-release.jks"; then\n            gradle :app:assembleRelease --stacktrace --no-daemon\n          fi 2>&1 | tee android-sumup-build.log
+          gradle :app:assembleDebug --stacktrace --no-daemon 2>&1 | tee android-sumup-build.log
+          if test -s "$RUNNER_TEMP/taxi-release.jks"; then
+            gradle :app:assembleRelease --stacktrace --no-daemon 2>&1 | tee -a android-sumup-build.log
+          fi
       - name: Upload compilation log
         if: always()
         uses: actions/upload-artifact@v4
