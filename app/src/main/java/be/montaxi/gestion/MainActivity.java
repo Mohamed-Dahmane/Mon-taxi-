@@ -669,6 +669,7 @@ public class MainActivity extends Activity {
  }
  @Override protected void onResume(){
   super.onResume();
+  if(taxiContacts!=null)taxiContacts.hideBubble();
   resumed=true;
   if(unlocked)checkIdleTimeout();
   else scheduleFingerprint();
