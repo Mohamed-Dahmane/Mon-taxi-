@@ -30,23 +30,33 @@ jobs:
           cp taxi-interface.css hold-reorder.js fixed-navigation.js index.html hotel-sync.js pickup-reservation.html directory-editor.js driver-directory.js vehicle-allocations.js vehicle-allocation-editor.js app/src/main/assets/
           cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
           base64 -d app/icon/mon_taxi.jpg.base64 > app/src/main/res/drawable-nodpi/mon_taxi_icon.jpg
-      - name: Prepare signing keystore
+      - name: Prepare signing keystore (optional, non-blocking)
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        continue-on-error: true
         env:
           TAXI_KEYSTORE_B64: ${{ secrets.TAXI_KEYSTORE_B64 }}
         run: |
           umask 077
           python3 - <<'PY'
-          import base64,os,re
+          import base64, os, re
           from pathlib import Path
-          value=os.environ["TAXI_KEYSTORE_B64"].strip()
-          value=re.sub(r"^(?:export\\s+)?TAXI_KEYSTORE_B64\\s*=\\s*","",value).strip("'\\\"")
-          value=re.sub(r"\\s+","",value.replace("\\r","").replace("\\n",""))
-          data=base64.b64decode(value+"="*(-len(value)%4),altchars=b"-_",validate=True)
-          if not data: raise SystemExit("Empty signing key")
-          Path(os.environ["RUNNER_TEMP"],"taxi-release.jks").write_bytes(data)
+          value = os.environ["TAXI_KEYSTORE_B64"].strip()
+          value = re.sub(r"^(?:export\s+)?TAXI_KEYSTORE_B64\s*=\s*", "", value)
+          value = value.strip("'\"").replace("\\r", "").replace("\\n", "")
+          value = re.sub(r"\s+", "", value)
+          try:
+              data = base64.b64decode(value + "=" * (-len(value) % 4), altchars=b"-_", validate=True)
+          except (ValueError, Exception):
+              print("Signing key is not valid Base64; compiling debug APK only.")
+              raise SystemExit(0)
+          if not data.startswith((b"\xfe\xed\xfe\xed", b"\xce\xce\xce\xce", b"0")):
+              print("Signing key format not recognized; compiling debug APK only.")
+              raise SystemExit(0)
+          Path(os.environ["RUNNER_TEMP"], "taxi-release.jks").write_bytes(data)
           PY
-          echo "TAXI_SIGNING_STORE_FILE=$RUNNER_TEMP/taxi-release.jks" >> "$GITHUB_ENV"
+          if test -s "$RUNNER_TEMP/taxi-release.jks"; then
+            echo "TAXI_SIGNING_STORE_FILE=$RUNNER_TEMP/taxi-release.jks" >> "$GITHUB_ENV"
+          fi
       - name: Compile Android APK
         env:
           TAXI_SIGNING_STORE_PASSWORD: ${{ secrets.TAXI_SIGNING_STORE_PASSWORD }}
@@ -54,7 +64,7 @@ jobs:
           TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
         run: |
           set -o pipefail
-          gradle :app:assembleDebug :app:assembleRelease --stacktrace --no-daemon 2>&1 | tee android-sumup-build.log
+          gradle :app:assembleDebug --stacktrace --no-daemon\n          if test -s "$RUNNER_TEMP/taxi-release.jks"; then\n            gradle :app:assembleRelease --stacktrace --no-daemon\n          fi 2>&1 | tee android-sumup-build.log
       - name: Upload compilation log
         if: always()
         uses: actions/upload-artifact@v4
@@ -63,7 +73,7 @@ jobs:
           path: android-sumup-build.log
           retention-days: 7
       - name: Upload signed update APK
-        if: ${{ success() && env.HAS_SIGNING_KEY == 'true' }}
+        if: ${{ success() && env.TAXI_SIGNING_STORE_FILE != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: Mon-Taxi-SumUp-APK-signee
@@ -71,7 +81,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Upload unsigned test APK
-        if: ${{ success() && env.HAS_SIGNING_KEY != 'true' }}
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: Mon-Taxi-SumUp-APK-test-non-installable-comme-mise-a-jour
