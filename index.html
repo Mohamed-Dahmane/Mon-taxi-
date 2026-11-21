@@ -403,6 +403,14 @@ input,select,textarea{accent-color:#7098ff}
 <div role="group" aria-labelledby="entryFrequentHeading">
 <h3 class="entry-group-heading" id="entryFrequentHeading">Saisie rapide</h3>
 <div class="taxi-entry commission-entry"><label for="commissionInput">Commission manuelle</label><div class="entry-euro-field"><input id="commissionInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter une commission"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="commissionToday">—</span></strong><button type="button" class="payment-pencil" id="editCommission" aria-label="Corriger Com du jour" title="Corriger Com du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
+<div id="nativeSumUpCheckout" class="card" hidden style="margin:10px 0;padding:12px;border:1px solid #385d7a">
+ <label for="nativeSumUpAmount" style="display:block;margin-bottom:8px">Encaisser par carte · SumUp Solo Lite</label>
+ <div style="display:flex;gap:8px;align-items:center">
+  <input id="nativeSumUpAmount" type="text" inputmode="decimal" placeholder="Montant en €" aria-label="Montant à encaisser" style="flex:1;min-width:0;padding:10px">
+  <button type="button" id="nativeSumUpButton" style="padding:10px">Encaisser par carte</button>
+ </div>
+ <small id="nativeSumUpStatus" aria-live="polite">Paiement traité par le SDK SumUp sur Android uniquement.</small>
+</div>
 <div class="taxi-entry cash-entry"><label for="cashInput">Cash</label><div class="entry-euro-field"><input id="cashInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0,00" aria-label="Ajouter du cash"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="cashToday">—</span></strong><button type="button" class="payment-pencil" id="editCash" aria-label="Corriger Cash du jour" title="Corriger Cash du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 <div class="taxi-entry"><label for="appeleInput">Applis</label><div class="entry-euro-field"><input id="appeleInput" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="0,00" aria-label="Ajouter un revenu appli"><span class="entry-euro-symbol" aria-hidden="true">€</span></div><div class="taxi-amount"><strong><span id="appeleToday">—</span></strong><button type="button" class="payment-pencil" id="editAppele" aria-label="Corriger Appli du jour" title="Corriger Appli du jour"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 12-12-3.5-3.5-12 12L4 20Z"/></svg></button></div></div>
 </div>
@@ -2365,4 +2373,26 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 <script src="fixed-navigation.js?v=20261120-retour-tactile"></script>
 
 <link rel="stylesheet" href="taxi-interface.css?v=20261120-planning-police-17">
-</body></html>
+<script>
+(function(){
+ function init(){
+  const box=document.getElementById('nativeSumUpCheckout');
+  if(!box||!window.TaxiSumUp||typeof window.TaxiSumUp.checkout!=='function')return;
+  box.hidden=false;
+  const button=document.getElementById('nativeSumUpButton');
+  const amount=document.getElementById('nativeSumUpAmount');
+  const status=document.getElementById('nativeSumUpStatus');
+  button.addEventListener('click',function(){
+   const raw=amount.value.trim().replace(',','.');
+   if(!/^\\d{1,5}(?:\\.\\d{1,2})?$/.test(raw)||Number(raw)<1){status.textContent='Saisis un montant valide (minimum 1,00 €).';return;}
+   status.textContent='Ouverture de SumUp…';
+   window.TaxiSumUp.checkout(raw);
+  });
+  window.addEventListener('mon-taxi-sumup-result',function(event){
+   const d=event.detail||{};
+   status.textContent=d.status==='success'?'Paiement confirmé par SumUp · '+(d.transactionCode||''):d.status==='uncertain'?'Statut incertain : vérifier dans SumUp avant de réessayer.':'Paiement non confirmé ou annulé.';
+  });
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script></body></html>
