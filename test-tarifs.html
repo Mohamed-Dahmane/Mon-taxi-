@@ -14,7 +14,7 @@ if(realId){
   document.querySelector('.footer').textContent='Mon Taxi · course réelle · paiement à confirmer';
   document.querySelectorAll('#demo28,#demo31,#loaded,#start,#messageTools,#pickContact,#sms,#whatsapp').forEach(x=>{if(x)x.style.display='none'});
   document.querySelector('#actionsCard').querySelectorAll('button').forEach(x=>{if(x.id!=='waze'&&x.id!=='arrive')x.style.display='none'});
-  base=Number(course.announcedPrice)||64.8;
+  base=course.announcedPrice==null?0:Number(course.announcedPrice)||0;
   startTime=course.startedAt?Date.parse(course.startedAt):Date.now();
   if(!Number.isFinite(startTime))startTime=Date.now();
   seconds=Math.max(0,Math.floor((Date.now()-startTime)/1000));
@@ -29,7 +29,7 @@ if(realId){
   $('state').textContent='En course';
   draw();
   timer=setInterval(tick,1000);
-  $('statusText').textContent='Course réelle · terminer le trajet pour afficher le tarif et les options de paiement.';
+  $('statusText').textContent='Course réelle · terminer le trajet pour afficher le tarif et les options de paiement. Vérifie le tarif avant encaissement.';
  }else{
   document.querySelector('.footer').textContent='Course introuvable : retour au Planning requis.';
  }
