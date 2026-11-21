@@ -3,7 +3,7 @@ android {
  namespace 'be.montaxi.gestion'
  compileSdk 36
  compileOptions { coreLibraryDesugaringEnabled true; sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
- defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 36; versionCode 79; versionName 'V 6/11.70 - Police des trajets' }
+ defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 36; versionCode 80; versionName 'V 6/11.80 - SumUp' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
