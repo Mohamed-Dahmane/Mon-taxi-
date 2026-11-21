@@ -2372,4 +2372,34 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 <script src="fixed-navigation.js?v=20261120-retour-tactile"></script>
 
 <link rel="stylesheet" href="taxi-interface.css?v=20261120-planning-police-17">
+<script>
+/* Samsung IME : valider le champ sans soumettre une action sensible. */
+(function(){
+ const wired=new WeakSet();
+ function wire(doc){
+  if(!doc||wired.has(doc))return;
+  wired.add(doc);
+  doc.addEventListener('keydown',function(e){
+   if(e.defaultPrevented||e.isComposing||e.key!=='Enter'||e.ctrlKey||e.altKey||e.metaKey)return;
+   const el=e.target;
+   if(!el?.matches?.('input:not([type=hidden]):not([type=submit]):not([type=button]),select')||el.disabled||el.readOnly)return;
+   e.preventDefault();
+   const label=(el.labels?.[0]?.textContent||el.getAttribute('aria-label')||el.placeholder||'').toLowerCase();
+   const money=el.inputMode==='decimal'||(el.inputMode==='numeric'&&/montant|commission|prix|cash|carte|carburant|dépense|factur|pourboire|€/.test(label));
+   if(money&&!el.required&&!String(el.value||'').trim())el.value='0';
+   el.dispatchEvent(new Event('input',{bubbles:true}));
+   el.dispatchEvent(new Event('change',{bubbles:true}));
+   const scope=el.form||el.closest('dialog,section,main')||doc.body;
+   const fields=Array.from(scope.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]),select,textarea'));
+   const next=fields.slice(fields.indexOf(el)+1).find(x=>!x.disabled&&!x.readOnly&&x.getClientRects().length&&x.type!=='checkbox'&&x.type!=='radio');
+   if(next&&el.enterKeyHint==='next')next.focus();else el.blur();
+  },true);
+  const scan=()=>doc.querySelectorAll('iframe').forEach(frame=>{try{wire(frame.contentDocument)}catch{}});
+  doc.addEventListener('load',e=>{if(e.target?.tagName==='IFRAME')scan()},true);
+  scan();
+  new MutationObserver(scan).observe(doc.documentElement,{childList:true,subtree:true});
+ }
+ wire(document);
+})();
+</script>
 </body></html>
