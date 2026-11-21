@@ -1,5 +1,10 @@
 package be.montaxi.gestion;
 import android.app.Activity;
+import com.sumup.merchant.reader.api.SumUpAPI;
+import com.sumup.merchant.reader.api.SumUpLogin;
+import com.sumup.merchant.reader.api.SumUpPayment;
+import java.math.BigDecimal;
+import java.util.UUID;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -109,6 +114,69 @@ public class MainActivity extends Activity {
   return !acceptSessionInteraction()||super.dispatchKeyEvent(event);
  }
  private CancellationSignal biometric;
+ private static final int SUMUP_LOGIN=701, SUMUP_READER=702, SUMUP_CHECKOUT=703;
+ private BigDecimal pendingSumUpAmount;
+ private String pendingSumUpReference;
+ private boolean sumUpInProgress=false;
+ private void showSumUpMessage(String message){Toast.makeText(this,message,Toast.LENGTH_LONG).show();}
+ private void sendSumUpResult(String status,String code){
+  if(web==null)return;
+  String js="window.dispatchEvent(new CustomEvent('mon-taxi-sumup-result',{detail:{status:"+org.json.JSONObject.quote(status)+",transactionCode:"+org.json.JSONObject.quote(code==null?"":code)+"}}))";
+  web.evaluateJavascript(js,null);
+ }
+ private void beginSumUpPayment(String raw){
+  if(sumUpInProgress){showSumUpMessage("Un encaissement SumUp est déjà en cours");return;}
+  final BigDecimal amount;
+  try{amount=new BigDecimal(raw.replace(',','.')).setScale(2,java.math.RoundingMode.UNNECESSARY);
+   if(amount.compareTo(BigDecimal.ONE)<0||amount.compareTo(new BigDecimal("99999"))>0)throw new IllegalArgumentException();
+  }catch(Exception e){showSumUpMessage("Montant invalide (minimum 1,00 €)");return;}
+  new AlertDialog.Builder(this).setTitle("Encaisser par carte · SumUp")
+   .setMessage("Envoyer "+amount.toPlainString()+" € au Solo Lite ? Un paiement réel sera possible.")
+   .setNegativeButton("Annuler",null)
+   .setPositiveButton("Continuer",(d,w)->{
+     pendingSumUpAmount=amount;pendingSumUpReference=UUID.randomUUID().toString();sumUpInProgress=true;
+     if(SumUpAPI.isLoggedIn())openSumUpReader();
+     else askSumUpAffiliateKey();
+   }).show();
+ }
+ private void askSumUpAffiliateKey(){
+  String saved=getSharedPreferences("taxi-sumup",MODE_PRIVATE).getString("affiliate","");
+  if(!saved.isEmpty()){openSumUpLogin(saved);return;}
+  EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Clé d'affiliation SumUp");
+  new AlertDialog.Builder(this).setTitle("Configurer SumUp").setMessage("Saisis la clé d'affiliation une seule fois sur ton téléphone.")
+   .setView(field).setNegativeButton("Annuler",(d,w)->finishSumUp("cancelled",""))
+   .setPositiveButton("Enregistrer",(d,w)->{
+     String key=field.getText().toString().trim();
+     if(key.isEmpty()){finishSumUp("error","Clé SumUp manquante");return;}
+     getSharedPreferences("taxi-sumup",MODE_PRIVATE).edit().putString("affiliate",key).apply();
+     openSumUpLogin(key);
+   }).show();
+ }
+ private void openSumUpLogin(String key){
+  try{SumUpAPI.openLoginActivity(this,SumUpLogin.builder(key).build(),SUMUP_LOGIN);}
+  catch(Exception e){finishSumUp("error","Connexion SumUp impossible");}
+ }
+ private void openSumUpReader(){
+  try{
+   if(SumUpAPI.isCardReaderConnected())openSumUpCheckout();
+   else SumUpAPI.openCardReaderPage(this,SUMUP_READER);
+  }catch(Exception e){finishSumUp("error","Lecteur SumUp indisponible");}
+ }
+ private void openSumUpCheckout(){
+  try{
+   SumUpPayment payment=SumUpPayment.builder().total(pendingSumUpAmount)
+    .currency(SumUpPayment.Currency.EUR).title("Course Mon Taxi")
+    .foreignTransactionId(pendingSumUpReference).build();
+   SumUpAPI.checkout(this,payment,SUMUP_CHECKOUT);
+  }catch(Exception e){finishSumUp("error","Impossible de lancer le paiement");}
+ }
+ private void finishSumUp(String status,String code){
+  sumUpInProgress=false;pendingSumUpAmount=null;pendingSumUpReference=null;
+  sendSumUpResult(status,code);
+  if("success".equals(status))showSumUpMessage("Paiement SumUp confirmé");
+  else if("uncertain".equals(status))showSumUpMessage("Statut incertain : vérifier SumUp avant de réessayer");
+  else if("error".equals(status))showSumUpMessage("Paiement non confirmé : "+code);
+ }
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
@@ -254,6 +322,27 @@ public class MainActivity extends Activity {
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
   super.onActivityResult(requestCode,resultCode,data);
+  if(requestCode==SUMUP_LOGIN){
+   int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
+   if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL)openSumUpReader();
+   else finishSumUp("error","Connexion SumUp refusée");
+   return;
+  }
+  if(requestCode==SUMUP_READER){
+   if(SumUpAPI.isCardReaderConnected())openSumUpCheckout();
+   else finishSumUp("cancelled","");
+   return;
+  }
+  if(requestCode==SUMUP_CHECKOUT){
+   int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
+   if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL){
+    String tx=data.getStringExtra(SumUpAPI.Response.TX_CODE);
+    if(tx!=null&&!tx.isEmpty())finishSumUp("success",tx);
+    else finishSumUp("uncertain","");
+   }else if(code==SumUpAPI.Response.ResultCode.ERROR_UNKNOWN_TRANSACTION_STATUS)finishSumUp("uncertain","");
+   else finishSumUp("cancelled","");
+   return;
+  }
   if(requestCode==TaxiContactsBridge.CONTACT_PICK&&taxiContacts!=null)taxiContacts.picked(resultCode,data);
   if(requestCode==91){
    prompting=false;
@@ -427,6 +516,14 @@ public class MainActivity extends Activity {
      });
     }
    },"TaxiHaptics");
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void checkout(String amount){
+     runOnUiThread(()->{
+      String url=web==null?null:web.getUrl();
+      if(url!=null&&(url.startsWith(APP_URL)||url.equals("file:///android_asset/index.html")))beginSumUpPayment(amount);
+     });
+    }
+   },"TaxiSumUp");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
