@@ -1,8 +1,8 @@
 plugins { id 'com.android.application' }
 android {
  namespace 'be.montaxi.gestion'
- compileSdk 35
- defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 79; versionName 'V 6/11.70 - Police des trajets' }
+ compileSdk 36
+ defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 36; versionCode 79; versionName 'V 6/11.70 - Police des trajets' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
@@ -53,7 +53,8 @@ if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
  android.buildTypes { release { signingConfig android.signingConfigs.taxiRelease; minifyEnabled false } }
 }
 
-// Tests unitaires locaux de validation des montants avant intégration du SDK.
+// SumUp reader SDK: Solo Lite. Ne lance aucun paiement avant integration du flux de connexion.
 dependencies {
+    implementation 'com.sumup:merchant-sdk:7.2.0'
     testImplementation 'junit:junit:4.13.2'
 }
