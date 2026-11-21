@@ -1739,13 +1739,17 @@ async function refreshEntireTaxi(){
  if(centerIndicator)centerIndicator.hidden=false;
  document.body.classList.add("taxi-refreshing");
  try{
-  const [paymentsUpdated,hotelsUpdated]=await Promise.all([loadPrivatePayments(),syncHotels()]);
-  if(!navigator.onLine||paymentsUpdated===false||hotelsUpdated===false)throw Error("Actualisation non confirmée");
+  // Local display must remain usable even when the remote service is unavailable.
+  const syncResult=await Promise.race([
+   Promise.allSettled([loadPrivatePayments(),syncHotels()]),
+   new Promise(resolve=>setTimeout(()=>resolve("timeout"),7000))
+  ]);
   hotelCommissions=readHotelCommissions();
   render();
   markRefreshed();
-  document.body.classList.remove("taxi-refresh-error");
-  toast("Actualisé");
+  const complete=Array.isArray(syncResult)&&navigator.onLine&&syncResult.every(item=>item.status==="fulfilled"&&item.value!==false);
+  if(!complete)hotelSyncStatus("Synchronisation en attente · données locales conservées");
+  toast(complete?"Actualisé":"Données locales actualisées · synchronisation en attente");
  }catch(error){
   console.error("Actualisation sans navigation",error);
   document.body.classList.add("taxi-refresh-error");
