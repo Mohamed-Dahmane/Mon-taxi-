@@ -21,7 +21,8 @@ if(realId){
   stage=2;
   const navigate=()=>{const url='https://waze.com/ul?q='+encodeURIComponent(course.destination==='BRU'||course.destination==='Airport BRU'?'Brussels Airport, Belgique':course.destination)+'&navigate=yes';const bridge=window.parent.TaxiContacts;if(bridge?.open){bridge.showBubble?.();bridge.open(url)}else window.open(url,'_blank')};
   $('waze').onclick=navigate;
-  $('cash').onclick=()=>{if(!confirm('Confirmer '+e(total())+' réellement reçus en espèces ?'))return;if(host?.parent?.taxiFarePayment?.(realId,'cash',total(),tip)){stage=4;$('finished').classList.remove('hidden');draw();window.parent.dispatchEvent(new Event('taxi-fare-completed'));}};
+  $('cash').onclick=()=>{if(!confirm('Confirmer '+e(total())+' réellement reçus en espèces ?'))return;if(host?.parent?.taxiFinishFare?.(realId,'cash',total(),tip)){stage=4;$('finished').classList.remove('hidden');draw();}};
+  $('sumup').addEventListener('click',()=>{if(window.TaxiSumUp?.checkout)host?.parent?.taxiBeginFareSumUp?.(realId,total(),tip);});
   $('markSumup').onclick=()=>{$('payment').textContent='En attente de synchronisation SumUp : ne pas enregistrer manuellement la recette carte ni archiver.';};
   $('finish').style.display='none';
   $('back').onclick=()=>window.parent.dispatchEvent(new Event('taxi-fare-completed'));
