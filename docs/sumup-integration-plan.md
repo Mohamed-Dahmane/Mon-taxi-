@@ -32,3 +32,15 @@
 
 ## État
 Branche de test créée. Aucune intégration SDK ni APK compilée à ce stade.
+
+## Vérification officielle du 21/11/2026
+- Documentation: https://developer.sumup.com/terminal-payments/sdks/android/setup/
+- SDK lecteur officiel : `com.sumup:merchant-sdk:7.2.0`, dépôt `https://maven.sumup.com/releases`.
+- Exigences SDK lecteur : minSdk 26, targetSdk 36, Android Gradle Plugin 9.2.1, Kotlin 2.4.0, Java 17.
+- État actuel vérifié : `app/build.gradle` targetSdk 35 ; `MainActivity extends Activity` ; `settings.gradle` ne référence pas Maven SumUp.
+- Le quickstart recommande une Activity `ComponentActivity` ou `AppCompatActivity` pour les contrats Activity Result. Vérifier les impacts sur la biométrie et WebView avant refonte.
+- `applicationId` actuel : `be.montaxi.gestion.empreinte`. La clé d'affiliation doit correspondre exactement à cet identifiant ; vérifier le rattachement côté SumUp sans afficher la clé.
+- Le SDK Tap to Pay Android est distinct et nécessite un accès Maven SumUp dédié ; ne pas mélanger les deux intégrations.
+- La connexion Bluetooth de l'application SumUp officielle ne garantit pas une session déjà authentifiée dans le SDK intégré : prévoir connexion SDK et appairage si requis.
+- Documentation : https://developer.sumup.com/terminal-payments/sdks/android/quickstart/
+- Ne pas modifier la production ni lancer de paiement réel avant la vérification de la chaîne de build et des autorisations.
