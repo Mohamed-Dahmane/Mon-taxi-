@@ -161,7 +161,7 @@ public final class TaxiContactsBridge {
  });}
 
  private android.view.WindowManager bubbleManager;
- private android.widget.TextView bubble;
+ private android.widget.ImageView bubble;
  private android.view.WindowManager.LayoutParams bubbleParams;
  @JavascriptInterface public void showBubble(){activity.runOnUiThread(()->{
   if(!trusted())return;
@@ -173,11 +173,10 @@ public final class TaxiContactsBridge {
   }
   if(bubble!=null)return;
   bubbleManager=(android.view.WindowManager)activity.getSystemService(Activity.WINDOW_SERVICE);
-  bubble=new android.widget.TextView(activity);
-  bubble.setText("🚕");
-  bubble.setTextSize(25f);
-  bubble.setGravity(android.view.Gravity.CENTER);
-  bubble.setTextColor(android.graphics.Color.WHITE);
+  bubble=new android.widget.ImageView(activity);
+  bubble.setImageResource(R.drawable.mon_taxi_icon);
+  bubble.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+  bubble.setContentDescription("Mon Taxi · revenir à la course");
   android.graphics.drawable.GradientDrawable background=new android.graphics.drawable.GradientDrawable();
   background.setColor(0xff173b70);
   background.setCornerRadius(100f);
