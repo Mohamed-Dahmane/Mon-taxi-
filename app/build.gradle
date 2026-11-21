@@ -52,3 +52,8 @@ if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
  } }
  android.buildTypes { release { signingConfig android.signingConfigs.taxiRelease; minifyEnabled false } }
 }
+
+// Tests unitaires locaux de validation des montants avant intégration du SDK.
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
