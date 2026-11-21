@@ -320,9 +320,11 @@ public class MainActivity extends Activity {
   Runnable reveal=revealHome;
   unlockContent=null;
   revealHome=null;
-  if(content!=null&&reveal!=null&&content.isAttachedToWindow()){
-   attachTaxiWeb(content,true);
-   content.postOnAnimation(reveal);
+  if(content!=null&&content.isAttachedToWindow()){
+   // Fiabilite : apres empreinte, afficher le WebView directement.
+   // L'ancienne animation pouvait laisser l'ecran noir sur certains Samsung.
+   content.removeAllViews();
+   attachTaxiWeb(content,false);
    return;
   }
   content=createTaxiContent();
@@ -433,7 +435,7 @@ public class MainActivity extends Activity {
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // Toujours charger la dernière version en ligne après déverrouillage.
-  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=6");
+  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=7");
   webHealthHandler.postDelayed(this::verifyWebContent,15000L);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
