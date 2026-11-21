@@ -1,32 +1,79 @@
-name: SumUp APK test
+name: SumUp APK signed update
 on:
   push:
     branches:
       - feature/sumup-payments-test
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   compile:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      HAS_SIGNING_KEY: ${{ secrets.TAXI_KEYSTORE_B64 != '' && secrets.TAXI_SIGNING_STORE_PASSWORD != '' && secrets.TAXI_SIGNING_KEY_ALIAS != '' && secrets.TAXI_SIGNING_KEY_PASSWORD != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK 36
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v4
         with:
-          gradle-version: '9.2.1'
-      - name: Compile SumUp debug APK
-        run: gradle :app:assembleDebug --stacktrace --no-daemon
-      - name: Upload test APK
-        if: success()
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Prepare embedded web interface and assets
+        run: |
+          mkdir -p app/src/main/assets/app app/src/main/res/drawable-nodpi
+          cp taxi-interface.css hold-reorder.js fixed-navigation.js index.html hotel-sync.js pickup-reservation.html directory-editor.js driver-directory.js vehicle-allocations.js vehicle-allocation-editor.js app/src/main/assets/
+          cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
+          base64 -d app/icon/mon_taxi.jpg.base64 > app/src/main/res/drawable-nodpi/mon_taxi_icon.jpg
+      - name: Prepare signing keystore
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        env:
+          TAXI_KEYSTORE_B64: ${{ secrets.TAXI_KEYSTORE_B64 }}
+        run: |
+          umask 077
+          python3 - <<'PY'
+          import base64,os,re
+          from pathlib import Path
+          value=os.environ["TAXI_KEYSTORE_B64"].strip()
+          value=re.sub(r"^(?:export\\s+)?TAXI_KEYSTORE_B64\\s*=\\s*","",value).strip("'\\\"")
+          value=re.sub(r"\\s+","",value.replace("\\r","").replace("\\n",""))
+          data=base64.b64decode(value+"="*(-len(value)%4),altchars=b"-_",validate=True)
+          if not data: raise SystemExit("Empty signing key")
+          Path(os.environ["RUNNER_TEMP"],"taxi-release.jks").write_bytes(data)
+          PY
+          echo "TAXI_SIGNING_STORE_FILE=$RUNNER_TEMP/taxi-release.jks" >> "$GITHUB_ENV"
+      - name: Compile Android APK
+        env:
+          TAXI_SIGNING_STORE_PASSWORD: ${{ secrets.TAXI_SIGNING_STORE_PASSWORD }}
+          TAXI_SIGNING_KEY_ALIAS: ${{ secrets.TAXI_SIGNING_KEY_ALIAS }}
+          TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -o pipefail
+          gradle :app:assembleDebug :app:assembleRelease --stacktrace --no-daemon 2>&1 | tee android-sumup-build.log
+      - name: Upload compilation log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mon-taxi-sumup-test-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: mon-taxi-sumup-build-log
+          path: android-sumup-build.log
+          retention-days: 7
+      - name: Upload signed update APK
+        if: ${{ success() && env.HAS_SIGNING_KEY == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mon-Taxi-SumUp-APK-signee
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload unsigned test APK
+        if: ${{ success() && env.HAS_SIGNING_KEY != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mon-Taxi-SumUp-APK-test-non-installable-comme-mise-a-jour
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
