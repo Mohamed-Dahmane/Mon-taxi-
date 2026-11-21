@@ -1765,16 +1765,19 @@ setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},
 
 window.openTaxiValidatedFare=function(id){
  const old=document.getElementById('taxiValidatedFare');
- if(old)old.remove();
- const overlay=document.createElement('div');overlay.id='taxiValidatedFare';
- overlay.style.cssText='position:fixed;inset:0;z-index:999999;background:#081326;display:flex;flex-direction:column';
+ if(old){if(old.open)old.close();old.remove();}
+ const overlay=document.createElement('dialog');overlay.id='taxiValidatedFare';
+ overlay.setAttribute('aria-label','Course et encaissement');
+ overlay.style.cssText='position:fixed;inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;padding:0;border:0;background:#081326;color:white;overflow:hidden';
  const close=document.createElement('button');close.textContent='← Retour au Planning';
- close.style.cssText='padding:12px;background:#173b70;color:white;border:0;font-weight:800';
- close.onclick=()=>overlay.remove();
+ close.style.cssText='width:100%;padding:12px;background:#173b70;color:white;border:0;font-weight:800';
+ close.onclick=()=>overlay.close();
  const frame=document.createElement('iframe');frame.title='Mon Taxi · Course et paiement';
- frame.style.cssText='width:100%;flex:1;border:0;background:#081326';
+ frame.style.cssText='width:100%;height:calc(100% - 48px);border:0;background:#081326';
  frame.src='test-tarifs.html?course='+encodeURIComponent(id);
  overlay.append(close,frame);document.body.append(overlay);
+ overlay.addEventListener('close',()=>overlay.remove(),{once:true});
+ try{overlay.showModal();}catch(error){overlay.remove();alert('Impossible d’ouvrir le paiement : '+error.message);}
 };
 window.addEventListener('taxi-fare-completed',()=>document.getElementById('taxiValidatedFare')?.remove());
 const hotelCommissionsDialog=$("hotelCommissionsDialog");
