@@ -391,7 +391,7 @@ input,select,textarea{accent-color:#7098ff}
  function recover(){
   if(startupDone)return;
   var main=document.querySelector("main");
-  var gate=document.getElementById("taxiPrivateGate")||document.querySelector("[id*=privateGate]");
+  var gate=document.querySelector(".taxi-access");
   if(main&&!main.hidden){startupDone=true;return;}
   if(gate&&!gate.hidden){startupDone=true;return;}
   if(document.getElementById("taxiStartupRecovery"))return;
