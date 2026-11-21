@@ -168,7 +168,7 @@ public final class TaxiContactsBridge {
     if(!number.matches("\\+?[0-9]{3,20}"))return;
     intent=new Intent(Intent.ACTION_SENDTO,Uri.parse("smsto:"+number));
     if(mark>=0&&raw.substring(mark+1).startsWith("body="))intent.putExtra("sms_body",Uri.decode(raw.substring(mark+6)));
-   }else return;
+   }else if("https".equals(scheme)&&"waze.com".equalsIgnoreCase(uri.getHost())&&"/ul".equals(uri.getPath())){\n    intent=new Intent(Intent.ACTION_VIEW,uri);\n    try{intent.setPackage("com.waze");activity.startActivity(intent);return;}\n    catch(ActivityNotFoundException ignored){intent.setPackage(null);}\n   }else return;
    activity.startActivity(intent);
   }catch(Exception e){result("open",null,"Aucune application compatible n’a pu être ouverte.");}
  });}
