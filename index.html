@@ -659,7 +659,7 @@ async function cloudBackup(type="change"){
 }
 // Une source de vérité Supabase pour Chrome et Android : lecture régulière de la dernière sauvegarde.
 async function checkCloudSync(){
- if(cloudPollBusy||!privateSession?.access_token)return;
+ if(cloudPollBusy||!privateSession?.access_token||backupPending)return;
  if(backupBusy||(syncReady&&backupPending))return;
  cloudPollBusy=true;
  try{
@@ -1285,7 +1285,11 @@ $("importFile").addEventListener("change",async e=>{
    if(!["gestion-taxi-test-v1","gestion-taxi-test-v2","gestion-taxi-test-v3"].includes(parsed.format)||!parsed.data?.months)throw Error("Fichier de sauvegarde non valide");
    if(!confirm("Remplacer toutes les données test par cette sauvegarde ?"))return;
    localStorage.setItem("gestion-taxi-before-full-import",JSON.stringify(data));
-   data={...parsed.data,resetVersion:"taxi-zero-20261105",manualResetVersion};lastEntry=null;save();render();markRefreshed();toast("Sauvegarde importée");
+   data={...parsed.data,resetVersion:"taxi-zero-20261105",manualResetVersion};lastEntry=null;
+   // Import explicite : la sauvegarde choisie doit primer sur une ancienne copie cloud.
+   // Bloquer les lectures cloud jusqu’à la confirmation de son envoi.
+   backupPending=true;syncReady=true;
+   save();render();markRefreshed();toast("Sauvegarde restaurée · synchronisation en cours");
   }
  }catch(err){alert("Import impossible : "+(err?.message||"fichier non valide"))}
  finally{e.target.value=""}
