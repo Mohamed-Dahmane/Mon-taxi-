@@ -344,7 +344,7 @@ input,select,textarea{accent-color:#7098ff}
 </head><body><div id="taxiBootDiagnostic" role="status" style="position:fixed;inset:0;z-index:2147483647;background:#10203a;color:#fff;font:17px system-ui;padding:38px 22px;overflow:auto"><div style="max-width:520px;margin:auto;background:#20385a;padding:24px;border-radius:16px"><h1 style="font-size:25px;color:#85e3b8">Mon Taxi · diagnostic</h1><p id="taxiBootStatus">Chargement en cours…</p><p id="taxiBootDetails" style="font-size:14px;overflow-wrap:anywhere">Vérification de la page.</p><button type="button" id="taxiBootRetry" style="background:#527bf3;color:white;border:0;padding:12px 18px;border-radius:10px;font-size:16px">Réessayer</button></div></div><script>
 (function(){
  var errors=[];
- function report(msg){errors.push(String(msg).slice(0,240));}
+ function report(msg){errors.push(String(msg).slice(0,240));window.taxiBootErrors=errors;}
  window.addEventListener("error",function(e){report("Erreur JS : "+e.message+" (ligne "+e.lineno+")");});
  window.addEventListener("unhandledrejection",function(e){report("Promesse : "+String(e.reason));});
  document.getElementById("taxiBootRetry").onclick=function(){location.reload();};
@@ -423,6 +423,8 @@ input,select,textarea{accent-color:#7098ff}
   panel.style.cssText="position:fixed;inset:0;z-index:2147483647;background:#101827;color:white;display:flex;align-items:center;justify-content:center;padding:24px;font:16px system-ui";
   panel.innerHTML='<div style="max-width:420px;width:100%;background:#1c2a42;padding:24px;border-radius:18px"><h2 style="font-size:23px;margin:0 0 14px">Mon Taxi · récupération</h2><p>Le démarrage a rencontré un problème. Tes données enregistrées ne sont pas effacées.</p><p>Réessaie le chargement. Si le problème persiste, ouvre Mon Taxi dans Chrome pour le diagnostic.</p><button id="taxiStartupRetry" style="background:#4275ed;color:white;border:0;border-radius:12px;padding:14px 20px;font-size:16px">Réessayer</button></div>';
   document.body.appendChild(panel);
+  var errors=window.taxiBootErrors||[];
+  if(errors.length){var detail=document.createElement("p");detail.style.cssText="font-size:13px;overflow-wrap:anywhere;color:#ffcaad";detail.textContent="Diagnostic : "+errors.join(" | ");panel.querySelector("div").appendChild(detail);}
   document.getElementById("taxiStartupRetry").onclick=function(){location.reload()};
  }
  window.addEventListener("error",function(e){console.error("Mon Taxi startup",e.message)});
