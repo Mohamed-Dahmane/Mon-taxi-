@@ -341,7 +341,26 @@ input,select,textarea{accent-color:#7098ff}
 @media(max-width:390px){#home .quick-card{padding:9px}#home .compact-overview .card{padding:8px}.pageBtn{padding:9px 5px}}
 @media(prefers-reduced-motion:reduce){button,.button,.pageBtn,.tab,.typeBtn{transition:none}}
 </style>
-</head><body><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-separator" aria-hidden="true"></div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
+</head><body><div id="taxiBootDiagnostic" role="status" style="position:fixed;inset:0;z-index:2147483647;background:#10203a;color:#fff;font:17px system-ui;padding:38px 22px;overflow:auto"><div style="max-width:520px;margin:auto;background:#20385a;padding:24px;border-radius:16px"><h1 style="font-size:25px;color:#85e3b8">Mon Taxi · diagnostic</h1><p id="taxiBootStatus">Chargement en cours…</p><p id="taxiBootDetails" style="font-size:14px;overflow-wrap:anywhere">Vérification de la page.</p><button type="button" id="taxiBootRetry" style="background:#527bf3;color:white;border:0;padding:12px 18px;border-radius:10px;font-size:16px">Réessayer</button></div></div><script>
+(function(){
+ var errors=[];
+ function report(msg){errors.push(String(msg).slice(0,240));}
+ window.addEventListener("error",function(e){report("Erreur JS : "+e.message+" (ligne "+e.lineno+")");});
+ window.addEventListener("unhandledrejection",function(e){report("Promesse : "+String(e.reason));});
+ document.getElementById("taxiBootRetry").onclick=function(){location.reload();};
+ function check(){
+  var main=document.querySelector("main"),gate=document.querySelector(".taxi-access");
+  var visible=function(el){return !!el&&!el.hidden&&getComputedStyle(el).display!=="none"&&getComputedStyle(el).visibility!=="hidden"&&el.getBoundingClientRect().height>0};
+  if(visible(main)||visible(gate)){
+   document.getElementById("taxiBootDiagnostic")?.remove();
+   return;
+  }
+  document.getElementById("taxiBootStatus").textContent="Le programme principal n'a pas affiché Mon Taxi.";
+  document.getElementById("taxiBootDetails").textContent=errors.length?errors.join(" | "):"Aucune erreur JavaScript détectée. Page principale : "+(main?"présente mais masquée":"absente")+". Connexion : "+(gate?"présente mais masquée":"non initialisée")+".";
+ }
+ setTimeout(check,6000);
+})();
+</script><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-separator" aria-hidden="true"></div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
 <script>
 (()=>{
  const splash=document.getElementById("taxiSplash"), pictures=splash.querySelectorAll("img");
