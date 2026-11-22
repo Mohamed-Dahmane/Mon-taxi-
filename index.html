@@ -2420,6 +2420,24 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   const info=document.createElement('p');info.style.cssText='font-size:17px;line-height:1.5';
   info.textContent=next?'Prochaine course planifiée : '+[next.date,next.time,next.client,next.origin].filter(Boolean).join(' · '):'Aucune prochaine course planifiée';
   success.append(heading,info);document.body.append(success);
+  // Son court et discret, déclenché uniquement après l'enregistrement réussi.
+  try{
+   const AudioCtx=window.AudioContext||window.webkitAudioContext;
+   if(AudioCtx){
+    const ctx=new AudioCtx(),start=ctx.currentTime;
+    for(const [offset,frequency] of [[0,660],[0.11,880]]){
+     const osc=ctx.createOscillator(),gain=ctx.createGain();
+     osc.type='sine';osc.frequency.value=frequency;
+     gain.gain.setValueAtTime(0.0001,start+offset);
+     gain.gain.exponentialRampToValueAtTime(0.12,start+offset+0.012);
+     gain.gain.exponentialRampToValueAtTime(0.0001,start+offset+0.13);
+     osc.connect(gain);gain.connect(ctx.destination);
+     osc.start(start+offset);osc.stop(start+offset+0.14);
+    }
+    setTimeout(()=>ctx.close().catch(()=>{}),650);
+   }
+  }catch(error){console.warn('Son de paiement indisponible',error);}
+
   try{success.showModal()}catch{success.setAttribute('open','')}
   setTimeout(()=>{try{success.close()}catch{}success.remove();document.querySelector('.pageBtn[data-page="home"]')?.click();},3000);
   return true;
