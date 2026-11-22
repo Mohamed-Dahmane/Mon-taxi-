@@ -51,6 +51,8 @@ jobs:
           test -f index.html
       - name: Test cash payment and course archival
         run: node tests/cash-payment.test.cjs
+      - name: Test payment safety and Planning separation
+        run: node --test integrations/course-payment-state.test.mjs integrations/course-actions-adapter.test.mjs integrations/main-app-payment-wiring.test.mjs
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets/app
