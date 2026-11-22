@@ -95,3 +95,20 @@ test('failed atomic completion leaves course in Planning', async () => {
   await assert.rejects(actions.completeFromPlanning('ride-8'),/course_completion_not_committed/);
   assert.equal(courses.get('ride-8').status,'scheduled');
 });
+
+test('closed rides cannot create a cash receipt or trigger SumUp verification',async()=>{
+ for(const status of ['completed','cancelled']){
+  let cashCalls=0,verifyCalls=0,saveCalls=0;
+  const actions=createCourseActions({
+   getCourse:async()=>({id:'closed-ride',status}),
+   saveCourse:async()=>{saveCalls++;},
+   recordCashReceipt:async()=>{cashCalls++;return true;},
+   verifySumUpTransaction:async()=>{verifyCalls++;return true;}
+  });
+  await assert.rejects(actions.recordFarePayment('closed-ride','cash',1235),/course_not_in_planning/);
+  await assert.rejects(actions.recordFarePayment('closed-ride','sumup',1235,'tx-closed'),/course_not_in_planning/);
+  assert.equal(cashCalls,0);
+  assert.equal(verifyCalls,0);
+  assert.equal(saveCalls,0);
+ }
+});
