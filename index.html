@@ -2449,7 +2449,13 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   const heading=document.createElement('h1');heading.textContent='✓ PAIEMENT ACCEPTÉ';heading.style.cssText='font-size:clamp(25px,7vw,37px);color:#76e2a1;margin:0 0 20px';
   const info=document.createElement('p');info.style.cssText='font-size:17px;line-height:1.5';
   info.textContent=next?'Prochaine course planifiée : '+[next.date,next.time,next.client,next.origin].filter(Boolean).join(' · '):'Aucune prochaine course planifiée';
-  success.append(heading,info);document.body.append(success);
+  const ok=document.createElement('button');
+  ok.type='button';ok.textContent='OK · Retour à l’accueil';
+  ok.style.cssText='display:block;width:100%;margin-top:22px;padding:16px;border:0;border-radius:12px;background:#2876dc;color:white;font-size:20px;font-weight:800';
+  const acknowledge=()=>{try{success.close()}catch{}success.remove();document.querySelector('.pageBtn[data-page="home"]')?.click();};
+  ok.onclick=acknowledge;
+  success.addEventListener('cancel',event=>event.preventDefault());
+  success.append(heading,info,ok);document.body.append(success);
   // Son court et discret, déclenché uniquement après l'enregistrement réussi.
   try{
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
@@ -2469,7 +2475,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   }catch(error){console.warn('Son de paiement indisponible',error);}
 
   try{success.showModal()}catch{success.setAttribute('open','')}
-  setTimeout(()=>{try{success.close()}catch{}success.remove();document.querySelector('.pageBtn[data-page="home"]')?.click();},3000);
+  ok.focus();
   return true;
  }
  window.taxiFinishFare=finishFare;
