@@ -6,8 +6,19 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
   if (![getCourse, saveCourse, recordCashReceipt].every(fn => typeof fn === 'function')) {
     throw new Error('course_action_dependencies_required');
   }
+  // Same-process guard: prevent double taps from racing before persistence.
+  // The host must still enforce uniqueness atomically across devices/processes.
+  const inFlight = new Set();
+  async function guarded(courseId, work) {
+    const key = String(courseId);
+    if (inFlight.has(key)) throw new Error('course_operation_in_progress');
+    inFlight.add(key);
+    try { return await work(); }
+    finally { inFlight.delete(key); }
+  }
   return {
     async recordFarePayment(courseId, method, amountCents, reference) {
+      return guarded(courseId, async () => {
       const course = await getCourse(courseId);
       if (!course) throw new Error('course_not_found');
       // Reject invalid cent values before calling the cash ledger or SumUp verifier.
@@ -58,8 +69,10 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         return { recorded: true, course: persisted };
       }
       throw new Error('unsupported_payment_method');
+      });
     },
     async completeFromPlanning(courseId) {
+      return guarded(courseId, async () => {
       const course = await getCourse(courseId);
       if (!course) throw new Error('course_not_found');
       const next = completeCourseFromPlanning(course);
@@ -74,6 +87,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
       const persisted = await getCourse(courseId);
       if (!persisted || persisted.status !== 'completed') throw new Error('course_completion_not_committed');
       return persisted;
+      });
     }
   };
 }
