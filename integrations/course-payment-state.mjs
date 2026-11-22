@@ -46,6 +46,7 @@ export function completeCourseFromPlanning(course) {
   if (!course || !course.id) throw new Error('course_required');
   if (course.status === 'completed') return course;
   if (course.status === 'cancelled') throw new Error('cancelled_course');
+  if (course.payment?.status === 'pending') throw new Error('payment_pending_verification');
   return { ...course, status: 'completed' };
 }
 export function planningCourses(courses) {
