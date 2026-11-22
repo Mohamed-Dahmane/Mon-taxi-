@@ -122,7 +122,26 @@ test('pending SumUp blocks new cash or SumUp charge until reconciliation',async(
   verifySumUpTransaction:async()=>{verification++;return true;}
  });
  await assert.rejects(actions.recordFarePayment('pending-ride','cash',1235),/payment_pending_verification/);
- await assert.rejects(actions.recordFarePayment('pending-ride','sumup',1235,'tx-pending'),/payment_pending_verification/);
+ await assert.rejects(actions.recordFarePayment('pending-ride','sumup',1235),/payment_pending_verification/);
  assert.equal(cash,0);
  assert.equal(verification,0);
+});
+
+test('verified SumUp reconciliation settles pending payment without completing ride',async()=>{
+ const courses=new Map([['pending-reconcile',{id:'pending-reconcile',status:'scheduled',payment:{status:'pending',method:'sumup'}}]]);
+ let checks=0;
+ const actions=createCourseActions({
+  getCourse:async id=>courses.get(id),
+  saveCourse:async course=>{courses.set(course.id,course);},
+  recordCashReceipt:async()=>{throw Error('cash_not_expected');},
+  verifySumUpTransaction:async({courseId,amountCents,reference})=>{
+   checks++;
+   return courseId==='pending-reconcile'&&amountCents===1235&&reference==='tx-confirmed';
+  }
+ });
+ const result=await actions.recordFarePayment('pending-reconcile','sumup',1235,'tx-confirmed');
+ assert.equal(result.recorded,true);
+ assert.equal(courses.get('pending-reconcile').payment.status,'paid');
+ assert.equal(courses.get('pending-reconcile').status,'scheduled');
+ assert.equal(checks,1);
 });
