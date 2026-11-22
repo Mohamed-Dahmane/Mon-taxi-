@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const realPayment=html.slice(html.indexOf('window.parent.taxiRecordPaymentOnly=window.parent.taxiFarePayment='),html.indexOf('function reservationOutcomeActions('));
+const paymentStart=html.indexOf('window.parent.taxiRecordPaymentOnly=window.parent.taxiFarePayment=');
+const paymentEnd=html.indexOf('function reservationOutcomeActions(',paymentStart);
+assert.ok(paymentStart>=0&&paymentEnd>paymentStart,'payment-only handler must exist before Planning actions');
+const realPayment=html.slice(paymentStart,paymentEnd);
 const fareBridge=html.slice(html.lastIndexOf('function finishFare('),html.lastIndexOf('window.taxiBeginFareSumUp='));
 const sumupBridge=html.slice(html.lastIndexOf('window.taxiBeginFareSumUp='),html.lastIndexOf('</script>'));
 
@@ -27,4 +30,13 @@ test('uncertain or unsaved SumUp results retain the payment lock',()=>{
  assert.match(sumupBridge,/if\(activePayment\)return false/);
  assert.match(sumupBridge,/if\(result\.status==='uncertain'\)/);
  assert.match(sumupBridge,/if\(finishFare\(pending\.id,'sumup',pending\.amount,pending\.tip\)\)\{/);
+});
+
+test('cash payment never calls the legacy close-and-archive bridge',()=>{
+ const farePage=readFileSync(new URL('../test-tarifs.html',import.meta.url),'utf8');
+ assert.match(farePage,/taxiRecordFarePayment\(realId,'cash',amount,tip\)/);
+ assert.doesNotMatch(farePage,/taxiFinishFare\(realId,'cash',amount,tip\)/);
+});
+test('already archived rides cannot be paid again',()=>{
+ assert.match(realPayment,/Course deja archivee ou annulee : verifier dans Historique/);
 });
