@@ -1980,6 +1980,8 @@ function finishPlanningCourse(id){\n const entry=data.find(item=>item.id===id);\
  const rawAmount=Number(amount),rawTip=Number(tip??0);
  const cents=Math.round(rawAmount*100),tipCents=Math.round(rawTip*100);
  // Rejeter les montants invalides avant toute ecriture du Planning.
+ // Le navigateur ne peut pas certifier une transaction SumUp : aucun enregistrement direct.
+ if(method==='sumup')throw Error('Confirmation SumUp serveur indisponible : course conservee dans le Planning.');
  if(!['cash','sumup'].includes(method)||
     !Number.isFinite(rawAmount)||!Number.isFinite(rawTip)||
     !Number.isSafeInteger(cents)||!Number.isSafeInteger(tipCents)||
