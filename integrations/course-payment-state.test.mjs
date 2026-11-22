@@ -25,3 +25,17 @@ test('same confirmed SumUp reference is idempotent', () => {
   const c=registerPayment({id:'a'},p);
   assert.equal(registerPayment(c,p),c);
 });
+
+test('SumUp pending is not paid and does not complete course', async () => {
+  const { markPaymentPending } = await import('./course-payment-state.mjs');
+  const c = markPaymentPending({id:'a',status:'scheduled'});
+  assert.equal(c.payment.status,'pending');
+  assert.equal(c.status,'scheduled');
+  assert.equal(markPaymentPending(c),c);
+});
+test('SumUp failure leaves course in Planning', async () => {
+  const { markPaymentPending, markPaymentFailed } = await import('./course-payment-state.mjs');
+  const c = markPaymentFailed(markPaymentPending({id:'a',status:'scheduled'}));
+  assert.equal(c.payment.status,'failed');
+  assert.equal(planningCourses([c]).length,1);
+});
