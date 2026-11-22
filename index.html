@@ -2212,6 +2212,19 @@ body .pagebar{display:none}
 #hotelQuickMenu nav{margin:8px;width:min(340px,92vw);max-height:95dvh;overflow:auto;padding:15px;background:#111c30;border:1px solid #4c6485;border-radius:15px;color:white}
 #hotelQuickMenu nav button{display:block;width:100%;text-align:left;background:#203856;color:white;border:1px solid #3b5776;border-radius:9px;margin-top:7px;padding:13px;font:inherit}
 
+/* Dans le module hôtel, le menu fixe est placé en bas à droite pour
+   libérer les boutons de navigation en haut du formulaire. */
+#hotelCommissionsDialog[open] #hotelQuickMenuBtn{
+  top:auto!important;
+  bottom:68px!important;
+  right:12px!important;
+}
+#hotelCommissionsDialog[open] #hotelQuickMenu{
+  align-items:flex-end!important;
+}
+#hotelCommissionsDialog[open] #hotelQuickMenu nav{
+  margin-bottom:118px!important;
+}
 /* Le bandeau et son bouton d'actualisation passent en bas de l'écran :
    le bouton Retour du formulaire intégré reste libre en haut. */
 #hotelCommissionsDialog[open] .hotel-commissions-bar{
