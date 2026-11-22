@@ -27,6 +27,7 @@ export function registerPayment(course, payment) {
 // A SumUp checkout request is not proof of payment.
 export function markPaymentPending(course, method = 'sumup') {
   if (!course || !course.id) throw new Error('course_required');
+  if (course.status === 'completed' || course.status === 'cancelled') throw new Error('course_not_in_planning');
   if (method !== 'sumup') throw new Error('unsupported_pending_method');
   if (course.payment?.status === 'paid') throw new Error('already_paid');
   if (course.payment?.status === 'pending') return course;
