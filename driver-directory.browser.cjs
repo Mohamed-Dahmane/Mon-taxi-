@@ -875,6 +875,7 @@ async function checkBookingRoom(frame,id){
  const celineRow=frame.locator('[data-entry-id="planning-charge-celine"]');
  await celineRow.getByRole('button',{name:'Charger',exact:true}).click();
  const retryStandard=celineRow.getByRole('button',{name:'Message de commission',exact:true});
+ assert.ok(await retryStandard.count(),JSON.stringify(await frame.evaluate(()=>({row:document.querySelector('[data-entry-id="planning-charge-celine"]')?.outerHTML.slice(0,3500),course:data.find(x=>x.id==='planning-charge-celine'),posted:window.parent.TaxiHotels?.commissionPostedAt(data.find(x=>x.id==='planning-charge-celine'))}))));
  assert.ok((await storedCourse(celineCourse.id)).commissionChargedAt);
  assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Aucun numéro enregistré pour Céline.');
  assert.equal(await referrerPhone.isVisible(),false);
