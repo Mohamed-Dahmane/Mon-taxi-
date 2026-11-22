@@ -48,3 +48,20 @@ test('unconfirmed SumUp payment cannot be recorded', async () => {
   await assert.rejects(actions.recordFarePayment('ride-4','sumup',1250),/sumup_confirmation_required/);
   assert.equal(courses.get('ride-4').payment,undefined);
 });
+
+test('SumUp reference alone cannot prove payment', async () => {
+  const {courses, actions} = setup({id:'ride-5',status:'scheduled'});
+  await assert.rejects(actions.recordFarePayment('ride-5','sumup',1250,'tx-unverified'),/sumup_verifier_unavailable/);
+  assert.equal(courses.get('ride-5').payment,undefined);
+});
+test('SumUp verifier rejection leaves payment unrecorded', async () => {
+  const courses = new Map([['ride-6',{id:'ride-6',status:'scheduled'}]]);
+  const actions = createCourseActions({
+    getCourse: async id => courses.get(id),
+    saveCourse: async course => courses.set(course.id,course),
+    recordCashReceipt: async () => true,
+    verifySumUpTransaction: async () => false
+  });
+  await assert.rejects(actions.recordFarePayment('ride-6','sumup',1250,'tx-declined'),/sumup_payment_not_verified/);
+  assert.equal(courses.get('ride-6').payment,undefined);
+});
