@@ -160,3 +160,30 @@ test('unverified SumUp reconciliation keeps pending ride and creates no cash rec
  assert.equal(saves,0);
  assert.equal(cash,0);
 });
+
+test('invalid cents or method cannot call payment side effects',async()=>{
+ let cash=0,verify=0,saves=0;
+ const actions=createCourseActions({
+  getCourse:async()=>({id:'invalid',status:'scheduled'}),
+  saveCourse:async()=>{saves++;},
+  recordCashReceipt:async()=>{cash++;return true;},
+  verifySumUpTransaction:async()=>{verify++;return true;}
+ });
+ for(const cents of [12.5,-1,NaN,Infinity]){
+  await assert.rejects(actions.recordFarePayment('invalid','cash',cents),/invalid_amount/);
+  await assert.rejects(actions.recordFarePayment('invalid','sumup',cents,'tx'),/invalid_amount/);
+ }
+ await assert.rejects(actions.recordFarePayment('invalid','other',1235),/unsupported_payment_method/);
+ assert.deepEqual([cash,verify,saves],[0,0,0]);
+});
+test('SumUp verification without persisted payment never announces recorded',async()=>{
+ const course={id:'unsaved',status:'scheduled'};
+ const actions=createCourseActions({
+  getCourse:async()=>course,
+  saveCourse:async()=>true,
+  recordCashReceipt:async()=>true,
+  verifySumUpTransaction:async()=>true
+ });
+ await assert.rejects(actions.recordFarePayment('unsaved','sumup',1235,'tx-verified'),/sumup_payment_not_committed/);
+ assert.equal(course.payment,undefined);
+});
