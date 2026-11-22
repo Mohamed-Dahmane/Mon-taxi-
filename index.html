@@ -1974,8 +1974,13 @@ function initializeHotelDirectory(){
 }
 function finishPlanningCourse(id){\n const entry=data.find(item=>item.id===id);\n if(!entry||reservationCourseStatus(entry)!=='pending')return;\n if(typeof window.parent.openTaxiValidatedFare==='function')window.parent.openTaxiValidatedFare(entry.id);
  else window.parent.postMessage({type:'mon-taxi-open-fare',courseId:String(entry.id)},'*');\n}\nwindow.parent.taxiFareCourseInfo=function(id){\n const entry=data.find(item=>String(item.id)===String(id));\n if(!entry)return null;\n return {id:entry.id,origin:entry.pickup?.place||entry.hotel||'',destination:entry.destination==='Autre'?(entry.otherDestination||''):entry.destination||'',room:entry.room||entry.roomNumber||'',announcedPrice:entry.announcedPrice??null,startedAt:entry.rideStartedAt||null};\n};\nwindow.parent.taxiNextPlannedCourse=function(){\n const upcoming=data.filter(item=>isPlanningCourse(item)&&reservationCourseStatus(item)==='pending'&&item.scheduledDate).sort((a,b)=>String(a.scheduledDate+' '+(a.scheduledTime||a.time||'')).localeCompare(String(b.scheduledDate+' '+(b.scheduledTime||b.time||''))));\n const next=upcoming[0];\n return next?{date:next.scheduledDate,time:next.scheduledTime||next.time||'',client:next.clientName||next.name||'',origin:next.pickup?.place||next.hotel||''}:null;\n};\nwindow.parent.taxiRecordPaymentOnly=window.parent.taxiFarePayment=function(id,method,amount,tip){
- const courseId=String(id),cents=Math.round(Number(amount)*100);
- if(!['cash','sumup'].includes(method)||!Number.isSafeInteger(cents)||cents<0)return false;
+ const courseId=String(id),rawAmount=Number(amount),rawTip=Number(tip??0);
+ const cents=Math.round(rawAmount*100),tipCents=Math.round(rawTip*100);
+ // Rejeter les montants invalides avant toute ecriture du Planning.
+ if(!['cash','sumup'].includes(method)||
+    !Number.isFinite(rawAmount)||!Number.isFinite(rawTip)||
+    !Number.isSafeInteger(cents)||!Number.isSafeInteger(tipCents)||
+    cents<0||tipCents<0)return false;
  if(!coursesReadable)throw Error('Planning illisible : aucune modification effectuee.');
  const latest=readCourses(localStorage.getItem(key));
  const entry=latest.find(item=>String(item.id)===courseId);
@@ -1991,13 +1996,17 @@ function finishPlanningCourse(id){\n const entry=data.find(item=>item.id===id);\
  const paidAt=reservationClock();
  // Le paiement ne valide JAMAIS la course : seul le bouton Effectuee du Planning l'archive.
  entry.paidAmount=cents/100;
- entry.tipAmount=Math.round((Number(tip)||0)*100)/100;
+ entry.tipAmount=tipCents/100;
  entry.paymentMethod=method;
  entry.paidAt=paidAt;
  try{
   localStorage.setItem(key,JSON.stringify(latest));
   const verified=readCourses(localStorage.getItem(key)).find(item=>String(item.id)===courseId);
-  if(!verified||verified.paidAt!==paidAt||reservationCourseStatus(verified)!=='pending')
+  if(!verified||verified.paidAt!==paidAt||
+     verified.paymentMethod!==method||
+     Math.round(Number(verified.paidAmount)*100)!==cents||
+     Math.round(Number(verified.tipAmount)*100)!==tipCents||
+     reservationCourseStatus(verified)!=='pending')
    throw Error('Enregistrement du paiement non confirme.');
   data=latest;
   try{renderReservations();}catch(renderError){console.warn('Affichage du paiement differe',renderError);}
