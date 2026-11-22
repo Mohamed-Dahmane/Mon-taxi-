@@ -2569,7 +2569,12 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
 </script>
 <script>
 (function(){
+ const pendingKey='mon-taxi-sumup-pending-v1';
  let activePayment=null;
+ try{
+  const saved=JSON.parse(localStorage.getItem(pendingKey)||'null');
+  if(saved&&typeof saved.id==='string'&&Number.isFinite(saved.amount)&&Number.isFinite(saved.tip))activePayment=saved;
+ }catch(error){console.warn('Lecture transaction SumUp en attente impossible',error);activePayment={id:'verification-required',amount:0,tip:0};}
  const overlay=()=>document.getElementById('taxiValidatedFare');
  function finishFare(id,method,amount,tip){
   try{
@@ -2622,7 +2627,12 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   if(amount===null||amount===undefined||String(amount).trim()==='')return false;
   const euros=Number(amount), gratuity=Number(tip??0);
   if(!id||!Number.isFinite(euros)||euros<0||!Number.isFinite(gratuity)||gratuity<0)return false;
-  activePayment={id:String(id),amount:euros,tip:gratuity};
+  const pending={id:String(id),amount:euros,tip:gratuity};
+  try{
+   localStorage.setItem(pendingKey,JSON.stringify(pending));
+   if(localStorage.getItem(pendingKey)!==JSON.stringify(pending))return false;
+  }catch(error){console.error('Verrou SumUp non sauvegarde',error);return false;}
+  activePayment=pending;
   return true;
  };
  // Ne pas exposer de fonction de deblocage au navigateur : un objet
@@ -2651,6 +2661,8 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
    alert('SumUp annonce un succes, mais la transaction doit etre verifiee avant enregistrement. Course conservee dans le Planning.');
    return;
   }else if(result.status==='failed'||result.status==='cancelled'){
+   // Ne deverrouiller que si le resultat concerne la course en attente.
+   try{localStorage.removeItem(pendingKey);}catch(error){console.warn('Verrou SumUp conserve',error);return;}
    activePayment=null;
   }else{
    // Un statut inconnu n'autorise ni une comptabilisation ni un nouvel essai.
