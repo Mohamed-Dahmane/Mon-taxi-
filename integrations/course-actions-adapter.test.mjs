@@ -211,3 +211,29 @@ test('completion callback success without persisted status cannot archive ride',
  await assert.rejects(actions.completeFromPlanning('completion-uncommitted'),/course_completion_not_committed/);
  assert.equal(original.status,'scheduled');
 });
+
+test('cash receipt must not silently complete the ride or return another course',async()=>{
+ const original={id:'cash-preserve',status:'scheduled'};
+ for(const mutated of [
+  {id:'cash-preserve',status:'completed',payment:{status:'paid',method:'cash',amountCents:1250}},
+  {id:'another-course',status:'scheduled',payment:{status:'paid',method:'cash',amountCents:1250}}
+ ]){
+  const actions=createCourseActions({
+   getCourse:async()=>mutated,
+   saveCourse:async()=>true,
+   recordCashReceipt:async()=>true
+  });
+  await assert.rejects(actions.recordFarePayment(original.id,'cash',1250),/already_paid|cash_receipt_not_committed/);
+ }
+});
+test('SumUp confirmation must not silently complete the ride',async()=>{
+ const course={id:'sumup-preserve',status:'scheduled'};
+ let stored=course;
+ const actions=createCourseActions({
+  getCourse:async()=>stored,
+  saveCourse:async next=>{stored={...next,status:'completed'};return true;},
+  recordCashReceipt:async()=>true,
+  verifySumUpTransaction:async()=>true
+ });
+ await assert.rejects(actions.recordFarePayment(course.id,'sumup',1250,'verified-ref'),/sumup_payment_not_committed/);
+});
