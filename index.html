@@ -2434,7 +2434,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  const overlay=()=>document.getElementById('taxiValidatedFare');
  function finishFare(id,method,amount,tip){
   const host=document.getElementById('hotelCommissionsFrame')?.contentWindow;
-  if(!host?.taxiFarePayment?.(id,method,amount,tip))return false;
+  if(!host?.parent?.taxiFarePayment?.(id,method,amount,tip))return false;
   const next=host.taxiNextPlannedCourse?.();
   const modal=overlay();
   if(modal?.open)modal.close();
