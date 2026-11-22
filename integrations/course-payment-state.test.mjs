@@ -112,3 +112,12 @@ test('payments accept exact centimes, including 0.75 EUR and 12.35 EUR',()=>{
 test('fractional cent amount is rejected by the state module',()=>{
  assert.throws(()=>registerPayment({id:'fraction',status:'scheduled'},{method:'cash',amountCents:1234.5}),/invalid_amount/);
 });
+
+test('pending SumUp rejects cash but accepts verified matching SumUp settlement',()=>{
+ const pending={id:'ride-pending',status:'scheduled',payment:{status:'pending',method:'sumup'}};
+ assert.throws(()=>registerPayment(pending,{method:'cash',amountCents:1235}),/payment_pending_verification/);
+ assert.throws(()=>registerPayment(pending,{method:'sumup',amountCents:1235,reference:'tx-unverified'}),/payment_pending_verification/);
+ const settled=registerPayment(pending,{method:'sumup',amountCents:1235,reference:'tx-verified',confirmed:true});
+ assert.equal(settled.payment.status,'paid');
+ assert.equal(settled.status,'scheduled');
+});
