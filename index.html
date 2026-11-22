@@ -1503,6 +1503,27 @@ function addPayment(field,input){
  toast("Montant ajouté et enregistré");
  return true;
 }
+// Paiement espèces d'une course : crédit journalier unique, indépendant de SumUp.
+window.taxiRecordCashFare=function(courseId,amount){
+ const cents=Math.round(Number(amount)*100);
+ if(!courseId||!Number.isSafeInteger(cents)||cents<0)return false;
+ const receiptId=String(courseId);
+ data.cashFareReceipts??={};
+ if(data.cashFareReceipts[receiptId])return true;
+ const now=new Date();
+ const monthKey=now.getFullYear()+"-"+now.getMonth();
+ const day=String(now.getDate());
+ const month=data.months[monthKey]??(data.months[monthKey]={days:{},fixed:defaultFixed(),extra:[]});
+ month.payments??={};
+ month.payments[day]??={};
+ const before=number(month.payments[day].cash);
+ month.payments[day].cash=String(Math.round((before+cents/100)*100)/100);
+ data.cashFareReceipts[receiptId]={amount:cents,date:now.toISOString()};
+ try{localStorage.setItem(storageKey,JSON.stringify(data));if(!syncApplying)scheduleCloudBackup();}
+ catch(error){month.payments[day].cash=String(before);delete data.cashFareReceipts[receiptId];return false;}
+ refreshMetrics();renderDays();renderAnnual();renderArchive();
+ return true;
+};
 function correctPayment(field,label,adjustment=false){
  const month=current();
  const previous=adjustment?number(month.paymentAdjustments?.[field])/100:number(month.payments?.[selectedDay]?.[field]);
@@ -2409,6 +2430,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  function finishFare(id,method,amount,tip){
   const host=document.getElementById('hotelCommissionsFrame')?.contentWindow;
   if(!host?.taxiFarePayment?.(id,method,amount,tip))return false;
+  if(method==='cash'&&!window.taxiRecordCashFare?.(id,amount)){alert('Course archivée, mais crédit Cash impossible. Vérifie le Cash avant toute correction manuelle.');return false;}
   const next=host.taxiNextPlannedCourse?.();
   const modal=overlay();
   if(modal?.open)modal.close();
