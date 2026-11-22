@@ -112,3 +112,17 @@ test('closed rides cannot create a cash receipt or trigger SumUp verification',a
   assert.equal(saveCalls,0);
  }
 });
+
+test('pending SumUp blocks new cash or SumUp charge until reconciliation',async()=>{
+ let cash=0,verification=0;
+ const actions=createCourseActions({
+  getCourse:async()=>({id:'pending-ride',status:'scheduled',payment:{status:'pending',method:'sumup'}}),
+  saveCourse:async()=>{throw Error('unexpected_save');},
+  recordCashReceipt:async()=>{cash++;return true;},
+  verifySumUpTransaction:async()=>{verification++;return true;}
+ });
+ await assert.rejects(actions.recordFarePayment('pending-ride','cash',1235),/payment_pending_verification/);
+ await assert.rejects(actions.recordFarePayment('pending-ride','sumup',1235,'tx-pending'),/payment_pending_verification/);
+ assert.equal(cash,0);
+ assert.equal(verification,0);
+});
