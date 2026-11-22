@@ -2603,7 +2603,11 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  }
  window.taxiRecordFarePayment=finishFare;\n window.taxiFinishFare=finishFare;
  window.taxiBeginFareSumUp=function(id,amount,tip){
-  activePayment={id,amount,tip};
+  // Une transaction SumUp en attente ne doit jamais etre ecrasee par un second clic.
+  if(activePayment)return false;
+  const euros=Number(amount), gratuity=Number(tip||0);
+  if(!id||!Number.isFinite(euros)||euros<0||!Number.isFinite(gratuity)||gratuity<0)return false;
+  activePayment={id:String(id),amount:euros,tip:gratuity};
   return true;
  };
  window.addEventListener('mon-taxi-sumup-result',event=>{
