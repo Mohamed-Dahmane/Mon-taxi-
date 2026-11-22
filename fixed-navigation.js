@@ -6,7 +6,11 @@ const back=doc.createElement('button');back.type='button';back.textContent='←'
 const home=doc.createElement('button');home.type='button';home.textContent='Accueil';home.setAttribute('aria-label','Retour à l’accueil');nav.append(back,home);
 const style=doc.createElement('style');style.textContent=`
 #taxiQuickNavigation{position:fixed!important;inset:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) auto auto!important;z-index:2147483000;display:flex!important;gap:0!important;width:auto!important;height:42px!important;padding:0!important;margin:0!important;border:1px solid #7196c4;border-radius:13px;background:#14283f;box-shadow:0 4px 18px #0008;overflow:hidden;flex:none}
-#taxiQuickNavigation[data-placement="dialog"]{position:sticky!important;inset:0 0 auto auto!important;width:max-content!important;margin:0 0 8px auto!important}
+#taxiQuickNavigation[data-placement="dialog"]{position:relative!important;inset:auto!important;width:max-content!important;max-width:100%!important;margin:0 0 12px auto!important;z-index:1!important;flex-wrap:nowrap!important}
+/* Reserve an independent row for navigation, never over actionable controls. */
+dialog:has(> #taxiQuickNavigation){padding-top:max(12px,env(safe-area-inset-top))!important}
+#taxiQuickNavigation[data-placement="toolbar"]{max-width:calc(100vw - 24px)!important}
+#taxiQuickNavigation button{white-space:nowrap!important}
 #taxiQuickNavigation[hidden]{display:none!important}
 #taxiQuickNavigation button{position:static!important;flex:none!important;box-sizing:border-box;min-height:40px!important;height:40px!important;min-width:46px!important;width:auto!important;margin:0!important;padding:8px 12px!important;border:0!important;border-radius:0!important;background:#14283f!important;color:#fff!important;font:700 14px system-ui!important;cursor:pointer;touch-action:manipulation}
 #taxiQuickNavigation button:first-child{font-size:23px!important;border-right:1px solid #7196c4!important}
@@ -23,8 +27,11 @@ function refresh(){
  const opened=[...doc.querySelectorAll('dialog[open]')];
  dialogs=dialogs.filter(d=>opened.includes(d));for(const d of opened)if(!dialogs.includes(d))dialogs.push(d);
  const top=dialogs.at(-1),host=top||doc.body;
- nav.dataset.placement=top&&top.id!=='hotelCommissionsDialog'?'dialog':'toolbar';
+ // Placer la navigation dans le dialogue actif, y compris le Planning.
+ nav.dataset.placement=top?'dialog':'toolbar';
  if(nav.parentElement!==host)host.prepend(nav);
+ // Keep navigation out of the click path of controls in other open dialogs.
+ // The topmost dialog always owns the navigation, never an underlying dialog.
  const page=readPage();if(key(page)!==key(current)){history.push(current);current=page;}
  const hidden=(!top&&current.page==='home')||!!doc.querySelector('main[hidden]')||doc.body.classList.contains('taxi-intro-pending');if(nav.hidden!==hidden)nav.hidden=hidden;
  const disabled=!top&&current.page==='home'&&!history.length;if(back.disabled!==disabled)back.disabled=disabled;

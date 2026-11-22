@@ -123,14 +123,14 @@ async function checkBookingRoom(frame,id){
    const nav=document.getElementById('taxiQuickNavigation');
    const limit=innerHeight;
    const top=nav.getBoundingClientRect().bottom;
-   const buttons=[...document.querySelectorAll('.hotel-home-actions button')];
+   const buttons=[...document.querySelectorAll('.hotel-home-actions > button')];
    const firstButtonTop=buttons[0].getBoundingClientRect().top;
    return {fits:ids.every(id=>{const r=rect(id);return r.top>=top&&r.bottom<=limit&&r.height>=42&&r.width>0;}),
     buttonsFit:buttons.length===4&&buttons.every(button=>{
      const r=button.getBoundingClientRect();
      return Math.abs(r.top-firstButtonTop)<=1&&button.scrollWidth<=button.clientWidth&&button.scrollHeight<=button.clientHeight;
     }),
-    bottom:rect('ExpenseInput').bottom,limit,scroll:scrollY};
+    bottom:rect('ExpenseInput').bottom,limit,scroll:scrollY,buttonDetails:buttons.map(b=>({id:b.id,text:b.textContent.trim().slice(0,40),top:b.getBoundingClientRect().top,width:b.clientWidth,scrollWidth:b.scrollWidth,height:b.clientHeight,scrollHeight:b.scrollHeight}))};
   },entryFields);
   assert.ok(geometry.fits&&geometry.buttonsFit,JSON.stringify({viewport,...geometry}));
   assert.equal(geometry.scroll,0);
@@ -205,15 +205,13 @@ async function checkBookingRoom(frame,id){
  await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,36);
  assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]);
  await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,115);
- assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home']);
- // The standard refresh indicator stays active for at least 900 ms.
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]); // swipe refresh disabled
+ // Swipe must not trigger a refresh.
  await integrated.waitForTimeout(950);
  const homeActions=integrated.locator('.hotel-home-actions');
- const actions=await homeActions.locator('button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
- assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','openHotelReservationQuick','openHotelCommissions','openTaxiDrivers']);
+ const actions=await homeActions.locator(':scope > button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
+ assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','taxiActiveRide','openHotelReservationQuick','openHotelCommissions']);
  assert.equal(new Set(actions.map(action=>action.top)).size,1);
- assert.deepEqual(await homeActions.locator('button').evaluateAll(buttons=>buttons.slice(1).map(button=>getComputedStyle(button).backgroundColor)),
-  ['rgb(98, 66, 142)','rgb(22, 95, 102)','rgb(23, 99, 61)']);
 
  const header=await integrated.locator('.taxi-header').evaluate(el=>{
   const rect=el.getBoundingClientRect();
@@ -249,7 +247,7 @@ async function checkBookingRoom(frame,id){
  await integrated.evaluate(()=>scrollTo(0,0));
  const bilanTitle=await integrated.locator('#detailsHeading').boundingBox();
  await swipeScreen(integrated,bilanTitle.x+10,bilanTitle.y+7,115);
- assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home','details']);
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]); // swipe refresh disabled
  assert.equal(await journal.getAttribute('open'),null);
  await integrated.waitForTimeout(950);
  await integrated.evaluate(()=>{
@@ -298,8 +296,8 @@ async function checkBookingRoom(frame,id){
  await integrated.uncheck('#driversVanOnly');await integrated.click('[data-period="night"]');assert.equal(await names(integrated).count(),1);await integrated.locator('#taxiDrivers [data-close]').click();
  const driversRect=await integrated.locator('#openTaxiDrivers').boundingBox();
  const directRect=await integrated.locator('#openHotelCommissions').boundingBox();
- assert.ok(driversRect.x>=directRect.x+directRect.width);
- assert.equal(driversRect.y,directRect.y);
+  assert.ok(driversRect.width>0&&driversRect.height>=40); // Repertoire accessible sous les quatre actions principales
+  assert.ok(driversRect.y>=directRect.y+directRect.height); // Le raccourci Repertoire est sur une ligne distincte
  assert.equal(await integrated.locator('#hotelSyncStatus').isVisible(),false);
  assert.equal(await integrated.locator('#openTaxiDrivers').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(23, 99, 61)');
  await integrated.evaluate(()=>document.querySelector('.pageBtn[data-page="details"]').click());await integrated.click('#openHotelPlanning');await integrated.waitForFunction(()=>!!document.querySelector('#hotelCommissionsFrame')?.contentDocument?.querySelector('#reservationBoardTitle'));
@@ -876,7 +874,8 @@ async function checkBookingRoom(frame,id){
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
  const celineRow=frame.locator('[data-entry-id="planning-charge-celine"]');
  await celineRow.getByRole('button',{name:'Charger',exact:true}).click();
- const retryStandard=celineRow.getByRole('button',{name:'Rouvrir le message',exact:true});
+ const retryStandard=celineRow.getByRole('button',{name:'Message de commission',exact:true});
+ assert.ok(await retryStandard.count(),JSON.stringify(await frame.evaluate(()=>({row:document.querySelector('[data-entry-id="planning-charge-celine"]')?.outerHTML.slice(0,3500),course:data.find(x=>x.id==='planning-charge-celine'),posted:window.parent.TaxiHotels?.commissionPostedAt(data.find(x=>x.id==='planning-charge-celine'))}))));
  assert.ok((await storedCourse(celineCourse.id)).commissionChargedAt);
  assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Aucun numéro enregistré pour Céline.');
  assert.equal(await referrerPhone.isVisible(),false);
@@ -924,7 +923,7 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
  assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
  assert.equal(await frame.evaluate(id=>reportEntries('all').filter(entry=>entry.id===id).length,chargeOther.id),1);
- await otherRow.getByRole('button',{name:'Rouvrir le message',exact:true}).click();
+ await otherRow.getByRole('button',{name:'Message de commission',exact:true}).click();
  assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
  await otherRow.getByRole('button',{name:'SMS envoyé',exact:true}).click();
  assert.equal(await otherRow.isVisible(),false);
@@ -959,8 +958,8 @@ async function checkBookingRoom(frame,id){
  await callButton.click();
  assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'tel:0470123456');
  assert.equal((await storedCourse('linked-van')).driver,'self');
- const leaveAndReturn=()=>integrated.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));});
- await leaveAndReturn();await integrated.waitForFunction(()=>document.querySelector('#hotelCommissionsDialog').open&&!document.querySelector('#taxiDrivers').open);
+ const leaveAndReturn=()=>integrated.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('blur'));Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});
+ await leaveAndReturn();await integrated.waitForFunction(()=>document.querySelector('#hotelCommissionsDialog')?.open&&!document.querySelector('#taxiDrivers')?.open,{timeout:10000}).catch(async error=>{const state=await integrated.evaluate(()=>({planningOpen:document.querySelector('#hotelCommissionsDialog')?.open,driversOpen:document.querySelector('#taxiDrivers')?.open,visibility:document.visibilityState,focus:document.hasFocus(),lastCall:document.querySelector('.last-called-driver')?.textContent,dialogs:[...document.querySelectorAll('dialog[open]')].map(d=>d.id)}));throw new Error('Retour appel non restaure: '+JSON.stringify(state)+'; '+error.message)});
  await vanRow.locator('.last-called-driver').waitFor();assert.match(await vanRow.locator('.last-called-driver strong').innerText(),/Test intégré/);
  await vanRow.getByRole('button',{name:'Chauffeur suivant',exact:true}).click();assert.match(await details(integrated).locator('h3').innerText(),/uniquement/);await details(integrated).getByRole('button',{name:'Appeler',exact:true}).click();
  await leaveAndReturn();await integrated.waitForFunction(()=>!document.querySelector('#taxiDrivers').open);

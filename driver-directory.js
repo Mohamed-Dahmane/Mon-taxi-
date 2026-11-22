@@ -720,6 +720,15 @@ function finishDriverLookup(response){
  status(response.error||(numbers.size>1?'Plusieurs numéros correspondent à '+previous.name+'. Choisis sa fiche.':
   'Numéro introuvable pour '+previous.name+'. Importe sa fiche depuis les contacts.'));
 }
+// Revenir au Planning apres l'application Telephone, sans effacer la course.
+let callReturnQueued=false;
+function restorePlanningAfterCall(){
+ if(callReturnQueued||!lastCall?.awaitingReturn||doc.visibilityState==='hidden')return;
+ callReturnQueued=true;
+ try{root.TaxiDriverCommunication?.resumeCall();}finally{callReturnQueued=false;}
+}
+doc.addEventListener('visibilitychange',()=>{if(doc.visibilityState==='visible')restorePlanningAfterCall();});
+root.addEventListener('focus',restorePlanningAfterCall);
 root.TaxiDriverCommunication={
  lastFor,
  exportFromPlanning(courseId){
