@@ -7,6 +7,14 @@ const home=doc.createElement('button');home.type='button';home.textContent='Accu
 const style=doc.createElement('style');style.textContent=`
 #taxiQuickNavigation{position:fixed!important;inset:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) auto auto!important;z-index:2147483000;display:flex!important;gap:0!important;width:auto!important;height:42px!important;padding:0!important;margin:0!important;border:1px solid #7196c4;border-radius:13px;background:#14283f;box-shadow:0 4px 18px #0008;overflow:hidden;flex:none}
 #taxiQuickNavigation[data-placement="dialog"]{position:relative!important;inset:auto!important;width:max-content!important;max-width:100%!important;margin:0 0 12px auto!important;z-index:1!important;flex-wrap:nowrap!important}
+/* Pick-up is an absolute overlay inside the hotel dialog. Keep its entire
+   hit area below the reserved navigation row, not just its visible title.
+   Otherwise it intercepts clicks even when the navigation looks visible. */
+#hotelCommissionsDialog:has(> #taxiQuickNavigation) #hotelPickup:not([hidden]){
+ top:66px!important;
+ bottom:0!important;
+ height:auto!important;
+}
 /* Reserve an independent row for navigation, never over actionable controls. */
 dialog:has(> #taxiQuickNavigation){padding-top:max(12px,env(safe-area-inset-top))!important}
 #taxiQuickNavigation[data-placement="toolbar"]{max-width:calc(100vw - 24px)!important}
