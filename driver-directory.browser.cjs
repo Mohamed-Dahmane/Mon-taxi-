@@ -130,7 +130,7 @@ async function checkBookingRoom(frame,id){
      const r=button.getBoundingClientRect();
      return Math.abs(r.top-firstButtonTop)<=1&&button.scrollWidth<=button.clientWidth&&button.scrollHeight<=button.clientHeight;
     }),
-    bottom:rect('ExpenseInput').bottom,limit,scroll:scrollY};
+    bottom:rect('ExpenseInput').bottom,limit,scroll:scrollY,buttonDetails:buttons.map(b=>({id:b.id,text:b.textContent.trim().slice(0,40),top:b.getBoundingClientRect().top,width:b.clientWidth,scrollWidth:b.scrollWidth,height:b.clientHeight,scrollHeight:b.scrollHeight}))};
   },entryFields);
   assert.ok(geometry.fits&&geometry.buttonsFit,JSON.stringify({viewport,...geometry}));
   assert.equal(geometry.scroll,0);
