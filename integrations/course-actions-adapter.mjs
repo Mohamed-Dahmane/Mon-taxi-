@@ -12,7 +12,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
       if (!course) throw new Error('course_not_found');
       if (course.payment?.status === 'paid') throw new Error('already_paid');
       if (course.status === 'completed' || course.status === 'cancelled') throw new Error('course_not_in_planning');
-      if (course.payment?.status === 'pending') throw new Error('payment_pending_verification');
+      if (course.payment?.status === 'pending' && method !== 'sumup') throw new Error('payment_pending_verification');
       if (method === 'cash') {
         // Cash accounting and course payment must be committed together by the host.
         // The host callback must be idempotent using courseId as its unique key.
@@ -24,7 +24,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         return { recorded: true, course: next };
       }
       if (method === 'sumup') {
-        if (!reference) throw new Error('sumup_confirmation_required');
+        if (!reference) throw new Error(course.payment?.status === 'pending' ? 'payment_pending_verification' : 'sumup_confirmation_required');
         if (typeof verifySumUpTransaction !== 'function') throw new Error('sumup_verifier_unavailable');
         const verified = await verifySumUpTransaction({ courseId, amountCents, reference });
         if (verified !== true) throw new Error('sumup_payment_not_verified');
