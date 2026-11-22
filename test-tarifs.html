@@ -21,7 +21,22 @@ if(realId){
   stage=2;
   const navigate=()=>{const url='https://waze.com/ul?q='+encodeURIComponent(course.destination==='BRU'||course.destination==='Airport BRU'?'Brussels Airport, Belgique':course.destination)+'&navigate=yes';const bridge=window.parent.TaxiContacts;if(bridge?.open){bridge.showBubble?.();bridge.open(url)}else window.open(url,'_blank')};
   $('waze').onclick=navigate;
-  $('cash').onclick=()=>{if(!confirm('Confirmer '+e(total())+' réellement reçus en espèces ?'))return;if(host?.parent?.taxiFinishFare?.(realId,'cash',total(),tip)){stage=4;$('finished').classList.remove('hidden');draw();}};
+  $('cash').onclick=()=>{
+    const status=$('payment');
+    status.textContent='Confirmation du paiement en espèces en cours…';
+    try{
+      const amount=total();
+      if(!Number.isFinite(amount)||amount<0){status.textContent='Montant invalide : vérifie le prix de la course.';return;}
+      if(!window.confirm('Confirmer '+e(amount)+' réellement reçus en espèces ?')){status.textContent='Paiement en espèces annulé.';return;}
+      const finish=window.parent.taxiFinishFare;
+      if(typeof finish!=='function'){status.textContent='Erreur : liaison avec le Planning indisponible. Course non clôturée.';return;}
+      if(finish(realId,'cash',amount,tip)){stage=4;$('finished').classList.remove('hidden');draw();}
+      else status.textContent='Le paiement n’a pas pu clôturer la course. Vérifie le Planning.';
+    }catch(error){
+      status.textContent='Erreur espèces : '+(error?.message||String(error));
+      console.error('Mon Taxi cash payment',error);
+    }
+  };
   $('sumup').addEventListener('click',()=>{if(window.TaxiSumUp?.checkout)host?.parent?.taxiBeginFareSumUp?.(realId,total(),tip);});
   $('markSumup').onclick=()=>{$('payment').textContent='En attente de synchronisation SumUp : ne pas enregistrer manuellement la recette carte ni archiver.';};
   $('finish').style.display='none';
