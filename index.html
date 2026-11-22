@@ -2646,13 +2646,10 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
    return;
   }
   if(result.status==='success'){
-   // Ne jamais autoriser un nouvel encaissement si le paiement a pu reussir
-   // mais que son enregistrement local a echoue.
-   if(finishFare(pending.id,'sumup',pending.amount,pending.tip)){
-    activePayment=null;
-   }else{
-    alert('SumUp indique un succes, mais le paiement n\'est pas sauvegarde. Nouvelle tentative bloquee : verifier la transaction.');
-   }
+   // Un CustomEvent navigateur n'est PAS une preuve de paiement SumUp.
+   // Conserver la course et le verrou jusqu'a verification serveur authentifiee.
+   alert('SumUp annonce un succes, mais la transaction doit etre verifiee avant enregistrement. Course conservee dans le Planning.');
+   return;
   }else if(result.status==='failed'||result.status==='cancelled'){
    activePayment=null;
   }else{
