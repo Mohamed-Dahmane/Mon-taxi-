@@ -16,18 +16,20 @@ function scenario({failSave=false,future=false}={}){
  const {context:c,store,win}=scenario();
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
  assert.equal(store.has('account'),false);
- assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'validated');
+ assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'pending');
+ assert.equal(JSON.parse(store.get('courses'))[0].paidAmount,1);
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
  assert.equal(store.has('account'),false);
 }
 {
  const {store,win}=scenario({future:true});
- assert.throws(()=>win.taxiFarePayment('ride-1','cash',1,0),/future/i);
+ assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
  assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'pending');
 }
 {
  const {store,win}=scenario({failSave:true});
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
- assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'validated');
+ assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'pending');
+ assert.equal(JSON.parse(store.get('courses'))[0].paidAmount,1);
 }
-console.log('PASS: course closure without cash credit, repeat safe, future blocked');
+console.log('PASS: payment recorded without course archival or cash credit, repeat safe');
