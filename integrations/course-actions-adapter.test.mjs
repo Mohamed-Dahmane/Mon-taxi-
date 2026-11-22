@@ -65,3 +65,33 @@ test('SumUp verifier rejection leaves payment unrecorded', async () => {
   await assert.rejects(actions.recordFarePayment('ride-6','sumup',1250,'tx-declined'),/sumup_payment_not_verified/);
   assert.equal(courses.get('ride-6').payment,undefined);
 });
+
+test('Planning completion is idempotent and does not create a receipt', async () => {
+  const courses = new Map([['ride-7',{id:'ride-7',status:'scheduled'}]]);
+  let completions=0;
+  const actions = createCourseActions({
+    getCourse: async id => courses.get(id),
+    saveCourse: async () => { throw new Error('should_not_use_non_atomic_save'); },
+    recordCashReceipt: async () => { throw new Error('should_not_record_cash'); },
+    completeCourseAtomically: async ({courseId,course}) => {
+      completions++;
+      courses.set(courseId,course);
+      return true;
+    }
+  });
+  await actions.completeFromPlanning('ride-7');
+  await actions.completeFromPlanning('ride-7');
+  assert.equal(completions,1);
+  assert.equal(courses.get('ride-7').status,'completed');
+});
+test('failed atomic completion leaves course in Planning', async () => {
+  const courses = new Map([['ride-8',{id:'ride-8',status:'scheduled'}]]);
+  const actions = createCourseActions({
+    getCourse: async id => courses.get(id),
+    saveCourse: async () => {},
+    recordCashReceipt: async () => true,
+    completeCourseAtomically: async () => false
+  });
+  await assert.rejects(actions.completeFromPlanning('ride-8'),/course_completion_not_committed/);
+  assert.equal(courses.get('ride-8').status,'scheduled');
+});
