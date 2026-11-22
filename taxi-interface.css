@@ -950,3 +950,14 @@ html.taxi-clean {
 .taxi-clean.taxi-hotel #planningEditActions:empty {
   margin-top: 0;
 }
+
+/* Prevent the hidden commissions dialog refresh control from intercepting taps
+   on the home screen after closing the planning dialog. */
+#hotelCommissionsDialog:not([open]),
+#hotelCommissionsDialog:not([open]) #refreshHotelPage {
+  display: none !important;
+  pointer-events: none !important;
+}
+/* Decorative SVGs must never become a separate hit target. */
+#refreshHotelPage .refresh-arc,
+#refreshLocal .refresh-arc { pointer-events: none; }
