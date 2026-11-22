@@ -61,17 +61,15 @@ jobs:
       - name: Build debug APK with diagnostic logs
         run: |
           set -o pipefail
-          for attempt in 1 2 3; do
-            if gradle --no-daemon --stacktrace --info assembleDebug assembleRelease 2>&1 | tee android-build.log; then
-              exit 0
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "Échec après trois tentatives de téléchargement des dépendances" >&2
-              exit 1
-            fi
-            echo "Tentative $attempt échouée : nouvelle tentative après temporisation..."
-            sleep $((attempt * 45))
-          done
+          if gradle --no-daemon --console=plain assembleDebug assembleRelease > android-build.log 2>&1; then
+            echo "Compilation Android réussie."
+          else
+            echo "=== ERREURS DE COMPILATION (extrait) ==="
+            grep -nE '(^| )error:|FAILURE:|What went wrong:|Execution failed|Could not|cannot find symbol|symbol:|location:|Caused by:|requires|A problem occurred' android-build.log | tail -n 100 || true
+            echo "=== FIN DU JOURNAL ==="
+            tail -n 110 android-build.log
+            exit 1
+          fi
         shell: bash
         env:
           JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
