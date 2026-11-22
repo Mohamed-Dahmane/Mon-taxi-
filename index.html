@@ -2428,10 +2428,18 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  let activePayment=null;
  const overlay=()=>document.getElementById('taxiValidatedFare');
  function finishFare(id,method,amount,tip){
-  const host=document.getElementById('hotelCommissionsFrame')?.contentWindow;
-  if(!host?.taxiFarePayment?.(id,method,amount,tip))return false;
-  if(method==='cash'&&!window.taxiRecordCashFare?.(id,amount)){alert('Course archivée, mais crédit Cash impossible. Vérifie le Cash avant toute correction manuelle.');return false;}
-  const next=host.taxiNextPlannedCourse?.();
+  // Les fonctions de réservation sont exposées sur la fenêtre principale par l'iframe.
+  // Ne pas les chercher sur contentWindow de l'iframe : elles y sont absentes.
+  if(typeof window.taxiFarePayment!=='function'){
+   alert('Planning indisponible : impossible de confirmer le paiement.');return false;
+  }
+  if(method==='cash'&&!window.taxiRecordCashFare?.(id,amount)){
+   alert('Crédit Cash impossible : paiement non clôturé.');return false;
+  }
+  if(!window.taxiFarePayment(id,method,amount,tip)){
+   alert('Enregistrement de la course refusé. Vérifie son état dans le Planning avant toute nouvelle tentative.');return false;
+  }
+  const next=window.taxiNextPlannedCourse?.();
   const modal=overlay();
   if(modal?.open)modal.close();
   modal?.remove();
