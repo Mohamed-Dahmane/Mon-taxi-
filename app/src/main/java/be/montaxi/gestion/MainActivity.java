@@ -337,6 +337,32 @@ public class MainActivity extends Activity {
    WebSettings settings=web.getSettings();
    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
+    // Serve the APK-bundled UI at the SAME HTTPS origin as the previous app.
+    // This preserves existing localStorage data while isolating Android from Chrome updates.
+    @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+     android.net.Uri uri=request.getUrl();
+     if(uri==null||!"https".equals(uri.getScheme())||!"mohamed-dahmane.github.io".equals(uri.getHost()))return null;
+     String route=uri.getPath();
+     String prefix="/Mon-taxi-/";
+     if(route==null||!route.startsWith(prefix))return null;
+     String file=route.substring(prefix.length());
+     if(file.isEmpty())file="index.html";
+     // Only explicitly bundled files are intercepted; other resources remain online.
+     String[] bundled={"index.html","test-tarifs.html","taxi-interface.css","hold-reorder.js","fixed-navigation.js","hotel-sync.js","pickup-reservation.html","directory-editor.js","driver-directory.js","vehicle-allocations.js","vehicle-allocation-editor.js"};
+     boolean allowed=false;
+     for(String name:bundled)if(name.equals(file)){allowed=true;break;}
+     if(!allowed)return null;
+     String mime=file.endsWith(".html")?"text/html":file.endsWith(".css")?"text/css":"application/javascript";
+     try{
+      InputStream stream=getAssets().open(file);
+      WebResourceResponse response=new WebResourceResponse(mime,"UTF-8",stream);
+      response.setResponseHeaders(java.util.Collections.singletonMap("Cache-Control","no-store"));
+      return response;
+     }catch(IOException error){
+      android.util.Log.e("MonTaxi","Missing bundled resource: "+file,error);
+      return new WebResourceResponse("text/plain","UTF-8",404,"Not Found",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream(new byte[0]));
+     }
+    }
     @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){
      if(!req.isForMainFrame())return;
