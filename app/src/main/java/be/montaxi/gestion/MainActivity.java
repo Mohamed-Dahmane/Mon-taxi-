@@ -163,12 +163,12 @@ public class MainActivity extends Activity {
  private void playCashRegisterSound(){
   ensureCashRegisterSound();
   if(paymentSoundReady&&paymentSoundPool!=null){
-   paymentSoundPool.play(paymentSoundId,0.60f,0.60f,1,0,1.0f);
+   paymentSoundPool.play(paymentSoundId,0.70f,0.70f,1,0,1.0f);
   }else{
    // Secours sonore Android deja confirme fonctionnel en V116.
    try{
     final android.media.ToneGenerator tone=new android.media.ToneGenerator(
-      android.media.AudioManager.STREAM_MUSIC,60);
+      android.media.AudioManager.STREAM_MUSIC,70);
     tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,180);
     new Handler(Looper.getMainLooper()).postDelayed(tone::release,350);
    }catch(Exception ignored){}
