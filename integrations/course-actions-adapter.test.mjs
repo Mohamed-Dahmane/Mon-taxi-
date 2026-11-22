@@ -145,3 +145,18 @@ test('verified SumUp reconciliation settles pending payment without completing r
  assert.equal(courses.get('pending-reconcile').status,'scheduled');
  assert.equal(checks,1);
 });
+
+test('unverified SumUp reconciliation keeps pending ride and creates no cash receipt',async()=>{
+ const course={id:'pending-unverified',status:'scheduled',payment:{status:'pending',method:'sumup'}};
+ let saves=0,cash=0;
+ const actions=createCourseActions({
+  getCourse:async()=>course,
+  saveCourse:async()=>{saves++;},
+  recordCashReceipt:async()=>{cash++;return true;},
+  verifySumUpTransaction:async()=>false
+ });
+ await assert.rejects(actions.recordFarePayment('pending-unverified','sumup',1235,'tx-unverified'),/sumup_payment_not_verified/);
+ assert.equal(course.payment.status,'pending');
+ assert.equal(saves,0);
+ assert.equal(cash,0);
+});
