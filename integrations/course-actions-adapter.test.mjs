@@ -272,3 +272,14 @@ test('payment and Planning completion cannot race on same ride',async()=>{
  await actions.completeFromPlanning('race-ride');
  assert.equal(stored.status,'completed');
 });
+
+test('Planning completion must preserve paid amount, method and reference',async()=>{
+ const original={id:'paid-completion',status:'scheduled',payment:{status:'paid',method:'sumup',amountCents:1235,reference:'tx-123'}};
+ let stored=original;
+ const actions=createCourseActions({
+  getCourse:async()=>stored,
+  saveCourse:async next=>{stored={...next,payment:{...next.payment,amountCents:0}};return true;},
+  recordCashReceipt:async()=>true
+ });
+ await assert.rejects(actions.completeFromPlanning(original.id),/course_completion_not_committed/);
+});
