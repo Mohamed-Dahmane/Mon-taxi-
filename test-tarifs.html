@@ -54,6 +54,21 @@ if(realId){
       console.error('Mon Taxi cash payment',error);
     }
   };
+  // Une course facturée à l'hôtel n'est ni un encaissement cash ni SumUp.
+  // Retourner au Planning sans inventer de paiement et sans archiver la course.
+  const hotelPayment=document.createElement('button');
+  hotelPayment.type='button';
+  hotelPayment.id='hotelPaymentReturn';
+  hotelPayment.className='ghost';
+  hotelPayment.style.cssText='width:100%;margin-top:10px;min-height:52px';
+  hotelPayment.textContent='Paiement par hôtel · Retour au Planning';
+  $('cash').insertAdjacentElement('afterend',hotelPayment);
+  hotelPayment.onclick=()=>{
+    if(stage===2){$('payment').textContent='Arrête d’abord le compteur avec « Finir course ».';return;}
+    if(stage!==3&&stage!==4)return;
+    $('payment').textContent='Aucun paiement en espèces enregistré. Retour au Planning pour « Course effectuée ».';
+    window.parent.dispatchEvent(new Event('taxi-fare-completed'));
+  };
   $('sumup').addEventListener('click',()=>{if(window.TaxiSumUp?.checkout)host?.parent?.taxiBeginFareSumUp?.(realId,total(),tip);});
   $('markSumup').onclick=()=>{$('payment').textContent='En attente de synchronisation SumUp : ne pas enregistrer manuellement la recette carte ni archiver.';};
   // Compteur arrêté avant toute validation de paiement ; le Planning décide du statut Effectuée.
