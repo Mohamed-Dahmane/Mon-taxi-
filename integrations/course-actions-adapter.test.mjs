@@ -213,17 +213,17 @@ test('completion callback success without persisted status cannot archive ride',
 });
 
 test('cash receipt must not silently complete the ride or return another course',async()=>{
- const original={id:'cash-preserve',status:'scheduled'};
  for(const mutated of [
   {id:'cash-preserve',status:'completed',payment:{status:'paid',method:'cash',amountCents:1250}},
   {id:'another-course',status:'scheduled',payment:{status:'paid',method:'cash',amountCents:1250}}
  ]){
+  let stored={id:'cash-preserve',status:'scheduled'};
   const actions=createCourseActions({
-   getCourse:async()=>mutated,
-   saveCourse:async()=>true,
-   recordCashReceipt:async()=>true
+   getCourse:async()=>stored,
+   saveCourse:async()=>{throw Error('unexpected_save');},
+   recordCashReceipt:async()=>{stored=mutated;return true;}
   });
-  await assert.rejects(actions.recordFarePayment(original.id,'cash',1250),/already_paid|cash_receipt_not_committed/);
+  await assert.rejects(actions.recordFarePayment('cash-preserve','cash',1250),/cash_receipt_not_committed/);
  }
 });
 test('SumUp confirmation must not silently complete the ride',async()=>{
