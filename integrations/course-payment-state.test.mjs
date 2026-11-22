@@ -39,3 +39,29 @@ test('SumUp failure leaves course in Planning', async () => {
   assert.equal(c.payment.status,'failed');
   assert.equal(planningCourses([c]).length,1);
 });
+
+test('confirmed SumUp payment after pending keeps course scheduled', async () => {
+  const { markPaymentPending } = await import('./course-payment-state.mjs');
+  const pending = markPaymentPending({ id: 'ride-1', status: 'scheduled' });
+  const paid = registerPayment(pending, {
+    method: 'sumup', amountCents: 2400, confirmed: true, reference: 'sumup-tx-1'
+  });
+  assert.equal(paid.payment.status, 'paid');
+  assert.equal(paid.status, 'scheduled');
+  assert.equal(planningCourses([paid]).length, 1);
+});
+test('failed SumUp payment can be retried without completing the ride', async () => {
+  const { markPaymentPending, markPaymentFailed } = await import('./course-payment-state.mjs');
+  const failed = markPaymentFailed(markPaymentPending({ id: 'ride-2', status: 'scheduled' }));
+  const retry = markPaymentPending(failed);
+  assert.equal(retry.payment.status, 'pending');
+  assert.equal(retry.status, 'scheduled');
+});
+test('cannot replace a paid SumUp transaction with a second reference', () => {
+  const paid = registerPayment({ id: 'ride-3', status: 'scheduled' }, {
+    method: 'sumup', amountCents: 1000, confirmed: true, reference: 'tx-a'
+  });
+  assert.throws(() => registerPayment(paid, {
+    method: 'sumup', amountCents: 1000, confirmed: true, reference: 'tx-b'
+  }), /already_paid/);
+});
