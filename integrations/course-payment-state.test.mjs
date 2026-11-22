@@ -121,3 +121,11 @@ test('pending SumUp rejects cash but accepts verified matching SumUp settlement'
  assert.equal(settled.payment.status,'paid');
  assert.equal(settled.status,'scheduled');
 });
+
+test('pending SumUp must be reconciled before course completion',()=>{
+ const pending={id:'pending-completion',status:'scheduled',payment:{status:'pending',method:'sumup'}};
+ assert.throws(()=>completeCourseFromPlanning(pending),/payment_pending_verification/);
+ assert.equal(pending.status,'scheduled');
+ const confirmed=registerPayment(pending,{method:'sumup',amountCents:1250,reference:'verified-tx',confirmed:true});
+ assert.equal(completeCourseFromPlanning(confirmed).status,'completed');
+});
