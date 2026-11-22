@@ -46,7 +46,13 @@ if(realId){
    }
    $('cash').textContent='Paiement en espèces';
   };
-  $('sumup').addEventListener('click',()=>{if(window.TaxiSumUp?.checkout)host?.parent?.taxiBeginFareSumUp?.(realId,total(),tip);});
+  $('sumup').addEventListener('click',()=>{
+   const parent=window.parent;
+   if(typeof parent?.taxiBeginFareSumUp!=='function'){
+    $('payment').textContent='Liaison Mon Taxi indisponible : paiement non lancé.';return;
+   }
+   parent.taxiBeginFareSumUp(realId,total(),tip);
+  });
   $('markSumup').onclick=()=>{$('payment').textContent='En attente de synchronisation SumUp : ne pas enregistrer manuellement la recette carte ni archiver.';};
   $('finish').style.display='none';
   $('back').onclick=()=>window.parent.dispatchEvent(new Event('taxi-fare-completed'));
