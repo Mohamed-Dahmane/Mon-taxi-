@@ -2613,12 +2613,20 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  window.addEventListener('mon-taxi-sumup-result',event=>{
   const result=event.detail||{};
   const pending=activePayment;
-  activePayment=null;
   if(!pending)return;
+  // Une reponse incertaine n'est ni un succes ni un echec.
+  // Conserver la transaction en attente pour bloquer une seconde demande
+  // qui pourrait encaisser deux fois le client.
+  if(result.status==='uncertain'){
+   alert('Statut SumUp incertain. Verifie la transaction avant toute nouvelle tentative. Paiement non enregistre ; course conservee.');
+   return;
+  }
+  activePayment=null;
   if(result.status==='success'){
    if(!finishFare(pending.id,'sumup',pending.amount,pending.tip))alert('Paiement confirmé sur SumUp, mais enregistrement impossible : vérifie la transaction avant toute nouvelle tentative.');
-  }else if(result.status==='uncertain'){
-   alert('Statut SumUp incertain. Vérifie la transaction avant de réessayer. Course conservée.');
+  }else if(result.status!=='failed'&&result.status!=='cancelled'){
+   // Un statut inconnu ne prouve pas un paiement.
+   alert('Resultat SumUp non reconnu. Verifie la transaction avant une nouvelle tentative.');
   }
  });
 })();
