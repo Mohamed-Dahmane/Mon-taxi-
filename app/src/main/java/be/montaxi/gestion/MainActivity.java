@@ -432,15 +432,59 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void play(){
      runOnUiThread(()->{
       try{
-       final android.media.ToneGenerator tone=new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC,22);
-       tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,85);
-       new Handler(Looper.getMainLooper()).postDelayed(tone::release,180L);
-       // Retour tactile presque imperceptible (12 ms), seulement au paiement accepté.
-       android.os.Vibrator vibrator=(android.os.Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
-       if(vibrator!=null&&vibrator.hasVibrator()){
-        if(Build.VERSION.SDK_INT>=26)vibrator.vibrate(android.os.VibrationEffect.createOneShot(12L,18));
-        else vibrator.vibrate(12L);
-       }
+       // Son de caisse enregistreuse : clac mécanique + double tintement métallique.
+       // PCM natif sur le canal multimedia, sans fichier externe ni changement de paiement.
+       new Thread(()->{
+        android.media.AudioTrack track=null;
+        try{
+         final int rate=22050;
+         final int frames=(int)(rate*0.62);
+         final byte[] pcm=new byte[frames*2];
+         java.util.Random random=new java.util.Random(417);
+         for(int i=0;i<frames;i++){
+          double t=(double)i/rate;
+          // Petit choc sec du tiroir au debut, puis deux notes de cloche.
+          double click=(t<0.052)?(random.nextDouble()*2-1)*Math.exp(-t*100)*0.72:0;
+          double bell1=t>=0.035?Math.exp(-(t-0.035)*9.5)*
+            (Math.sin(2*Math.PI*1318*(t-0.035))*0.46+
+             Math.sin(2*Math.PI*2636*(t-0.035))*0.13):0;
+          double bell2=t>=0.155?Math.exp(-(t-0.155)*8.0)*
+            (Math.sin(2*Math.PI*1760*(t-0.155))*0.48+
+             Math.sin(2*Math.PI*3520*(t-0.155))*0.12):0;
+          double v=Math.max(-1,Math.min(1,(click+bell1+bell2)*0.83));
+          short sample=(short)(v*32767);
+          pcm[2*i]=(byte)(sample&255);
+          pcm[2*i+1]=(byte)((sample>>8)&255);
+         }
+         int min=android.media.AudioTrack.getMinBufferSize(rate,
+           android.media.AudioFormat.CHANNEL_OUT_MONO,
+           android.media.AudioFormat.ENCODING_PCM_16BIT);
+         track=new android.media.AudioTrack(
+           new android.media.AudioAttributes.Builder()
+             .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+             .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
+           new android.media.AudioFormat.Builder()
+             .setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT)
+             .setSampleRate(rate).setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO).build(),
+           Math.max(min,pcm.length),android.media.AudioTrack.MODE_STATIC,
+           android.media.AudioManager.AUDIO_SESSION_ID_GENERATE);
+         if(track.getState()==android.media.AudioTrack.STATE_INITIALIZED){
+          track.write(pcm,0,pcm.length);
+          track.setVolume(1.0f);
+          track.play();
+          Thread.sleep(720);
+         }
+        }catch(Exception ignored){}
+        finally{if(track!=null){try{track.stop();}catch(Exception ignored){}track.release();}}
+       },"TaxiCashRegisterSound").start();
+       // Micro-vibration facultative, sans effet sur la validation du paiement.
+       try{
+        android.os.Vibrator vibrator=(android.os.Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+        if(vibrator!=null&&vibrator.hasVibrator()){
+         if(Build.VERSION.SDK_INT>=26)vibrator.vibrate(android.os.VibrationEffect.createOneShot(20L,35));
+         else vibrator.vibrate(20L);
+        }
+       }catch(Exception ignored){}
       }catch(Exception ignored){}
      });
     }
