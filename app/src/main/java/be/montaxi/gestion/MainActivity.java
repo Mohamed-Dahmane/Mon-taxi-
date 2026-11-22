@@ -120,7 +120,7 @@ public class MainActivity extends Activity {
   if(paymentSoundPool!=null)return;
   try{
    final int rate=44100, frames=(int)(rate*0.72);
-   java.io.File wav=new java.io.File(getCacheDir(),"taxi-cash-register-v119.wav");
+   java.io.File wav=new java.io.File(getCacheDir(),"taxi-cash-register-mechanical-v120.wav");
    if(!wav.exists()||wav.length()<100){
     try(java.io.FileOutputStream out=new java.io.FileOutputStream(wav)){
      out.write(new byte[]{'R','I','F','F'});
@@ -130,19 +130,20 @@ public class MainActivity extends Activity {
      writeWavInt(out,rate,4);writeWavInt(out,rate*2,4);
      writeWavInt(out,2,2);writeWavInt(out,16,2);
      out.write(new byte[]{'d','a','t','a'});writeWavInt(out,frames*2,4);
-     java.util.Random noise=new java.util.Random(119);
+     java.util.Random noise=new java.util.Random(120);
      for(int i=0;i<frames;i++){
       double t=(double)i/rate;
-      // Tiroir mecanique, puis deux tintements de cloche (ka-ching).
-      double click=t<0.07?(noise.nextDouble()*2-1)*Math.exp(-t*65)*0.82:0;
-      double first=t>0.04?Math.exp(-(t-0.04)*6.5)*
-        (0.49*Math.sin(2*Math.PI*1046*(t-0.04))+
-         0.15*Math.sin(2*Math.PI*2093*(t-0.04))):0;
-      double second=t>0.18?Math.exp(-(t-0.18)*6.0)*
-        (0.51*Math.sin(2*Math.PI*1568*(t-0.18))+
-         0.13*Math.sin(2*Math.PI*3136*(t-0.18))):0;
-      double envelope=Math.min(1.0,t*160);
-      double v=Math.max(-1,Math.min(1,(click+first+second)*0.92*envelope));
+      // Nouveau timbre mecanique: loquet, glissement du tiroir, cloche.
+      double latch=t<0.045?(noise.nextDouble()*2-1)*Math.exp(-t*95)*0.75:0;
+      double drawer=t>0.07&&t<0.24?
+       (noise.nextDouble()*2-1)*0.19*Math.sin(Math.PI*(t-0.07)/0.17):0;
+      double stop=t>0.245&&t<0.32?
+       (noise.nextDouble()*2-1)*Math.exp(-(t-0.245)*85)*0.65:0;
+      double bell=t>0.28?Math.exp(-(t-0.28)*5.8)*
+       (0.44*Math.sin(2*Math.PI*880*(t-0.28))+
+        0.23*Math.sin(2*Math.PI*1320*(t-0.28))+
+        0.12*Math.sin(2*Math.PI*1760*(t-0.28))):0;
+      double v=Math.max(-1,Math.min(1,latch+drawer+stop+bell));
       short pcm=(short)(v*32767);
       out.write(pcm&255);out.write((pcm>>8)&255);
      }
@@ -163,12 +164,12 @@ public class MainActivity extends Activity {
  private void playCashRegisterSound(){
   ensureCashRegisterSound();
   if(paymentSoundReady&&paymentSoundPool!=null){
-   paymentSoundPool.play(paymentSoundId,0.70f,0.70f,1,0,1.0f);
+   paymentSoundPool.play(paymentSoundId,0.60f,0.60f,1,0,1.0f);
   }else{
    // Secours sonore Android deja confirme fonctionnel en V116.
    try{
     final android.media.ToneGenerator tone=new android.media.ToneGenerator(
-      android.media.AudioManager.STREAM_MUSIC,70);
+      android.media.AudioManager.STREAM_MUSIC,60);
     tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,180);
     new Handler(Looper.getMainLooper()).postDelayed(tone::release,350);
    }catch(Exception ignored){}
