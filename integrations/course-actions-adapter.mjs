@@ -85,7 +85,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         if (saved === false) throw new Error('course_completion_not_committed');
       }
       const persisted = await getCourse(courseId);
-      if (!persisted || persisted.status !== 'completed') throw new Error('course_completion_not_committed');
+      if (!persisted || persisted.id !== courseId || persisted.status !== 'completed') throw new Error('course_completion_not_committed');
       return persisted;
       });
     }
