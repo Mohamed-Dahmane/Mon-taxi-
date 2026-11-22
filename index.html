@@ -2462,10 +2462,10 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  const overlay=()=>document.getElementById('taxiValidatedFare');
  function finishFare(id,method,amount,tip){
   // Les fonctions du Planning sont exposees par son iframe sur window.parent.
-  const host=document.getElementById('hotelCommissionsFrame')?.contentWindow;
-  if(typeof host?.taxiFarePayment!=='function'){alert('Planning indisponible : paiement non enregistre.');return false;}
-  if(!host.taxiFarePayment(id,method,amount,tip)){alert('Course non cloturee : verifie son statut dans le Planning.');return false;}
-  const next=host.taxiNextPlannedCourse?.();
+  // Le Planning expose ses fonctions sur window.parent (cette page), pas sur l'iframe.
+  if(typeof window.taxiFarePayment!=='function'){alert('Planning indisponible : paiement non enregistre.');return false;}
+  if(!window.taxiFarePayment(id,method,amount,tip)){alert('Course non cloturee : verifie son statut dans le Planning.');return false;}
+  const next=window.taxiNextPlannedCourse?.();
   const modal=overlay();
   if(modal?.open)modal.close();
   modal?.remove();
