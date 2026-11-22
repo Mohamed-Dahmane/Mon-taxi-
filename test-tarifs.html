@@ -51,10 +51,26 @@ if(realId){
       const amount=total();
       if(!Number.isFinite(amount)||amount<0){status.textContent='Montant invalide : vérifie le prix de la course.';return;}
       if(!window.confirm('Confirmer '+e(amount)+' réellement reçus en espèces ?')){status.textContent='Paiement en espèces annulé.';return;}
-      const finish=window.parent.taxiFinishFare;
-      if(typeof finish!=='function'){status.textContent='Erreur : liaison avec le Planning indisponible. Course non clôturée.';return;}
-      if(finish(realId,'cash',amount,tip)){stage=4;$('finished').classList.remove('hidden');draw();}
-      else status.textContent='Le paiement n’a pas pu clôturer la course. Vérifie le Planning.';
+      // Never call taxiFinishFare here: that legacy bridge also closes the ride.
+      // A payment-only bridge must explicitly confirm recording before we show success.
+      const recordPayment=window.parent.taxiRecordFarePayment;
+      if(typeof recordPayment!=='function'){
+        status.textContent='Enregistrement espèces indisponible : aucun paiement déclaré. Course conservée dans le Planning.';
+        return;
+      }
+      const result=recordPayment(realId,'cash',amount,tip);
+      if(result && typeof result.then==='function'){
+        status.textContent='Confirmation asynchrone non prise en charge ici : vérifie le Planning, sans réessayer immédiatement.';
+        return;
+      }
+      if(result===true || result?.recorded===true){
+        stage=4;
+        $('finished').classList.remove('hidden');
+        status.textContent='Espèces enregistrées. Course toujours à valider dans le Planning.';
+        draw();
+      }else{
+        status.textContent='Paiement non confirmé. Course conservée dans le Planning.';
+      }
     }catch(error){
       status.textContent='Erreur espèces : '+(error?.message||String(error));
       console.error('Mon Taxi cash payment',error);
