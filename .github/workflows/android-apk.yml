@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'index.html'
+      - 'tests/**'
       - 'taxi-interface.css'
       - 'hotel-sync.js'
       - 'pickup-reservation.html'
@@ -48,6 +49,8 @@ jobs:
           test -f app/src/main/AndroidManifest.xml
           test -f app/src/main/java/be/montaxi/gestion/MainActivity.java
           test -f index.html
+      - name: Test cash payment and course archival
+        run: node tests/cash-payment.test.cjs
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets/app
