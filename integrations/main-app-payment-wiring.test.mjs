@@ -34,8 +34,9 @@ test('uncertain or unsaved SumUp results retain the payment lock',()=>{
 
 test('cash payment never calls the legacy close-and-archive bridge',()=>{
  const farePage=readFileSync(new URL('../test-tarifs.html',import.meta.url),'utf8');
- assert.match(farePage,/taxiRecordFarePayment\(realId,'cash',amount,tip\)/);
- assert.doesNotMatch(farePage,/taxiFinishFare\(realId,'cash',amount,tip\)/);
+ assert.match(farePage,/const recordPayment=window\.parent\.taxiRecordFarePayment;/);
+ assert.match(farePage,/recordPayment\(realId,'cash',amount,tip\)/);
+ assert.doesNotMatch(farePage,/window\.parent\.taxiFinishFare\(realId,'cash',amount,tip\)/);
 });
 test('already archived rides cannot be paid again',()=>{
  assert.match(realPayment,/Course deja archivee ou annulee : verifier dans Historique/);
