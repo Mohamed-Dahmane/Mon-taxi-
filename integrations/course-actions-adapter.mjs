@@ -10,6 +10,9 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
     async recordFarePayment(courseId, method, amountCents, reference) {
       const course = await getCourse(courseId);
       if (!course) throw new Error('course_not_found');
+      // Reject invalid cent values before calling the cash ledger or SumUp verifier.
+      if (!Number.isSafeInteger(amountCents) || amountCents < 0) throw new Error('invalid_amount');
+      if (method !== 'cash' && method !== 'sumup') throw new Error('unsupported_payment_method');
       if (course.payment?.status === 'paid') throw new Error('already_paid');
       if (course.status === 'completed' || course.status === 'cancelled') throw new Error('course_not_in_planning');
       if (course.payment?.status === 'pending' && method !== 'sumup') throw new Error('payment_pending_verification');
