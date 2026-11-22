@@ -20,6 +20,23 @@ if(realId){
   seconds=Math.max(0,Math.floor((Date.now()-startTime)/1000));
   stage=2;
   const navigate=()=>{const url='https://waze.com/ul?q='+encodeURIComponent(course.destination==='BRU'||course.destination==='Airport BRU'?'Brussels Airport, Belgique':course.destination)+'&navigate=yes';const bridge=window.parent.TaxiContacts;if(bridge?.open){bridge.showBubble?.();bridge.open(url)}else window.open(url,'_blank')};
+  // Arrêter définitivement le compteur de cette course, sans déclencher de paiement.
+  const stopKey='mon-taxi-fare-stopped-'+String(realId);
+  const savedStop=Number(localStorage.getItem(stopKey)||0);
+  if(savedStop>0&&Number.isFinite(savedStop)){
+   seconds=Math.max(0,savedStop);clearInterval(timer);stage=3;
+  }
+  $('arrive').onclick=()=>{
+   clearInterval(timer);
+   if(stage===2){
+    seconds=Math.max(seconds,Math.floor((Date.now()-startTime)/1000));
+    localStorage.setItem(stopKey,String(seconds));
+   }
+   stage=3;
+   $('statusText').textContent='Compteur arrêté. Course conservée dans le Planning jusqu’au bouton Effectuée.';
+   draw();
+   $('paymentCard').scrollIntoView({behavior:'smooth',block:'start'});
+  };
   $('waze').onclick=navigate;
   $('cash').onclick=()=>{
     const status=$('payment');
@@ -44,7 +61,7 @@ if(realId){
   $('returnTaxi').style.display='none';
   $('state').textContent='En course';
   draw();
-  timer=setInterval(tick,1000);
+  if(stage===2)timer=setInterval(tick,1000);
   $('statusText').textContent='Course réelle · terminer le trajet pour afficher le tarif et les options de paiement. Vérifie le tarif avant encaissement.';
  }else{
   document.querySelector('.footer').textContent='Course introuvable : retour au Planning requis.';
