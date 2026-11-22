@@ -110,7 +110,7 @@ public class MainActivity extends Activity {
  }
  private CancellationSignal biometric;
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
- @Override public private android.media.SoundPool paymentSoundPool;
+ private android.media.SoundPool paymentSoundPool;
  private int paymentSoundId=0;
  private boolean paymentSoundReady=false;
  private void writeWavInt(java.io.OutputStream out,int value,int bytes)throws IOException{
