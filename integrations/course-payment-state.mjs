@@ -6,7 +6,9 @@ export function registerPayment(course, payment) {
   if (!payment || !['cash', 'sumup', 'other'].includes(payment.method)) throw new Error('invalid_method');
   if (!Number.isSafeInteger(payment.amountCents) || payment.amountCents < 0) throw new Error('invalid_amount');
   if (course.payment?.status === 'paid') {
-    if (course.payment.reference && payment.reference === course.payment.reference) return course;
+    if (course.payment.method === 'sumup' && payment.method === 'sumup' &&
+        course.payment.reference && payment.reference === course.payment.reference &&
+        payment.amountCents === course.payment.amountCents && payment.confirmed === true) return course;
     throw new Error('already_paid');
   }
   if (payment.method === 'sumup' && (payment.confirmed !== true || !payment.reference)) {
