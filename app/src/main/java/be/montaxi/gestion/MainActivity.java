@@ -174,7 +174,7 @@ public class MainActivity extends Activity {
    }catch(Exception ignored){}
   }
  }
- void onCreate(Bundle state) {
+ @Override public void onCreate(Bundle state) {
   super.onCreate(state);
   vault=getSharedPreferences("taxi-lock",MODE_PRIVATE);
   // Autoriser les captures d'écran demandées par l'utilisateur.
