@@ -2467,6 +2467,10 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   success.append(heading,info,ok);document.body.append(success);
   // Son court et discret, déclenché uniquement après l'enregistrement réussi.
   try{
+   // Priorité au son Android natif ; WebAudio reste le secours pour Chrome.
+   if(window.TaxiPaymentSound&&typeof window.TaxiPaymentSound.play==='function'){
+    window.TaxiPaymentSound.play();
+   }else{
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
    if(AudioCtx){
     const ctx=new AudioCtx(),start=ctx.currentTime;
@@ -2481,6 +2485,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
      osc.start(start+offset);osc.stop(start+offset+duration+0.005);
     }
     setTimeout(()=>ctx.close().catch(()=>{}),350);
+   }
    }
   }catch(error){console.warn('Son de paiement indisponible',error);}
 
