@@ -66,3 +66,12 @@ test('browser SumUp success cannot mark a ride as paid',()=>{
  assert.doesNotMatch(sumupBridge,/finishFare\(pending\.id,'sumup'/);
  assert.match(sumupBridge,/verification serveur authentifiee/);
 });
+
+test('browser cannot directly register a SumUp payment',()=>{
+ assert.match(realPayment,/if\(method==='sumup'\)throw Error\('Confirmation SumUp serveur indisponible/);
+});
+test('untrusted failure or cancellation cannot release SumUp lock',()=>{
+ assert.match(sumupBridge,/result\.status==='failed'\|\|result\.status==='cancelled'/);
+ assert.doesNotMatch(sumupBridge,/localStorage\.removeItem\(pendingKey\)/);
+ assert.doesNotMatch(sumupBridge,/activePayment=null/);
+});
