@@ -190,6 +190,7 @@ public class MainActivity extends Activity {
    // L'interface web conserve son propre écran de démarrage.
   }
   showLock();
+  ensureCashRegisterSound();
  }
  private byte[] derive(char[] pin,byte[] salt) throws Exception {
   PBEKeySpec spec=new PBEKeySpec(pin,salt,210000,256);
