@@ -2610,6 +2610,23 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   activePayment={id:String(id),amount:euros,tip:gratuity};
   return true;
  };
+ // Le statut incertain reste bloque jusqu'a une reconciliation verifiee.
+ // Aucun simple clic utilisateur ne peut forcer la reinitialisation.
+ window.taxiResolvePendingSumUp=function(verification){
+  if(!activePayment)return false;
+  if(!verification||verification.verified!==true||verification.courseId!==activePayment.id)return false;
+  if(verification.status==='confirmed'){
+   const pending=activePayment;
+   if(!finishFare(pending.id,'sumup',pending.amount,pending.tip))return false;
+   activePayment=null;
+   return true;
+  }
+  if(verification.status==='not_charged'){
+   activePayment=null;
+   return true;
+  }
+  return false;
+ };
  window.addEventListener('mon-taxi-sumup-result',event=>{
   const result=event.detail||{};
   const pending=activePayment;
