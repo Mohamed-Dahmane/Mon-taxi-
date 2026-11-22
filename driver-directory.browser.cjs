@@ -874,7 +874,7 @@ async function checkBookingRoom(frame,id){
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
  const celineRow=frame.locator('[data-entry-id="planning-charge-celine"]');
  await celineRow.getByRole('button',{name:'Charger',exact:true}).click();
- const retryStandard=celineRow.getByRole('button',{name:'Rouvrir le message',exact:true});
+ const retryStandard=celineRow.getByRole('button',{name:'Message de commission',exact:true});
  assert.ok((await storedCourse(celineCourse.id)).commissionChargedAt);
  assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Aucun numéro enregistré pour Céline.');
  assert.equal(await referrerPhone.isVisible(),false);
@@ -922,7 +922,7 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
  assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
  assert.equal(await frame.evaluate(id=>reportEntries('all').filter(entry=>entry.id===id).length,chargeOther.id),1);
- await otherRow.getByRole('button',{name:'Rouvrir le message',exact:true}).click();
+ await otherRow.getByRole('button',{name:'Message de commission',exact:true}).click();
  assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
  await otherRow.getByRole('button',{name:'SMS envoyé',exact:true}).click();
  assert.equal(await otherRow.isVisible(),false);
