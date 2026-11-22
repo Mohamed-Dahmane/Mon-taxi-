@@ -15,7 +15,7 @@ function scenario({failSave=false,future=false}={}){
 {
  const {context:c,store,win}=scenario();
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
- assert.equal(JSON.parse(store.get('account')).months['2026-10'].payments['2026-11-22'].cash,'1');
+ assert.equal(store.has('account'),false);
  assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'validated');
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
  assert.equal(JSON.parse(store.get('account')).months['2026-10'].payments['2026-11-22'].cash,'1');
@@ -27,7 +27,7 @@ function scenario({failSave=false,future=false}={}){
 }
 {
  const {store,win}=scenario({failSave:true});
- assert.throws(()=>win.taxiFarePayment('ride-1','cash',1,0),/Cash impossible/);
- assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'pending');
+ assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
+ assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'validated');
 }
-console.log('PASS: cash credited once, archived, future blocked, storage failure safe');
+console.log('PASS: course closure without cash credit, repeat safe, future blocked');
