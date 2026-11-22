@@ -52,3 +52,8 @@ if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
  } }
  android.buildTypes { release { signingConfig android.signingConfigs.taxiRelease; minifyEnabled false } }
 }
+
+// SDK SumUp pour encaissement direct sur le lecteur Solo Lite.
+dependencies {
+ implementation 'com.sumup:merchant-sdk:7.2.0'
+}
