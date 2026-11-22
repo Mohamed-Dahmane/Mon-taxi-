@@ -9,6 +9,8 @@ on:
       - 'integrations/course-actions-adapter.mjs'
       - 'integrations/course-actions-adapter.test.mjs'
       - '.github/workflows/course-payment-tests.yml'
+      - 'integrations/main-app-payment-wiring.test.mjs'
+      - 'index.html'
   pull_request:
     paths:
       - 'integrations/course-payment-state.mjs'
@@ -16,6 +18,8 @@ on:
       - 'integrations/course-actions-adapter.mjs'
       - 'integrations/course-actions-adapter.test.mjs'
       - '.github/workflows/course-payment-tests.yml'
+      - 'integrations/main-app-payment-wiring.test.mjs'
+      - 'index.html'
   workflow_dispatch:
 jobs:
   payment-tests:
@@ -26,4 +30,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verify course payment and planning state
-        run: node --test integrations/course-payment-state.test.mjs integrations/course-actions-adapter.test.mjs
+        run: node --test integrations/course-payment-state.test.mjs integrations/course-actions-adapter.test.mjs integrations/main-app-payment-wiring.test.mjs
