@@ -47,7 +47,9 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         // A successful remote charge must not be reported as locally recorded
         // unless the host can read the same paid state back from persistence.
         const persisted = await getCourse(courseId);
-        if (!persisted || persisted.payment?.status !== 'paid' ||
+        if (!persisted || persisted.id !== courseId ||
+            persisted.status !== course.status ||
+            persisted.payment?.status !== 'paid' ||
             persisted.payment.method !== 'sumup' ||
             persisted.payment.reference !== reference ||
             persisted.payment.amountCents !== amountCents) {
