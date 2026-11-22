@@ -12,6 +12,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
       if (!course) throw new Error('course_not_found');
       if (course.payment?.status === 'paid') throw new Error('already_paid');
       if (course.status === 'completed' || course.status === 'cancelled') throw new Error('course_not_in_planning');
+      if (course.payment?.status === 'pending') throw new Error('payment_pending_verification');
       if (method === 'cash') {
         // Cash accounting and course payment must be committed together by the host.
         // The host callback must be idempotent using courseId as its unique key.
