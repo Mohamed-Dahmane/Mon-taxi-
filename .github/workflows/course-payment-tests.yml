@@ -1,0 +1,29 @@
+name: Course payment safety tests
+on:
+  push:
+    branches:
+      - fix/standard-dropdown-navigation-20261122
+    paths:
+      - 'integrations/course-payment-state.mjs'
+      - 'integrations/course-payment-state.test.mjs'
+      - 'integrations/course-actions-adapter.mjs'
+      - 'integrations/course-actions-adapter.test.mjs'
+      - '.github/workflows/course-payment-tests.yml'
+  pull_request:
+    paths:
+      - 'integrations/course-payment-state.mjs'
+      - 'integrations/course-payment-state.test.mjs'
+      - 'integrations/course-actions-adapter.mjs'
+      - 'integrations/course-actions-adapter.test.mjs'
+      - '.github/workflows/course-payment-tests.yml'
+  workflow_dispatch:
+jobs:
+  payment-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify course payment and planning state
+        run: node --test integrations/course-payment-state.test.mjs integrations/course-actions-adapter.test.mjs
