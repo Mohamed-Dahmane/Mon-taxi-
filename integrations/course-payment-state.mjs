@@ -37,6 +37,7 @@ export function markPaymentPending(course, method = 'sumup') {
 export function markPaymentFailed(course) {
   if (!course || !course.id) throw new Error('course_required');
   if (course.payment?.status === 'paid') throw new Error('already_paid');
+  if (course.status === 'completed' || course.status === 'cancelled') throw new Error('course_not_in_planning');
   if (course.payment?.status !== 'pending') return course;
   return { ...course, payment: { ...course.payment, status: 'failed' } };
 }
