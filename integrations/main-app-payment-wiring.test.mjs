@@ -29,7 +29,8 @@ test('the Planning completion button remains a separate action',()=>{
 test('uncertain or unsaved SumUp results retain the payment lock',()=>{
  assert.match(sumupBridge,/if\(activePayment\)return false/);
  assert.match(sumupBridge,/if\(result\.status==='uncertain'\)/);
- assert.match(sumupBridge,/if\(finishFare\(pending\.id,'sumup',pending\.amount,pending\.tip\)\)\{/);
+ assert.doesNotMatch(sumupBridge,/finishFare\(pending\.id,'sumup'/);
+ assert.match(sumupBridge,/transaction doit etre verifiee avant enregistrement/);
 });
 
 test('cash payment never calls the legacy close-and-archive bridge',()=>{
@@ -53,4 +54,15 @@ test('SumUp result for another ride is ignored',()=>{
 test('real payment rejects fractional cents rather than silently rounding',()=>{
  assert.match(realPayment,/Math\.abs\(rawAmount\*100-cents\)>0\.000001/);
  assert.match(realPayment,/Math\.abs\(rawTip\*100-tipCents\)>0\.000001/);
+});
+
+test('SumUp pending lock survives reload and blocks another checkout',()=>{
+ assert.match(sumupBridge,/localStorage\.setItem\(pendingKey,JSON\.stringify\(pending\)\)/);
+ assert.match(html,/JSON\.parse\(localStorage\.getItem\(pendingKey\)\|\|'null'\)/);
+ assert.match(sumupBridge,/if\(activePayment\)return false/);
+});
+test('browser SumUp success cannot mark a ride as paid',()=>{
+ assert.match(sumupBridge,/if\(result\.status==='success'\)/);
+ assert.doesNotMatch(sumupBridge,/finishFare\(pending\.id,'sumup'/);
+ assert.match(sumupBridge,/verification serveur authentifiee/);
 });
