@@ -261,7 +261,7 @@ test('payment and Planning completion cannot race on same ride',async()=>{
  let stored={id:'race-ride',status:'scheduled'};
  const actions=createCourseActions({
   getCourse:async()=>stored,
-  saveCourse:async()=>true,
+  saveCourse:async course=>{stored=course;return true;},
   recordCashReceipt:async({course})=>{await gate;stored=course;return true;}
  });
  const payment=actions.recordFarePayment('race-ride','cash',1250);
