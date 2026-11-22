@@ -19,7 +19,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
   return {
     async recordFarePayment(courseId, method, amountCents, reference) {
       return guarded(courseId, async () => {
-      if (typeof courseId !== 'string' || !courseId.trim()) throw new Error('invalid_course_id');
+      if (typeof courseId !== 'string' || !courseId.trim() || courseId !== courseId.trim()) throw new Error('invalid_course_id');
       const course = await getCourse(courseId);
       if (!course || course.id !== courseId) throw new Error('course_not_found');
       // Reject invalid cent values before calling the cash ledger or SumUp verifier.
@@ -74,7 +74,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
     },
     async completeFromPlanning(courseId) {
       return guarded(courseId, async () => {
-      if (typeof courseId !== 'string' || !courseId.trim()) throw new Error('invalid_course_id');
+      if (typeof courseId !== 'string' || !courseId.trim() || courseId !== courseId.trim()) throw new Error('invalid_course_id');
       const course = await getCourse(courseId);
       if (!course || course.id !== courseId) throw new Error('course_not_found');
       const next = completeCourseFromPlanning(course);
