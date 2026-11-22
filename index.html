@@ -1958,6 +1958,12 @@ function initializeHotelDirectory(){
   const entry=latest.find(item=>String(item.id)===String(id));
   if(!entry||reservationCourseStatus(entry)!=='pending')return false;
   if(!entry.rideStoppedAt)entry.rideStoppedAt=reservationClock();
+  // Le compteur réel utilise cette clé dans test-tarifs.html.
+  // Enregistrer la durée figée AVANT de sauvegarder la course.
+  const start=Date.parse(entry.rideStartedAt||'');
+  const end=Date.parse(entry.rideStoppedAt);
+  if(Number.isFinite(start)&&Number.isFinite(end))
+    localStorage.setItem('mon-taxi-fare-stopped-'+String(id),String(Math.max(0,Math.floor((end-start)/1000))));
   localStorage.setItem(key,JSON.stringify(latest));
   const verified=readCourses(localStorage.getItem(key)).find(item=>String(item.id)===String(id));
   if(!verified?.rideStoppedAt)throw Error('Arrêt du compteur non enregistré');
