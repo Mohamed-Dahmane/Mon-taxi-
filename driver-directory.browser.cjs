@@ -205,15 +205,13 @@ async function checkBookingRoom(frame,id){
  await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,36);
  assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]);
  await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,115);
- assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home']);
- // The standard refresh indicator stays active for at least 900 ms.
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]); // swipe refresh disabled
+ // Swipe must not trigger a refresh.
  await integrated.waitForTimeout(950);
  const homeActions=integrated.locator('.hotel-home-actions');
- const actions=await homeActions.locator('button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
- assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','openHotelReservationQuick','openHotelCommissions','openTaxiDrivers']);
+ const actions=await homeActions.locator(':scope > button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
+ assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','taxiActiveRide','openHotelReservationQuick','openHotelCommissions']);
  assert.equal(new Set(actions.map(action=>action.top)).size,1);
- assert.deepEqual(await homeActions.locator('button').evaluateAll(buttons=>buttons.slice(1).map(button=>getComputedStyle(button).backgroundColor)),
-  ['rgb(98, 66, 142)','rgb(22, 95, 102)','rgb(23, 99, 61)']);
 
  const header=await integrated.locator('.taxi-header').evaluate(el=>{
   const rect=el.getBoundingClientRect();
@@ -249,7 +247,7 @@ async function checkBookingRoom(frame,id){
  await integrated.evaluate(()=>scrollTo(0,0));
  const bilanTitle=await integrated.locator('#detailsHeading').boundingBox();
  await swipeScreen(integrated,bilanTitle.x+10,bilanTitle.y+7,115);
- assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home','details']);
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]); // swipe refresh disabled
  assert.equal(await journal.getAttribute('open'),null);
  await integrated.waitForTimeout(950);
  await integrated.evaluate(()=>{
