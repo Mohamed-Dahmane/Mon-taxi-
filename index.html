@@ -2446,7 +2446,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   const success=document.createElement('dialog');
   success.id='taxiPaymentSuccess';
   success.style.cssText='border:0;border-radius:20px;background:#10233a;color:#fff;padding:28px 22px;width:min(92vw,440px);text-align:center;box-shadow:0 20px 90px #0009';
-  const heading=document.createElement('div');heading.textContent='✓ PAIEMENT ACCEPTÉ';heading.style.cssText='font-size:16px;font-weight:700;letter-spacing:.5px;color:#76e2a1;margin:0 0 18px';
+  const heading=document.createElement('div');heading.textContent='✓ PAIEMENT ACCEPTÉ';heading.style.cssText='font-size:21px;font-weight:800;letter-spacing:.5px;color:#76e2a1;margin:0 0 18px';
   const info=document.createElement('div');info.style.cssText='line-height:1.3;overflow-wrap:anywhere';
   if(next){
    const label=document.createElement('div');label.textContent='PROCHAINE COURSE';label.style.cssText='font-size:15px;font-weight:800;color:#a7c7ed;margin-bottom:12px';
@@ -2470,14 +2470,14 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
    if(AudioCtx){
     const ctx=new AudioCtx(),start=ctx.currentTime;
-    for(const [offset,frequency] of [[0,660],[0.11,880]]){
+    for(const [offset,frequency] of [[0,1046],[0.28,1318]]){
      const osc=ctx.createOscillator(),gain=ctx.createGain();
      osc.type='sine';osc.frequency.value=frequency;
      gain.gain.setValueAtTime(0.0001,start+offset);
-     gain.gain.exponentialRampToValueAtTime(0.12,start+offset+0.012);
-     gain.gain.exponentialRampToValueAtTime(0.0001,start+offset+0.13);
+     gain.gain.exponentialRampToValueAtTime(0.19,start+offset+0.012);
+     gain.gain.exponentialRampToValueAtTime(0.0001,start+offset+0.24);
      osc.connect(gain);gain.connect(ctx.destination);
-     osc.start(start+offset);osc.stop(start+offset+0.14);
+     osc.start(start+offset);osc.stop(start+offset+0.25);
     }
     setTimeout(()=>ctx.close().catch(()=>{}),650);
    }
