@@ -15,9 +15,10 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt }
         // Cash accounting and course payment must be committed together by the host.
         // The host callback must be idempotent using courseId as its unique key.
         const next = registerPayment(course, { method, amountCents });
+        // The host must atomically commit both the cash receipt and course state.
+        // A separate save after cash recording risks double accounting on retry.
         const recorded = await recordCashReceipt({ courseId, amountCents, course: next });
         if (recorded !== true) throw new Error('cash_receipt_not_recorded');
-        await saveCourse(next);
         return { recorded: true, course: next };
       }
       if (method === 'sumup') {
