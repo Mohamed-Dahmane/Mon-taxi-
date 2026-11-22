@@ -58,9 +58,12 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         const saved = await completeCourseAtomically({ courseId, previous: course, course: next });
         if (saved !== true) throw new Error('course_completion_not_committed');
       } else {
-        await saveCourse(next);
+        const saved = await saveCourse(next);
+        if (saved === false) throw new Error('course_completion_not_committed');
       }
-      return next;
+      const persisted = await getCourse(courseId);
+      if (!persisted || persisted.status !== 'completed') throw new Error('course_completion_not_committed');
+      return persisted;
     }
   };
 }
