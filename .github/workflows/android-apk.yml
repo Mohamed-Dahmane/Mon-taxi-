@@ -51,7 +51,7 @@ jobs:
       - name: Prepare embedded interface
         run: |
           mkdir -p app/src/main/assets/app
-          cp taxi-interface.css hold-reorder.js fixed-navigation.js index.html hotel-sync.js pickup-reservation.html directory-editor.js driver-directory.js vehicle-allocations.js vehicle-allocation-editor.js app/src/main/assets/
+          cp taxi-interface.css hold-reorder.js fixed-navigation.js index.html hotel-sync.js pickup-reservation.html directory-editor.js driver-directory.js vehicle-allocations.js vehicle-allocation-editor.js test-tarifs.html app/src/main/assets/
           cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
       - name: Prepare launcher icon
         run: |
