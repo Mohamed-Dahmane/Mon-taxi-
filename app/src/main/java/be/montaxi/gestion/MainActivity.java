@@ -435,6 +435,12 @@ public class MainActivity extends Activity {
        final android.media.ToneGenerator tone=new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC,22);
        tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,85);
        new Handler(Looper.getMainLooper()).postDelayed(tone::release,180L);
+       // Retour tactile presque imperceptible (12 ms), seulement au paiement accepté.
+       android.os.Vibrator vibrator=(android.os.Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+       if(vibrator!=null&&vibrator.hasVibrator()){
+        if(Build.VERSION.SDK_INT>=26)vibrator.vibrate(android.os.VibrationEffect.createOneShot(12L,18));
+        else vibrator.vibrate(12L);
+       }
       }catch(Exception ignored){}
      });
     }
