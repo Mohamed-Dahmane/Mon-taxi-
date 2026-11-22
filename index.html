@@ -1962,6 +1962,9 @@ function initializeHotelDirectory(){
       completeCourse.onclick=()=>{
         try{
           setReservationStatus(entry.id,'validated','',{driver:entry.driver||'self',driverName:entry.driverName||''});
+          if(reservationCourseStatus(entry)==='pending'){
+            $('reservationBoardMessage').textContent='Course toujours en attente : clôture non confirmée.';
+          }
         }catch(error){
           console.error('Clôture course impossible',error);
           $('reservationBoardMessage').textContent='Clôture impossible : '+(error.message||'erreur inconnue');
