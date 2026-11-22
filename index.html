@@ -1959,35 +1959,30 @@ function initializeHotelDirectory(){
  const latest=readCourses(localStorage.getItem(key));
  const entry=latest.find(item=>String(item.id)===courseId);
  if(!entry)throw Error('Course introuvable dans le Planning.');
- if(entry.reservationStatus==='validated'&&entry.paidAt){
-  return entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents;
+ if(reservationCourseStatus(entry)!=='pending'){
+  if(entry.paidAt&&entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents)return true;
+  throw Error('Course deja archivee ou annulee.');
  }
- if(reservationCourseStatus(entry)!=='pending')throw Error('Course deja archivee ou annulee.');
+ if(entry.paidAt){
+  if(entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents)return true;
+  throw Error('Paiement deja enregistre : verifier avant de recommencer.');
+ }
  const paidAt=reservationClock();
- if(entry.bookingMode==='Programmée'&&entry.scheduledDate>paidAt.slice(0,10))
-  throw Error('Course future : cloture impossible.');
- // Etape 1 : cloture seule. Aucun credit automatique au Cash dans cette version.
+ // Le paiement ne valide JAMAIS la course : seul le bouton Effectuee du Planning l'archive.
  entry.paidAmount=cents/100;
  entry.tipAmount=Math.round((Number(tip)||0)*100)/100;
  entry.paymentMethod=method;
  entry.paidAt=paidAt;
- entry.reservationStatus='validated';
- entry.validatedAt=paidAt;
- entry.completedDriver=entry.driver||'self';
- entry.completedDriverName=entry.driverName||'';
- entry.contact=pendingReservationContact(entry)||entry.contact;
  try{
   localStorage.setItem(key,JSON.stringify(latest));
   const verified=readCourses(localStorage.getItem(key)).find(item=>String(item.id)===courseId);
-  if(!verified||verified.reservationStatus!=='validated'||verified.paidAt!==paidAt)
-   throw Error('Archivage non confirme.');
+  if(!verified||verified.paidAt!==paidAt||reservationCourseStatus(verified)!=='pending')
+   throw Error('Enregistrement du paiement non confirme.');
   data=latest;
-  try{refreshCourseTotals();renderReservations();}catch(renderError){
-   console.warn('Paiement archive, rafraichissement differe',renderError);
-  }
+  try{renderReservations();}catch(renderError){console.warn('Affichage du paiement differe',renderError);}
   return true;
  }catch(error){
-  console.error('Echec archivage course payee',error);
+  console.error('Echec enregistrement paiement',error);
   throw error;
  }
 };
