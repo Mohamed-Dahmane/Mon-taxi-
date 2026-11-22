@@ -399,6 +399,7 @@ input,select,textarea{accent-color:#7098ff}
 <p class="hint" id="hotelSyncStatus" role="status"></p>
 <div class="pagebar"><button class="pageBtn active" data-page="home">Accueil</button><button class="pageBtn" data-page="details">Bilan</button></div>
 <section class="page active" id="home">
+<div style="text-align:right;margin:4px 0 10px"><button type="button" id="taxiTestPaymentSound" style="font-size:12px;padding:7px 12px;border:1px solid #64748b;border-radius:9px;background:transparent;color:inherit">🔔 Tester le son de caisse</button></div>
 <section class="card entry-hub" aria-label="Saisie des montants"><div class="entry-hub-header"><h2 class="entry-heading">Saisie du jour <span id="entryDate"></span></h2><span class="entry-total-label">Total TTC</span></div>
 <div role="group" aria-labelledby="entryFrequentHeading">
 <h3 class="entry-group-heading" id="entryFrequentHeading">Saisie rapide</h3>
@@ -2510,5 +2511,16 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   }
  });
 })();
+</script>
+<script>
+document.getElementById('taxiTestPaymentSound')?.addEventListener('click',()=>{
+ try{
+  if(window.TaxiPaymentSound&&typeof window.TaxiPaymentSound.play==='function'){
+   window.TaxiPaymentSound.play();
+  }else{
+   alert('Le test sonore natif est disponible dans l’application Android Mon Taxi.');
+  }
+ }catch(error){alert('Son indisponible : '+String(error));}
+});
 </script>
 </body></html>
