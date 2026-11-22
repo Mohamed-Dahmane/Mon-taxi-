@@ -2626,6 +2626,12 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   const result=event.detail||{};
   const pending=activePayment;
   if(!pending)return;
+  // Un resultat associe a une autre course ne peut pas encaisser celle-ci.
+  // En l'absence d'identifiant, conserver la compatibilite avec l'ancien SDK.
+  if(result.courseId!=null&&String(result.courseId)!==pending.id){
+   console.warn('Resultat SumUp pour une autre course ignore');
+   return;
+  }
   // Une reponse incertaine n'est ni un succes ni un echec.
   // Conserver la transaction en attente pour bloquer une seconde demande
   // qui pourrait encaisser deux fois le client.
