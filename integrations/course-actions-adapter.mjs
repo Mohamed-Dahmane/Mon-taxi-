@@ -24,7 +24,14 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         // A separate save after cash recording risks double accounting on retry.
         const recorded = await recordCashReceipt({ courseId, amountCents, course: next });
         if (recorded !== true) throw new Error('cash_receipt_not_recorded');
-        return { recorded: true, course: next };
+        const persisted = await getCourse(courseId);
+        if (!persisted || persisted.payment?.status !== 'paid' ||
+            persisted.payment.method !== 'cash' ||
+            persisted.payment.amountCents !== amountCents ||
+            persisted.status === 'completed' || persisted.status === 'cancelled') {
+          throw new Error('cash_receipt_not_committed');
+        }
+        return { recorded: true, course: persisted };
       }
       if (method === 'sumup') {
         if (!reference) throw new Error(course.payment?.status === 'pending' ? 'payment_pending_verification' : 'sumup_confirmation_required');
