@@ -1986,8 +1986,8 @@ function finishPlanningCourse(id){\n const entry=data.find(item=>item.id===id);\
  const entry=latest.find(item=>String(item.id)===courseId);
  if(!entry)throw Error('Course introuvable dans le Planning.');
  if(reservationCourseStatus(entry)!=='pending'){
-  if(entry.paidAt&&entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents&&Math.round(Number(entry.tipAmount??0)*100)===tipCents)return true;
-  throw Error('Course deja archivee ou annulee.');
+  // Un paiement ne doit jamais rouvrir ni valider une course archivee.
+  throw Error('Course deja archivee ou annulee : verifier dans Historique.');
  }
  if(entry.paidAt){
   if(entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents&&Math.round(Number(entry.tipAmount??0)*100)===tipCents)return true;
@@ -2633,12 +2633,19 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
    alert('Statut SumUp incertain. Verifie la transaction avant toute nouvelle tentative. Paiement non enregistre ; course conservee.');
    return;
   }
-  activePayment=null;
   if(result.status==='success'){
-   if(!finishFare(pending.id,'sumup',pending.amount,pending.tip))alert('Paiement confirmé sur SumUp, mais enregistrement impossible : vérifie la transaction avant toute nouvelle tentative.');
-  }else if(result.status!=='failed'&&result.status!=='cancelled'){
-   // Un statut inconnu ne prouve pas un paiement.
-   alert('Resultat SumUp non reconnu. Verifie la transaction avant une nouvelle tentative.');
+   // Ne jamais autoriser un nouvel encaissement si le paiement a pu reussir
+   // mais que son enregistrement local a echoue.
+   if(finishFare(pending.id,'sumup',pending.amount,pending.tip)){
+    activePayment=null;
+   }else{
+    alert('SumUp indique un succes, mais le paiement n\'est pas sauvegarde. Nouvelle tentative bloquee : verifier la transaction.');
+   }
+  }else if(result.status==='failed'||result.status==='cancelled'){
+   activePayment=null;
+  }else{
+   // Un statut inconnu n'autorise ni une comptabilisation ni un nouvel essai.
+   alert('Resultat SumUp non reconnu. Transaction maintenue en attente pour verification.');
   }
  });
 })();
