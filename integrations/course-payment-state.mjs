@@ -2,6 +2,7 @@
 // Payment is independent from course completion.
 export function registerPayment(course, payment) {
   if (!course || !course.id) throw new Error('course_required');
+  if (course.status === 'completed' || course.status === 'cancelled') throw new Error('course_not_in_planning');
   if (!payment || !['cash', 'sumup', 'other'].includes(payment.method)) throw new Error('invalid_method');
   if (!Number.isSafeInteger(payment.amountCents) || payment.amountCents < 0) throw new Error('invalid_amount');
   if (course.payment?.status === 'paid') {
