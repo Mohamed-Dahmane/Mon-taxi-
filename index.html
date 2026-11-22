@@ -2470,16 +2470,17 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
    if(AudioCtx){
     const ctx=new AudioCtx(),start=ctx.currentTime;
-    for(const [offset,frequency] of [[0,1046],[0.28,1318]]){
+    // Clic de déclencheur très léger, suivi d'une seule note cristalline.
+    for(const [offset,frequency,peak,duration,type] of [[0,420,0.028,0.035,'triangle'],[0.045,1175,0.045,0.115,'sine']]){
      const osc=ctx.createOscillator(),gain=ctx.createGain();
-     osc.type='sine';osc.frequency.value=frequency;
+     osc.type=type;osc.frequency.value=frequency;
      gain.gain.setValueAtTime(0.0001,start+offset);
-     gain.gain.exponentialRampToValueAtTime(0.19,start+offset+0.012);
-     gain.gain.exponentialRampToValueAtTime(0.0001,start+offset+0.24);
+     gain.gain.exponentialRampToValueAtTime(peak,start+offset+0.006);
+     gain.gain.exponentialRampToValueAtTime(0.0001,start+offset+duration);
      osc.connect(gain);gain.connect(ctx.destination);
-     osc.start(start+offset);osc.stop(start+offset+0.25);
+     osc.start(start+offset);osc.stop(start+offset+duration+0.005);
     }
-    setTimeout(()=>ctx.close().catch(()=>{}),650);
+    setTimeout(()=>ctx.close().catch(()=>{}),350);
    }
   }catch(error){console.warn('Son de paiement indisponible',error);}
 
