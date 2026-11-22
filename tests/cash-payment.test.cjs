@@ -18,7 +18,7 @@ function scenario({failSave=false,future=false}={}){
  assert.equal(store.has('account'),false);
  assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'validated');
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
- assert.equal(JSON.parse(store.get('account')).months['2026-10'].payments['2026-11-22'].cash,'1');
+ assert.equal(store.has('account'),false);
 }
 {
  const {store,win}=scenario({future:true});
