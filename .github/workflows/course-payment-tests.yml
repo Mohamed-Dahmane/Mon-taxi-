@@ -11,6 +11,7 @@ on:
       - '.github/workflows/course-payment-tests.yml'
       - 'integrations/main-app-payment-wiring.test.mjs'
       - 'index.html'
+      - 'test-tarifs.html'
   pull_request:
     paths:
       - 'integrations/course-payment-state.mjs'
@@ -20,6 +21,7 @@ on:
       - '.github/workflows/course-payment-tests.yml'
       - 'integrations/main-app-payment-wiring.test.mjs'
       - 'index.html'
+      - 'test-tarifs.html'
   workflow_dispatch:
 jobs:
   payment-tests:
