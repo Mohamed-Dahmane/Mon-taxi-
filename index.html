@@ -2559,8 +2559,10 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  const overlay=()=>document.getElementById('taxiValidatedFare');
  function finishFare(id,method,amount,tip){
   try{
-   if(typeof window.taxiFarePayment!=='function')throw Error('Planning indisponible.');
-   if(!window.taxiFarePayment(id,method,amount,tip))throw Error('Course non cloturee.');
+   // Legacy taxiFarePayment may close/archive the ride. Never call it for payment.
+   if(typeof window.taxiRecordPaymentOnly!=='function')throw Error('Enregistrement indépendant indisponible : aucune clôture effectuée.');
+   const recorded=window.taxiRecordPaymentOnly(id,method,amount,tip);
+   if(recorded!==true && recorded?.recorded!==true)throw Error('Paiement non confirmé. Course conservée dans le Planning.');
   }catch(error){
    console.error('Paiement non finalise',error);
    alert('Paiement non finalise : '+(error?.message||String(error)));
@@ -2599,7 +2601,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   setTimeout(()=>{try{success.close()}catch{}success.remove();},3000);
   return true;
  }
- window.taxiFinishFare=finishFare;
+ window.taxiRecordFarePayment=finishFare;\n window.taxiFinishFare=finishFare;
  window.taxiBeginFareSumUp=function(id,amount,tip){
   activePayment={id,amount,tip};
   return true;
