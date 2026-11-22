@@ -65,3 +65,12 @@ test('cannot replace a paid SumUp transaction with a second reference', () => {
     method: 'sumup', amountCents: 1000, confirmed: true, reference: 'tx-b'
   }), /already_paid/);
 });
+
+test('completed or cancelled courses cannot accept a new payment', () => {
+ for (const status of ['completed','cancelled']) {
+  assert.throws(
+   () => registerPayment({id:'archived-1',status},{method:'cash',amountCents:2500}),
+   /course_not_in_planning/
+  );
+ }
+});
