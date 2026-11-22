@@ -26,6 +26,7 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
       if (!Number.isSafeInteger(amountCents) || amountCents < 0) throw new Error('invalid_amount');
       if (method !== 'cash' && method !== 'sumup') throw new Error('unsupported_payment_method');
       if (course.payment?.status === 'paid') throw new Error('already_paid');
+      if (course.payment?.status === 'pending' && course.payment.method !== 'sumup') throw new Error('invalid_pending_payment');
       if (course.status === 'completed' || course.status === 'cancelled') throw new Error('course_not_in_planning');
       if (course.payment?.status === 'pending' && method !== 'sumup') throw new Error('payment_pending_verification');
       if (method === 'cash') {
