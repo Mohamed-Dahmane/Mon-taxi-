@@ -56,7 +56,7 @@ if(realId){
   };
   $('sumup').addEventListener('click',()=>{if(window.TaxiSumUp?.checkout)host?.parent?.taxiBeginFareSumUp?.(realId,total(),tip);});
   $('markSumup').onclick=()=>{$('payment').textContent='En attente de synchronisation SumUp : ne pas enregistrer manuellement la recette carte ni archiver.';};
-  // La clôture est distincte du paiement : le Planning décide du statut Effectuée.
+  // Compteur arrêté avant toute validation de paiement ; le Planning décide du statut Effectuée.
   $('finish').style.display='none';
   $('arrive').textContent='ARRÊTER LE COMPTEUR · FINIR COURSE';
   $('arrive').style.cssText+=';min-height:58px;font-weight:800;font-size:17px;width:100%;';
