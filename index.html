@@ -2663,9 +2663,10 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
    alert('SumUp annonce un succes, mais la transaction doit etre verifiee avant enregistrement. Course conservee dans le Planning.');
    return;
   }else if(result.status==='failed'||result.status==='cancelled'){
-   // Ne deverrouiller que si le resultat concerne la course en attente.
-   try{localStorage.removeItem(pendingKey);}catch(error){console.warn('Verrou SumUp conserve',error);return;}
-   activePayment=null;
+   // Un evenement navigateur peut etre forge : ne jamais effacer le verrou
+   // sur cette seule base. Une verification authentifiee devra le liberer.
+   alert('SumUp indique un echec ou une annulation. Verifier la transaction avant de relancer un paiement.');
+   return;
   }else{
    // Un statut inconnu n'autorise ni une comptabilisation ni un nouvel essai.
    alert('Resultat SumUp non reconnu. Transaction maintenue en attente pour verification.');
