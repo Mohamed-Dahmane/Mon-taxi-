@@ -21,6 +21,20 @@ export function registerPayment(course, payment) {
     }
   };
 }
+// A SumUp checkout request is not proof of payment.
+export function markPaymentPending(course, method = 'sumup') {
+  if (!course || !course.id) throw new Error('course_required');
+  if (method !== 'sumup') throw new Error('unsupported_pending_method');
+  if (course.payment?.status === 'paid') throw new Error('already_paid');
+  if (course.payment?.status === 'pending') return course;
+  return { ...course, payment: { status: 'pending', method, amountCents: null, reference: null } };
+}
+export function markPaymentFailed(course) {
+  if (!course || !course.id) throw new Error('course_required');
+  if (course.payment?.status === 'paid') throw new Error('already_paid');
+  if (course.payment?.status !== 'pending') return course;
+  return { ...course, payment: { ...course.payment, status: 'failed' } };
+}
 export function completeCourseFromPlanning(course) {
   if (!course || !course.id) throw new Error('course_required');
   if (course.status === 'completed') return course;
