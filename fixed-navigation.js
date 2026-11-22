@@ -23,7 +23,8 @@ function refresh(){
  const opened=[...doc.querySelectorAll('dialog[open]')];
  dialogs=dialogs.filter(d=>opened.includes(d));for(const d of opened)if(!dialogs.includes(d))dialogs.push(d);
  const top=dialogs.at(-1),host=top||doc.body;
- // Positionner la navigation dans toute fenetre ouverte, y compris le Planning.\n // Sinon la barre flottante intercepte les clics sur les actions de la course.\n nav.dataset.placement=top?'dialog':'toolbar';
+ // Placer la navigation dans le dialogue actif, y compris le Planning.
+ nav.dataset.placement=top?'dialog':'toolbar';
  if(nav.parentElement!==host)host.prepend(nav);
  const page=readPage();if(key(page)!==key(current)){history.push(current);current=page;}
  const hidden=(!top&&current.page==='home')||!!doc.querySelector('main[hidden]')||doc.body.classList.contains('taxi-intro-pending');if(nav.hidden!==hidden)nav.hidden=hidden;
