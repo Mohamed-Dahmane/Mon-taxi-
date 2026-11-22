@@ -2,7 +2,7 @@ import { registerPayment, completeCourseFromPlanning } from './course-payment-st
 
 // Adapter for the host application. Persistence is injected so this module never
 // touches real financial data until the host provides its own atomic save operation.
-export function createCourseActions({ getCourse, saveCourse, recordCashReceipt }) {
+export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, verifySumUpTransaction }) {
   if (![getCourse, saveCourse, recordCashReceipt].every(fn => typeof fn === 'function')) {
     throw new Error('course_action_dependencies_required');
   }
@@ -23,6 +23,9 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt }
       }
       if (method === 'sumup') {
         if (!reference) throw new Error('sumup_confirmation_required');
+        if (typeof verifySumUpTransaction !== 'function') throw new Error('sumup_verifier_unavailable');
+        const verified = await verifySumUpTransaction({ courseId, amountCents, reference });
+        if (verified !== true) throw new Error('sumup_payment_not_verified');
         const next = registerPayment(course, {
           method, amountCents, reference, confirmed: true
         });
