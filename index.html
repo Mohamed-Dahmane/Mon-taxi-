@@ -1986,11 +1986,11 @@ function finishPlanningCourse(id){\n const entry=data.find(item=>item.id===id);\
  const entry=latest.find(item=>String(item.id)===courseId);
  if(!entry)throw Error('Course introuvable dans le Planning.');
  if(reservationCourseStatus(entry)!=='pending'){
-  if(entry.paidAt&&entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents)return true;
+  if(entry.paidAt&&entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents&&Math.round(Number(entry.tipAmount??0)*100)===tipCents)return true;
   throw Error('Course deja archivee ou annulee.');
  }
  if(entry.paidAt){
-  if(entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents)return true;
+  if(entry.paymentMethod===method&&Math.round(Number(entry.paidAmount)*100)===cents&&Math.round(Number(entry.tipAmount??0)*100)===tipCents)return true;
   throw Error('Paiement deja enregistre : verifier avant de recommencer.');
  }
  const paidAt=reservationClock();
