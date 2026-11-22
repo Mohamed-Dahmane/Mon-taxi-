@@ -2539,7 +2539,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   success.style.cssText='border:0;border-radius:20px;background:#10233a;color:#fff;padding:28px 22px;width:min(92vw,440px);text-align:center;box-shadow:0 20px 90px #0009';
   const heading=document.createElement('h1');heading.textContent='✓ PAIEMENT ACCEPTÉ';heading.style.cssText='font-size:clamp(25px,7vw,37px);color:#76e2a1;margin:0 0 20px';
   const info=document.createElement('p');info.style.cssText='font-size:17px;line-height:1.5';
-  info.textContent=next?'Prochaine course planifiée : '+[next.date,next.time,next.client,next.origin].filter(Boolean).join(' · '):'Aucune prochaine course planifiée';
+  info.textContent='Paiement enregistré. La course reste dans le Planning : appuie sur « Effectuée » pour la terminer.';
   success.append(heading,info);document.body.append(success);
   // Son court et discret, déclenché uniquement après l'enregistrement réussi.
   try{
@@ -2560,7 +2560,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   }catch(error){console.warn('Son de paiement indisponible',error);}
 
   try{success.showModal()}catch{success.setAttribute('open','')}
-  setTimeout(()=>{try{success.close()}catch{}success.remove();document.querySelector('.pageBtn[data-page="home"]')?.click();},3000);
+  setTimeout(()=>{try{success.close()}catch{}success.remove();},3000);
   return true;
  }
  window.taxiFinishFare=finishFare;
@@ -2574,7 +2574,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   activePayment=null;
   if(!pending)return;
   if(result.status==='success'){
-   if(!finishFare(pending.id,'sumup',pending.amount,pending.tip))alert('Paiement confirmé sur SumUp, mais archivage impossible : vérifie la course avant toute nouvelle tentative.');
+   if(!finishFare(pending.id,'sumup',pending.amount,pending.tip))alert('Paiement confirmé sur SumUp, mais enregistrement impossible : vérifie la transaction avant toute nouvelle tentative.');
   }else if(result.status==='uncertain'){
    alert('Statut SumUp incertain. Vérifie la transaction avant de réessayer. Course conservée.');
   }
