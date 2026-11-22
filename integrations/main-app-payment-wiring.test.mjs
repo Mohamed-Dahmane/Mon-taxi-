@@ -49,3 +49,8 @@ test('blank payment amount is rejected before it can become zero',()=>{
 test('SumUp result for another ride is ignored',()=>{
  assert.match(sumupBridge,/String\(result\.courseId\)!==pending\.id/);
 });
+
+test('real payment rejects fractional cents rather than silently rounding',()=>{
+ assert.match(realPayment,/Math\.abs\(rawAmount\*100-cents\)>0\.000001/);
+ assert.match(realPayment,/Math\.abs\(rawTip\*100-tipCents\)>0\.000001/);
+});
