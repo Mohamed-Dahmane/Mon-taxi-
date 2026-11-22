@@ -74,3 +74,23 @@ test('completed or cancelled courses cannot accept a new payment', () => {
   );
  }
 });
+
+test('same SumUp reference with different amount is rejected', () => {
+ const paid=registerPayment({id:'ride-amount'},{
+  method:'sumup',amountCents:2500,reference:'tx-amount',confirmed:true
+ });
+ assert.throws(()=>registerPayment(paid,{
+  method:'sumup',amountCents:3500,reference:'tx-amount',confirmed:true
+ }),/already_paid/);
+});
+test('SumUp reference cannot be replayed as cash or without confirmation', () => {
+ const paid=registerPayment({id:'ride-replay'},{
+  method:'sumup',amountCents:2500,reference:'tx-replay',confirmed:true
+ });
+ assert.throws(()=>registerPayment(paid,{
+  method:'cash',amountCents:2500,reference:'tx-replay'
+ }),/already_paid/);
+ assert.throws(()=>registerPayment(paid,{
+  method:'sumup',amountCents:2500,reference:'tx-replay',confirmed:false
+ }),/already_paid/);
+});
