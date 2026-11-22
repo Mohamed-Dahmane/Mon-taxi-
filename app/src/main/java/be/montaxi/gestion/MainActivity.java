@@ -110,7 +110,71 @@ public class MainActivity extends Activity {
  }
  private CancellationSignal biometric;
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
- @Override public void onCreate(Bundle state) {
+ @Override public private android.media.SoundPool paymentSoundPool;
+ private int paymentSoundId=0;
+ private boolean paymentSoundReady=false;
+ private void writeWavInt(java.io.OutputStream out,int value,int bytes)throws IOException{
+  for(int j=0;j<bytes;j++)out.write((value>>(8*j))&255);
+ }
+ private void ensureCashRegisterSound(){
+  if(paymentSoundPool!=null)return;
+  try{
+   final int rate=44100, frames=(int)(rate*0.72);
+   java.io.File wav=new java.io.File(getCacheDir(),"taxi-cash-register-v119.wav");
+   if(!wav.exists()||wav.length()<100){
+    try(java.io.FileOutputStream out=new java.io.FileOutputStream(wav)){
+     out.write(new byte[]{'R','I','F','F'});
+     writeWavInt(out,36+frames*2,4);
+     out.write(new byte[]{'W','A','V','E','f','m','t',' '});
+     writeWavInt(out,16,4);writeWavInt(out,1,2);writeWavInt(out,1,2);
+     writeWavInt(out,rate,4);writeWavInt(out,rate*2,4);
+     writeWavInt(out,2,2);writeWavInt(out,16,2);
+     out.write(new byte[]{'d','a','t','a'});writeWavInt(out,frames*2,4);
+     java.util.Random noise=new java.util.Random(119);
+     for(int i=0;i<frames;i++){
+      double t=(double)i/rate;
+      // Tiroir mecanique, puis deux tintements de cloche (ka-ching).
+      double click=t<0.07?(noise.nextDouble()*2-1)*Math.exp(-t*65)*0.82:0;
+      double first=t>0.04?Math.exp(-(t-0.04)*6.5)*
+        (0.49*Math.sin(2*Math.PI*1046*(t-0.04))+
+         0.15*Math.sin(2*Math.PI*2093*(t-0.04))):0;
+      double second=t>0.18?Math.exp(-(t-0.18)*6.0)*
+        (0.51*Math.sin(2*Math.PI*1568*(t-0.18))+
+         0.13*Math.sin(2*Math.PI*3136*(t-0.18))):0;
+      double envelope=Math.min(1.0,t*160);
+      double v=Math.max(-1,Math.min(1,(click+first+second)*0.92*envelope));
+      short pcm=(short)(v*32767);
+      out.write(pcm&255);out.write((pcm>>8)&255);
+     }
+    }
+   }
+   paymentSoundPool=new android.media.SoundPool.Builder().setMaxStreams(2)
+    .setAudioAttributes(new android.media.AudioAttributes.Builder()
+     .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+     .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build();
+   paymentSoundPool.setOnLoadCompleteListener((pool,sample,status)->{
+    if(sample==paymentSoundId&&status==0)paymentSoundReady=true;
+   });
+   paymentSoundId=paymentSoundPool.load(wav.getAbsolutePath(),1);
+  }catch(Exception ex){
+   android.util.Log.e("MonTaxi","Chargement du son de caisse impossible",ex);
+  }
+ }
+ private void playCashRegisterSound(){
+  ensureCashRegisterSound();
+  if(paymentSoundReady&&paymentSoundPool!=null){
+   paymentSoundPool.play(paymentSoundId,1.0f,1.0f,1,0,1.0f);
+  }else{
+   // Secours sonore Android deja confirme fonctionnel en V116.
+   try{
+    final android.media.ToneGenerator tone=new android.media.ToneGenerator(
+      android.media.AudioManager.STREAM_MUSIC,95);
+    tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,180);
+    new Handler(Looper.getMainLooper()).postDelayed(tone::release,350);
+   }catch(Exception ignored){}
+  }
+ }
+ void onCreate(Bundle state) {
   super.onCreate(state);
   vault=getSharedPreferences("taxi-lock",MODE_PRIVATE);
   // Autoriser les captures d'écran demandées par l'utilisateur.
@@ -427,33 +491,10 @@ public class MainActivity extends Activity {
      });
     }
    },"TaxiHaptics");
-   // Son de confirmation natif : WebAudio peut être bloqué dans Android WebView.
+   // Son natif de caisse enregistreuse : fichier WAV local joue par SoundPool.
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void play(){
-     runOnUiThread(()->{
-      try{
-       // Retour a ToneGenerator, confirme audible sur le Samsung en V116.
-       // Deux impacts rapides evoquent le tiroir et le tintement de caisse.
-       final android.media.ToneGenerator tone=new android.media.ToneGenerator(
-         android.media.AudioManager.STREAM_MUSIC,95);
-       tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP,125);
-       new Handler(Looper.getMainLooper()).postDelayed(()->{
-        try{tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,190);}
-        catch(Exception ignored){}
-       },170L);
-       new Handler(Looper.getMainLooper()).postDelayed(()->{
-        try{tone.release();}catch(Exception ignored){}
-       },520L);
-       // Retour tactile secondaire et discret.
-       try{
-        android.os.Vibrator vibrator=(android.os.Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
-        if(vibrator!=null&&vibrator.hasVibrator()){
-         if(Build.VERSION.SDK_INT>=26)vibrator.vibrate(android.os.VibrationEffect.createOneShot(20L,35));
-         else vibrator.vibrate(20L);
-        }
-       }catch(Exception ignored){}
-      }catch(Exception ignored){}
-     });
+     runOnUiThread(()->playCashRegisterSound());
     }
    },"TaxiPaymentSound");
    taxiContacts=new TaxiContactsBridge(this,web);
