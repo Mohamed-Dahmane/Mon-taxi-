@@ -585,6 +585,12 @@ async function checkBookingRoom(frame,id){
  },linked.car);
  assert.equal(planningHeader.compact.filterHidden,true);
  assert.equal(planningHeader.compact.localBackHidden,true);
+ // A modal Pick-up occupies the browser top layer: use its own Retour first.
+ // The global navigation is tested only after that modal has been dismissed.
+ if(await integrated.locator('#hotelPickup').isVisible()){
+  await integrated.locator('#closeHotelPickup').click();
+  assert.equal(await integrated.locator('#hotelPickup').isVisible(),false);
+ }
  const fixedNavigation=integrated.locator('#taxiQuickNavigation');
  const fixedBack=fixedNavigation.getByRole('button',{name:'Page précédente',exact:true});
  assert.equal(await fixedBack.isVisible(),true);
