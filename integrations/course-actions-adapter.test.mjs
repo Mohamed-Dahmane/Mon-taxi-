@@ -237,3 +237,38 @@ test('SumUp confirmation must not silently complete the ride',async()=>{
  });
  await assert.rejects(actions.recordFarePayment(course.id,'sumup',1250,'verified-ref'),/sumup_payment_not_committed/);
 });
+
+test('two simultaneous cash taps cannot write twice',async()=>{
+ let release;
+ const gate=new Promise(resolve=>{release=resolve;});
+ let receipts=0;
+ let stored={id:'double-cash',status:'scheduled'};
+ const actions=createCourseActions({
+  getCourse:async()=>stored,
+  saveCourse:async()=>true,
+  recordCashReceipt:async({course})=>{receipts++;await gate;stored=course;return true;}
+ });
+ const first=actions.recordFarePayment('double-cash','cash',1250);
+ await assert.rejects(actions.recordFarePayment('double-cash','cash',1250),/course_operation_in_progress/);
+ release();
+ await first;
+ assert.equal(receipts,1);
+ assert.equal(stored.payment.status,'paid');
+});
+test('payment and Planning completion cannot race on same ride',async()=>{
+ let release;
+ const gate=new Promise(resolve=>{release=resolve;});
+ let stored={id:'race-ride',status:'scheduled'};
+ const actions=createCourseActions({
+  getCourse:async()=>stored,
+  saveCourse:async()=>true,
+  recordCashReceipt:async({course})=>{await gate;stored=course;return true;}
+ });
+ const payment=actions.recordFarePayment('race-ride','cash',1250);
+ await assert.rejects(actions.completeFromPlanning('race-ride'),/course_operation_in_progress/);
+ release();
+ await payment;
+ assert.equal(stored.status,'scheduled');
+ await actions.completeFromPlanning('race-ride');
+ assert.equal(stored.status,'completed');
+});
