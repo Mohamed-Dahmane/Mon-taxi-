@@ -1966,12 +1966,7 @@ function initializeHotelDirectory(){
  const paidAt=reservationClock();
  if(entry.bookingMode==='Programmée'&&entry.scheduledDate>paidAt.slice(0,10))
   throw Error('Course future : cloture impossible.');
- // Le cash est credite avant archivage; le registre empeche tout double credit en cas de nouvel essai.
- if(method==='cash'){
-  if(typeof window.parent.taxiCreditCashFare!=='function')throw Error('Comptabilite Cash indisponible.');
-  if(!window.parent.taxiCreditCashFare(courseId,cents/100,paidAt))
-   throw Error('Enregistrement Cash impossible. Course conservee dans le Planning.');
- }
+ // Etape 1 : cloture seule. Aucun credit automatique au Cash dans cette version.
  entry.paidAmount=cents/100;
  entry.tipAmount=Math.round((Number(tip)||0)*100)/100;
  entry.paymentMethod=method;
