@@ -2442,6 +2442,26 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   const success=document.createElement('dialog');
   success.id='taxiPaymentSuccess';
   success.style.cssText='border:0;border-radius:20px;background:#10233a;color:#fff;padding:28px 22px;width:min(92vw,440px);text-align:center;box-shadow:0 20px 90px #0009';
+  // Son bref uniquement après confirmation et enregistrement du paiement.
+  try{
+   const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+   if(AudioContextClass){
+    const audio=new AudioContextClass();
+    const start=audio.currentTime;
+    for(const [offset,freq] of [[0,740],[0.12,988]]){
+     const tone=audio.createOscillator();
+     const gain=audio.createGain();
+     tone.type='sine';tone.frequency.setValueAtTime(freq,start+offset);
+     gain.gain.setValueAtTime(0.0001,start+offset);
+     gain.gain.exponentialRampToValueAtTime(0.12,start+offset+0.012);
+     gain.gain.exponentialRampToValueAtTime(0.0001,start+offset+0.16);
+     tone.connect(gain);gain.connect(audio.destination);
+     tone.start(start+offset);tone.stop(start+offset+0.17);
+    }
+    if(audio.state==='suspended')audio.resume().catch(()=>{});
+    setTimeout(()=>audio.close().catch(()=>{}),700);
+   }
+  }catch(error){console.warn('Son de confirmation indisponible',error)}
   const heading=document.createElement('h1');heading.textContent='✓ PAIEMENT ACCEPTÉ';heading.style.cssText='font-size:clamp(25px,7vw,37px);color:#76e2a1;margin:0 0 20px';
   const info=document.createElement('p');info.style.cssText='font-size:17px;line-height:1.5';
   info.textContent=method==='cash'?'Paiement en espèces accepté':'Paiement confirmé par SumUp';
