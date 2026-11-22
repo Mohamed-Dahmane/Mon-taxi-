@@ -6,7 +6,7 @@ export function registerPayment(course, payment) {
   if (!payment || !['cash', 'sumup', 'other'].includes(payment.method)) throw new Error('invalid_method');
   // Les centimes sont acceptés, mais pas les fractions de centime.
   if (!Number.isSafeInteger(payment.amountCents) || payment.amountCents < 0) throw new Error('invalid_amount');
-  if (course.payment?.status === 'pending') throw new Error('payment_pending_verification');
+  if (course.payment?.status === 'pending' && !(payment.method === 'sumup' && payment.confirmed === true && payment.reference)) throw new Error('payment_pending_verification');
   if (course.payment?.status === 'paid') {
     if (course.payment.method === 'sumup' && payment.method === 'sumup' &&
         course.payment.reference && payment.reference === course.payment.reference &&
