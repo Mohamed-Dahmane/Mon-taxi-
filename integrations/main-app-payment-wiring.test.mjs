@@ -41,3 +41,11 @@ test('cash payment never calls the legacy close-and-archive bridge',()=>{
 test('already archived rides cannot be paid again',()=>{
  assert.match(realPayment,/Course deja archivee ou annulee : verifier dans Historique/);
 });
+
+test('blank payment amount is rejected before it can become zero',()=>{
+ assert.match(realPayment,/if\(amount===null\|\|amount===undefined\|\|String\(amount\)\.trim\(\)===''\)return false/);
+ assert.match(sumupBridge,/if\(amount===null\|\|amount===undefined\|\|String\(amount\)\.trim\(\)===''\)return false/);
+});
+test('SumUp result for another ride is ignored',()=>{
+ assert.match(sumupBridge,/String\(result\.courseId\)!==pending\.id/);
+});
