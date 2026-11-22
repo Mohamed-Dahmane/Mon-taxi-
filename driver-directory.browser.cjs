@@ -296,8 +296,8 @@ async function checkBookingRoom(frame,id){
  await integrated.uncheck('#driversVanOnly');await integrated.click('[data-period="night"]');assert.equal(await names(integrated).count(),1);await integrated.locator('#taxiDrivers [data-close]').click();
  const driversRect=await integrated.locator('#openTaxiDrivers').boundingBox();
  const directRect=await integrated.locator('#openHotelCommissions').boundingBox();
- assert.ok(driversRect.x>=directRect.x+directRect.width);
- assert.equal(driversRect.y,directRect.y);
+  assert.ok(driversRect.width>0&&driversRect.height>=40); // Repertoire accessible sous les quatre actions principales
+  assert.ok(driversRect.y>=directRect.y+directRect.height); // Le raccourci Repertoire est sur une ligne distincte
  assert.equal(await integrated.locator('#hotelSyncStatus').isVisible(),false);
  assert.equal(await integrated.locator('#openTaxiDrivers').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(23, 99, 61)');
  await integrated.evaluate(()=>document.querySelector('.pageBtn[data-page="details"]').click());await integrated.click('#openHotelPlanning');await integrated.waitForFunction(()=>!!document.querySelector('#hotelCommissionsFrame')?.contentDocument?.querySelector('#reservationBoardTitle'));
