@@ -120,7 +120,7 @@ public class MainActivity extends Activity {
   if(paymentSoundPool!=null)return;
   try{
    final int rate=44100, frames=(int)(rate*1.12);
-   java.io.File wav=new java.io.File(getCacheDir(),"taxi-cash-register-double-ting-v121.wav");
+   java.io.File wav=new java.io.File(getCacheDir(),"taxi-cash-register-single-ting-v122.wav");
    if(!wav.exists()||wav.length()<100){
     try(java.io.FileOutputStream out=new java.io.FileOutputStream(wav)){
      out.write(new byte[]{'R','I','F','F'});
@@ -139,19 +139,17 @@ public class MainActivity extends Activity {
        (noise.nextDouble()*2-1)*0.19*Math.sin(Math.PI*(t-0.07)/0.17):0;
       double stop=t>0.245&&t<0.32?
        (noise.nextDouble()*2-1)*Math.exp(-(t-0.245)*85)*0.65:0;
-      // Deux frappes de clochette: attaque percussive et partiels inharmoniques.
+      // Une seule frappe de clochette, avec attaque nette et resonance decroissante.
       double bell=0;
-      for(double hit:new double[]{0.32,0.63}){
-       double dt=t-hit;
-       if(dt>=0){
-        double strike=Math.exp(-dt*180)*0.12*Math.sin(2*Math.PI*3200*dt);
-        double ring=Math.exp(-dt*6.4)*
-         (0.32*Math.sin(2*Math.PI*1174*dt)+
-          0.17*Math.sin(2*Math.PI*1767.4*dt)+
-          0.12*Math.sin(2*Math.PI*2411.8*dt)+
-          0.07*Math.sin(2*Math.PI*3279.1*dt));
-        bell+=strike+ring;
-       }
+      double dt=t-0.32;
+      if(dt>=0){
+       double strike=Math.exp(-dt*220)*0.13*Math.sin(2*Math.PI*3600*dt);
+       double ring=Math.exp(-dt*7.5)*
+        (0.30*Math.sin(2*Math.PI*1174*dt)+
+         0.16*Math.sin(2*Math.PI*1767.4*dt)+
+         0.11*Math.sin(2*Math.PI*2411.8*dt)+
+         0.06*Math.sin(2*Math.PI*3279.1*dt));
+       bell=strike+ring;
       }
       double v=Math.max(-1,Math.min(1,latch+drawer+stop+bell));
       short pcm=(short)(v*32767);
@@ -174,12 +172,12 @@ public class MainActivity extends Activity {
  private void playCashRegisterSound(){
   ensureCashRegisterSound();
   if(paymentSoundReady&&paymentSoundPool!=null){
-   paymentSoundPool.play(paymentSoundId,0.60f,0.60f,1,0,1.0f);
+   paymentSoundPool.play(paymentSoundId,0.45f,0.45f,1,0,1.0f);
   }else{
    // Secours sonore Android deja confirme fonctionnel en V116.
    try{
     final android.media.ToneGenerator tone=new android.media.ToneGenerator(
-      android.media.AudioManager.STREAM_MUSIC,60);
+      android.media.AudioManager.STREAM_MUSIC,45);
     tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,180);
     new Handler(Looper.getMainLooper()).postDelayed(tone::release,350);
    }catch(Exception ignored){}
