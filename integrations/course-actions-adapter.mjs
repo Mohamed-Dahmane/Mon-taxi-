@@ -34,8 +34,18 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         const next = registerPayment(course, {
           method, amountCents, reference, confirmed: true
         });
-        await saveCourse(next);
-        return { recorded: true, course: next };
+        const saved = await saveCourse(next);
+        if (saved === false) throw new Error('sumup_payment_not_committed');
+        // A successful remote charge must not be reported as locally recorded
+        // unless the host can read the same paid state back from persistence.
+        const persisted = await getCourse(courseId);
+        if (!persisted || persisted.payment?.status !== 'paid' ||
+            persisted.payment.method !== 'sumup' ||
+            persisted.payment.reference !== reference ||
+            persisted.payment.amountCents !== amountCents) {
+          throw new Error('sumup_payment_not_committed');
+        }
+        return { recorded: true, course: persisted };
       }
       throw new Error('unsupported_payment_method');
     },
