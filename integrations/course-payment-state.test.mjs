@@ -101,3 +101,14 @@ test('SumUp cannot start on completed or cancelled courses', async () => {
   assert.throws(()=>markPaymentPending({id:'ride-closed',status}),/course_not_in_planning/);
  }
 });
+
+test('payments accept exact centimes, including 0.75 EUR and 12.35 EUR',()=>{
+ const small=registerPayment({id:'cents-1',status:'scheduled'},{method:'cash',amountCents:75});
+ const larger=registerPayment({id:'cents-2',status:'scheduled'},{method:'cash',amountCents:1235});
+ assert.equal(small.payment.amountCents,75);
+ assert.equal(larger.payment.amountCents,1235);
+ assert.equal(small.status,'scheduled');
+});
+test('fractional cent amount is rejected by the state module',()=>{
+ assert.throws(()=>registerPayment({id:'fraction',status:'scheduled'},{method:'cash',amountCents:1234.5}),/invalid_amount/);
+});
