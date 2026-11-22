@@ -16,6 +16,7 @@ on:
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
+      - 'gradle.properties'
       - '.github/workflows/android-apk.yml'
 jobs:
   android:
