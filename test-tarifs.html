@@ -38,8 +38,14 @@ if(realId){
    $('paymentCard').scrollIntoView({behavior:'smooth',block:'start'});
   };
   $('waze').onclick=navigate;
+  let cashPaymentBusy=false;
   $('cash').onclick=()=>{
     const status=$('payment');
+    if(cashPaymentBusy){status.textContent='Encaissement déjà en cours. Patiente.';return;}
+    if(stage===4){status.textContent='Paiement déjà déclaré : aucun deuxième encaissement.';return;}
+    if(stage!==3){status.textContent='Arrête le compteur avant de confirmer les espèces.';return;}
+    cashPaymentBusy=true;
+    $('cash').disabled=true;
     status.textContent='Confirmation du paiement en espèces en cours…';
     try{
       const amount=total();
@@ -52,6 +58,9 @@ if(realId){
     }catch(error){
       status.textContent='Erreur espèces : '+(error?.message||String(error));
       console.error('Mon Taxi cash payment',error);
+    }finally{
+      cashPaymentBusy=false;
+      if(stage!==4)$('cash').disabled=false;
     }
   };
   // Une course facturée à l'hôtel n'est ni un encaissement cash ni SumUp.
