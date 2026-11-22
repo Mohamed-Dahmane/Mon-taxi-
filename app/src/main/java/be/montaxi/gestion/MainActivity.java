@@ -427,6 +427,18 @@ public class MainActivity extends Activity {
      });
     }
    },"TaxiHaptics");
+   // Son de confirmation natif : WebAudio peut être bloqué dans Android WebView.
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void play(){
+     runOnUiThread(()->{
+      try{
+       final android.media.ToneGenerator tone=new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC,22);
+       tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,85);
+       new Handler(Looper.getMainLooper()).postDelayed(tone::release,180L);
+      }catch(Exception ignored){}
+     });
+    }
+   },"TaxiPaymentSound");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
