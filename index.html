@@ -1974,7 +1974,10 @@ function initializeHotelDirectory(){
 }
 function finishPlanningCourse(id){\n const entry=data.find(item=>item.id===id);\n if(!entry||reservationCourseStatus(entry)!=='pending')return;\n if(typeof window.parent.openTaxiValidatedFare==='function')window.parent.openTaxiValidatedFare(entry.id);
  else window.parent.postMessage({type:'mon-taxi-open-fare',courseId:String(entry.id)},'*');\n}\nwindow.parent.taxiFareCourseInfo=function(id){\n const entry=data.find(item=>String(item.id)===String(id));\n if(!entry)return null;\n return {id:entry.id,origin:entry.pickup?.place||entry.hotel||'',destination:entry.destination==='Autre'?(entry.otherDestination||''):entry.destination||'',room:entry.room||entry.roomNumber||'',announcedPrice:entry.announcedPrice??null,startedAt:entry.rideStartedAt||null};\n};\nwindow.parent.taxiNextPlannedCourse=function(){\n const upcoming=data.filter(item=>isPlanningCourse(item)&&reservationCourseStatus(item)==='pending'&&item.scheduledDate).sort((a,b)=>String(a.scheduledDate+' '+(a.scheduledTime||a.time||'')).localeCompare(String(b.scheduledDate+' '+(b.scheduledTime||b.time||''))));\n const next=upcoming[0];\n return next?{date:next.scheduledDate,time:next.scheduledTime||next.time||'',client:next.clientName||next.name||'',origin:next.pickup?.place||next.hotel||''}:null;\n};\nwindow.parent.taxiRecordPaymentOnly=window.parent.taxiFarePayment=function(id,method,amount,tip){
- const courseId=String(id),rawAmount=Number(amount),rawTip=Number(tip??0);
+ const courseId=String(id);
+ // Une valeur vide ne doit pas devenir silencieusement un encaissement de 0 EUR.
+ if(amount===null||amount===undefined||String(amount).trim()==='')return false;
+ const rawAmount=Number(amount),rawTip=Number(tip??0);
  const cents=Math.round(rawAmount*100),tipCents=Math.round(rawTip*100);
  // Rejeter les montants invalides avant toute ecriture du Planning.
  if(!['cash','sumup'].includes(method)||
@@ -2614,7 +2617,8 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  window.taxiBeginFareSumUp=function(id,amount,tip){
   // Une transaction SumUp en attente ne doit jamais etre ecrasee par un second clic.
   if(activePayment)return false;
-  const euros=Number(amount), gratuity=Number(tip||0);
+  if(amount===null||amount===undefined||String(amount).trim()==='')return false;
+  const euros=Number(amount), gratuity=Number(tip??0);
   if(!id||!Number.isFinite(euros)||euros<0||!Number.isFinite(gratuity)||gratuity<0)return false;
   activePayment={id:String(id),amount:euros,tip:gratuity};
   return true;
