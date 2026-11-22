@@ -2,7 +2,7 @@ import { registerPayment, completeCourseFromPlanning } from './course-payment-st
 
 // Adapter for the host application. Persistence is injected so this module never
 // touches real financial data until the host provides its own atomic save operation.
-export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, verifySumUpTransaction }) {
+export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, verifySumUpTransaction, completeCourseAtomically }) {
   if (![getCourse, saveCourse, recordCashReceipt].every(fn => typeof fn === 'function')) {
     throw new Error('course_action_dependencies_required');
   }
@@ -38,7 +38,13 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
       const course = await getCourse(courseId);
       if (!course) throw new Error('course_not_found');
       const next = completeCourseFromPlanning(course);
-      await saveCourse(next);
+      if (next === course) return next;
+      if (typeof completeCourseAtomically === 'function') {
+        const saved = await completeCourseAtomically({ courseId, previous: course, course: next });
+        if (saved !== true) throw new Error('course_completion_not_committed');
+      } else {
+        await saveCourse(next);
+      }
       return next;
     }
   };
