@@ -8,9 +8,11 @@ function setup(initial) {
   const actions = createCourseActions({
     getCourse: async id => courses.get(id),
     saveCourse: async course => { courses.set(course.id, course); },
-    recordCashReceipt: async ({courseId}) => {
+    recordCashReceipt: async ({courseId, course}) => {
       if (receipts.has(courseId)) return false;
+      // Simulate the host's atomic cash receipt + course state commit.
       receipts.add(courseId);
+      courses.set(courseId, course);
       return true;
     }
   });
