@@ -94,3 +94,10 @@ test('SumUp reference cannot be replayed as cash or without confirmation', () =>
   method:'sumup',amountCents:2500,reference:'tx-replay',confirmed:false
  }),/already_paid/);
 });
+
+test('SumUp cannot start on completed or cancelled courses', async () => {
+ const {markPaymentPending}=await import('./course-payment-state.mjs');
+ for(const status of ['completed','cancelled']) {
+  assert.throws(()=>markPaymentPending({id:'ride-closed',status}),/course_not_in_planning/);
+ }
+});
