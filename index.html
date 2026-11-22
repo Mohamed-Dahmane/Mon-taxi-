@@ -2212,6 +2212,25 @@ body .pagebar{display:none}
 #hotelQuickMenu nav{margin:8px;width:min(340px,92vw);max-height:95dvh;overflow:auto;padding:15px;background:#111c30;border:1px solid #4c6485;border-radius:15px;color:white}
 #hotelQuickMenu nav button{display:block;width:100%;text-align:left;background:#203856;color:white;border:1px solid #3b5776;border-radius:9px;margin-top:7px;padding:13px;font:inherit}
 
+/* Protection transversale des zones tactiles : aucun bouton ne doit masquer son voisin. */
+#hotelCommissionsDialog[open] .hotel-commissions-bar{
+  position:relative!important;inset:auto!important;transform:none!important;
+  display:flex!important;flex-wrap:wrap;align-items:center;gap:6px;
+  flex:0 0 auto;min-height:50px;box-sizing:border-box;
+}
+#hotelCommissionsDialog[open] .hotel-commissions-bar button{
+  position:relative;max-width:100%;min-width:0;flex-shrink:1;
+  white-space:normal;overflow-wrap:anywhere;
+}
+#hotelCommissionsDialog[open] #hotelCommissionsFrame{
+  display:block;flex:1 1 auto;min-height:0;width:100%;position:relative;
+}
+.hotel-home-actions{min-width:0}
+.hotel-home-actions>button{min-width:0;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:390px){
+  .hotel-home-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .hotel-home-actions>button{font-size:12px!important;line-height:1.2!important;white-space:normal!important}
+}
 </style>
 
 <div id="quickMenu" hidden><nav aria-label="Menu Mon Taxi">
