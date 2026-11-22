@@ -187,3 +187,27 @@ test('SumUp verification without persisted payment never announces recorded',asy
  await assert.rejects(actions.recordFarePayment('unsaved','sumup',1235,'tx-verified'),/sumup_payment_not_committed/);
  assert.equal(course.payment,undefined);
 });
+
+test('cash callback success without persisted receipt cannot announce payment',async()=>{
+ const original={id:'cash-uncommitted',status:'scheduled'};
+ let calls=0;
+ const actions=createCourseActions({
+  getCourse:async()=>original,
+  saveCourse:async()=>{throw Error('unexpected_save');},
+  recordCashReceipt:async()=>{calls++;return true;}
+ });
+ await assert.rejects(actions.recordFarePayment('cash-uncommitted','cash',1235),/cash_receipt_not_committed/);
+ assert.equal(calls,1);
+ assert.equal(original.payment,undefined);
+});
+test('completion callback success without persisted status cannot archive ride',async()=>{
+ const original={id:'completion-uncommitted',status:'scheduled'};
+ const actions=createCourseActions({
+  getCourse:async()=>original,
+  saveCourse:async()=>true,
+  recordCashReceipt:async()=>true,
+  completeCourseAtomically:async()=>true
+ });
+ await assert.rejects(actions.completeFromPlanning('completion-uncommitted'),/course_completion_not_committed/);
+ assert.equal(original.status,'scheduled');
+});
