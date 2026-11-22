@@ -283,3 +283,29 @@ test('Planning completion must preserve paid amount, method and reference',async
  });
  await assert.rejects(actions.completeFromPlanning(original.id),/course_completion_not_committed/);
 });
+
+test('invalid or ambiguous course identifiers do not touch financial callbacks',async()=>{
+ let reads=0,cash=0;
+ const actions=createCourseActions({
+  getCourse:async()=>{reads++;return {id:'ride',status:'scheduled'};},
+  saveCourse:async()=>true,
+  recordCashReceipt:async()=>{cash++;return true;}
+ });
+ for(const id of ['', ' ', ' ride', 'ride ', null, 123]){
+  await assert.rejects(actions.recordFarePayment(id,'cash',1250),/invalid_course_id/);
+  await assert.rejects(actions.completeFromPlanning(id),/invalid_course_id/);
+ }
+ assert.equal(reads,0);
+ assert.equal(cash,0);
+});
+test('corrupted pending payment cannot be mistaken for SumUp reconciliation',async()=>{
+ let verifications=0;
+ const actions=createCourseActions({
+  getCourse:async()=>({id:'pending-invalid',status:'scheduled',payment:{status:'pending',method:'cash'}}),
+  saveCourse:async()=>true,
+  recordCashReceipt:async()=>true,
+  verifySumUpTransaction:async()=>{verifications++;return true;}
+ });
+ await assert.rejects(actions.recordFarePayment('pending-invalid','sumup',1250,'tx-ref'),/invalid_pending_payment/);
+ assert.equal(verifications,0);
+});
