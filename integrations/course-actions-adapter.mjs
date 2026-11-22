@@ -25,10 +25,11 @@ export function createCourseActions({ getCourse, saveCourse, recordCashReceipt, 
         const recorded = await recordCashReceipt({ courseId, amountCents, course: next });
         if (recorded !== true) throw new Error('cash_receipt_not_recorded');
         const persisted = await getCourse(courseId);
-        if (!persisted || persisted.payment?.status !== 'paid' ||
+        if (!persisted || persisted.id !== courseId ||
+            persisted.payment?.status !== 'paid' ||
             persisted.payment.method !== 'cash' ||
             persisted.payment.amountCents !== amountCents ||
-            persisted.status === 'completed' || persisted.status === 'cancelled') {
+            persisted.status !== course.status) {
           throw new Error('cash_receipt_not_committed');
         }
         return { recorded: true, course: persisted };
