@@ -1983,6 +1983,8 @@ function finishPlanningCourse(id){\n const entry=data.find(item=>item.id===id);\
  if(!['cash','sumup'].includes(method)||
     !Number.isFinite(rawAmount)||!Number.isFinite(rawTip)||
     !Number.isSafeInteger(cents)||!Number.isSafeInteger(tipCents)||
+    Math.abs(rawAmount*100-cents)>0.000001||
+    Math.abs(rawTip*100-tipCents)>0.000001||
     cents<0||tipCents<0)return false;
  if(!coursesReadable)throw Error('Planning illisible : aucune modification effectuee.');
  const latest=readCourses(localStorage.getItem(key));
