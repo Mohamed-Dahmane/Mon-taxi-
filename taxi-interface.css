@@ -969,3 +969,23 @@ html.taxi-clean {
     overflow-wrap: anywhere;
   }
 }
+
+/* Small-height toolbar: four equal-width buttons, one line, no clipping. */
+@media (max-width: 360px) and (max-height: 620px) {
+  .taxi-clean .taxi-home-toolbar .hotel-home-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .taxi-clean .taxi-home-toolbar .hotel-home-actions .button {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    padding: 3px 1px;
+    font-size: 9px;
+    line-height: 1.05;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
