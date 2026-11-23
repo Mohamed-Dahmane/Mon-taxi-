@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'be.montaxi.gestion'
  compileSdk 35
- defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 225; versionName 'V 6/11.225 - Recovery isolated' }
+ defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 226; versionName 'V 6/11.226 - Chargé Waze paiement' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
