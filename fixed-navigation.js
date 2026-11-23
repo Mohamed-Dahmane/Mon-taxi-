@@ -64,7 +64,9 @@ let current=readPage(),history=[],dialogs=[];
 function refresh(){
  const opened=[...doc.querySelectorAll('dialog[open]')];
  dialogs=dialogs.filter(d=>opened.includes(d));for(const d of opened)if(!dialogs.includes(d))dialogs.push(d);
- const top=dialogs.at(-1),host=top||doc.body;
+ // Prefer the actual top-layer modal; DOM order and historical open order can differ.
+ const modal=opened.filter(d=>d.matches(':modal')).at(-1);
+ const top=modal||dialogs.at(-1),host=top||doc.body;
  // Placer la navigation dans le dialogue actif, y compris le Planning.
  nav.dataset.placement=top?'dialog':'toolbar';
  // In dialogs, navigation stays in document flow instead of covering action buttons.
@@ -85,7 +87,7 @@ function goHome(){
 }
 function goBack(){
  if(menus()){refresh();return;}
- const top=dialogs.at(-1);
+ const top=doc.querySelectorAll('dialog[open]:modal').length?[...doc.querySelectorAll('dialog[open]:modal')].at(-1):dialogs.at(-1);
  if(top){
   if(top.id==='taxiDrivers'&&root.taxiDriverNavigateBack?.())return;
   if(top.id==='hotelCommissionsDialog'){
