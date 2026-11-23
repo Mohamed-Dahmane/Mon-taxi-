@@ -207,7 +207,7 @@ async function checkBookingRoom(frame,id){
  await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,36);
  assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]);
  await swipeScreen(integrated,quickTitle.x+10,quickTitle.y+7,115);
- assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home']);
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]); // Pull-to-refresh intentionally disabled
  // The standard refresh indicator stays active for at least 900 ms.
  await integrated.waitForTimeout(950);
  const homeActions=integrated.locator('.hotel-home-actions');
