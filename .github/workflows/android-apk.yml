@@ -73,17 +73,14 @@ jobs:
           from pathlib import Path
           path=Path('app/src/main/assets/index.html')
           html=path.read_text()
-          guards={
-            'function scheduleCloudBackup(){':'function scheduleCloudBackup(){if(true)return;',
-            'async function cloudBackup(type=':'async function cloudBackup(type='
-          }
-          # Cloud sync and automatic cloud writes are disabled in the bundled APK.
-          for old,new in list(guards.items())[:1]:
-              if html.count(old)!=1: raise SystemExit('Missing Android cloud backup guard')
+          # Disable synchronization on Android without changing Chrome.
+          for old,new in [
+              ('function scheduleCloudBackup(){','function scheduleCloudBackup(){return;'),
+              ('async function cloudBackup(type="change"){','async function cloudBackup(type="change"){return false;'),
+              ('async function checkCloudSync(){','async function checkCloudSync(){return false;')
+          ]:
+              if html.count(old)!=1: raise SystemExit('Missing Android-only sync guard: '+old)
               html=html.replace(old,new,1)
-          old='async function checkCloudSync(){'
-          if html.count(old)!=1: raise SystemExit('Missing Android cloud polling guard')
-          html=html.replace(old,'async function checkCloudSync(){return false;',1)
           path.write_text(html)
           PY
       - name: Prepare launcher icon
