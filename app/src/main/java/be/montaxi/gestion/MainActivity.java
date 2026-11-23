@@ -439,7 +439,11 @@ public class MainActivity extends Activity {
     @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
     @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
      WebResourceResponse local=localTaxiResource(request.getUrl());
-     return local!=null?local:super.shouldInterceptRequest(view,request);
+     if(local!=null)return local;
+     // Interdire toute requête réseau vers le site Chrome, même pour un chemin imprévu.
+     if("mohamed-dahmane.github.io".equalsIgnoreCase(request.getUrl().getHost()))
+      return new WebResourceResponse("text/plain","UTF-8",new java.io.ByteArrayInputStream(new byte[0]));
+     return super.shouldInterceptRequest(view,request);
     }
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){
      if(!req.isForMainFrame())return;
