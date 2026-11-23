@@ -996,11 +996,11 @@ async function checkBookingRoom(frame,id){
  await callButton.click();
  assert.equal(await integrated.evaluate(()=>externalActions.at(-1).url),'tel:0470123456');
  assert.equal((await storedCourse('linked-van')).driver,'self');
- const leaveAndReturn=()=>integrated.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));});
- await leaveAndReturn();await integrated.waitForFunction(()=>document.querySelector('#taxiDrivers').open);
+ const leaveAndReturn=()=>integrated.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));return window.TaxiDriverCommunication.resumeCall();});
+ assert.equal(await leaveAndReturn(),true);await integrated.waitForFunction(()=>document.querySelector('#hotelCommissionsDialog').open);
  await vanRow.locator('.last-called-driver').waitFor();assert.match(await vanRow.locator('.last-called-driver strong').innerText(),/Test intégré/);
  await vanRow.getByRole('button',{name:'Chauffeur suivant',exact:true}).click();assert.match(await details(integrated).locator('h3').innerText(),/uniquement/);await details(integrated).getByRole('button',{name:'Appeler',exact:true}).click();
- await leaveAndReturn();await integrated.waitForFunction(()=>document.querySelector('#taxiDrivers').open);
+ assert.equal(await leaveAndReturn(),true);await integrated.waitForFunction(()=>document.querySelector('#hotelCommissionsDialog').open);
  await vanRow.locator('.last-called-driver strong').filter({hasText:'uniquement'}).waitFor();await vanRow.getByRole('button',{name:'J’envoie',exact:true}).click();
  const linkedSms=await integrated.evaluate(()=>externalActions.at(-1));assert.ok(linkedSms.url.startsWith('sms:0470202020?body='));const linkedText=decodeURIComponent(linkedSms.url);for(const value of ['Airport CRL (Charleroi)','Chambre : 204','Client : Client lié','Téléphone : +32470000011','Vol : SN123','Compagnie : Brussels Airlines','Passagers : 5','PRIX FIXÉ : 90,00'])assert.ok(linkedText.includes(value),value);assert.equal(linkedSms.home,true);assert.equal(linkedSms.planningClosed,true);
  assert.deepEqual(await storedCourse('linked-van'),{...linked.van,driver:'other',driverName:'uniquement',driverDirectoryId:driverIds['0470202020']});
