@@ -2478,6 +2478,9 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
    if(e.defaultPrevented||e.isComposing||e.key!=='Enter'||e.ctrlKey||e.altKey||e.metaKey)return;
    const el=e.target;
    if(!el?.matches?.('input:not([type=hidden]):not([type=submit]):not([type=button]),select')||el.disabled||el.readOnly)return;
+   // Payment inputs have their own Enter handler which records and clears amounts.
+   // Do not intercept them in capture phase: it would prevent that handler running.
+   if(['commissionInput','cashInput','appeleInput','invoiceInput'].includes(el.id))return;
    e.preventDefault();
    const label=(el.labels?.[0]?.textContent||el.getAttribute('aria-label')||el.placeholder||'').toLowerCase();
    const money=el.inputMode==='decimal'||(el.inputMode==='numeric'&&/montant|commission|prix|cash|carte|carburant|dépense|factur|pourboire|€/.test(label));
