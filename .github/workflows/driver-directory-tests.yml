@@ -26,4 +26,5 @@ jobs:
       - run: node --check driver-directory.js && node --test driver-directory.test.cjs
       - run: npm install --no-save playwright
       - run: command -v google-chrome || npx playwright install --with-deps chromium
-      - run: node driver-directory.browser.cjs
+      - name: Full browser regression (1,289-line suite)
+        run: node driver-directory.browser.cjs
