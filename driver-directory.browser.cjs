@@ -126,7 +126,7 @@ async function checkBookingRoom(frame,id){
    const buttons=[...document.querySelectorAll('.hotel-home-actions button')];
    const firstButtonTop=buttons[0].getBoundingClientRect().top;
    return {fits:ids.every(id=>{const r=rect(id);return r.top>=top&&r.bottom<=limit&&r.height>=42&&r.width>0;}),
-    buttonsFit:buttons.length===3&&buttons.every(button=>{
+    buttonsFit:buttons.length===4&&buttons.every(button=>{
      const r=button.getBoundingClientRect();
      return Math.abs(r.top-firstButtonTop)<=1&&button.scrollWidth<=button.clientWidth&&button.scrollHeight<=button.clientHeight;
     }),
