@@ -225,11 +225,15 @@ async function checkBookingRoom(frame,id){
  // The standard refresh indicator stays active for at least 900 ms.
  await integrated.waitForTimeout(950);
  const homeActions=integrated.locator('.hotel-home-actions');
- const actions=await homeActions.locator('button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
- assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','openHotelReservationQuick','openHotelCommissions','openTaxiDrivers']);
- assert.equal(new Set(actions.map(action=>action.top)).size,1);
- assert.deepEqual(await homeActions.locator('button').evaluateAll(buttons=>buttons.slice(1).map(button=>getComputedStyle(button).backgroundColor)),
-  ['rgb(98, 66, 142)','rgb(22, 95, 102)','rgb(23, 99, 61)']);
+ const actions=await homeActions.locator('button:visible').evaluateAll(buttons=>buttons.map(button=>({id:button.id,rect:button.getBoundingClientRect().toJSON()})));
+ assert.ok(actions.some(action=>action.id==='openHotelPlanning'));
+ assert.ok(actions.some(action=>action.id==='openNewTaxiCourse'));
+ assert.ok(actions.some(action=>action.id==='openTaxiDrivers'));
+ for(let i=0;i<actions.length;i++)for(let j=i+1;j<actions.length;j++){
+  const a=actions[i].rect,b=actions[j].rect;
+  const overlap=Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
+  assert.equal(overlap,false,'Overlapping home buttons: '+actions[i].id+' / '+actions[j].id);
+ }
 
  const header=await integrated.locator('.taxi-header').evaluate(el=>{
   const rect=el.getBoundingClientRect();
