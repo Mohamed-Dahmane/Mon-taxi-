@@ -12,19 +12,21 @@ async function auditButtons(page,stage){
     const buttons=[...document.querySelectorAll('button,[role="button"],input[type="button"],input[type="submit"]')];
     return buttons.map((el,index)=>{
      const style=getComputedStyle(el),r=el.getBoundingClientRect();
-     const hidden=style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse'||r.width===0||r.height===0||!!el.closest('[hidden],[inert]');
+     const hidden=style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse'||r.width===0||r.height===0||!!el.closest('[hidden],[inert]')||!el.getClientRects().length;
      const x=Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),y=Math.max(0,Math.min(innerHeight-1,r.top+r.height/2));
      const inViewport=r.bottom>0&&r.right>0&&r.top<innerHeight&&r.left<innerWidth;
      const hit=inViewport&&!hidden?document.elementFromPoint(x,y):null;
      const obstructed=!!hit&&hit!==el&&!el.contains(hit);
-     return {index,id:el.id||null,label:(el.getAttribute('aria-label')||el.textContent||el.value||'').trim().slice(0,70),hidden,disabled:!!el.disabled,offscreen:!inViewport,obstructed,hit:obstructed?(hit.id||hit.tagName):null};
+     const pointerBlocked=style.pointerEvents==='none'||!!el.closest('[inert]');
+     const unnamed=!(el.getAttribute('aria-label')||el.textContent||el.value||'').trim();
+     return {index,id:el.id||null,label:(el.getAttribute('aria-label')||el.textContent||el.value||'').trim().slice(0,70),hidden,disabled:!!el.disabled,offscreen:!inViewport,obstructed,pointerBlocked,unnamed,hit:obstructed?(hit.id||hit.tagName):null};
     });
    });
    entries.push({url:frame.url(),buttons:result});
   }catch(e){entries.push({url:frame.url(),error:String(e)});}
  }
  const all=entries.flatMap(x=>x.buttons||[]);
- const summary={stage,total:all.length,hidden:all.filter(x=>x.hidden).length,disabled:all.filter(x=>x.disabled).length,offscreen:all.filter(x=>!x.hidden&&x.offscreen).length,obstructed:all.filter(x=>!x.hidden&&!x.offscreen&&x.obstructed).length,frames:entries.length};
+ const summary={stage,total:all.length,hidden:all.filter(x=>x.hidden).length,disabled:all.filter(x=>x.disabled).length,offscreen:all.filter(x=>!x.hidden&&x.offscreen).length,obstructed:all.filter(x=>!x.hidden&&!x.offscreen&&x.obstructed).length,pointerBlocked:all.filter(x=>!x.hidden&&x.pointerBlocked).length,unnamed:all.filter(x=>!x.hidden&&x.unnamed).length,frames:entries.length};
  console.log('BUTTON_AUDIT '+JSON.stringify(summary));
  console.log('BUTTON_AUDIT_DETAILS '+JSON.stringify(entries.filter(x=>x.error||x.buttons?.some(b=>b.obstructed&&!b.hidden&&!b.offscreen))));
  return summary;
