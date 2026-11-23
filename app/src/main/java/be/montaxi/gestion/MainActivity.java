@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
    .setNegativeButton("Annuler",null)
    .setPositiveButton("Continuer",(d,w)->{
      pendingSumUpAmount=amount;pendingSumUpReference=UUID.randomUUID().toString();sumUpInProgress=true;
-     if(SumUpAPI.isLoggedIn())openSumUpReader();
+     if(SumUpAPI.isLoggedIn())openSumUpCheckout();
      else askSumUpAffiliateKey();
    }).show();
  }
@@ -398,7 +398,7 @@ public class MainActivity extends Activity {
   super.onActivityResult(requestCode,resultCode,data);
   if(requestCode==SUMUP_LOGIN){
    int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
-   if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL)openSumUpReader();
+   if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL)openSumUpCheckout();
    else finishSumUp("error","Connexion SumUp refusée");
    return;
   }
