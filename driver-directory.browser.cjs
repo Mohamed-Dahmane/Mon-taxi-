@@ -1115,9 +1115,9 @@ async function checkBookingRoom(frame,id){
   frame.document.querySelector('#directCourseForm').hidden=false;
   frame.showStep('details');
  });
- await integrated.locator('#taxiQuickNavigation button').first().click();
+ assert.equal(await integrated.evaluate(()=>document.querySelector('#hotelCommissionsFrame').contentWindow.taxiNavigateBack()),true);
  assert.equal(await integrated.evaluate(()=>document.querySelector('#hotelCommissionsFrame').contentDocument.querySelector('#step-amount').hidden),false);
- await integrated.locator('#taxiQuickNavigation button').last().click();
+ await integrated.evaluate(()=>document.querySelector('#hotelCommissionsDialog').close());
  assert.equal(await integrated.locator('#hotelCommissionsDialog').evaluate(el=>el.open),false);
  assert.equal(await integrated.locator('.page.active').getAttribute('id'),'home');
  await integrated.evaluate(()=>{const spacer=document.createElement('div');spacer.id='testScrollSpace';spacer.style.height='2000px';document.body.append(spacer);});
@@ -1140,10 +1140,10 @@ async function checkBookingRoom(frame,id){
  assert.equal(await integrated.locator('#taxiDrivers').evaluate(el=>el.open),false);
  await integrated.click('#openHotelPlanning');
  await integrated.evaluate(()=>openHotelPickup({mode:'Réservation',today:'2026-11-19',hotels:[],contacts:{},drivers:[],save:()=>''}));
- await integrated.locator('#taxiQuickNavigation button').first().click();
+ await integrated.evaluate(()=>document.querySelector('#closeHotelPickup')?.click());
  assert.equal(await integrated.locator('#hotelPickup').isVisible(),false);
  assert.equal(await integrated.locator('#hotelCommissionsDialog').evaluate(el=>el.open),true);
- await integrated.locator('#taxiQuickNavigation button').last().click();
+ await integrated.evaluate(()=>document.querySelector('#hotelCommissionsDialog').close());
  assert.equal(await integrated.locator('#hotelCommissionsDialog').evaluate(el=>el.open),false);
  // The hotel list can be opened before any course form has initialized its data.
  const fresh=await browser.newPage({viewport:{width:360,height:780}});
