@@ -269,7 +269,7 @@ async function checkBookingRoom(frame,id){
  await integrated.evaluate(()=>scrollTo(0,0));
  const bilanTitle=await integrated.locator('#detailsHeading').boundingBox();
  await swipeScreen(integrated,bilanTitle.x+10,bilanTitle.y+7,115);
- assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),['home','details']);
+ assert.deepEqual(await integrated.evaluate(()=>refreshGestureCalls),[]);
  assert.equal(await journal.getAttribute('open'),null);
  await integrated.waitForTimeout(950);
  await integrated.evaluate(()=>{
