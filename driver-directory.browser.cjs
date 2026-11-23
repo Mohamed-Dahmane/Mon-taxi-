@@ -920,8 +920,8 @@ async function checkBookingRoom(frame,id){
  const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline',scheduledDate:linked.van.date};
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
  const celineRow=frame.locator('[data-entry-id="planning-charge-celine"]');
- await celineRow.getByRole('button',{name:'Charger',exact:true}).click();
- const retryStandard=celineRow.getByRole('button',{name:'Rouvrir le message',exact:true});
+ // Commission messaging is separate from the ride start / Waze / payment lifecycle.
+ await celineRow.getByRole('button',{name:'Commission · SMS',exact:true}).click();
  assert.ok((await storedCourse(celineCourse.id)).commissionChargedAt);
  assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Aucun numéro enregistré pour Céline.');
  assert.equal(await referrerPhone.isVisible(),false);
@@ -929,24 +929,21 @@ async function checkBookingRoom(frame,id){
   window.TaxiContacts.openWhatsAppMessage=(number,text)=>{window.commissionChat={number,text}};
   window.TaxiContacts.findReferrer=name=>{window.lookedUpReferrer=name};
  });
- await retryStandard.click();
- assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
  const referrerLookup=contacts=>integrated.evaluate(contacts=>
   window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'referrer-lookup',contacts}})),contacts);
+ await celineRow.getByRole('button',{name:'Message de commission',exact:true}).click();
+ assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
  await referrerLookup([{nativeId:'81',name:'Céline',phone:'0470000021'},{nativeId:'82',name:'Céline',phone:'0470000022'}]);
  assert.match(await frame.locator('#reservationBoardMessage').textContent(),/Plusieurs numéros.*Céline/);
  assert.equal(await integrated.evaluate(()=>window.commissionChat),undefined);
- await retryStandard.click();
+ await celineRow.getByRole('button',{name:'Message de commission',exact:true}).click();
  await referrerLookup([{nativeId:'81',name:'Céline',phone:'0470000021'},
   {nativeId:'83',name:'Celine Standard',phone:'0470000033'}]);
  const commissionChat=await integrated.evaluate(()=>window.commissionChat);
  assert.equal(commissionChat.number,'+32470000033');
  assert.equal(commissionChat.text,'The Standard 10');
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
- assert.equal(await referrerPhone.isVisible(),false);
- await celineRow.getByRole('button',{name:'WhatsApp envoyé',exact:true}).click();
- assert.equal(await celineRow.isVisible(),false);
- assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'validated');
+ assert.equal(await celineRow.getByRole('button',{name:'Charger · Demarrer',exact:true}).isVisible(),true);
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
  const chargeOther={...linked.car,id:'planning-charge-other',hotel:'Moxy',hotelGroup:'Autre',contact:'Petit test',amount:10,scheduledDate:linked.car.date};
  assert.deepEqual(await frame.evaluate(()=>{
@@ -959,9 +956,8 @@ async function checkBookingRoom(frame,id){
  const commissionOnDay=async()=>Math.round(Number((await integrated.locator('#commissionMonthCard').textContent())
   .replace(/[^\d,\-]/g,'').replace(',','.'))*100);
  const commissionBeforeCharging=await commissionOnDay();
- await otherRow.getByRole('button',{name:'Charger',exact:true}).click();
+ await otherRow.getByRole('button',{name:'Commission · SMS',exact:true}).click();
  assert.equal(await referrerPhone.isVisible(),false);
- assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
  assert.equal(decodeURIComponent(await integrated.evaluate(()=>externalActions.at(-1).url)),
   'sms:+32470101010?body=Moxy 10');
  assert.deepEqual(await frame.evaluate(()=>[6,25,50,10.5].map(amount=>planningCommissionMessage({hotel:'Moxy',amount}))),
@@ -969,14 +965,10 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
  assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
  assert.equal(await frame.evaluate(id=>reportEntries('all').filter(entry=>entry.id===id).length,chargeOther.id),1);
- await otherRow.getByRole('button',{name:'Rouvrir le message',exact:true}).click();
+ await otherRow.getByRole('button',{name:'Message de commission',exact:true}).click();
  assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
- await otherRow.getByRole('button',{name:'SMS envoyé',exact:true}).click();
- assert.equal(await otherRow.isVisible(),false);
- const archivedCharge=await storedCourse(chargeOther.id);
- assert.equal(archivedCharge.reservationStatus,'validated');
- assert.equal(archivedCharge.commissionChargedAt,undefined);
- assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
+ assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
+ assert.equal(await otherRow.getByRole('button',{name:'Charger · Demarrer',exact:true}).isVisible(),true);
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},chargeOther.id);
  await frame.evaluate(ids=>{data=data.filter(course=>!ids.includes(course.id));save();renderReservations();},papaVariants.map(course=>course.id));
 
