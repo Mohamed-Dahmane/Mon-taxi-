@@ -1372,3 +1372,5 @@ async function checkBookingRoom(frame,id){
  console.log('Browser passed: names-only directory, prefix-free ranked search, detail/back flow, vehicle/day/night choices, native refresh, optional client creation/editing, airport/room/fare/date in copied text and SMS, and home return.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
+
+// Regression run: commission message confirmation must not archive a pending ride.
