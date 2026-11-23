@@ -60,8 +60,8 @@ public class MainActivity extends Activity {
   recoveryShown=true;
   new AlertDialog.Builder(this).setTitle("Mon Taxi ne s'affiche pas")
    .setMessage("L'empreinte a fonctionne, mais le tableau n'a pas pu se charger. Aucune donnee ne sera effacee.")
-   .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL+"?retry="+SystemClock.elapsedRealtime());webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
-   .setNegativeButton("Ouvrir dans Chrome",(dialog,which)->{recoveryShown=false;startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(APP_URL)));})
+   .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL);webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
+   .setNegativeButton("Fermer",(dialog,which)->recoveryShown=false)
    .setOnCancelListener(dialog->recoveryShown=false).show();
  }
  private FrameLayout unlockContent;
@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
   return !acceptSessionInteraction()||super.dispatchKeyEvent(event);
  }
  private CancellationSignal biometric;
- private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
+ private static final String APP_URL="file:///android_asset/index.html";
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
   vault=getSharedPreferences("taxi-lock",MODE_PRIVATE);
@@ -342,11 +342,8 @@ public class MainActivity extends Activity {
      if(!req.isForMainFrame())return;
      android.net.Uri uri=req.getUrl();
      // Une ressource secondaire indisponible ne doit pas remplacer toute la page.
-     if(uri==null||!uri.toString().startsWith(APP_URL))return;
-     if(!"file".equals(view.getUrl()==null?"":android.net.Uri.parse(view.getUrl()).getScheme())){
-      view.loadUrl("file:///android_asset/index.html");
-      webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);
-     }
+     if(uri==null||!uri.toString().equals(APP_URL))return;
+     showWebRecovery();
     }
     @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){
      // Le processus WebView est mort : ne jamais réutiliser cette instance.
@@ -363,7 +360,7 @@ public class MainActivity extends Activity {
      });
      return true;
     }
-    @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith(APP_URL);}
+    @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith("file:///android_asset/");}
    });
    web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
     try{
@@ -461,10 +458,10 @@ public class MainActivity extends Activity {
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
-   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(true);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
-  // Toujours charger la dernière version en ligne après déverrouillage.
-  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=6");
+  // Interface embarquee dans l APK : aucune lecture de GitHub Pages.
+  if(web.getUrl()==null)web.loadUrl(APP_URL);
   webHealthHandler.postDelayed(this::verifyWebContent,15000L);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
