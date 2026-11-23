@@ -491,7 +491,12 @@ public class MainActivity extends Activity {
    },"TaxiPaymentSound");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
-   web.setWebChromeClient(new WebChromeClient());
+   web.setWebChromeClient(new WebChromeClient(){
+    @Override public boolean onConsoleMessage(ConsoleMessage message){
+     android.util.Log.e("MonTaxiWeb",message.message()+" @ "+message.sourceId()+":"+message.lineNumber());
+     return true;
+    }
+   });
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // Interface embarquee dans l APK : aucune lecture de GitHub Pages.
