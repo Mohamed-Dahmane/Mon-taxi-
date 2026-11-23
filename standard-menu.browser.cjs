@@ -17,7 +17,12 @@ const assert = require('node:assert/strict');
   await page.goto('http://taxi-app.test/');
   await page.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');const main=document.querySelector('main');if(main)main.hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());});
   const ready=await page.waitForFunction(()=>typeof window.openHotelModule==='function',null,{timeout:15000}).catch(()=>null);
-  if(!ready)throw new Error('Module hôtel non initialisé : '+JSON.stringify({errors,url:page.url(),scripts:await page.locator('script').count(),body:(await page.locator('body').innerText()).slice(0,250)}));
+  if(!ready){
+    const scripts=await page.locator('script:not([src])').evaluateAll(nodes=>nodes.map((node,i)=>({index:i,content:node.textContent})));
+    const vm=require('node:vm');
+    const syntax=scripts.map(s=>{try{new vm.Script(s.content,{filename:'inline-script-'+s.index+'.js'});return null;}catch(e){return String(e.stack||e)}}).filter(Boolean);
+    throw new Error('Module hôtel non initialisé : '+JSON.stringify({errors,syntax,url:page.url()}));
+  }
   await page.evaluate(async()=>await window.openHotelModule('direct'));
   await page.waitForFunction(()=>!!document.querySelector('#hotelCommissionsFrame')?.contentDocument?.querySelector('#reservationHotelGroup'));
   const frame=await (await page.$('#hotelCommissionsFrame')).contentFrame();
