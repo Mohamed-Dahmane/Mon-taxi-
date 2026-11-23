@@ -304,9 +304,10 @@ async function checkBookingRoom(frame,id){
  assert.equal(await names(integrated).count(),1);assert.equal(await integrated.locator('#taxiDrivers').evaluate(el=>el.scrollWidth>el.clientWidth),false);
  await integrated.uncheck('#driversVanOnly');await integrated.click('[data-period="night"]');assert.equal(await names(integrated).count(),1);await integrated.locator('#taxiDrivers [data-close]').click();
  const driversRect=await integrated.locator('#openTaxiDrivers').boundingBox();
- const directRect=await integrated.locator('#openHotelCommissions').boundingBox();
- assert.ok(driversRect.x>=directRect.x+directRect.width);
- assert.equal(driversRect.y,directRect.y);
+ const newCourseRect=await integrated.locator('#toggleNewCourse').boundingBox();
+ assert.ok(driversRect&&newCourseRect,'Les boutons Répertoire et Nouvelle course doivent être visibles');
+ assert.ok(driversRect.x>=newCourseRect.x+newCourseRect.width);
+ assert.equal(driversRect.y,newCourseRect.y);
  assert.equal(await integrated.locator('#hotelSyncStatus').isVisible(),false);
  assert.equal(await integrated.locator('#openTaxiDrivers').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(23, 99, 61)');
  await integrated.evaluate(()=>document.querySelector('.pageBtn[data-page="details"]').click());await integrated.click('#openHotelPlanning');await integrated.waitForFunction(()=>!!document.querySelector('#hotelCommissionsFrame')?.contentDocument?.querySelector('#reservationBoardTitle'));
