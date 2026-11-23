@@ -11,6 +11,16 @@ on:
       - 'pickup-reservation.html'
       - 'app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java'
       - '.github/workflows/driver-directory-tests.yml'
+  pull_request:
+    paths:
+      - 'driver-directory*'
+      - 'fixed-navigation.js'
+      - 'hold-reorder.js'
+      - 'directory-editor.js'
+      - 'index.html'
+      - 'taxi-interface.css'
+      - 'pickup-reservation.html'
+      - '.github/workflows/driver-directory-tests.yml'
   workflow_dispatch:
 jobs:
   directory:
