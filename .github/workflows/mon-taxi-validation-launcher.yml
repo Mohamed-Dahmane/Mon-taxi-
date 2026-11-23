@@ -1,0 +1,66 @@
+name: Validation Mon Taxi - quatre contrôles
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/mon-taxi-validation-launcher.yml]
+  workflow_dispatch:
+jobs:
+  syntax:
+    name: 1 - Syntaxe JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/standard-dropdown-navigation-20261122
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node --check driver-directory.js
+          node --check driver-directory.browser.cjs
+          node --check standard-menu.browser.cjs
+          node --check hold-reorder.js
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('index.html','utf8');
+          const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+          for(let i=0;i<scripts.length;i++)if(scripts[i][1].trim())new vm.Script(scripts[i][1],{filename:'index inline '+i});
+          console.log('Scripts vérifiés:',scripts.length);
+          NODE
+  unit:
+    name: 2 - Logique et calculs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/standard-dropdown-navigation-20261122
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test driver-directory.test.cjs
+  standard:
+    name: 3 - Menu The Standard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/standard-dropdown-navigation-20261122
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node standard-menu.browser.cjs
+  browser:
+    name: 4 - Parcours navigateur complet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/standard-dropdown-navigation-20261122
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node driver-directory.browser.cjs
