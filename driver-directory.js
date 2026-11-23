@@ -136,6 +136,12 @@ function merge(existing,incoming,source,options={}){
   if(!norm(c.name)||!validPhone(c.phone))continue;
   const nativeId=c.nativeId?String(c.nativeId):'';
   let old=nativeId?result.find(x=>x.nativeId===nativeId):null;
+  // Phone number is the primary cross-directory match; names and TX prefixes are not identities.
+  if(!old&&options.fromPhone){
+   const number=contactNumber(c.phone);
+   const matches=result.filter(driver=>contactNumber(driver.phone)===number);
+   if(matches.length===1)old=matches[0];
+  }
   if(!old&&options.fromPhone){
    const name=cleanSearch(c.name);
    const candidates=result.filter(driver=>!nativeId||!driver.nativeId);
