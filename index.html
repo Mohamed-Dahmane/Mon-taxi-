@@ -1294,9 +1294,9 @@ $("importFile").addEventListener("change",async e=>{
    localStorage.setItem("gestion-taxi-before-full-import",JSON.stringify(data));
    data={...parsed.data,resetVersion:"taxi-zero-20261105",manualResetVersion};lastEntry=null;
    // Import explicite : la sauvegarde choisie doit primer sur une ancienne copie cloud.
-   // Bloquer les lectures cloud jusqu’à la confirmation de son envoi.
-   backupPending=true;syncReady=true;
-   save();render();markRefreshed();toast("Sauvegarde restaurée · synchronisation en cours");
+   // Cette restauration est conservée uniquement sur le téléphone.
+   backupPending=false;syncReady=true;
+   save();render();markRefreshed();toast("Sauvegarde restaurée localement");
   }
  }catch(err){alert("Import impossible : "+(err?.message||"fichier non valide"))}
  finally{e.target.value=""}
