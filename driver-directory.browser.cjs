@@ -110,7 +110,7 @@ async function checkBookingRoom(frame,id){
  // The real app stylesheet, copied course, optional client forms and home return.
  const vm=require('node:vm');
  const htmlSource=fs.readFileSync(__dirname+'/index.html','utf8');
- for(const [index,match] of [...htmlSource.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/g)].entries()){
+ for(const [index,match] of [...htmlSource.matchAll(new RegExp('<script[^>]*>([\\\\s\\\\S]*?)<\\\\/script>','g'))].entries()){
   if(!match[1].trim())continue;
   try{new vm.Script(match[1],{filename:'index.html inline script '+index});}
   catch(error){throw new Error('Main app JavaScript syntax error: '+error.stack);}
