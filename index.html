@@ -2614,4 +2614,52 @@ document.getElementById('taxiTestPaymentSound')?.addEventListener('click',()=>{
  dialog.addEventListener('click',event=>{if(event.target===dialog)close();});
 })();
 </script>
+<script>
+/* Saisie intelligente non destructive : suggestions uniquement depuis les options existantes. */
+(()=>{
+ const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const aliases={'nh collection brussels centre':['nh atlanta','atlanta','nh collection','collection brussels'],'doubletree':['dt','double tree'],'the standard':['st','standard']};
+ function prepareSelect(select){
+  if(select.dataset.taxiSmartReady||select.multiple||select.size>1||select.options.length<5)return;
+  select.dataset.taxiSmartReady='1';
+  const container=document.createElement('div');
+  container.className='taxi-smart-select';
+  const search=document.createElement('input');
+  search.type='search';search.autocomplete='off';search.placeholder='Rechercher dans la liste…';
+  search.setAttribute('aria-label','Filtrer '+(select.getAttribute('aria-label')||select.id||'les choix'));
+  const results=document.createElement('div');results.className='taxi-smart-results';
+  const render=()=>{
+   results.replaceChildren();
+   const q=normalize(search.value);
+   if(!q){results.hidden=true;return;}
+   const options=[...select.options].filter(o=>o.value&&!o.disabled).map(o=>({option:o,text:o.textContent.trim()}));
+   const matching=options.filter(({text})=>{
+    const name=normalize(text);
+    const extras=Object.entries(aliases).filter(([key])=>name.includes(key)).flatMap(([,values])=>values);
+    return [name,...extras].some(v=>normalize(v).includes(q));
+   }).slice(0,7);
+   for(const {option,text} of matching){
+    const b=document.createElement('button');b.type='button';b.textContent=text;
+    b.addEventListener('click',()=>{select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));search.value='';results.hidden=true;});
+    results.appendChild(b);
+   }
+   results.hidden=!matching.length;
+  };
+  search.addEventListener('input',render);
+  search.addEventListener('keydown',e=>{if(e.key==='Escape'){search.value='';results.hidden=true;}if(e.key==='Enter'&&!results.hidden&&results.firstElementChild){e.preventDefault();results.firstElementChild.click();}});
+  select.parentNode.insertBefore(container,select);
+  container.append(search,results,select);results.hidden=true;
+ }
+ // Ne modifier que les listes longues, sans toucher aux champs de paiement.
+ const enhance=()=>document.querySelectorAll('select').forEach(prepareSelect);
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance);else enhance();
+})();
+</script>
+<style>
+.taxi-smart-select{position:relative;min-width:0}
+.taxi-smart-select>input{box-sizing:border-box;width:100%;min-height:42px;margin-bottom:5px;padding:8px;border-radius:8px;border:1px solid #8198b8;background:#17263b;color:#fff;font:inherit}
+.taxi-smart-results{position:relative;z-index:4;max-height:180px;overflow:auto;background:#15273e;border:1px solid #6688b8;border-radius:8px;margin-bottom:5px}
+.taxi-smart-results button{display:block;width:100%;min-height:42px;padding:9px;text-align:left;color:#fff;background:transparent;border:0;border-bottom:1px solid #ffffff22;font:inherit}
+.taxi-smart-results button:focus-visible{outline:2px solid #7fc7ff}
+</style>
 </body></html>
