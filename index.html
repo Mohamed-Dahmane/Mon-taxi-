@@ -340,6 +340,20 @@ button:active,.button:active,.pageBtn:active,.tab:active,.typeBtn:active{filter:
 input,select,textarea{accent-color:#7098ff}
 @media(max-width:390px){#home .quick-card{padding:9px}#home .compact-overview .card{padding:8px}.pageBtn{padding:9px 5px}}
 @media(prefers-reduced-motion:reduce){button,.button,.pageBtn,.tab,.typeBtn{transition:none}}
+
+/* Petits ecrans : accueil utilisable sans chevauchement des saisies. */
+.hotel-home-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hotel-home-actions .button{min-width:0;overflow-wrap:anywhere;white-space:normal;font-size:clamp(9px,2.5vw,12px);padding:5px 2px;line-height:1.05;min-height:44px}
+@media(max-width:390px) and (max-height:600px){
+ main{padding-top:4px}header{margin-bottom:3px}
+ #home .taxi-summary{margin:4px 0;gap:4px}
+ #home .taxi-summary .work-reference{padding:2px 4px}
+ .entry-hub{padding:6px 8px}
+ .entry-hub .taxi-entry{gap:3px}
+ .entry-hub .hint{margin:2px 0 4px}
+ .entry-hub .entry-costs{margin-top:3px;padding-top:2px}
+ .pagebar{margin-block:3px}
+}
 </style>
 </head><body class="taxi-intro-pending"><div id="taxiSplash" class="taxi-splash"><img class="taxi-splash-studio" src="app/mercedes-studio.webp" alt="" fetchpriority="high"><div class="taxi-splash-art"><div class="taxi-splash-scene"><div class="taxi-splash-vehicle"><img src="app/mercedes-foreground.webp" alt="" fetchpriority="high"><span class="taxi-wheel-treads left"></span><span class="taxi-wheel-treads right"></span></div></div><div class="taxi-splash-lockup"><div class="taxi-splash-wordmark">TAXIMO</div><div class="taxi-splash-separator" aria-hidden="true"></div><div class="taxi-splash-city">Bruxelles Mobility</div><button type="button" class="taxi-splash-continue" disabled>Appuie pour ouvrir</button></div></div></div>
 <script>
