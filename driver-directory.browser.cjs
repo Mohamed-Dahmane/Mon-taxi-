@@ -931,8 +931,8 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
  assert.equal(await referrerPhone.isVisible(),false);
  const celineFinalButtons=await celineRow.locator('button').allTextContents();
- assert.ok(celineFinalButtons.some(label=>label.trim()==='Effectuée'), 'Celine finalization action missing after commission message: '+JSON.stringify(celineFinalButtons));
- await celineRow.getByRole('button',{name:'Effectuée',exact:true}).click({timeout:5000});
+ assert.ok(celineFinalButtons.some(label=>label.trim()==='Chargé'), 'Celine finalization action missing after commission message: '+JSON.stringify(celineFinalButtons));
+ await celineRow.getByRole('button',{name:'Chargé',exact:true}).click({timeout:5000});
  assert.equal(await celineRow.isVisible(),false);
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'validated');
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
