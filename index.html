@@ -1515,7 +1515,7 @@ window.taxiRecordCashFare=function(courseId,amount){
  if(!courseId||!Number.isSafeInteger(cents)||cents<0)return false;
  const receiptId=String(courseId);
  data.cashFareReceipts??={};
- if(data.cashFareReceipts[receiptId])return true;
+ // Une tentative repetee avec un montant different ne doit jamais etre acceptee.\n if(data.cashFareReceipts[receiptId])return data.cashFareReceipts[receiptId].amount===cents;
  const now=new Date();
  const monthKey=now.getFullYear()+"-"+now.getMonth();
  const day=String(now.getDate());
