@@ -1,5 +1,5 @@
 name: Construire APK Mon Taxi - icone mise a jour
-# Rebuild requested after restoring hotel and driver directory menus (2026-11-22).
+# Safe isolated APK rebuild requested after passing validation on commit 5626852 (2026-11-23).
 on:
   workflow_dispatch:
   push:
