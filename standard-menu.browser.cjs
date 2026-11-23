@@ -31,7 +31,6 @@ const assert = require('node:assert/strict');
    try {
     openReservations(null);
     const entry={id:'standard-focus-test',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',scheduledDate:reservationClock().slice(0,10),scheduledTime:'15:00',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',room:'240',clientName:'Client test'};
-    data.push(entry);
     showReservationForm(entry,false);
     const menu=document.getElementById('standardContactDropdown');
     if(!menu)throw Error('Menu Standard absent');
