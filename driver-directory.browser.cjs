@@ -934,11 +934,12 @@ async function checkBookingRoom(frame,id){
  await referrerPhone.getByRole('button',{name:'Annuler'}).click();
  await earlyPapa.click();
  assert.equal(await earlyRow.getByRole('button',{name:'Charger',exact:true}).count(),0);
- assert.equal(await earlyRow.getByRole('button',{name:'Chargé',exact:true}).isVisible(),true);
+ assert.equal(await earlyRow.getByRole('button',{name:'Chargé',exact:true}).count(),0);
+ assert.equal(await earlyRow.getByRole('button',{name:'Message de commission',exact:true}).count(),0);
  const doubleTreeDirect=papaVariants.find(course=>course.bookingMode==='Direct');
  const doubleTreeDirectRow=frame.locator('[data-entry-id="'+doubleTreeDirect.id+'"]');
  const externalCount=await integrated.evaluate(()=>externalActions.length);
- await doubleTreeDirectRow.getByRole('button',{name:'Chargé',exact:true}).click();
+ await doubleTreeDirectRow.getByRole('button',{name:/Course effectuée/}).click();
  assert.equal((await storedCourse(doubleTreeDirect.id)).reservationStatus,'validated');
  assert.equal(await integrated.evaluate(()=>externalActions.length),externalCount);
  assert.equal(await referrerPhone.isVisible(),false);
