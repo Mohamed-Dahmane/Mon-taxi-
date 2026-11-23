@@ -26,6 +26,35 @@ dialog:has(> #taxiQuickNavigation){padding-top:max(12px,env(safe-area-inset-top)
 #taxiQuickNavigation button:focus-visible{outline:3px solid #fbbf24;outline-offset:-3px}
 body{padding-bottom:max(80px,env(safe-area-inset-bottom))}
 #taxiDrivers,#taxiDirectoryEditor{padding-bottom:80px!important}
+/* Shared responsive policy: never compress the driver directory or dialog actions
+   beneath fixed navigation; allow scrolling instead of overlaying controls. */
+#taxiDrivers[open],#taxiDirectoryEditor[open],#hotelCommissionsDialog[open]{
+ max-height:calc(100dvh - 24px)!important;
+ max-width:calc(100vw - 24px)!important;
+ overflow-y:auto!important;
+ overscroll-behavior:contain;
+ box-sizing:border-box!important;
+}
+#taxiDrivers button,#taxiDirectoryEditor button,#hotelCommissionsDialog button{
+ touch-action:manipulation;
+}
+@media(max-width:540px){
+ #taxiQuickNavigation[data-placement="toolbar"]{
+  position:fixed!important;top:auto!important;right:12px!important;
+  bottom:max(12px,env(safe-area-inset-bottom))!important;
+  left:auto!important;max-width:calc(100vw - 24px)!important;
+ }
+ #taxiQuickNavigation[data-placement="dialog"]{
+  position:relative!important;max-width:100%!important;
+ }
+ #taxiDrivers[open],#taxiDirectoryEditor[open],#hotelCommissionsDialog[open]{
+  width:calc(100vw - 16px)!important;
+  max-width:calc(100vw - 16px)!important;
+ }
+ #taxiDrivers button,#taxiDirectoryEditor button{
+  min-height:40px;
+ }
+}
 `;
 doc.head.append(style);doc.body.append(nav);
 const readPage=()=>({page:doc.querySelector('.page.active')?.id||'home',tab:doc.querySelector('.panel.active')?.id||''});
