@@ -172,7 +172,7 @@ async function checkBookingRoom(frame,id){
  assert.equal(await manualCommission.getAttribute('enterkeyhint'),'done');
  await manualCommission.fill('12,50');
  await manualCommission.press('Enter');
- assert.equal(await manualCommission.inputValue(),'');
+ assert.equal(await manualCommission.inputValue(),'', 'Commission: Enter doit enregistrer le montant et vider le champ');
  assert.equal(await integrated.evaluate(()=>document.activeElement.tagName),'BODY');
  assert.match(await integrated.locator('#commissionToday').innerText(),/12,50/);
  await manualCommission.fill('12,50');
