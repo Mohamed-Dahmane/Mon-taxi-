@@ -380,15 +380,15 @@ async function checkBookingRoom(frame,id){
   // Ensure the Standard contact choices are rendered before exercising the click.
   $('reservationHotelGroup').value=reservationHotels[1];
   syncReservationHotel(original.contact);
-  const sophiaButton=$('reservationStandardContacts').querySelector('[data-contact="Sophia"]');
-  assert.ok(sophiaButton,'Le bouton Sophia doit être présent dans les contacts du Standard');
-  sophiaButton.click();
+  const falButton=$('reservationStandardContacts').querySelector('[data-contact="Fal"]');
+  if(!falButton)throw new Error('Le bouton Fal doit être présent dans les contacts du Standard');
+  falButton.click();
   const loaded={name:$('reservationClientName').value,phone:$('reservationClientPhone').value,flight:$('reservationFlight').value,company:$('reservationCompany').value};showReservationStep(reservationSaveStep);
   $('reservationRoom').value='0240';$('reservationClientName').value='Nom modifié';$('reservationClientPhone').value='+32470000001';$('reservationPassengers').value='5';$('reservationForm').onsubmit({preventDefault(){}});
   const edited=data.find(e=>e.id===original.id);showReservationForm(edited,false);showReservationStep(reservationSaveStep);$('reservationClientName').value='';$('reservationClientPhone').value='';$('reservationPassengers').value='';$('reservationForm').onsubmit({preventDefault(){}});
   return {loaded,edited,cleared:data.find(e=>e.id===original.id),error:$('reservationMessage').textContent};
  });
- assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.loaded.flight,'BA388');assert.equal(reservation.loaded.company,'British Airways');assert.equal(reservation.edited.flight,'BA388');assert.equal(reservation.edited.company,'British Airways');assert.equal(reservation.edited.room,'0240');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.edited.contact,'Sophia');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');assert.equal(reservation.edited.passengers,5);assert.equal(reservation.cleared.passengers,null);
+ assert.equal(reservation.loaded.name,'Nom initial');assert.equal(reservation.loaded.flight,'BA388');assert.equal(reservation.loaded.company,'British Airways');assert.equal(reservation.edited.flight,'BA388');assert.equal(reservation.edited.company,'British Airways');assert.equal(reservation.edited.room,'0240');assert.equal(reservation.edited.clientName,'Nom modifié',reservation.error);assert.equal(reservation.edited.clientPhone,'+32470000001');assert.equal(reservation.edited.contact,'Fal');assert.equal(reservation.cleared.clientName,'');assert.equal(reservation.cleared.clientPhone,'');assert.equal(reservation.edited.passengers,5);assert.equal(reservation.cleared.passengers,null);
  await frame.evaluate(id=>{showReservationForm(data.find(course=>course.id===id),false);showReservationStep(reservationSaveStep);},reservation.edited.id);
  await checkBookingRoom(frame,'reservationRoom');
  // The real pick-up save handler must also accept blank client fields.
