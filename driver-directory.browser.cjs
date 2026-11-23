@@ -972,6 +972,11 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
  assert.equal(await referrerPhone.isVisible(),false);
  await celineRow.getByRole('button',{name:'WhatsApp envoyé',exact:true}).click();
+ assert.equal(await celineRow.isVisible(),true);
+ assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
+ assert.ok((await storedCourse(celineCourse.id)).commissionMessageSentAt);
+ assert.equal(await celineRow.getByRole('button',{name:'Message confirmé',exact:true}).isDisabled(),true);
+ await celineRow.getByRole('button',{name:'Course effectuée',exact:true}).click();
  assert.equal(await celineRow.isVisible(),false);
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'validated');
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
@@ -999,6 +1004,10 @@ async function checkBookingRoom(frame,id){
  await otherRow.getByRole('button',{name:'Message de commission',exact:true}).click();
  assert.equal(await commissionOnDay(),commissionBeforeCharging+1000);
  await otherRow.getByRole('button',{name:'SMS envoyé',exact:true}).click();
+ assert.equal(await otherRow.isVisible(),true);
+ assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
+ assert.ok((await storedCourse(chargeOther.id)).commissionMessageSentAt);
+ await otherRow.getByRole('button',{name:'Course effectuée',exact:true}).click();
  assert.equal(await otherRow.isVisible(),false);
  const archivedCharge=await storedCourse(chargeOther.id);
  assert.equal(archivedCharge.reservationStatus,'validated');
