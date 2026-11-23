@@ -845,6 +845,26 @@ async function checkBookingRoom(frame,id){
  assert.equal(await vanRow.getByRole('button',{name:'Papa',exact:true}).count(),0);
  const quickVan=vanRow.getByRole('combobox',{name:'Changer le chauffeur'});
  assert.equal(await quickVan.locator('option').filter({hasText:'TX Petit test'}).count(),0);
+ // Regression matrix: switching between DoubleTree contacts must be reversible,
+ // preserve the pending course and never trigger payment or archiving.
+ for(const original of ['Night','Day']){
+  const candidate={...earlyDoubleTree,id:'contact-matrix-'+original.toLowerCase(),contact:original};
+  await frame.evaluate(course=>{data.push(course);save();renderReservations();},candidate);
+  const card=frame.locator('.reservation-card[data-entry-id="'+candidate.id+'"]');
+  const papa=card.getByRole('button',{name:'Papa',exact:true});
+  for(let round=0;round<2;round++){
+   await papa.click();
+   await card.getByText('Contact · Papas',{exact:true}).waitFor();
+   assert.equal((await storedCourse(candidate.id)).contact,'Papas');
+   assert.equal((await storedCourse(candidate.id)).reservationStatus,candidate.reservationStatus);
+   assert.equal(await card.getByRole('button',{name:'Charger · Demarrer',exact:true}).isVisible(),true);
+   await papa.click();
+   await card.getByText('Contact · '+original,{exact:true}).waitFor();
+   assert.equal((await storedCourse(candidate.id)).contact,original);
+   assert.equal((await storedCourse(candidate.id)).reservationStatus,candidate.reservationStatus);
+   assert.equal(await card.getByRole('button',{name:'Charger · Demarrer',exact:true}).isVisible(),true);
+  }
+ }
  const papaVariants=[
   {...earlyDoubleTree,id:'planning-papa-pickup',scheduledTime:'07:00',contact:'Day',destination:'DoubleTree by Hilton',pickup:{place:'BRU'}},
   {...earlyDoubleTree,id:'planning-papa-direct',bookingMode:'Direct',recordedTime:'23:00',contact:'Night'}
