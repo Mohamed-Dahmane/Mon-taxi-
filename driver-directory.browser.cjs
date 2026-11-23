@@ -891,7 +891,7 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(doubleTreeDirect.id)).reservationStatus,'validated');
  assert.equal(await integrated.evaluate(()=>externalActions.length),externalCount);
  assert.equal(await referrerPhone.isVisible(),false);
- const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline',scheduledDate:'2026-11-20'}; // Past scheduled date avoids date-bound commission gating
+ const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline',bookingMode:'Direct',date:linked.van.date,scheduledDate:linked.van.date}; // Direct course remains actionable; avoid archived scheduled-date filtering
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
  const celineRow=frame.locator('[data-entry-id="planning-charge-celine"]');
  await celineRow.getByRole('button',{name:'Charger',exact:true}).click();
