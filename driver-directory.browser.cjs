@@ -358,6 +358,7 @@ async function checkBookingRoom(frame,id){
  assert.equal(direct.count,1,direct.error);assert.equal(direct.first.room,'0240');assert.equal(direct.first.clientName,'Mme Test');assert.equal(direct.first.clientPhone,'+32470000000');assert.equal(direct.first.passengers,4);assert.equal(direct.first.flight,'SN123');assert.equal(direct.first.company,'Brussels Airlines');assert.equal(direct.cleared,true);assert.equal(direct.total,2);assert.equal(direct.second.clientName,'');assert.equal(direct.second.clientPhone,'');assert.equal(direct.second.passengers,null);
  const reservation=await frame.evaluate(()=>{
   // The home shortcut may be absent in the embedded reservation view; the API accepts no button.
+   if(typeof openReservations!=='function')throw new Error('Réservations : fonction openReservations indisponible dans la fenêtre intégrée');
    openReservations(null);
   const today=reservationClock().slice(0,10);const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10);
   const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000',flight:'BA388',company:'British Airways',passengers:3};
