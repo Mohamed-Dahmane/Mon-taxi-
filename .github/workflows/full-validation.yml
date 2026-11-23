@@ -1,4 +1,5 @@
 name: Validation complète Mon Taxi
+# Relance des quatre contrôles après correction du bloc Planning
 on:
   push:
     branches:
