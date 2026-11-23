@@ -40,9 +40,10 @@ body{padding-bottom:max(80px,env(safe-area-inset-bottom))}
 }
 @media(max-width:540px){
  #taxiQuickNavigation[data-placement="toolbar"]{
-  position:fixed!important;top:auto!important;right:12px!important;
-  bottom:max(12px,env(safe-area-inset-bottom))!important;
-  left:auto!important;max-width:calc(100vw - 24px)!important;
+  /* In normal flow on narrow screens: never cover the last form controls. */
+  position:relative!important;inset:auto!important;
+  margin:12px 12px 16px auto!important;
+  max-width:calc(100vw - 24px)!important;
  }
  #taxiQuickNavigation[data-placement="dialog"]{
   position:relative!important;max-width:100%!important;
