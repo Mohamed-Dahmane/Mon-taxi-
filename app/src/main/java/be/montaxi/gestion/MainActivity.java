@@ -52,7 +52,15 @@ public class MainActivity extends Activity {
   if(!unlocked||web==null||recoveryShown)return;
   web.evaluateJavascript("(function(){try{var m=document.querySelector('main');var g=document.querySelector('.taxi-access');return document.readyState==='complete'&&!!((m&&!m.hidden)||(g&&!g.hidden))}catch(e){return false}})()",value->{
    if(!unlocked||web==null||recoveryShown)return;
-   if(!"true".equals(value))showWebRecovery();
+   if(!"true".equals(value)){
+    web.evaluateJavascript("(function(){try{return JSON.stringify({url:location.href,ready:document.readyState,main:!!document.querySelector('main'),mainHidden:document.querySelector('main')?.hidden,gate:!!document.querySelector('.taxi-access'),gateHidden:document.querySelector('.taxi-access')?.hidden,bodyLength:document.body?.innerText?.length||0})}catch(e){return String(e)}})()",diagnostic->{
+     if(isFinishing()||isDestroyed()||!unlocked)return;
+     new AlertDialog.Builder(this).setTitle("Diagnostic Mon Taxi")
+      .setMessage("L'interface Android ne s'affiche pas. Diagnostic : "+diagnostic)
+      .setPositiveButton("Réessayer",(dialog,which)->{recoveryShown=false;web.loadUrl(APP_URL);})
+      .setNegativeButton("Fermer",(dialog,which)->recoveryShown=false).show();
+    });
+   }
   });
  }
  private void showWebRecovery(){
