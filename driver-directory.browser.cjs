@@ -894,7 +894,13 @@ async function checkBookingRoom(frame,id){
  const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline',bookingMode:'Direct',date:linked.van.date,scheduledDate:linked.van.date}; // Direct course remains actionable; avoid archived scheduled-date filtering
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
  const celineRow=frame.locator('[data-entry-id="planning-charge-celine"]');
- await celineRow.getByRole('button',{name:'Charger',exact:true}).click();
+ const celineDiagnostic=await frame.evaluate(()=>{
+  const entry=data.find(item=>item.id==='planning-charge-celine');
+  const row=document.querySelector('[data-entry-id="planning-charge-celine"]');
+  return {entry:entry&&{id:entry.id,contact:entry.contact,hotel:entry.hotel,hotelGroup:entry.hotelGroup,bookingMode:entry.bookingMode,status:reservationCourseStatus(entry),date:commissionDate(entry),isDoubleTree:isDoubleTreeCourse(entry),charged:window.parent.TaxiHotels?.commissionPostedAt(entry)},boardStatus:reservationBoardStatus,planningView,rowExists:!!row,buttons:row?[...row.querySelectorAll('button')].map(button=>({text:button.textContent,disabled:button.disabled})):[]};
+ });
+ assert.ok(celineDiagnostic.rowExists&&celineDiagnostic.buttons.some(button=>button.text==='Charger'), 'Celine charge button diagnostic: '+JSON.stringify(celineDiagnostic));
+ await celineRow.getByRole('button',{name:'Charger',exact:true}).click({timeout:5000});
  const retryStandard=celineRow.getByRole('button',{name:'Message de commission',exact:true});
  assert.ok((await storedCourse(celineCourse.id)).commissionChargedAt);
  assert.equal(await frame.locator('#reservationBoardMessage').textContent(),'Aucun numéro enregistré pour Céline.');
