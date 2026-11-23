@@ -195,6 +195,16 @@ async function checkBookingRoom(frame,id){
  await integrated.fill('#ExpenseInput','');
  await integrated.evaluate(()=>{document.activeElement.blur();scrollTo(0,0);});
  await integrated.setViewportSize({width:360,height:780});
+  // Mobile regression: quick navigation must never float over actionable content.
+  const mobileNav=await integrated.evaluate(()=>{
+   const nav=document.getElementById('taxiQuickNavigation');
+   if(!nav)return {exists:false};
+   const style=getComputedStyle(nav),rect=nav.getBoundingClientRect();
+   return {exists:true,placement:nav.dataset.placement,position:style.position,width:rect.width,viewport:innerWidth};
+  });
+  assert.equal(mobileNav.exists,true,'La navigation rapide doit être présente');
+  assert.notEqual(mobileNav.position,'fixed','Sur mobile la navigation ne doit pas masquer les boutons');
+  assert.ok(mobileNav.width<=mobileNav.viewport,'La navigation doit tenir dans la largeur mobile');
  const homeAverage=integrated.locator('#home .workday-average .reference-amount');
  const averageColor=await homeAverage.evaluate(el=>getComputedStyle(el).color);
  assert.equal(averageColor,'rgb(156, 231, 190)');
