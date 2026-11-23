@@ -1,0 +1,22 @@
+name: Payment automatic archival regression
+on:
+  push:
+    branches:
+      - fix/payment-no-auto-archive-20261123
+  pull_request:
+    paths:
+      - index.html
+      - tests/payment-automatic-archive.test.cjs
+      - .github/workflows/payment-automatic-archive.yml
+jobs:
+  payment-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: node --check tests/payment-automatic-archive.test.cjs
+      - name: Payment-before-archive regression
+        run: node tests/payment-automatic-archive.test.cjs
