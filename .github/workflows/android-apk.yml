@@ -51,14 +51,14 @@ jobs:
           test -f app/src/main/AndroidManifest.xml
           test -f app/src/main/java/be/montaxi/gestion/MainActivity.java
           test -f index.html
-      - name: Verify Android and Chrome remain linked
+      - name: Verify Android uses embedded interface only
         run: |
-          # Android must load the same published web interface as Chrome.
-          grep -Fq 'private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";' app/src/main/java/be/montaxi/gestion/MainActivity.java
-          grep -Fq 'web.loadUrl(APP_URL+"?appbuild=6")' app/src/main/java/be/montaxi/gestion/MainActivity.java
-          # Shared cloud synchronization must remain available in the web interface.
-          grep -Fq 'async function checkCloudSync()' index.html
-          grep -Fq 'taxi_management_backups' index.html
+          grep -Fq 'private static final String APP_URL="file:///android_asset/index.html";' app/src/main/java/be/montaxi/gestion/MainActivity.java
+          grep -Fq 'web.loadUrl(APP_URL)' app/src/main/java/be/montaxi/gestion/MainActivity.java
+          if grep -Fq 'mohamed-dahmane.github.io/Mon-taxi-' app/src/main/java/be/montaxi/gestion/MainActivity.java; then
+            echo 'ERROR: Android still depends on GitHub Pages' >&2
+            exit 1
+          fi
       - name: Test cash payment and course archival
         run: node tests/cash-payment.test.cjs
       - name: Test payment safety and Planning separation
