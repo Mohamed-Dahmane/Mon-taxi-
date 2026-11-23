@@ -730,6 +730,7 @@ async function checkBookingRoom(frame,id){
   return [button.textContent,style.backgroundColor,style.color,button.getBoundingClientRect().height>=44];
  })),[
   ['Exporter au chauffeur','rgb(36, 115, 58)','rgb(255, 255, 255)',true],
+  ['Course effectuée','rgb(8, 114, 100)','rgb(255, 255, 255)',true],
   ['Attribuer à','rgb(38, 91, 152)','rgb(255, 255, 255)',true],
   ['Supprimer la course','rgb(115, 55, 64)','rgb(255, 255, 255)',true]
  ]);
