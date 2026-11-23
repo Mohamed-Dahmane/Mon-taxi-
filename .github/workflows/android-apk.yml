@@ -62,7 +62,7 @@ jobs:
       - name: Build debug APK with diagnostic logs
         run: |
           set -o pipefail
-          if gradle --no-daemon --console=plain assembleDebug assembleRelease > android-build.log 2>&1; then
+          if gradle --no-daemon --console=plain --max-workers=2 assembleDebug assembleRelease > android-build.log 2>&1 || (echo 'Nouvelle tentative après échec temporaire du téléchargement Maven'; sleep 35; gradle --no-daemon --console=plain --max-workers=2 --refresh-dependencies assembleDebug assembleRelease >> android-build.log 2>&1); then
             echo "Compilation Android réussie."
           else
             echo "=== ERREURS DE COMPILATION (extrait) ==="
