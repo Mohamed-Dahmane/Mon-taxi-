@@ -12,6 +12,7 @@ on:
       - 'app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java'
       - '.github/workflows/driver-directory-tests.yml'
   workflow_dispatch:
+# Fresh full-suite baseline for consolidated error audit (2026-11-23).
 jobs:
   directory:
     runs-on: ubuntu-24.04
