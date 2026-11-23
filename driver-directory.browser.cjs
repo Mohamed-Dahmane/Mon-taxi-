@@ -884,14 +884,18 @@ async function checkBookingRoom(frame,id){
  assert.equal(await referrerPhone.getByRole('textbox',{name:/Night/}).inputValue(),'');
  await referrerPhone.getByRole('button',{name:'Annuler'}).click();
  await earlyPapa.click();
- assert.equal(await earlyRow.getByRole('button',{name:'Charger',exact:true}).count(),0);
- assert.equal(await earlyRow.getByRole('button',{name:'Chargé',exact:true}).isVisible(),true);
+ // The unified lifecycle no longer has legacy 'Chargé' validation buttons.
+ // Starting navigation must preserve the pending status until payment and confirmation.
+ assert.equal(await earlyRow.getByRole('button',{name:'Chargé',exact:true}).count(),0);
+ assert.equal(await earlyRow.getByRole('button',{name:'Charger · Demarrer',exact:true}).isVisible(),true);
  const doubleTreeDirect=papaVariants.find(course=>course.bookingMode==='Direct');
  const doubleTreeDirectRow=frame.locator('[data-entry-id="'+doubleTreeDirect.id+'"]');
  const externalCount=await integrated.evaluate(()=>externalActions.length);
- await doubleTreeDirectRow.getByRole('button',{name:'Chargé',exact:true}).click();
- assert.equal((await storedCourse(doubleTreeDirect.id)).reservationStatus,'validated');
- assert.equal(await integrated.evaluate(()=>externalActions.length),externalCount);
+ await doubleTreeDirectRow.getByRole('button',{name:'Charger · Demarrer',exact:true}).click();
+ assert.ok((await storedCourse(doubleTreeDirect.id)).rideStartedAt);
+ assert.equal((await storedCourse(doubleTreeDirect.id)).reservationStatus,'pending');
+ assert.equal(await integrated.evaluate(()=>externalActions.length),externalCount+1);
+ assert.equal(await doubleTreeDirectRow.getByRole('button',{name:'Terminer · Encaisser',exact:true}).isVisible(),true);
  assert.equal(await referrerPhone.isVisible(),false);
  const celineCourse={...linked.van,id:'planning-charge-celine',contact:'Céline',scheduledDate:linked.van.date};
  await frame.evaluate(course=>{data.push(course);save();renderReservations();},celineCourse);
