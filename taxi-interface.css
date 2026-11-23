@@ -950,3 +950,22 @@ html.taxi-clean {
 .taxi-clean.taxi-hotel #planningEditActions:empty {
   margin-top: 0;
 }
+
+/* Compact phones: keep the six quick-entry fields above the fold and
+   all four home actions on one row without clipped labels. */
+@media (max-width: 360px) and (max-height: 620px) {
+  .taxi-clean #home .entry-hub { padding: 4px 7px; margin-bottom: 3px; }
+  .taxi-clean #home .entry-hub-header { padding-bottom: 1px; }
+  .taxi-clean #home .entry-hub .taxi-entry { padding-block: 0; gap: 3px; }
+  .taxi-clean #home .entry-hub .taxi-entry input { min-height: 42px; }
+  .taxi-clean #home .entry-hub .entry-costs { margin-top: 1px; padding-top: 0; }
+  .taxi-clean #home .taxi-summary .work-reference { padding-block: 4px; }
+  .taxi-clean #home .hotel-home-actions { gap: 2px; }
+  .taxi-clean #home .hotel-home-actions button {
+    min-width: 0;
+    padding-inline: 2px;
+    font-size: 10px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+}
