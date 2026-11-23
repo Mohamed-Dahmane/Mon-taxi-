@@ -61,7 +61,7 @@ public class MainActivity extends Activity {
   new AlertDialog.Builder(this).setTitle("Mon Taxi ne s'affiche pas")
    .setMessage("L'empreinte a fonctionne, mais le tableau n'a pas pu se charger. Aucune donnee ne sera effacee.")
    .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL+"?retry="+SystemClock.elapsedRealtime());webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
-   .setNegativeButton("Ouvrir dans Chrome",(dialog,which)->{recoveryShown=false;startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(APP_URL)));})
+   .setNegativeButton("Fermer",(dialog,which)->recoveryShown=false)
    .setOnCancelListener(dialog->recoveryShown=false).show();
  }
  private FrameLayout unlockContent;
@@ -110,6 +110,31 @@ public class MainActivity extends Activity {
  }
  private CancellationSignal biometric;
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
+ // Conserver la même origine WebView pour retrouver les données locales existantes.
+ // Servir toutes les ressources de cette origine depuis l'APK, sans accès à GitHub Pages.
+ private WebResourceResponse localTaxiResource(android.net.Uri uri){
+  if(uri==null||!uri.toString().startsWith(APP_URL))return null;
+  String root=android.net.Uri.parse(APP_URL).getPath();
+  String path=uri.getPath();
+  if(root==null||path==null||!path.startsWith(root))return null;
+  String asset=path.substring(root.length());
+  if(asset.length()==0)asset="index.html";
+  if(asset.startsWith("/")||asset.contains("..")||asset.contains("\\"))return null;
+  String mime="application/octet-stream";
+  if(asset.endsWith(".html"))mime="text/html";
+  else if(asset.endsWith(".js"))mime="text/javascript";
+  else if(asset.endsWith(".css"))mime="text/css";
+  else if(asset.endsWith(".webp"))mime="image/webp";
+  else if(asset.endsWith(".jpg")||asset.endsWith(".jpeg"))mime="image/jpeg";
+  else if(asset.endsWith(".png"))mime="image/png";
+  else if(asset.endsWith(".svg"))mime="image/svg+xml";
+  else if(asset.endsWith(".ogg"))mime="audio/ogg";
+  try{return new WebResourceResponse(mime,"UTF-8",getAssets().open(asset));}
+  catch(IOException e){
+   return new WebResourceResponse("text/plain","UTF-8",new java.io.ByteArrayInputStream(
+    ("Ressource APK introuvable: "+asset).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+  }
+ }
  private android.media.SoundPool paymentSoundPool;
  private int paymentSoundId=0;
  private boolean paymentSoundReady=false;
@@ -412,15 +437,15 @@ public class MainActivity extends Activity {
    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
     @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
+    @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+     WebResourceResponse local=localTaxiResource(request.getUrl());
+     return local!=null?local:super.shouldInterceptRequest(view,request);
+    }
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){
      if(!req.isForMainFrame())return;
      android.net.Uri uri=req.getUrl();
-     // Une ressource secondaire indisponible ne doit pas remplacer toute la page.
-     if(uri==null||!uri.toString().startsWith(APP_URL))return;
-     if(!"file".equals(view.getUrl()==null?"":android.net.Uri.parse(view.getUrl()).getScheme())){
-      view.loadUrl("file:///android_asset/index.html");
-      webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);
-     }
+     // Ne jamais basculer vers le site en ligne ni changer l’origine de stockage.
+     if(uri!=null&&uri.toString().startsWith(APP_URL))webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);
     }
     @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){
      // Le processus WebView est mort : ne jamais réutiliser cette instance.
@@ -512,7 +537,7 @@ public class MainActivity extends Activity {
    web.setWebChromeClient(new WebChromeClient());
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
-  // Toujours charger la dernière version en ligne après déverrouillage.
+  // Charger l’interface locale intégrée; même origine HTTPS pour préserver localStorage.
   if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=6");
   webHealthHandler.postDelayed(this::verifyWebContent,15000L);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
