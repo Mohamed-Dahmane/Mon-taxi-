@@ -730,10 +730,12 @@ async function checkBookingRoom(frame,id){
   return [button.textContent,style.backgroundColor,style.color,button.getBoundingClientRect().height>=44];
  })),[
   ['Exporter au chauffeur','rgb(36, 115, 58)','rgb(255, 255, 255)',true],
-  ['Course effectuée','rgb(8, 114, 100)','rgb(255, 255, 255)',true],
   ['Attribuer à','rgb(38, 91, 152)','rgb(255, 255, 255)',true],
   ['Supprimer la course','rgb(115, 55, 64)','rgb(255, 255, 255)',true]
  ]);
+ const completionButtons=frame.locator('[data-entry-id="linked-car"] .planning-completion-separate button').filter({hasText:'Course effectuée'});
+ assert.equal(await completionButtons.count(),1,'Une seule action Course effectuée doit être visible dans le bloc de validation');
+ assert.equal(await completionButtons.first().isEnabled(),true);
  const references=await frame.evaluate(course=>{
   const date=course.scheduledDate;
   const {nextReference,referenceCountersKey}=window.parent.TaxiHotels;
