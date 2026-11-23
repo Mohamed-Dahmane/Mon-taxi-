@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {assessUberImportSchema} from '../lib/uber-schema-preflight.mjs';
+const cols=(table,names)=>names.map(column_name=>({table_name:table,column_name}));
+const staging=cols('taxi_uber_driver_earnings_staging',['driver_external_id','external_payment_id','net_cents','local_service_date','source']);
+const payments=cols('taxi_uber_payments',['user_id','payment_id','amount_cents','cash_collected_cents']);
+test('current schema cannot authorize automatic posting',()=>{const r=assessUberImportSchema([...staging,...payments]);assert.equal(r.readyForAutomaticPosting,false);assert.equal(r.ownershipMappingVerified,false);assert.deepEqual(r.missing,[]);});
+test('missing payment columns fail closed',()=>assert.deepEqual(assessUberImportSchema(staging).missing.length,4));
+test('even extra ownership columns cannot bypass authorization and atomicity',()=>{const r=assessUberImportSchema([...staging,...payments,...cols('taxi_uber_driver_earnings_staging',['user_id']),...cols('taxi_uber_payments',['driver_external_id'])]);assert.equal(r.ownershipMappingVerified,true);assert.equal(r.readyForAutomaticPosting,false);});
+test('invalid inventory fails closed',()=>assert.throws(()=>assessUberImportSchema(null),/inventory/));

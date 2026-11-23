@@ -1,0 +1,23 @@
+name: Uber reconciliation offline tests
+on:
+  push:
+    branches:
+      - uber-earnings-safe-reconciliation-20261111
+    paths:
+      - 'lib/uber-*.mjs'
+      - 'tests/uber-*.test.mjs'
+      - '.github/workflows/uber-reconciliation-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run offline Uber tests (no Supabase credentials)
+        run: node --test tests/uber-*.test.mjs
