@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
   return !acceptSessionInteraction()||super.dispatchKeyEvent(event);
  }
  private CancellationSignal biometric;
- private static final String APP_URL="file:///android_asset/index.html";
+ private static final String APP_URL="https://appassets.androidplatform.net/index.html";
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
   vault=getSharedPreferences("taxi-lock",MODE_PRIVATE);
@@ -340,6 +340,20 @@ public class MainActivity extends Activity {
     // Defence in depth: the Android APK must never access shared
     // Chrome/Android backup or hotel synchronization endpoints.
     @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+     android.net.Uri resource=request.getUrl();
+     if(resource!=null&&"appassets.androidplatform.net".equals(resource.getHost())){
+      String relative=resource.getPath();
+      if(relative==null||relative.contains(".."))return new WebResourceResponse("text/plain","UTF-8",null);
+      if(relative.startsWith("/"))relative=relative.substring(1);
+      if(relative.isEmpty())relative="index.html";
+      String mime=relative.endsWith(".js")?"application/javascript":
+       relative.endsWith(".css")?"text/css":relative.endsWith(".html")?"text/html":
+       relative.endsWith(".webp")?"image/webp":relative.endsWith(".jpg")?"image/jpeg":
+       "application/octet-stream";
+      try{return new WebResourceResponse(mime,"UTF-8",getAssets().open(relative));}
+      catch(IOException e){return new WebResourceResponse("text/plain","UTF-8",null);}
+     }
+
      android.net.Uri uri=request.getUrl();
      String path=uri==null?"":uri.getPath();
      if(path!=null&&(path.startsWith("/rest/v1/taxi_management_backups")
@@ -372,7 +386,7 @@ public class MainActivity extends Activity {
      });
      return true;
     }
-    @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith("file:///android_asset/");}
+    @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !req.getUrl().toString().startsWith("https://appassets.androidplatform.net/");}
    });
    web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
     try{
@@ -470,7 +484,7 @@ public class MainActivity extends Activity {
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
-   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(true);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // Interface embarquee dans l APK : aucune lecture de GitHub Pages.
   if(web.getUrl()==null)web.loadUrl(APP_URL);
