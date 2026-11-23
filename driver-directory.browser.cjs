@@ -214,9 +214,15 @@ async function checkBookingRoom(frame,id){
  const visibleActions=await homeActions.locator('button').evaluateAll(buttons=>buttons.filter(b=>b.getClientRects().length).map(b=>({id:b.id,top:b.getBoundingClientRect().top})));
  assert.deepEqual(visibleActions.map(action=>action.id),['openHotelPlanning','taxiActiveRide','toggleNewCourse','openTaxiDrivers']);
  assert.equal(new Set(visibleActions.map(action=>action.top)).size,1);
+ // Current Mon Taxi home contract: four primary actions; direct and reservation nested.
  assert.equal(await integrated.locator('#newCourseChoices').evaluate(el=>el.hidden),true);
+ assert.equal(await integrated.locator('#toggleNewCourse').getAttribute('aria-expanded'),'false');
+ assert.equal(await integrated.locator('#openHotelCommissions').isVisible(),false);
+ assert.equal(await integrated.locator('#openHotelReservationQuick').isVisible(),false);
+ assert.equal(await integrated.locator('#refreshLocal').count(),1);
  await integrated.locator('#toggleNewCourse').click();
  assert.equal(await integrated.locator('#newCourseChoices').evaluate(el=>el.hidden),false);
+ assert.equal(await integrated.locator('#toggleNewCourse').getAttribute('aria-expanded'),'true');
  assert.equal(await integrated.locator('#openHotelCommissions').isVisible(),true);
  assert.equal(await integrated.locator('#openHotelReservationQuick').isVisible(),true);
  await integrated.locator('#toggleNewCourse').click();
