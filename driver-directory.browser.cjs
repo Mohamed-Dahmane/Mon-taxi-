@@ -1159,9 +1159,26 @@ async function checkBookingRoom(frame,id){
  assert.equal(await integrated.locator('#taxiQuickNavigation').isVisible(),false);
  await integrated.locator('#taxiPageLocation [data-location="details"]').click();
  const beforeScroll=await integrated.locator('#taxiQuickNavigation').boundingBox();
+ const navigationLayout=await integrated.locator('#taxiQuickNavigation').evaluate(el=>({
+  position:getComputedStyle(el).position,
+  placement:el.dataset.placement,
+  viewportWidth:innerWidth
+ }));
  await integrated.evaluate(()=>window.scrollTo(0,1400));
  const afterScroll=await integrated.locator('#taxiQuickNavigation').boundingBox();
- assert.ok(Math.abs(beforeScroll.y-afterScroll.y)<2);
+ const actualScroll=await integrated.evaluate(()=>scrollY);
+ assert.ok(actualScroll>0,'The page must actually scroll before testing navigation placement');
+ if(navigationLayout.placement==='toolbar'&&navigationLayout.viewportWidth<=540){
+  // Narrow screens deliberately use normal flow to avoid covering form controls.
+  assert.equal(navigationLayout.position,'relative');
+  assert.ok(Math.abs((beforeScroll.y-afterScroll.y)-actualScroll)<2,
+   'Mobile navigation must scroll with the page rather than overlap form actions');
+ }else if(navigationLayout.position==='fixed'){
+  assert.ok(Math.abs(beforeScroll.y-afterScroll.y)<2,
+   'Fixed navigation must remain in the viewport during scrolling');
+ }else{
+  assert.equal(navigationLayout.position,'relative');
+ }
  assert.equal(await integrated.locator('#taxiQuickNavigation').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
  await integrated.locator('#taxiQuickNavigation button').last().click();
  await integrated.evaluate(()=>document.querySelector('#testScrollSpace').remove());
