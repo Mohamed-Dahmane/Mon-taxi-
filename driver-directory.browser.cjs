@@ -110,6 +110,7 @@ async function checkBookingRoom(frame,id){
  // The real app stylesheet, copied course, optional client forms and home return.
  const integrated=await browser.newPage({viewport:{width:360,height:780}});
  await integrated.route('**/*',r=>{const u=new URL(r.request().url());if(u.origin!=='http://taxi-app.test')return r.abort();const path=u.pathname==='/'?'index.html':u.pathname.slice(1);if(path.includes('..'))return r.abort();const target=__dirname+'/'+path;if(!fs.existsSync(target))return r.fulfill({status:404,body:''});return r.fulfill({contentType:path.endsWith('.js')?'application/javascript':path.endsWith('.html')?'text/html':path.endsWith('.css')?'text/css':'application/octet-stream',body:fs.readFileSync(target)});});
+ await integrated.addInitScript(()=>{window.__taxiTestErrors=[];window.addEventListener('error',e=>window.__taxiTestErrors.push(String(e.message)));window.addEventListener('unhandledrejection',e=>window.__taxiTestErrors.push(String(e.reason)));});
  await integrated.goto('http://taxi-app.test/');await integrated.waitForFunction(()=>typeof window.openTaxiDrivers==='function');
  await integrated.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');document.querySelector('main').hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());window.externalActions=[];window.TaxiContacts={open:url=>externalActions.push({url,home:document.querySelector('#home').classList.contains('active'),directoryClosed:!document.querySelector('#taxiDrivers').open,planningClosed:!document.querySelector('#hotelCommissionsDialog').open})};});
  await integrated.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--clean-bg').trim()==='#10151c');
@@ -147,7 +148,7 @@ async function checkBookingRoom(frame,id){
  assert.equal(await manualCommission.getAttribute('enterkeyhint'),'done');
  await manualCommission.fill('12,50');
  await manualCommission.press('Enter');
- assert.equal(await manualCommission.inputValue(),'');
+ assert.equal(await manualCommission.inputValue(),'',JSON.stringify(await integrated.evaluate(()=>({ready:document.readyState,active:document.activeElement?.id,errors:window.__taxiTestErrors||[],commission:document.getElementById('commissionToday')?.textContent,loadedScripts:[...document.scripts].length}))));
  assert.equal(await integrated.evaluate(()=>document.activeElement.tagName),'BODY');
  assert.match(await integrated.locator('#commissionToday').innerText(),/12,50/);
  await manualCommission.fill('12,50');
