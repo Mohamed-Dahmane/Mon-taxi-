@@ -2,7 +2,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const html=fs.readFileSync('index.html','utf8');
 function extract(start,end){const i=html.indexOf(start),j=html.indexOf(end,i+start.length);assert(i>=0&&j>i,'Missing code: '+start);return html.slice(i,j);}
 const credit=extract('window.taxiCreditCashFare=function(', 'function correctPayment(');
-const bridge=extract('window.parent.taxiFarePayment=function(', 'function reservationOutcomeActions(');
+const bridge=extract('window.parent.taxiFarePayment=function(', 'function reservationOutcomeActions(').replace(/\\n/g,'\n');
 function scenario({failSave=false,future=false}={}){
  const store=new Map(),account={months:{}},now='2026-11-22T14:30';
  const course={id:'ride-1',bookingMode:future?'Programmée':'Direct',scheduledDate:future?'2026-11-23':'2026-11-22',reservationStatus:'pending',driver:'self'};
