@@ -930,7 +930,9 @@ async function checkBookingRoom(frame,id){
  assert.equal(commissionChat.text,'The Standard 10');
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
  assert.equal(await referrerPhone.isVisible(),false);
- await celineRow.getByRole('button',{name:'Chargé',exact:true}).click();
+ const celineFinalButtons=await celineRow.locator('button').allTextContents();
+ assert.ok(celineFinalButtons.some(label=>label.trim()==='Chargé'), 'Celine finalization action missing after commission message: '+JSON.stringify(celineFinalButtons));
+ await celineRow.getByRole('button',{name:'Chargé',exact:true}).click({timeout:5000});
  assert.equal(await celineRow.isVisible(),false);
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'validated');
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
