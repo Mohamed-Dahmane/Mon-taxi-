@@ -12,9 +12,13 @@ const assert = require('node:assert/strict');
    if(path.includes('..')||!fs.existsSync(__dirname+'/'+path)) return route.fulfill({status:404,body:''});
    return route.fulfill({body:fs.readFileSync(__dirname+'/'+path),contentType:path.endsWith('.js')?'application/javascript':path.endsWith('.html')?'text/html':path.endsWith('.css')?'text/css':'application/octet-stream'});
   });
+  const errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
   await page.goto('http://taxi-app.test/');
-  await page.waitForFunction(()=>typeof window.openHotelModule==='function');
-  await page.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');document.querySelector('main').hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());openHotelModule('direct');});
+  await page.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');const main=document.querySelector('main');if(main)main.hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());});
+  const ready=await page.waitForFunction(()=>typeof window.openHotelModule==='function',{timeout:15000}).catch(()=>null);
+  if(!ready)throw new Error('Module hôtel non initialisé : '+JSON.stringify({errors,url:page.url()}));
+  await page.evaluate(async()=>await window.openHotelModule('direct'));
   await page.waitForFunction(()=>!!document.querySelector('#hotelCommissionsFrame')?.contentDocument?.querySelector('#reservationHotelGroup'));
   const frame=await (await page.$('#hotelCommissionsFrame')).contentFrame();
   const result=await frame.evaluate(()=>{
