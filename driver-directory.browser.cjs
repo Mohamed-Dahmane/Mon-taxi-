@@ -2,6 +2,34 @@ const {chromium}=require('playwright');
 const fs=require('fs');
 const assert=require('node:assert/strict');
 const KEY='montaxi:driver-directory:v1';
+// Non-destructive census: measure actual rendered controls, not only HTML declarations.
+// Hidden controls in closed panels are reported separately from obstructed visible controls.
+async function auditButtons(page,stage){
+ const frames=page.frames();const entries=[];
+ for(const frame of frames){
+  try{
+   const result=await frame.evaluate(()=>{
+    const buttons=[...document.querySelectorAll('button,[role="button"],input[type="button"],input[type="submit"]')];
+    return buttons.map((el,index)=>{
+     const style=getComputedStyle(el),r=el.getBoundingClientRect();
+     const hidden=style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse'||r.width===0||r.height===0||!!el.closest('[hidden],[inert]');
+     const x=Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),y=Math.max(0,Math.min(innerHeight-1,r.top+r.height/2));
+     const inViewport=r.bottom>0&&r.right>0&&r.top<innerHeight&&r.left<innerWidth;
+     const hit=inViewport&&!hidden?document.elementFromPoint(x,y):null;
+     const obstructed=!!hit&&hit!==el&&!el.contains(hit);
+     return {index,id:el.id||null,label:(el.getAttribute('aria-label')||el.textContent||el.value||'').trim().slice(0,70),hidden,disabled:!!el.disabled,offscreen:!inViewport,obstructed,hit:obstructed?(hit.id||hit.tagName):null};
+    });
+   });
+   entries.push({url:frame.url(),buttons:result});
+  }catch(e){entries.push({url:frame.url(),error:String(e)});}
+ }
+ const all=entries.flatMap(x=>x.buttons||[]);
+ const summary={stage,total:all.length,hidden:all.filter(x=>x.hidden).length,disabled:all.filter(x=>x.disabled).length,offscreen:all.filter(x=>!x.hidden&&x.offscreen).length,obstructed:all.filter(x=>!x.hidden&&!x.offscreen&&x.obstructed).length,frames:entries.length};
+ console.log('BUTTON_AUDIT '+JSON.stringify(summary));
+ console.log('BUTTON_AUDIT_DETAILS '+JSON.stringify(entries.filter(x=>x.error||x.buttons?.some(b=>b.obstructed&&!b.hidden&&!b.offscreen))));
+ return summary;
+}
+
 const code=fs.readFileSync(__dirname+'/driver-directory.js','utf8');
 const reorderCode=fs.readFileSync(__dirname+'/hold-reorder.js','utf8');
 async function holdDrag(page,from,to){await from.scrollIntoViewIfNeeded();await to.scrollIntoViewIfNeeded();const a=await from.boundingBox(),b=await to.boundingBox();await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(550);await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:10});await page.mouse.up();}
@@ -111,6 +139,7 @@ async function checkBookingRoom(frame,id){
  const integrated=await browser.newPage({viewport:{width:360,height:780}});
  await integrated.route('**/*',r=>{const u=new URL(r.request().url());if(u.origin!=='http://taxi-app.test')return r.abort();const path=u.pathname==='/'?'index.html':u.pathname.slice(1);if(path.includes('..'))return r.abort();const target=__dirname+'/'+path;if(!fs.existsSync(target))return r.fulfill({status:404,body:''});return r.fulfill({contentType:path.endsWith('.js')?'application/javascript':path.endsWith('.html')?'text/html':path.endsWith('.css')?'text/css':'application/octet-stream',body:fs.readFileSync(target)});});
  await integrated.goto('http://taxi-app.test/');await integrated.waitForFunction(()=>typeof window.openTaxiDrivers==='function');
+  await auditButtons(integrated,'accueil-charge');
  await integrated.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');document.querySelector('main').hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());window.externalActions=[];window.TaxiContacts={open:url=>externalActions.push({url,home:document.querySelector('#home').classList.contains('active'),directoryClosed:!document.querySelector('#taxiDrivers').open,planningClosed:!document.querySelector('#hotelCommissionsDialog').open})};});
  await integrated.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--clean-bg').trim()==='#10151c');
  const entryFields=['commissionInput','cashInput','appeleInput','invoiceInput','FuelInput','ExpenseInput'];
@@ -302,6 +331,7 @@ async function checkBookingRoom(frame,id){
  assert.equal(await integrated.locator('#openTaxiDrivers').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(23, 99, 61)');
  await integrated.evaluate(()=>document.querySelector('.pageBtn[data-page="details"]').click());await integrated.click('#openHotelPlanning');await integrated.waitForFunction(()=>!!document.querySelector('#hotelCommissionsFrame')?.contentDocument?.querySelector('#reservationBoardTitle'));
  const frame=await (await integrated.$('#hotelCommissionsFrame')).contentFrame();
+  await auditButtons(integrated,'module-hotel-ouvert');
  await frame.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--clean-bg').trim()==='#10151c');
  const hotelKeySearch=await frame.evaluate(()=>{
   searchByHotelName=true;
