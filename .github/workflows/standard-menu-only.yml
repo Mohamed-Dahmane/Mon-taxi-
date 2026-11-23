@@ -1,0 +1,21 @@
+name: Test menu The Standard uniquement
+on:
+  push:
+    branches:
+      - fix/standard-dropdown-navigation-20261122
+    paths:
+      - standard-menu.browser.cjs
+      - .github/workflows/standard-menu-only.yml
+      - index.html
+  workflow_dispatch:
+jobs:
+  standard-menu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - run: node standard-menu.browser.cjs
