@@ -389,8 +389,13 @@ input,select,textarea{accent-color:#7098ff}
 <div class="hotel-home-actions">
   <button type="button" class="button" id="openHotelPlanning" aria-controls="hotelCommissionsDialog">Planning</button>
   <button type="button" class="button" id="taxiActiveRide" style="background:#4b5563;color:#fff" aria-live="polite">Aucune course en cours</button>
-  <button type="button" class="button" id="openHotelReservationQuick" aria-controls="hotelCommissionsDialog">Réservation</button>
-  <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Course directe</button>
+  <div class="new-course-group">
+    <button type="button" class="button" id="toggleNewCourse" aria-expanded="false" aria-controls="newCourseChoices">Nouvelle course</button>
+    <div id="newCourseChoices" class="new-course-choices" hidden>
+      <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Course directe</button>
+      <button type="button" class="button" id="openHotelReservationQuick" aria-controls="hotelCommissionsDialog">Réservation</button>
+    </div>
+  </div>
   <div id="taxiDriverShortcut"></div>
 </div>
 <div class="taxi-page-navigation"><button type="button" id="taxiPagePrev" class="taxi-page-arrow" hidden aria-label="Page précédente">‹</button><div id="taxiPageLocation" class="taxi-page-location" aria-label="Page actuelle"><button type="button" data-location="home" class="active">Accueil</button><button type="button" data-location="details">Bilan</button></div><button type="button" id="taxiPageNext" class="taxi-page-arrow" hidden aria-label="Page suivante">›</button></div>
@@ -2522,5 +2527,20 @@ document.getElementById('taxiTestPaymentSound')?.addEventListener('click',()=>{
   }
  }catch(error){alert('Son indisponible : '+String(error));}
 });
+</script>
+<script>
+(function(){
+  const toggle=document.getElementById('toggleNewCourse');
+  const choices=document.getElementById('newCourseChoices');
+  if(!toggle||!choices)return;
+  toggle.addEventListener('click',()=>{
+    choices.hidden=!choices.hidden;
+    toggle.setAttribute('aria-expanded',String(!choices.hidden));
+  });
+  choices.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{
+    choices.hidden=true;
+    toggle.setAttribute('aria-expanded','false');
+  }));
+})();
 </script>
 </body></html>
