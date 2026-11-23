@@ -772,7 +772,22 @@ async function checkBookingRoom(frame,id){
  ]);
  const completionButtons=frame.locator('[data-entry-id="linked-car"] .planning-completion-separate button').filter({hasText:'Course effectuée'});
  assert.equal(await completionButtons.count(),1,'Une seule action Course effectuée doit être visible dans le bloc de validation');
- assert.equal(await completionButtons.first().isEnabled(),true);
+ // A scheduled course dated tomorrow must not be completed prematurely.
+  assert.equal(await completionButtons.first().isEnabled(),false,'Une course programmée demain doit rester non clôturable');
+  // Verify the same control becomes available when the course reaches today.
+  const completionToday=await frame.evaluate(()=>{
+   const course=data.find(item=>item.id==='linked-car');
+   const original=course.scheduledDate;
+   course.scheduledDate=reservationClock().slice(0,10);
+   renderReservations();
+   return original;
+  });
+  assert.equal(await frame.locator('[data-entry-id="linked-car"] .planning-completion-separate button').filter({hasText:'Course effectuée'}).first().isEnabled(),true,'Le bouton doit être actif à la date de la course');
+  await frame.evaluate(original=>{
+   const course=data.find(item=>item.id==='linked-car');
+   course.scheduledDate=original;
+   renderReservations();
+  },completionToday);
  const references=await frame.evaluate(course=>{
   const date=course.scheduledDate;
   const {nextReference,referenceCountersKey}=window.parent.TaxiHotels;
