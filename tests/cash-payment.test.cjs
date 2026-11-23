@@ -33,4 +33,33 @@ function scenario({failSave=false,future=false}={}){
  assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'pending');
  assert.equal(JSON.parse(store.get('courses'))[0].paidAmount,1);
 }
+{
+ const {store,win}=scenario();
+ assert.equal(win.taxiFarePayment('ride-1','cash',24.50,2),true);
+ const ride=JSON.parse(store.get('courses'))[0];
+ assert.equal(ride.paymentMethod,'cash');
+ assert.equal(ride.paidAmount,24.50);
+ assert.equal(ride.tipAmount,2);
+ assert.equal(ride.reservationStatus,'pending','Le paiement ne cloture pas la course');
+ assert.equal(ride.validatedAt,undefined);
+ assert.equal(store.has('account'),false,'Le paiement ne credite pas les recettes avant cloture');
+ assert.equal(win.taxiFarePayment('ride-1','cash',24.50,2),true,'Un retry identique est idempotent');
+ assert.equal(JSON.parse(store.get('courses')).length,1);
+ assert.throws(()=>win.taxiFarePayment('ride-1','cash',25,2),/Paiement deja enregistre/);
+}
+{
+ const {store,win}=scenario();
+ assert.throws(()=>win.taxiFarePayment('ride-1','sumup',24.50,0),/Confirmation SumUp serveur indisponible/);
+ const ride=JSON.parse(store.get('courses'))[0];
+ assert.equal(ride.reservationStatus,'pending');
+ assert.equal(ride.paidAt,undefined);
+ assert.equal(store.has('account'),false);
+}
+{
+ const {store,win}=scenario();
+ assert.equal(win.taxiFarePayment('ride-1','cash','',0),false);
+ assert.equal(win.taxiFarePayment('ride-1','cash',-1,0),false);
+ assert.equal(JSON.parse(store.get('courses'))[0].paidAt,undefined);
+}
+console.log('PASS: cash idempotence, SumUp safety, and no premature archival');
 console.log('PASS: payment recorded without course archival or cash credit, repeat safe');
