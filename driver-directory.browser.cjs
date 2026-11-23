@@ -211,11 +211,16 @@ async function checkBookingRoom(frame,id){
  // The standard refresh indicator stays active for at least 900 ms.
  await integrated.waitForTimeout(950);
  const homeActions=integrated.locator('.hotel-home-actions');
- const actions=await homeActions.locator('button').evaluateAll(buttons=>buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top})));
- assert.deepEqual(actions.map(action=>action.id),['openHotelPlanning','openHotelReservationQuick','openHotelCommissions','openTaxiDrivers']);
- assert.equal(new Set(actions.map(action=>action.top)).size,1);
- assert.deepEqual(await homeActions.locator('button').evaluateAll(buttons=>buttons.slice(1).map(button=>getComputedStyle(button).backgroundColor)),
-  ['rgb(98, 66, 142)','rgb(22, 95, 102)','rgb(23, 99, 61)']);
+ const visibleActions=await homeActions.locator('button').evaluateAll(buttons=>buttons.filter(b=>b.getClientRects().length).map(b=>({id:b.id,top:b.getBoundingClientRect().top})));
+ assert.deepEqual(visibleActions.map(action=>action.id),['openHotelPlanning','taxiActiveRide','toggleNewCourse','openTaxiDrivers']);
+ assert.equal(new Set(visibleActions.map(action=>action.top)).size,1);
+ assert.equal(await integrated.locator('#newCourseChoices').evaluate(el=>el.hidden),true);
+ await integrated.locator('#toggleNewCourse').click();
+ assert.equal(await integrated.locator('#newCourseChoices').evaluate(el=>el.hidden),false);
+ assert.equal(await integrated.locator('#openHotelCommissions').isVisible(),true);
+ assert.equal(await integrated.locator('#openHotelReservationQuick').isVisible(),true);
+ await integrated.locator('#toggleNewCourse').click();
+ assert.equal(await integrated.locator('#newCourseChoices').evaluate(el=>el.hidden),true);
 
  const header=await integrated.locator('.taxi-header').evaluate(el=>{
   const rect=el.getBoundingClientRect();
