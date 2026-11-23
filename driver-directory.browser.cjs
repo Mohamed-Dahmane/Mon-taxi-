@@ -1007,7 +1007,7 @@ async function checkBookingRoom(frame,id){
  assert.equal(await otherRow.isVisible(),true);
  assert.equal((await storedCourse(chargeOther.id)).reservationStatus,'pending');
  assert.ok((await storedCourse(chargeOther.id)).commissionMessageSentAt);
- await otherRow.getByRole('button',{name:'Course effectuée',exact:true}).click();
+ await otherRow.getByRole('button',{name:/^Course effectuée(?: : archiver cette course)?$/}).click();
  assert.equal(await otherRow.isVisible(),false);
  const archivedCharge=await storedCourse(chargeOther.id);
  assert.equal(archivedCharge.reservationStatus,'validated');
