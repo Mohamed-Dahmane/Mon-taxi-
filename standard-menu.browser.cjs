@@ -20,7 +20,7 @@ const assert = require('node:assert/strict');
   if(!ready){
     const scripts=await page.locator('script:not([src])').evaluateAll(nodes=>nodes.map((node,i)=>({index:i,content:node.textContent})));
     const vm=require('node:vm');
-    const syntax=scripts.map(s=>{try{new vm.Script(s.content,{filename:'inline-script-'+s.index+'.js'});return null;}catch(e){return String(e.stack||e)}}).filter(Boolean);
+    const syntax=scripts.map(s=>{try{new vm.Script(s.content,{filename:'inline-script-'+s.index+'.js'});return null;}catch(e){return {script:s.index,detail:String(e.stack||e).split('\\n').slice(0,7).join('\\n')}}}).filter(Boolean);
     throw new Error('Module hôtel non initialisé : '+JSON.stringify({errors,syntax,url:page.url()}));
   }
   await page.evaluate(async()=>await window.openHotelModule('direct'));
