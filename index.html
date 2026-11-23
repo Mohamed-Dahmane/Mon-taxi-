@@ -345,6 +345,9 @@ input,select,textarea{accent-color:#7098ff}
 .hotel-home-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
 .hotel-home-actions .button{min-width:0;overflow-wrap:anywhere;white-space:normal;font-size:clamp(9px,2.5vw,12px);padding:5px 2px;line-height:1.05;min-height:44px}
 @media(max-width:390px) and (max-height:600px){
+ /* Le bouton de diagnostic sonore occupe plus de 40 px et repousse les six saisies hors ecran. */
+ #taxiTestPaymentSound{display:none}
+ #home>div:first-child:has(#taxiTestPaymentSound){display:none}
  main{padding-top:4px}header{margin-bottom:3px}
  #home .taxi-summary{margin:4px 0;gap:4px}
  #home .taxi-summary .work-reference{padding:2px 4px}
