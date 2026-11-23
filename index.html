@@ -642,10 +642,11 @@ function mergeStartupEdits(before,local,remote){
  }
  return merged;
 }
+const taxiAndroidIsolated=true; // APK Android: aucun échange de sauvegardes avec Chrome / Supabase.
 let backupTimer=null,backupBusy=false,backupPending=false,syncReady=false,syncApplying=false,lastCloudId=0,cloudPollBusy=false;
 const save=()=>{try{localStorage.setItem(storageKey,JSON.stringify(data));if(!syncApplying)scheduleCloudBackup()}catch(e){toast("Stockage indisponible : exporte tes données")}};
-function scheduleCloudBackup(){backupPending=true;clearTimeout(backupTimer);backupTimer=setTimeout(()=>cloudBackup("change"),0)}
-async function cloudBackup(type="change"){
+function scheduleCloudBackup(){if(taxiAndroidIsolated)return;backupPending=true;clearTimeout(backupTimer);backupTimer=setTimeout(()=>cloudBackup("change"),0)}
+async function cloudBackup(type="change"){if(taxiAndroidIsolated)return false;
  if(backupBusy||!syncReady||!privateSession?.access_token)return false;
  backupBusy=true;
  const snapshot=JSON.parse(JSON.stringify(data));
@@ -664,7 +665,7 @@ async function cloudBackup(type="change"){
  finally{backupBusy=false;if(backupPending&&JSON.stringify(data)!==JSON.stringify(snapshot))scheduleCloudBackup()}
 }
 // Une source de vérité Supabase pour Chrome et Android : lecture régulière de la dernière sauvegarde.
-async function checkCloudSync(){
+async function checkCloudSync(){if(taxiAndroidIsolated)return false;
  if(cloudPollBusy||!privateSession?.access_token||backupPending)return;
  if(backupBusy||(syncReady&&backupPending))return;
  cloudPollBusy=true;
@@ -712,8 +713,8 @@ async function checkCloudSync(){
  }catch(e){console.warn("Synchronisation différée",e)}
  finally{cloudPollBusy=false}
 }
-setInterval(()=>checkCloudSync(),4000);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkCloudSync()});
+// Synchronisation automatique Supabase désactivée dans l'APK Android.
+// Aucune synchronisation lors du retour au premier plan.
 function workedDayAverage(m,year,month,today=new Date()){
  const monthKey=year+"-"+month;
  const period=year*12+month,currentPeriod=today.getFullYear()*12+today.getMonth();
@@ -1746,9 +1747,9 @@ else if(privateSession){
  document.querySelector("main").hidden=false;privateGate.hidden=true;
  // Ne pas lancer deux lectures lourdes simultanément au premier affichage.
  loadPrivatePayments();
- setTimeout(()=>checkCloudSync().catch(e=>console.warn("Synchronisation différée",e)),1200);
+ // Ne jamais importer des données Chrome au démarrage Android.
 }
-setInterval(()=>{if(backupPending&&navigator.onLine)cloudBackup()},30000);
+// Aucun envoi de sauvegarde Android vers Supabase.
 setInterval(()=>{if(document.visibilityState==="visible")loadPrivatePayments()},60000);
 
 // Vérifie les nouvelles versions du site sans interrompre une saisie.
