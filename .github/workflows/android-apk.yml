@@ -53,7 +53,7 @@ jobs:
           test -f index.html
       - name: Verify Android uses embedded interface only
         run: |
-          grep -Fq 'private static final String APP_URL="file:///android_asset/index.html";' app/src/main/java/be/montaxi/gestion/MainActivity.java
+          grep -Fq 'private static final String APP_URL="https://appassets.androidplatform.net/index.html";' app/src/main/java/be/montaxi/gestion/MainActivity.java
           grep -Fq 'web.loadUrl(APP_URL)' app/src/main/java/be/montaxi/gestion/MainActivity.java
           if grep -Fq 'mohamed-dahmane.github.io/Mon-taxi-' app/src/main/java/be/montaxi/gestion/MainActivity.java; then
             echo 'ERROR: Android still depends on GitHub Pages' >&2
