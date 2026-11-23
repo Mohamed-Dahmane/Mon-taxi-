@@ -427,6 +427,37 @@ public class MainActivity extends Activity {
      });
     }
    },"TaxiHaptics");
+   // Native cash-register sound for the button hosted on the published web page.
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void play(){
+     runOnUiThread(()->{
+      if(web==null)return;
+      String url=web.getUrl();
+      if(url==null||!(url.equals(APP_URL)||url.startsWith(APP_URL+"?")||
+          url.startsWith(APP_URL+"#")||url.equals("file:///android_asset/index.html")))return;
+      try{
+       android.media.ToneGenerator tone=new android.media.ToneGenerator(
+           android.media.AudioManager.STREAM_MUSIC,100);
+       tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP,110);
+       new Handler(Looper.getMainLooper()).postDelayed(()->{
+        try{tone.startTone(android.media.ToneGenerator.TONE_PROP_ACK,140);}
+        catch(Exception ignored){}
+       },145);
+       new Handler(Looper.getMainLooper()).postDelayed(()->{
+        try{tone.release();}catch(Exception ignored){}
+       },420);
+       android.os.Vibrator vibrator=(android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
+       if(vibrator!=null&&vibrator.hasVibrator()){
+        if(Build.VERSION.SDK_INT>=26)vibrator.vibrate(
+          android.os.VibrationEffect.createOneShot(85,android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+        else vibrator.vibrate(85);
+       }
+      }catch(Exception error){
+       Toast.makeText(MainActivity.this,"Test sonore indisponible : "+error.getMessage(),Toast.LENGTH_LONG).show();
+      }
+     });
+    }
+   },"TaxiPaymentSound");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
