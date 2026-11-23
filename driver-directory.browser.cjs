@@ -1374,3 +1374,5 @@ async function checkBookingRoom(frame,id){
 })().catch(e=>{console.error(e);process.exit(1)});
 
 // Regression run: commission message confirmation must not archive a pending ride.
+
+// Re-run regression suite after Samsung Enter-key fix.
