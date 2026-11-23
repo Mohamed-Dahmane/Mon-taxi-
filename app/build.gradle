@@ -2,7 +2,8 @@ plugins { id 'com.android.application' }
 android {
  namespace 'be.montaxi.gestion'
  compileSdk 35
- defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 119; versionName 'V 6/11.119 - Caisse sonore SoundPool' }
+ compileOptions { coreLibraryDesugaringEnabled true; sourceCompatibility JavaVersion.VERSION_21; targetCompatibility JavaVersion.VERSION_21 }
+ defaultConfig { applicationId 'be.montaxi.gestion.empreinte'; minSdk 26; targetSdk 35; versionCode 201; versionName 'V 6/11.201 - SumUp SDK init' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
@@ -51,4 +52,10 @@ if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
   keyPassword passwordUsed
  } }
  android.buildTypes { release { signingConfig android.signingConfigs.taxiRelease; minifyEnabled false } }
+}
+
+// SDK SumUp pour encaissement direct sur le lecteur Solo Lite.
+dependencies {
+ implementation 'com.sumup:merchant-sdk:7.2.0'
+ coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }

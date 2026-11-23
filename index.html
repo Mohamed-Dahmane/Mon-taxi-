@@ -2496,8 +2496,15 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
  }
  window.taxiFinishFare=finishFare;
  window.taxiBeginFareSumUp=function(id,amount,tip){
+  const total=Number(amount)+Number(tip||0);
+  if(!Number.isFinite(total)||total<1){alert('Montant SumUp invalide (minimum 1,00 €).');return false;}
+  if(activePayment){alert('Un paiement SumUp est déjà en attente. Vérifie son statut avant de recommencer.');return false;}
+  if(!window.TaxiSumUp||typeof window.TaxiSumUp.checkout!=='function'){
+   alert('Paiement SumUp indisponible dans cette version. Ouvre Mon Taxi Android mis à jour.');return false;
+  }
   activePayment={id,amount,tip};
-  return true;
+  try{window.TaxiSumUp.checkout(total.toFixed(2));return true;}
+  catch(error){activePayment=null;alert('Impossible de lancer SumUp : '+String(error));return false;}
  };
  window.addEventListener('mon-taxi-sumup-result',event=>{
   const result=event.detail||{};
