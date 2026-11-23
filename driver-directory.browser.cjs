@@ -375,8 +375,10 @@ async function checkBookingRoom(frame,id){
  assert.match(pickupCopied,/Airport CRL \(Charleroi\) → Hôtel/);assert.match(pickupCopied,/Chambre : 7A/);assert.match(pickupCopied,/Client : Client existant/);assert.doesNotMatch(pickupCopied,/PRIX FIXÉ|Chauffeur :/);
  await integrated.setViewportSize({width:320,height:620});
  await integrated.evaluate(()=>openHotelModule('direct'));
+  await auditButtons(integrated,'course-directe');
  await frame.click('#rideDropoff');
  await frame.evaluate(()=>showStep('details'));
+  await auditButtons(integrated,'details-course');
  await checkBookingRoom(frame,'room');
  const direct=await frame.evaluate(()=>{
   const initial=data.length;setDriverChoice('direct','self');$('hotel').value='The Standard';refreshContacts();$('contact').value='Fal';setVehicle('Voiture normale',false);selected=10;
@@ -406,6 +408,7 @@ async function checkBookingRoom(frame,id){
  await integrated.evaluate(()=>{window.pickupSaved=[];openHotelPickup({mode:'Réservation',today:'2026-11-20',hotels:['Test Hôtel'],contacts:{'Test Hôtel':['Contact']},drivers:[],save:form=>{pickupSaved.push(form);return 'Validation du test';}});});
  await integrated.waitForFunction(()=>!!document.querySelector('#hotelPickupFrame')?.contentDocument?.querySelector('#client'));
  const pickupFrame=await (await integrated.$('#hotelPickupFrame')).contentFrame();
+  await auditButtons(integrated,'pickup-ouvert');
  await pickupFrame.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--clean-bg').trim()==='#10151c');
  const pickupPlace=pickupFrame.locator('#place');
  assert.deepEqual(await pickupPlace.locator('option').allTextContents(),['Bruxelles Aéroport (BRU)','Charleroi Airport (CRL)']);
