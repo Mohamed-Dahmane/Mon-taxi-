@@ -909,7 +909,13 @@ async function checkBookingRoom(frame,id){
   window.TaxiContacts.openWhatsAppMessage=(number,text)=>{window.commissionChat={number,text}};
   window.TaxiContacts.findReferrer=name=>{window.lookedUpReferrer=name};
  });
- await retryStandard.click();
+ const afterChargeDiagnostic=await frame.evaluate(()=>{
+  const entry=data.find(item=>item.id==='planning-charge-celine');
+  const row=document.querySelector('[data-entry-id="planning-charge-celine"]');
+  return {stored:entry&&{commissionChargedAt:entry.commissionChargedAt,status:reservationCourseStatus(entry),contact:entry.contact},posted:entry?window.parent.TaxiHotels?.commissionPostedAt(entry):null,buttons:row?[...row.querySelectorAll('button')].map(button=>button.textContent):[],rowExists:!!row};
+ });
+ assert.ok(afterChargeDiagnostic.buttons.includes('Message de commission'),'Commission message action missing after charge: '+JSON.stringify(afterChargeDiagnostic));
+ await retryStandard.click({timeout:5000});
  assert.equal(await integrated.evaluate(()=>window.lookedUpReferrer),'Céline');
  const referrerLookup=contacts=>integrated.evaluate(contacts=>
   window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{mode:'referrer-lookup',contacts}})),contacts);
