@@ -17,6 +17,7 @@ function scenario({failSave=false,future=false}={}){
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
  assert.equal(store.has('account'),false);
  assert.equal(JSON.parse(store.get('courses'))[0].reservationStatus,'pending');
+ assert.equal(JSON.parse(store.get('courses'))[0].validatedAt,undefined,'Le paiement ne doit pas archiver la course');
  assert.equal(JSON.parse(store.get('courses'))[0].paidAmount,1);
  assert.equal(win.taxiFarePayment('ride-1','cash',1,0),true);
  assert.equal(store.has('account'),false);
