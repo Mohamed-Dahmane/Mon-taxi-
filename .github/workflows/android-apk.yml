@@ -90,6 +90,19 @@ jobs:
           assert 'async function checkCloudSync(){return false;' in embedded
           assert 'function scheduleCloudBackup(){return;' not in Path('index.html').read_text()
           PY
+      - name: Validate embedded JavaScript syntax
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
+          const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)];
+          for(let i=0;i<scripts.length;i++){
+            try{new vm.Script(scripts[i][1],{filename:'embedded-script-'+i+'.js'});}
+            catch(e){console.error(e.stack);process.exitCode=1;}
+          }
+          if(process.exitCode)process.exit(1);
+          console.log('Validated '+scripts.length+' inline scripts');
+          NODE
       - name: Prepare launcher icon
         run: |
           mkdir -p app/src/main/res/drawable-nodpi
