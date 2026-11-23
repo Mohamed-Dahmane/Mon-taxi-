@@ -989,3 +989,27 @@ html.taxi-clean {
     word-break: break-word;
   }
 }
+
+/* New course is a single home action; direct/reservation expand on demand. */
+.taxi-clean .taxi-home-toolbar .hotel-home-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.taxi-clean .new-course-group { position: relative; min-width: 0; }
+.taxi-clean .new-course-group > .button { width: 100%; min-height: 44px; }
+.taxi-clean .new-course-choices[hidden] { display: none !important; }
+.taxi-clean .new-course-choices:not([hidden]) {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  width: max(150px, 100%);
+  max-width: min(240px, 90vw);
+  display: grid;
+  gap: 5px;
+  padding: 6px;
+  background: var(--clean-surface);
+  border: 1px solid var(--clean-line);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px #0008;
+}
+.taxi-clean .new-course-choices .button { min-height: 44px; width: 100%; white-space: normal; }
