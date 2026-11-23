@@ -363,7 +363,12 @@ async function checkBookingRoom(frame,id){
   const today=reservationClock().slice(0,10);const future=reservationClock(new Date(Date.now()+86400000)).slice(0,10);
   const original={id:'optional-client-reservation',reservationBoard:true,hotelGroup:'The Standard',hotel:'The Standard',contact:'Fal',driver:'self',bookingMode:'Programmée',reservationStatus:'pending',date:today,recordedTime:'12:00',receivedAt:today+'T12:00',scheduledDate:future,scheduledTime:'15:00',vehicle:'Voiture normale',vehicleChoice:'Voiture normale',carCount:1,vanCount:0,destination:'Zaventem',amount:10,pricing:'Compteur',announcedPrice:null,room:'240',clientName:'Nom initial',clientPhone:'0470000000',flight:'BA388',company:'British Airways',passengers:3};
   data.push(original);showReservationForm(original,false);
-  $('reservationStandardContacts').querySelector('[data-contact="Sophia"]').click();
+  // Ensure the Standard contact choices are rendered before exercising the click.
+  $('reservationHotelGroup').value=reservationHotels[1];
+  syncReservationHotel(original.contact);
+  const sophiaButton=$('reservationStandardContacts').querySelector('[data-contact="Sophia"]');
+  assert.ok(sophiaButton,'Le bouton Sophia doit être présent dans les contacts du Standard');
+  sophiaButton.click();
   const loaded={name:$('reservationClientName').value,phone:$('reservationClientPhone').value,flight:$('reservationFlight').value,company:$('reservationCompany').value};showReservationStep(reservationSaveStep);
   $('reservationRoom').value='0240';$('reservationClientName').value='Nom modifié';$('reservationClientPhone').value='+32470000001';$('reservationPassengers').value='5';$('reservationForm').onsubmit({preventDefault(){}});
   const edited=data.find(e=>e.id===original.id);showReservationForm(edited,false);showReservationStep(reservationSaveStep);$('reservationClientName').value='';$('reservationClientPhone').value='';$('reservationPassengers').value='';$('reservationForm').onsubmit({preventDefault(){}});
