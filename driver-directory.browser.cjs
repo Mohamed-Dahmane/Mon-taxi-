@@ -976,7 +976,7 @@ async function checkBookingRoom(frame,id){
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'pending');
  assert.ok((await storedCourse(celineCourse.id)).commissionMessageSentAt);
  assert.equal(await celineRow.getByRole('button',{name:'Message confirmé',exact:true}).isDisabled(),true);
- await celineRow.getByRole('button',{name:'Course effectuée',exact:true}).click();
+ await celineRow.getByRole('button',{name:/^Course effectuée(?: : archiver cette course)?$/}).click();
  assert.equal(await celineRow.isVisible(),false);
  assert.equal((await storedCourse(celineCourse.id)).reservationStatus,'validated');
  await frame.evaluate(id=>{data=data.filter(course=>course.id!==id);save();renderReservations();},celineCourse.id);
