@@ -341,8 +341,15 @@ input,select,textarea{accent-color:#7098ff}
 @media(max-width:390px){#home .quick-card{padding:9px}#home .compact-overview .card{padding:8px}.pageBtn{padding:9px 5px}}
 @media(prefers-reduced-motion:reduce){button,.button,.pageBtn,.tab,.typeBtn{transition:none}}
 
+/* Accueil : trois actions, selection directe ou reservation dans une boite de choix. */
+.hotel-home-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+.new-taxi-course-dialog{width:min(340px,calc(100vw - 32px));border:1px solid #6c89b6;border-radius:16px;background:#111c30;color:#fff;padding:20px;box-shadow:0 18px 45px #0009}
+.new-taxi-course-dialog::backdrop{background:#0009}
+.new-taxi-course-dialog h2{font-size:20px;margin:0 0 16px}
+.new-taxi-course-dialog button{display:block;width:100%;min-height:48px;margin:8px 0;padding:10px;border:1px solid #6688b8;border-radius:10px;background:#145fa7;color:#fff;font:inherit;font-weight:700}
+.new-taxi-course-dialog #newTaxiCourseCancel{background:#26354b}
 /* Petits ecrans : accueil utilisable sans chevauchement des saisies. */
-.hotel-home-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hotel-home-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 .hotel-home-actions .button{min-width:0;overflow-wrap:anywhere;white-space:normal;font-size:clamp(9px,2.5vw,12px);padding:5px 2px;line-height:1.05;min-height:44px}
 @media(max-width:390px) and (max-height:600px){
  /* Le bouton de diagnostic sonore occupe plus de 40 px et repousse les six saisies hors ecran. */
@@ -406,10 +413,17 @@ input,select,textarea{accent-color:#7098ff}
 <div class="hotel-home-actions">
   <button type="button" class="button" id="openHotelPlanning" aria-controls="hotelCommissionsDialog">Planning</button>
   <button type="button" class="button" id="taxiActiveRide" style="background:#4b5563;color:#fff" aria-live="polite">Aucune course en cours</button>
-  <button type="button" class="button" id="openHotelReservationQuick" aria-controls="hotelCommissionsDialog">Réservation</button>
-  <button type="button" class="button" id="openHotelCommissions" aria-controls="hotelCommissionsDialog">Course directe</button>
+  <button type="button" class="button" id="openNewTaxiCourse" aria-haspopup="dialog" aria-controls="newTaxiCourseDialog">Nouvelle course</button>
   <div id="taxiDriverShortcut"></div>
 </div>
+<button type="button" id="openHotelReservationQuick" hidden aria-hidden="true" tabindex="-1">Réservation</button>
+<button type="button" id="openHotelCommissions" hidden aria-hidden="true" tabindex="-1">Course directe</button>
+<dialog id="newTaxiCourseDialog" aria-labelledby="newTaxiCourseTitle" class="new-taxi-course-dialog">
+ <h2 id="newTaxiCourseTitle">Nouvelle course</h2>
+ <button type="button" id="newTaxiCourseReservation">Réservation</button>
+ <button type="button" id="newTaxiCourseDirect">Course directe</button>
+ <button type="button" id="newTaxiCourseCancel">Annuler</button>
+</dialog>
 <div class="taxi-page-navigation"><button type="button" id="taxiPagePrev" class="taxi-page-arrow" hidden aria-label="Page précédente">‹</button><div id="taxiPageLocation" class="taxi-page-location" aria-label="Page actuelle"><button type="button" data-location="home" class="active">Accueil</button><button type="button" data-location="details">Bilan</button></div><button type="button" id="taxiPageNext" class="taxi-page-arrow" hidden aria-label="Page suivante">›</button></div>
 
 </div>
@@ -2586,5 +2600,18 @@ document.getElementById('taxiTestPaymentSound')?.addEventListener('click',()=>{
   }
  }catch(error){alert('Son indisponible : '+String(error));}
 });
+</script>
+<script>
+(()=>{
+ const dialog=document.getElementById('newTaxiCourseDialog');
+ const opener=document.getElementById('openNewTaxiCourse');
+ opener.addEventListener('click',()=>{if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');});
+ const close=()=>{if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');};
+ document.getElementById('newTaxiCourseCancel').addEventListener('click',close);
+ for(const [choice,target] of [['newTaxiCourseReservation','openHotelReservationQuick'],['newTaxiCourseDirect','openHotelCommissions']]){
+  document.getElementById(choice).addEventListener('click',()=>{close();document.getElementById(target).click();});
+ }
+ dialog.addEventListener('click',event=>{if(event.target===dialog)close();});
+})();
 </script>
 </body></html>
