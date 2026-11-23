@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
   recoveryShown=true;
   new AlertDialog.Builder(this).setTitle("Mon Taxi ne s'affiche pas")
    .setMessage("L'empreinte a fonctionne, mais le tableau n'a pas pu se charger. Aucune donnee ne sera effacee.")
-   .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL+"?retry="+SystemClock.elapsedRealtime());webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
+   .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL);webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
    .setNegativeButton("Ouvrir dans Chrome",(dialog,which)->{recoveryShown=false;startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(APP_URL)));})
    .setOnCancelListener(dialog->recoveryShown=false).show();
  }
@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
   return !acceptSessionInteraction()||super.dispatchKeyEvent(event);
  }
  private CancellationSignal biometric;
- private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
+ private static final String APP_URL="file:///android_asset/index.html";
  private android.media.SoundPool paymentSoundPool;
  private int paymentSoundId=0;
  private boolean paymentSoundReady=false;
@@ -510,10 +510,10 @@ public class MainActivity extends Activity {
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
-   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(true);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // Toujours charger la dernière version en ligne après déverrouillage.
-  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=6");
+  if(web.getUrl()==null)web.loadUrl(APP_URL);
   webHealthHandler.postDelayed(this::verifyWebContent,15000L);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
