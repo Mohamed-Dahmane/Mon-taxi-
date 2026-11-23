@@ -108,6 +108,13 @@ async function checkBookingRoom(frame,id){
  await select(page,'Yacine');await back(page);assert.equal(await page.inputValue('#driversSearch'),'y');assert.deepEqual(await page.locator('.driver-name').allTextContents(),['TX Yacine','TX Van Yassine Bekay','TX Farid Yassine']);
  await page.check('#driversVanOnly');assert.equal(await page.inputValue('#driversSearch'),'y');await page.fill('#driversSearch','Y A');assert.deepEqual(await page.locator('.driver-name').allTextContents(),['TX Van Yassine Bekay']);await page.fill('#driversSearch','Bekay');assert.equal(await names(page).count(),1);assert.deepEqual(errors,[]);
  // The real app stylesheet, copied course, optional client forms and home return.
+ const vm=require('node:vm');
+ const htmlSource=fs.readFileSync(__dirname+'/index.html','utf8');
+ for(const [index,match] of [...htmlSource.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/g)].entries()){
+  if(!match[1].trim())continue;
+  try{new vm.Script(match[1],{filename:'index.html inline script '+index});}
+  catch(error){throw new Error('Main app JavaScript syntax error: '+error.stack);}
+ }
  const integrated=await browser.newPage({viewport:{width:360,height:780}});
  await integrated.route('**/*',r=>{const u=new URL(r.request().url());if(u.origin!=='http://taxi-app.test')return r.abort();const path=u.pathname==='/'?'index.html':u.pathname.slice(1);if(path.includes('..'))return r.abort();const target=__dirname+'/'+path;if(!fs.existsSync(target))return r.fulfill({status:404,body:''});return r.fulfill({contentType:path.endsWith('.js')?'application/javascript':path.endsWith('.html')?'text/html':path.endsWith('.css')?'text/css':'application/octet-stream',body:fs.readFileSync(target)});});
  await integrated.addInitScript(()=>{window.__taxiTestErrors=[];window.addEventListener('error',e=>window.__taxiTestErrors.push(String(e.message)));window.addEventListener('unhandledrejection',e=>window.__taxiTestErrors.push(String(e.reason)));});
