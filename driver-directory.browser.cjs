@@ -610,9 +610,9 @@ async function checkBookingRoom(frame,id){
  assert.equal(planningHeader.compact.localBackHidden,true);
  const fixedNavigation=integrated.locator('#taxiQuickNavigation');
  const fixedBack=fixedNavigation.getByRole('button',{name:'Page précédente',exact:true});
- assert.equal(await fixedBack.isVisible(),true);
- assert.equal(await fixedNavigation.getByRole('button',{name:'Retour à l’accueil',exact:true}).isVisible(),true);
- await fixedBack.click();
+ assert.equal(await fixedBack.isVisible(),false);
+ assert.equal(await fixedNavigation.getByRole('button',{name:'Retour à l’accueil',exact:true}).isVisible(),false);
+ assert.equal(await frame.evaluate(()=>window.taxiNavigateBack()),true);
  assert.equal(await frame.locator('#reservationsOverlay').isVisible(),false);
  await integrated.evaluate(()=>openHotelModule('planning'));
  assert.equal(planningHeader.compact.monthCount,0);
