@@ -123,10 +123,11 @@ async function checkBookingRoom(frame,id){
    const nav=document.getElementById('taxiQuickNavigation');
    const limit=innerHeight;
    const top=nav.getBoundingClientRect().bottom;
-   const buttons=[...document.querySelectorAll('.hotel-home-actions button')];
-   const firstButtonTop=buttons[0].getBoundingClientRect().top;
+   const buttons=[...document.querySelectorAll('.hotel-home-actions button')].filter(button=>button.getClientRects().length>0);
+   const hiddenChoices=[...document.querySelectorAll('#newCourseChoices button')];
+   const choicesHidden=document.getElementById('newCourseChoices')?.hidden===true&&hiddenChoices.length===2&&hiddenChoices.every(button=>button.getClientRects().length===0);
    return {fits:ids.every(id=>{const r=rect(id);return r.top>=top&&r.bottom<=limit&&r.height>=42&&r.width>0;}),
-    buttonsFit:buttons.length>=4&&buttons.every(button=>{
+    buttonsFit:buttons.length===4&&choicesHidden&&buttons.every(button=>{
      const r=button.getBoundingClientRect();
      return r.width>=40&&r.height>=42&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=limit&&button.scrollWidth<=button.clientWidth&&button.scrollHeight<=button.clientHeight;
     }),
