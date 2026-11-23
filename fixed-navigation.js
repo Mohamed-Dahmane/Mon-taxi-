@@ -5,7 +5,7 @@ const nav=doc.createElement('nav');nav.id='taxiQuickNavigation';nav.setAttribute
 const back=doc.createElement('button');back.type='button';back.textContent='←';back.title='Page précédente';back.setAttribute('aria-label','Page précédente');
 const home=doc.createElement('button');home.type='button';home.textContent='Accueil';home.setAttribute('aria-label','Retour à l’accueil');nav.append(back,home);
 const style=doc.createElement('style');style.textContent=`
-#taxiQuickNavigation{position:fixed!important;inset:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) auto auto!important;z-index:2147483000;display:flex!important;gap:0!important;width:auto!important;height:42px!important;padding:0!important;margin:0!important;border:1px solid #7196c4;border-radius:13px;background:#14283f;box-shadow:0 4px 18px #0008;overflow:hidden;flex:none}
+#taxiQuickNavigation{position:fixed!important;inset:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) auto auto!important;z-index:100;display:flex!important;gap:0!important;width:auto!important;height:42px!important;padding:0!important;margin:0!important;border:1px solid #7196c4;border-radius:13px;background:#14283f;box-shadow:0 4px 18px #0008;overflow:hidden;flex:none}
 #taxiQuickNavigation[data-placement="dialog"]{position:relative!important;inset:auto!important;width:max-content!important;max-width:100%!important;margin:0 0 12px auto!important;z-index:1!important;flex-wrap:nowrap!important}
 /* Pick-up is an absolute overlay inside the hotel dialog. Keep its entire
    hit area below the reserved navigation row, not just its visible title.
@@ -37,6 +37,7 @@ function refresh(){
  const top=dialogs.at(-1),host=top||doc.body;
  // Placer la navigation dans le dialogue actif, y compris le Planning.
  nav.dataset.placement=top?'dialog':'toolbar';
+ // In dialogs, navigation stays in document flow instead of covering action buttons.
  if(nav.parentElement!==host)host.prepend(nav);
  // Keep navigation out of the click path of controls in other open dialogs.
  // The topmost dialog always owns the navigation, never an underlying dialog.
