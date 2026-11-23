@@ -337,6 +337,18 @@ public class MainActivity extends Activity {
    WebSettings settings=web.getSettings();
    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
+    // Defence in depth: the Android APK must never access shared
+    // Chrome/Android backup or hotel synchronization endpoints.
+    @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+     android.net.Uri uri=request.getUrl();
+     String path=uri==null?"":uri.getPath();
+     if(path!=null&&(path.startsWith("/rest/v1/taxi_management_backups")
+         ||path.startsWith("/rest/v1/taxi_hotel_sync"))){
+      return new WebResourceResponse("text/plain","UTF-8",403,"Synchronization disabled",
+       java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream(new byte[0]));
+     }
+     return super.shouldInterceptRequest(view,request);
+    }
     @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){
      if(!req.isForMainFrame())return;
