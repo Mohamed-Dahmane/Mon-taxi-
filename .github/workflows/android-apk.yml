@@ -1,5 +1,5 @@
 name: Construire APK Mon Taxi - icone mise a jour
-# Rebuild SumUp Solo Lite fix branch 2026-11-23
+# Rebuild SumUp Solo Lite fix branch 2026-11-23 - retry 2
 on:
   workflow_dispatch:
   push:
