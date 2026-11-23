@@ -1128,7 +1128,8 @@ async function checkBookingRoom(frame,id){
  const afterScroll=await integrated.locator('#taxiQuickNavigation').boundingBox();
  assert.ok(Math.abs(beforeScroll.y-afterScroll.y)<2);
  assert.equal(await integrated.locator('#taxiQuickNavigation').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
- await integrated.locator('#taxiQuickNavigation button').last().click();
+ // A hidden navigation control must not be clicked: return through the page control.
+ await integrated.evaluate(()=>document.querySelector('.pageBtn[data-page="home"]')?.click());
  await integrated.evaluate(()=>document.querySelector('#testScrollSpace').remove());
  assert.equal(await integrated.evaluate(()=>scrollY),0);
  await integrated.locator('#taxiPageLocation [data-location="details"]').click();
