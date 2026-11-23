@@ -2679,7 +2679,8 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAll()});
   setTimeout(()=>{try{success.close()}catch{}success.remove();},3000);
   return true;
  }
- window.taxiRecordFarePayment=finishFare;\n window.taxiFinishFare=finishFare;
+ window.taxiRecordFarePayment=finishFare;
+ window.taxiFinishFare=finishFare;
  window.taxiBeginFareSumUp=function(id,amount,tip){
   // Une transaction SumUp en attente ne doit jamais etre ecrasee par un second clic.
   if(activePayment)return false;
