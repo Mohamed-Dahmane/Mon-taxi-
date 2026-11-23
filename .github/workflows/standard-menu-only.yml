@@ -17,5 +17,5 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save playwright
-      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium
       - run: node standard-menu.browser.cjs
