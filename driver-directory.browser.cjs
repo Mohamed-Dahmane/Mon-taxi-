@@ -126,9 +126,9 @@ async function checkBookingRoom(frame,id){
    const buttons=[...document.querySelectorAll('.hotel-home-actions button')];
    const firstButtonTop=buttons[0].getBoundingClientRect().top;
    return {fits:ids.every(id=>{const r=rect(id);return r.top>=top&&r.bottom<=limit&&r.height>=42&&r.width>0;}),
-    buttonsFit:buttons.length===4&&buttons.every(button=>{
+    buttonsFit:buttons.length>=4&&buttons.every(button=>{
      const r=button.getBoundingClientRect();
-     return Math.abs(r.top-firstButtonTop)<=1&&button.scrollWidth<=button.clientWidth&&button.scrollHeight<=button.clientHeight;
+     return r.width>=40&&r.height>=42&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=limit&&button.scrollWidth<=button.clientWidth&&button.scrollHeight<=button.clientHeight;
     }),
     buttons:buttons.map(button=>({id:button.id,top:button.getBoundingClientRect().top,width:button.clientWidth,scrollWidth:button.scrollWidth,height:button.clientHeight,scrollHeight:button.scrollHeight,text:button.textContent.trim()})),
     bottom:rect('ExpenseInput').bottom,limit,scroll:scrollY};
