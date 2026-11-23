@@ -65,7 +65,7 @@ public class MainActivity extends Activity {
   recoveryShown=true;
   new AlertDialog.Builder(this).setTitle("Mon Taxi ne s'affiche pas")
    .setMessage("L'empreinte a fonctionne, mais le tableau n'a pas pu se charger. Aucune donnee ne sera effacee.")
-   .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL+"?retry="+SystemClock.elapsedRealtime());webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
+   .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl(APP_URL+"?provisoire=202&retry="+SystemClock.elapsedRealtime());webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
    .setNegativeButton("Ouvrir dans Chrome",(dialog,which)->{recoveryShown=false;startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(APP_URL)));})
    .setOnCancelListener(dialog->recoveryShown=false).show();
  }
@@ -178,6 +178,44 @@ public class MainActivity extends Activity {
   else if("error".equals(status))showSumUpMessage("Paiement non confirmé : "+code);
  }
  private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
+ // APK provisoire: conserver l'origine HTTPS de V201 (et donc localStorage),
+ // mais servir TOUS les fichiers de l'interface depuis les assets embarques.
+ // Aucune mise a jour de GitHub Pages ne peut changer cette interface.
+ private WebResourceResponse embeddedTaxiResource(WebResourceRequest request){
+  if(request==null||request.getUrl()==null)return null;
+  android.net.Uri uri=request.getUrl();
+  if(!"https".equalsIgnoreCase(uri.getScheme())||
+     !"mohamed-dahmane.github.io".equalsIgnoreCase(uri.getHost()))return null;
+  String path=uri.getEncodedPath();
+  if(path==null||!path.startsWith("/Mon-taxi-/"))return null;
+  String relative=path.substring("/Mon-taxi-/".length());
+  if(relative.isEmpty())relative="index.html";
+  // No traversal or remote fallback for the app's own origin.
+  if(relative.contains("..")||relative.contains("%")||relative.startsWith("/")||
+     relative.contains("\\"))return embeddedTaxiNotFound();
+  String mime="application/octet-stream";
+  if(relative.endsWith(".html"))mime="text/html";
+  else if(relative.endsWith(".js"))mime="application/javascript";
+  else if(relative.endsWith(".css"))mime="text/css";
+  else if(relative.endsWith(".webp"))mime="image/webp";
+  else if(relative.endsWith(".json"))mime="application/json";
+  else if(relative.endsWith(".svg"))mime="image/svg+xml";
+  try{
+   java.io.InputStream stream=getAssets().open(relative);
+   java.util.Map<String,String> headers=new java.util.HashMap<>();
+   headers.put("Cache-Control","no-store");
+   headers.put("Access-Control-Allow-Origin","*");
+   return new WebResourceResponse(mime,"UTF-8",200,"OK",headers,stream);
+  }catch(IOException missing){
+   android.util.Log.w("MonTaxi","Ressource locale absente: "+relative);
+   return embeddedTaxiNotFound();
+  }
+ }
+ private WebResourceResponse embeddedTaxiNotFound(){
+  return new WebResourceResponse("text/plain","UTF-8",404,"Not Found",
+   java.util.Collections.singletonMap("Cache-Control","no-store"),
+   new java.io.ByteArrayInputStream("Ressource non integree dans l'APK provisoire".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+ }
  private android.media.SoundPool paymentSoundPool;
  private int paymentSoundId=0;
  private boolean paymentSoundReady=false;
@@ -500,6 +538,9 @@ public class MainActivity extends Activity {
    WebSettings settings=web.getSettings();
    settings.setUserAgentString(settings.getUserAgentString()+" MonTaxiNativeSplash");
    web.setWebViewClient(new WebViewClient(){
+    @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+     return embeddedTaxiResource(request);
+    }
     @Override public void onPageFinished(WebView view,String url){super.onPageFinished(view,url);webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,9000L);}
     @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){
      if(!req.isForMainFrame())return;
@@ -606,11 +647,23 @@ public class MainActivity extends Activity {
    },"TaxiSumUp");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
+   // Intercepter egalement les requetes d'un ancien service worker pour eviter
+   // qu'une version Chrome deja mise en cache remplace l'interface embarquee.
+   if(Build.VERSION.SDK_INT>=24){
+    try{
+     ServiceWorkerController controller=ServiceWorkerController.getInstance();
+     controller.setServiceWorkerClient(new ServiceWorkerClient(){
+      @Override public WebResourceResponse shouldInterceptRequest(WebResourceRequest request){
+       return embeddedTaxiResource(request);
+      }
+     });
+    }catch(Exception e){android.util.Log.w("MonTaxi","Service worker non intercepte",e);}
+   }
    web.setWebChromeClient(new WebChromeClient());
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
-  // Toujours charger la dernière version en ligne après déverrouillage.
-  if(web.getUrl()==null)web.loadUrl(APP_URL+"?appbuild=6");
+  // URL d'origine conservee pour les donnees; contenu servi exclusivement depuis l'APK.
+  if(web.getUrl()==null)web.loadUrl(APP_URL+"?provisoire=202");
   webHealthHandler.postDelayed(this::verifyWebContent,15000L);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
