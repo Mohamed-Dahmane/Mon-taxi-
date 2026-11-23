@@ -27,9 +27,15 @@ const assert = require('node:assert/strict');
     const menu=document.getElementById('standardContactDropdown');
     if(!menu)throw Error('Menu Standard absent');
     const options=[...menu.options].map(o=>o.value);
+    if(!menu.getBoundingClientRect().width)throw Error('Menu Standard non visible');
     if(!options.includes('Fal'))throw Error('Contact Fal absent');
     menu.value='Fal';menu.dispatchEvent(new Event('change',{bubbles:true}));
     if(document.getElementById('reservationContact').value!=='Fal')throw Error('Contact non synchronisé');
+    for(const name of ['Moncef','Céline']){
+      if(!options.includes(name))throw Error('Contact absent du menu Standard : '+name);
+      menu.value=name;menu.dispatchEvent(new Event('change',{bubbles:true}));
+      if(document.getElementById('reservationContact').value!==name)throw Error('Contact non synchronisé : '+name);
+    }
     return {ok:true,options,selected:menu.value};
    }catch(e){return {ok:false,error:e.stack||String(e)}}
   });
