@@ -12,11 +12,12 @@ async function auditButtons(page,stage){
     const buttons=[...document.querySelectorAll('button,[role="button"],input[type="button"],input[type="submit"]')];
     return buttons.map((el,index)=>{
      const style=getComputedStyle(el),r=el.getBoundingClientRect();
-     const hidden=style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse'||r.width===0||r.height===0||!!el.closest('[hidden],[inert]')||!el.getClientRects().length;
+     const hidden=style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse'||r.width===0||r.height===0||!!el.closest('[hidden],[inert],[aria-hidden="true"]')||!el.getClientRects().length||![...el.getClientRects()].some(rect=>rect.width>0&&rect.height>0);
      const x=Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),y=Math.max(0,Math.min(innerHeight-1,r.top+r.height/2));
      const inViewport=r.bottom>0&&r.right>0&&r.top<innerHeight&&r.left<innerWidth;
+     const coveredByDialog=!!document.querySelector('dialog[open]')&&!el.closest('dialog[open]')&&!!document.querySelector('dialog[open]')?.matches(':modal');
      const hit=inViewport&&!hidden?document.elementFromPoint(x,y):null;
-     const obstructed=!!hit&&hit!==el&&!el.contains(hit);
+     const obstructed=coveredByDialog|| (!!hit&&hit!==el&&!el.contains(hit));
      const pointerBlocked=style.pointerEvents==='none'||!!el.closest('[inert]');
      const unnamed=!(el.getAttribute('aria-label')||el.textContent||el.value||'').trim();
      return {index,id:el.id||null,label:(el.getAttribute('aria-label')||el.textContent||el.value||'').trim().slice(0,70),hidden,disabled:!!el.disabled,offscreen:!inViewport,obstructed,pointerBlocked,unnamed,hit:obstructed?(hit.id||hit.tagName):null};
