@@ -82,6 +82,13 @@ jobs:
               if html.count(old)!=1: raise SystemExit('Missing Android-only sync guard: '+old)
               html=html.replace(old,new,1)
           path.write_text(html)
+          # Verify the bundled Android page cannot auto-read or auto-write
+          # Chrome's shared taxi_management_backups snapshot.
+          embedded=path.read_text()
+          assert 'function scheduleCloudBackup(){return;' in embedded
+          assert 'async function cloudBackup(type="change"){return false;' in embedded
+          assert 'async function checkCloudSync(){return false;' in embedded
+          assert 'function scheduleCloudBackup(){return;' not in Path('index.html').read_text()
           PY
       - name: Prepare launcher icon
         run: |
