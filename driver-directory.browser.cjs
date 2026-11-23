@@ -848,7 +848,7 @@ async function checkBookingRoom(frame,id){
  // Regression matrix: switching between DoubleTree contacts must be reversible,
  // preserve the pending course and never trigger payment or archiving.
  for(const original of ['Night','Day']){
-  const candidate={...earlyDoubleTree,id:'contact-matrix-'+original.toLowerCase(),contact:original};
+  const candidate={...earlyDoubleTree,id:'contact-matrix-'+original.toLowerCase(),contact:original,scheduledTime:original==='Day'?'14:00':'06:40'};
   await frame.evaluate(course=>{data.push(course);save();renderReservations();},candidate);
   const card=frame.locator('.reservation-card[data-entry-id="'+candidate.id+'"]');
   const papa=card.getByRole('button',{name:'Papa',exact:true});
