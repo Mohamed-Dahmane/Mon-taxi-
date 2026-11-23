@@ -203,3 +203,13 @@ test('Samsung links a unique manual driver to its TX contact without creating a 
  assert.equal(result.drivers[0].id,'saved');
  assert.equal(result.drivers[0].name,'TX Van Hassan');
 });
+
+test('Samsung phone match updates TX name without creating a second driver',()=>{
+ const existing=[{id:'taxi-driver-1',name:'Petit test',phone:'0470 10 10 10',category:'car'}];
+ const result=core.merge(existing,[{nativeId:'81',name:'TX Petit test Samsung',phone:'+32 470 10 10 10'}],'sync',{fromPhone:true});
+ assert.equal(result.drivers.length,1);
+ assert.equal(result.added,0);
+ assert.equal(result.drivers[0].id,'taxi-driver-1');
+ assert.equal(result.drivers[0].name,'TX Petit test Samsung');
+ assert.equal(result.drivers[0].nativeId,'81');
+});
