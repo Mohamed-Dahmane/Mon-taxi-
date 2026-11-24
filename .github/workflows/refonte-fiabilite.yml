@@ -243,7 +243,7 @@ jobs:
           const assert=require('node:assert/strict');
           const create=require('./refonte/course-controller.js');
           const c=create();
-          assert.deepEqual(c.snapshot(),{hotels:[],contacts:[],drivers:[],courses:[],ledger:[]});
+          assert.deepEqual(c.snapshot(),{hotels:[],contacts:[],drivers:[],courses:[],ledger:[],entries:{},fixed:{}});
           function ready(id){c.plan({id});assert.equal(c.load(id).status,'loaded');assert.equal(c.start(id).status,'in_progress');assert.equal(c.finish(id).status,'awaiting_payment');}
           ready('cash');
           assert.equal(c.cash('cash',5000).status,'archived');
