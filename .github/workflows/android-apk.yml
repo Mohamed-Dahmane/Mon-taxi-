@@ -1,34 +1,24 @@
-name: Construire APK Mon Taxi - icone mise a jour
-# Rebuild SumUp Solo Lite fix branch 2026-11-23 - retry 2
+name: Android autonome - compilation technique de refonte
 on:
   workflow_dispatch:
   push:
+    branches: [refonte/base-saine-20261124]
     paths:
-      - 'index.html'
-      - 'taxi-interface.css'
-      - 'hotel-sync.js'
-      - 'pickup-reservation.html'
-      - 'directory-editor.js'
-      - 'driver-directory.js'
-      - 'vehicle-allocations.js'
-      - 'vehicle-allocation-editor.js'
-      - 'fixed-navigation.js'
-      - 'hold-reorder.js'
+      - 'refonte/interface.html'
+      - 'refonte/clean-core.js'
+      - 'refonte/course-controller.js'
+      - 'refonte/sumup-course-payment.js'
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
       - '.github/workflows/android-apk.yml'
+permissions:
+  contents: read
 jobs:
   android:
     runs-on: ubuntu-24.04
-    outputs:
-      direct_artifact: ${{ steps.direct_apk.outputs.artifact-id }}
-      direct_url: ${{ steps.direct_apk.outputs.artifact-url }}
-    permissions:
-      contents: read
-    env:
-      HAS_SIGNING_KEY: ${{ secrets.TAXI_KEYSTORE_B64 != '' && secrets.TAXI_SIGNING_STORE_PASSWORD != '' && secrets.TAXI_SIGNING_KEY_ALIAS != '' && secrets.TAXI_SIGNING_KEY_PASSWORD != '' }}
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -38,132 +28,48 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Install Android SDK reliably
-        uses: android-actions/setup-android@v4
+      - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
-      - name: Verify build environment
+      - name: Préparer exclusivement les ressources Android de refonte
         run: |
-          java -version
-          gradle --version
-          test -f app/build.gradle
-          test -f app/src/main/AndroidManifest.xml
-          test -f app/src/main/java/be/montaxi/gestion/MainActivity.java
-          test -f index.html
-      - name: Prepare embedded interface
-        run: |
-          mkdir -p app/src/main/assets/app
-          cp taxi-interface.css hold-reorder.js fixed-navigation.js index.html hotel-sync.js pickup-reservation.html directory-editor.js driver-directory.js vehicle-allocations.js vehicle-allocation-editor.js app/src/main/assets/
+          set -euo pipefail
+          rm -rf app/src/main/assets
+          mkdir -p app/src/main/assets/app app/src/main/res/drawable-nodpi
+          cp refonte/interface.html app/src/main/assets/index.html
+          cp refonte/clean-core.js refonte/course-controller.js refonte/sumup-course-payment.js app/src/main/assets/
           cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
-      - name: Prepare launcher icon
-        run: |
-          mkdir -p app/src/main/res/drawable-nodpi
           base64 -d app/icon/mon_taxi.jpg.base64 > app/src/main/res/drawable-nodpi/mon_taxi_icon.jpg
-      - name: Build debug APK with diagnostic logs
+          cmp refonte/interface.html app/src/main/assets/index.html
+          ! grep -rE 'taxi_management_backups|taxi_hotel_sync|github[.]io|taxi_sumup_transactions' app/src/main/assets --include='*.html' --include='*.js'
+      - name: Compiler uniquement pour validation technique
         run: |
           set -o pipefail
-          if gradle --no-daemon --console=plain --max-workers=2 assembleDebug assembleRelease > android-build.log 2>&1 || (echo 'Nouvelle tentative après échec temporaire du téléchargement Maven'; sleep 35; gradle --no-daemon --console=plain --max-workers=2 --refresh-dependencies assembleDebug assembleRelease >> android-build.log 2>&1); then
-            echo "Compilation Android réussie."
-          else
-            echo "=== ERREURS DE COMPILATION (extrait) ==="
-            grep -nE '(^| )error:|FAILURE:|What went wrong:|Execution failed|Could not|cannot find symbol|symbol:|location:|Caused by:|requires|A problem occurred' android-build.log | tail -n 100 || true
-            echo "=== FIN DU JOURNAL ==="
-            tail -n 110 android-build.log
-            exit 1
-          fi
-        shell: bash
+          gradle --no-daemon --console=plain --max-workers=2 assembleDebug 2>&1 | tee android-build.log
         env:
           JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
-      - name: Upload build diagnostic log
+      - name: Vérifier le contenu réellement embarqué dans l'APK
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          apk=Path('app/build/outputs/apk/debug/app-debug.apk')
+          expected={'index.html','clean-core.js','course-controller.js','sumup-course-payment.js'}
+          with zipfile.ZipFile(apk) as z:
+              app_sources={n.removeprefix('assets/') for n in z.namelist() if n.startswith('assets/') and n.endswith(('.html','.js','.css')) and '/' not in n.removeprefix('assets/')}
+              assert app_sources==expected, f'Sources embarquées inattendues: {app_sources}'
+              for n in sorted(expected):
+                  original='interface.html' if n=='index.html' else n
+                  data=z.read('assets/'+n)
+                  assert data==Path('refonte',original).read_bytes(), n
+                  for forbidden in (b'taxi_management_backups',b'taxi_hotel_sync',b'taxi_sumup_transactions',b'github.io'):
+                      assert forbidden not in data,(n,forbidden)
+              print('APK : seules les sources Android de refonte sont embarquées, aucun ancien flux partagé.')
+          PY
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: Gestion-Taxi-build-log
+          name: journal-compilation-technique
           path: android-build.log
           if-no-files-found: ignore
           retention-days: 7
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Mon-Taxi-APK-icone
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
-
-      - name: Publier l’APK de production pour signature
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mon-Taxi-Release-non-signe
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
-          if-no-files-found: error
-          retention-days: 3
-
-      - name: Préparer la clé de signature persistante (si configurée)
-        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
-        run: |
-          umask 077
-          python3 - <<'PYTHON'
-          import base64
-          import os
-          import re
-          from pathlib import Path
-
-          value = os.environ["TAXI_KEYSTORE_B64"].strip()
-          value = re.sub(r"^(?:export\s+)?TAXI_KEYSTORE_B64\s*=\s*", "", value)
-          value = value.strip("'\\\"").replace("\\r", "").replace("\\n", "")
-          value = re.sub(r"\s+", "", value)
-          try:
-              data = base64.b64decode(value + "=" * (-len(value) % 4), altchars=b"-_", validate=True)
-          except ValueError:
-              raise SystemExit("La clé de signature enregistrée n’est pas un fichier Base64 valide.")
-          if not data.startswith((b"\xfe\xed\xfe\xed", b"\xce\xce\xce\xce", b"\x30")):
-              raise SystemExit("La clé de signature enregistrée ne contient pas de magasin de clés reconnu.")
-          Path(os.environ["RUNNER_TEMP"], "taxi-release.jks").write_bytes(data)
-          PYTHON
-          echo "TAXI_SIGNING_STORE_FILE=$RUNNER_TEMP/taxi-release.jks" >> "$GITHUB_ENV"
-        env:
-          TAXI_KEYSTORE_B64: ${{ secrets.TAXI_KEYSTORE_B64 }}
-      - name: Construire APK Mon Taxi signé
-        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
-        run: gradle --no-daemon assembleRelease
-        env:
-          TAXI_SIGNING_STORE_PASSWORD: ${{ secrets.TAXI_SIGNING_STORE_PASSWORD }}
-          TAXI_SIGNING_KEY_ALIAS: ${{ secrets.TAXI_SIGNING_KEY_ALIAS }}
-          TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
-      - name: Publier APK Mon Taxi signé
-        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mon-Taxi-APK-signe
-          path: app/build/outputs/apk/release/app-release.apk
-          retention-days: 30
-      - name: Préparer le téléchargement direct
-        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
-        run: cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/Mon-Taxi.apk"
-      - name: Publier le fichier APK sans archive
-        id: direct_apk
-        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
-        uses: actions/upload-artifact@v7
-        with:
-          path: ${{ runner.temp }}/Mon-Taxi.apk
-          archive: false
-          retention-days: 30
-  lien-android:
-    needs: android
-    if: ${{ needs.android.outputs.direct_artifact != '' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - name: Enregistrer le lien vers l’APK signé
-        env:
-          GH_TOKEN: ${{ github.token }}
-          APK_URL: ${{ needs.android.outputs.direct_url }}
-          APK_ID: ${{ needs.android.outputs.direct_artifact }}
-        run: |
-          set -euo pipefail
-          branch=apk-download-info
-          route="repos/$GITHUB_REPOSITORY/contents/mon-taxi-apk.json"
-          previous=$(gh api "$route?ref=$branch" --jq .sha 2>/dev/null || true)
-          payload=$(jq -nc --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg id "$APK_ID" --arg url "$APK_URL" '{commit:$sha, run:$run, artifact:$id, url:$url}' | base64 -w0)
-          args=()
-          if [[ -n "$previous" ]]; then args=(-f "sha=$previous"); fi
-          gh api "$route" --method PUT -f "branch=$branch" -f "message=Actualiser le lien de téléchargement Android" -f "content=$payload" "${args[@]}" --jq .content.path
