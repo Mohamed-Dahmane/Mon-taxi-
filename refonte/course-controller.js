@@ -26,6 +26,7 @@ function create(core,sumupEvent,storage){
     load:id=>apply(id,{type:"load"}),
     start:id=>apply(id,{type:"start"}),
     finish:id=>apply(id,{type:"finish"}),
+    refund(id,day){commit(core.recordRefund(state,id,day));return clone(get(id))},
     cash(id,cents){commit(core.recordCash(state,id,cents));return clone(get(id))},
     beginSumUp(id,cents,attemptId){
       if(!Number.isSafeInteger(cents)||cents<=0)throw Error("Montant terminal invalide");
