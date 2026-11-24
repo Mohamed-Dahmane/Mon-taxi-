@@ -281,7 +281,7 @@ function show(id){
     $('sumup-route').textContent=route(c);
     $('sumup-amount').textContent=euros(pending?c.payment.amountCents:sumupDraft.cents);
     $('sumup-confirm').hidden=pending;$('sumup-back').hidden=pending;$('sumup-recover').hidden=!pending;
-    $('sumup-message').textContent=pending?"Paiement en attente de confirmation. Ne pas recommencer.":"Confirme l’envoi du montant au Solo Lite.";
+    $('sumup-message').textContent=pending?"Paiement en attente de confirmation. Ne pas recommencer.":"Confirme l’envoi du montant au terminal SumUp.";
    }
   }
  }
@@ -316,7 +316,7 @@ document.addEventListener("submit",e=>{
 });
 document.addEventListener("click",e=>{
  const b=e.target.closest("button");if(!b||b.disabled)return;
- if(b.dataset.course){safe(()=>{selected=b.dataset.course;$('amount').value="";const c=current();if(!c)throw Error("Course inconnue");show(c.status==="awaiting_payment"?"payment":c.status==="payment_pending"?"sumup":"ride");if(c.status==="payment_pending")recoverSumUp();});return;}
+ if(b.dataset.course){safe(()=>{selected=b.dataset.course;const c=current();if(!c)throw Error("Course inconnue");$('amount').value=c.paymentDraftCents?(c.paymentDraftCents/100).toFixed(2).replace(".",","):"";show(c.status==="awaiting_payment"?"payment":c.status==="payment_pending"?"sumup":"ride");if(c.status==="payment_pending")recoverSumUp();});return;}
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");
   if(c.status==="planned"){controller.load(c.id);show("ride");}
@@ -350,13 +350,15 @@ document.addEventListener("click",e=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
   const cents=readCashCents($('amount').value);
   if(cents<100||cents>9999900)throw Error("Montant terminal : de 1 à 99 999 euros.");
+  controller.savePaymentDraft(c.id,cents);
   sumupDraft={id:c.id,cents};show("sumup");
  });return;}
  if(b.id==="sumup-confirm"){safe(()=>{
   const c=current(),draft=sumupDraft;
   if($('sumup').hidden||!draft||draft.id!==c?.id||c.status!=="awaiting_payment")throw Error("Aucun paiement carte à confirmer.");
   if(typeof window.TaxiSumUp?.checkout!=="function")throw Error("Terminal disponible uniquement sur Android.");
-  if(controller.snapshot().courses.some(x=>x.status==="payment_pending"))throw Error("Une tentative SumUp doit être vérifiée avant une nouvelle.");
+  const blocking=controller.snapshot().courses.find(x=>x.status==="payment_pending");
+  if(blocking)throw Error("Une tentative SumUp doit être vérifiée avant une nouvelle. Course concernée : "+(blocking.client||route(blocking))+" · "+euros(blocking.payment.amountCents)+". Ouvre cette course dans le planning. Aucun nouvel envoi au terminal.");
   const attempt=newId();
   controller.beginSumUp(c.id,draft.cents,attempt);
   show("sumup");window.TaxiSumUp.checkout(c.id,attempt,draft.cents);
