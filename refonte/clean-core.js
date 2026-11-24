@@ -26,6 +26,10 @@ function makeCore(){
  function apply(state,id,event){
   const index=state.courses.findIndex(c=>c.id===id);
   if(index<0)throw Error("Course inconnue");
+  if(event.type==="beginPayment"){
+   if(state.courses.some(c=>c.status==="payment_pending"))throw Error("Un paiement terminal est déjà en attente");
+   if(typeof event.attemptId!=="string"||!event.attemptId.trim()||state.ledger.some(p=>p.attemptId===event.attemptId)||state.courses.some(c=>c.lastPaymentAttempt?.attemptId===event.attemptId))throw Error("Identifiant de tentative déjà utilisé ou invalide");
+  }
   const course=transition(state.courses[index],event);
   const courses=state.courses.slice();courses[index]=course;
   let ledger=state.ledger;

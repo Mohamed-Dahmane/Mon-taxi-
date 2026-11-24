@@ -99,8 +99,16 @@ jobs:
           assert.equal((rules.match(/<exclude domain=/g)||[]).length,18);
           console.log('Base vierge, ancien stockage ignoré et intact, anciens formats rejetés, archives nouvelles indépendantes du répertoire.');
           JS
-  point8-precheck:
+  point10-reliability:
     needs: clean-data-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Point 10 - redémarrages, écritures interrompues, doublons et parcours répétés
+        run: node tests/refonte-reliability.cjs
+  point8-precheck:
+    needs: point10-reliability
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -726,3 +734,10 @@ jobs:
     steps:
       - name: Validation cumulative technique des points 1 à 9
         run: echo "Points 1 à 9 et règle de base vierge validés techniquement. La mise en service reste bloquée jusqu'aux vérifications finales."
+
+  points-1-to-10:
+    needs: [clean-data-gate, point10-reliability, points-1-to-9]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validation cumulative technique des points 1 à 10
+        run: echo "Points 1 à 10 validés techniquement, sans ancienne donnée. Compilation et essais matériels restent à confirmer."

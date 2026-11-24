@@ -4,7 +4,7 @@
 "use strict";
 function create(core,sumupEvent,storage){
   let state=core.validateState(storage?.load()??core.empty());
-  function commit(next){if(storage)storage.save(next);state=next;}
+  function commit(next){const validated=core.validateState(next);if(storage)storage.save(validated);state=validated;}
   function clone(value){return JSON.parse(JSON.stringify(value));}
   const get=id=>{const c=state.courses.find(c=>c.id===id);if(!c)throw Error("Course inconnue");return c};
   function apply(id,event){commit(core.apply(state,id,event));return clone(get(id))}
