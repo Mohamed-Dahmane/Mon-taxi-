@@ -1,0 +1,25 @@
+name: Remboursements - tests isolés sans publication
+on:
+  push:
+    branches: [test/remboursement-2101-20261124]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  refund-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe
+        run: |
+          node --check refonte/clean-core.js
+          node --check refonte/course-controller.js
+          node --check refonte/course-ui.js
+      - name: Tests de non-régression existants
+        run: node tests/refonte-reliability.cjs
+      - name: Tests des remboursements fictifs
+        run: node tests/refonte-refund.cjs
