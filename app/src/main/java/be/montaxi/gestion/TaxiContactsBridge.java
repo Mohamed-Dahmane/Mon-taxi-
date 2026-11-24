@@ -1,7 +1,6 @@
 package be.montaxi.gestion;
 
 import android.app.Activity;
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -11,7 +10,7 @@ import android.webkit.WebView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Explicit contact actions. Editing is performed in the phone's own contact editor. */
+/** Read-only contact selection, explicit calls/SMS, and dedicated Waze navigation. */
 public final class TaxiContactsBridge {
  static final int CONTACT_PICK=72;
  private final Activity activity;
@@ -47,18 +46,52 @@ public final class TaxiContactsBridge {
  private android.view.WindowManager bubbleManager;
  private android.widget.TextView bubble;
  private android.view.WindowManager.LayoutParams bubbleParams;
- @JavascriptInterface public void showBubble(){activity.runOnUiThread(()->{
+ private String bubbleCourseId;
+ private android.content.SharedPreferences wazeState(){return activity.getSharedPreferences("taxi_waze_refonte",Activity.MODE_PRIVATE);}
+ private boolean validCourseId(String id){return id!=null&&id.matches("[a-zA-Z0-9_-]{1,80}");}
+ private void dispatch(String event,JSONObject detail){
+  if(trusted())web.evaluateJavascript("window.dispatchEvent(new CustomEvent("+JSONObject.quote(event)+",{detail:"+detail.toString()+"}))",null);
+ }
+ private void wazeResult(String id,String status,boolean overlay,String error){
+  try{JSONObject d=new JSONObject();d.put("courseId",id);d.put("status",status);d.put("overlay",overlay);if(error!=null)d.put("error",error);dispatch("taxi-waze-result",d);}catch(Exception ignored){}
+ }
+ @JavascriptInterface public void navigateWaze(String courseId,String destination){activity.runOnUiThread(()->{
+  if(!trusted()||!validCourseId(courseId))return;
+  String address=destination==null?"":destination.trim();
+  if(address.isEmpty()||address.length()>250){wazeResult(courseId,"error",false,"Destination invalide.");return;}
+  hideBubble();
+  Uri uri=new Uri.Builder().scheme("https").authority("waze.com").path("/ul").appendQueryParameter("q",address).appendQueryParameter("navigate","yes").build();
+  Intent intent=new Intent(Intent.ACTION_VIEW,uri);
+  intent.setPackage("com.waze");
+  boolean overlay=false;
+  try{
+   overlay=showBubble(courseId);
+   activity.startActivity(intent);
+   if(!overlay)android.widget.Toast.makeText(activity,"Retour manuel à Mon Taxi possible. Autorise le bouton flottant pour la prochaine navigation.",android.widget.Toast.LENGTH_LONG).show();
+   wazeResult(courseId,"opened",overlay,null);
+  }catch(Exception e){hideBubble();wazeResult(courseId,"error",false,"Waze indisponible. La course reste en cours.");}
+ });}
+ @JavascriptInterface public void enableWazeOverlay(){activity.runOnUiThread(()->{
   if(!trusted())return;
-  if(android.os.Build.VERSION.SDK_INT>=23&&!android.provider.Settings.canDrawOverlays(activity)){
-   Intent permission=new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+activity.getPackageName()));
-   activity.startActivity(permission);
-   android.widget.Toast.makeText(activity,"Autorise Mon Taxi à apparaître par-dessus Waze, puis reprends la course.",android.widget.Toast.LENGTH_LONG).show();
-   return;
-  }
-  if(bubble!=null)return;
+  if(android.provider.Settings.canDrawOverlays(activity)){android.widget.Toast.makeText(activity,"Bouton flottant autorisé.",android.widget.Toast.LENGTH_SHORT).show();return;}
+  try{activity.startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+activity.getPackageName())));}
+  catch(Exception e){android.widget.Toast.makeText(activity,"Autorisation du bouton flottant indisponible.",android.widget.Toast.LENGTH_LONG).show();}
+ });}
+ @JavascriptInterface public void requestWazeReturn(){activity.runOnUiThread(()->{
+  if(!trusted())return;String id=wazeState().getString("returnCourse",null);
+  if(validCourseId(id))try{JSONObject d=new JSONObject();d.put("courseId",id);dispatch("taxi-return-active-course",d);}catch(Exception ignored){}
+ });}
+ @JavascriptInterface public void ackWazeReturn(String id){activity.runOnUiThread(()->{
+  if(trusted()&&validCourseId(id)&&id.equals(wazeState().getString("returnCourse",null)))wazeState().edit().remove("returnCourse").commit();
+ });}
+ private boolean showBubble(String courseId){
+  if(!android.provider.Settings.canDrawOverlays(activity))return false;
+  if(bubble!=null)return false;
+  bubbleCourseId=courseId;
   bubbleManager=(android.view.WindowManager)activity.getSystemService(Activity.WINDOW_SERVICE);
   bubble=new android.widget.TextView(activity);
   bubble.setText("🚕");
+  bubble.setContentDescription("Retour à la course Mon Taxi");
   bubble.setTextSize(25f);
   bubble.setGravity(android.view.Gravity.CENTER);
   bubble.setTextColor(android.graphics.Color.WHITE);
@@ -84,29 +117,37 @@ public final class TaxiContactsBridge {
      case android.view.MotionEvent.ACTION_MOVE:
       int dx=Math.round(event.getRawX()-startX),dy=Math.round(event.getRawY()-startY);
       if(Math.abs(dx)+Math.abs(dy)>12)moved=true;
-      if(moved){bubbleParams.x=Math.max(0,initialX+dx);bubbleParams.y=Math.max(0,initialY+dy);bubbleManager.updateViewLayout(bubble,bubbleParams);}
+      if(moved&&bubble!=null){
+       android.graphics.Rect bounds;
+       if(android.os.Build.VERSION.SDK_INT>=30)bounds=bubbleManager.getCurrentWindowMetrics().getBounds();
+       else{android.util.DisplayMetrics dm=new android.util.DisplayMetrics();bubbleManager.getDefaultDisplay().getRealMetrics(dm);bounds=new android.graphics.Rect(0,0,dm.widthPixels,dm.heightPixels);}
+       bubbleParams.x=Math.max(0,Math.min(Math.max(0,bounds.width()-size),initialX+dx));bubbleParams.y=Math.max(0,Math.min(Math.max(0,bounds.height()-size),initialY+dy));
+       try{bubbleManager.updateViewLayout(bubble,bubbleParams);}catch(Exception ignored){}
+      }
       return true;
      case android.view.MotionEvent.ACTION_UP:
       if(!moved){
+       String returning=bubbleCourseId;
+       if(!validCourseId(returning))return true;
+       if(!wazeState().edit().putString("returnCourse",returning).commit())return true;
        hideBubble();
        Intent back=new Intent(activity,MainActivity.class);
        back.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT|Intent.FLAG_ACTIVITY_SINGLE_TOP);
        activity.startActivity(back);
-       web.postDelayed(()->web.evaluateJavascript("window.dispatchEvent(new Event('taxi-return-active-course'))",null),450);
+
       }
       return true;
+     case android.view.MotionEvent.ACTION_CANCEL:return true;
     }
     return false;
    }
   });
-  try{bubbleManager.addView(bubble,bubbleParams);}catch(Exception error){bubble=null;android.widget.Toast.makeText(activity,"Bouton flottant indisponible",android.widget.Toast.LENGTH_SHORT).show();}
- });}
+  try{bubbleManager.addView(bubble,bubbleParams);return true;}
+  catch(Exception error){bubble=null;bubbleCourseId=null;return false;}
+ }
  public void hideBubble(){
-  activity.runOnUiThread(()->{
-   if(bubble==null)return;
-   try{bubbleManager.removeView(bubble);}catch(Exception ignored){}
-   bubble=null;
-  });
+  if(bubble!=null)try{bubbleManager.removeView(bubble);}catch(Exception ignored){}
+  bubble=null;bubbleCourseId=null;
  }
  @JavascriptInterface public void open(String url){activity.runOnUiThread(()->{
   if(!trusted()||url==null)return;
@@ -117,10 +158,6 @@ public final class TaxiContactsBridge {
     if(!number.matches("\\+?[0-9]{3,20}"))return;
     intent=new Intent(Intent.ACTION_SENDTO,Uri.parse("smsto:"+number));
     if(mark>=0&&raw.substring(mark+1).startsWith("body="))intent.putExtra("sms_body",Uri.decode(raw.substring(mark+6)));
-   }else if("https".equals(scheme)&&"waze.com".equalsIgnoreCase(uri.getHost())&&"/ul".equals(uri.getPath())){
-    intent=new Intent(Intent.ACTION_VIEW,uri);
-    try{intent.setPackage("com.waze");activity.startActivity(intent);return;}
-    catch(ActivityNotFoundException ignored){result("open",null,"Waze n’est pas installé.");return;}
    }else return;
    activity.startActivity(intent);
   }catch(Exception e){result("open",null,"Aucune application compatible n’a pu être ouverte.");}

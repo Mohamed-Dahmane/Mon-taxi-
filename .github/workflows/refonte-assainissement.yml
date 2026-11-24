@@ -19,7 +19,7 @@ jobs:
           node <<'JS'
           const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
           const read=p=>fs.readFileSync(p,'utf8');
-          const source=['refonte/interface.html','refonte/clean-core.js','refonte/course-controller.js','refonte/sumup-course-payment.js'];
+          const source=['refonte/interface.html','refonte/clean-core.js','refonte/course-controller.js','refonte/sumup-course-payment.js','refonte/course-ui.js'];
           for(const path of source)assert.doesNotMatch(read(path),/DoubleTree|The Standard|Papa|Moncef|Yacine|payment_express|github\.io|taxi_management_backups|taxi_hotel_sync|taxi_sumup_transactions/i,path);
           const bridge=read('app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java');
           const main=read('app/src/main/java/be/montaxi/gestion/MainActivity.java');

@@ -24,6 +24,25 @@ try{controller=window.createTaxiCourseController(storage);}catch(e){message(e.me
 const current=()=>controller.snapshot().courses.find(c=>c.id===selected);
 const route=c=>c.from+" → "+c.to;
 const labels={planned:"Client à charger",loaded:"Client chargé",in_progress:"Course en cours",awaiting_payment:"En attente de paiement",payment_pending:"Paiement en attente",archived:"Course archivée"};
+function launchWaze(c){
+ if(c.status!=="in_progress")throw Error("La course doit être démarrée.");
+ if(!window.TaxiContacts||typeof window.TaxiContacts.navigateWaze!=="function")throw Error("Waze est disponible uniquement dans l’application Android.");
+ window.TaxiContacts.navigateWaze(c.id,c.to);
+}
+function resumeWaze(){
+ if(window.TaxiContacts&&typeof window.TaxiContacts.requestWazeReturn==="function")window.TaxiContacts.requestWazeReturn();
+}
+window.addEventListener("taxi-waze-result",e=>safe(()=>{
+ const d=e.detail;if(!d||d.courseId!==selected||current()?.status!=="in_progress")return;
+ if(d.status==="error")message(d.error||"Waze indisponible : la course reste en cours.",true);
+ else if(d.status==="opened"&&d.overlay===false)message("Waze ouvert. Le bouton flottant nécessite une autorisation ; retour manuel possible.");
+}));
+window.addEventListener("taxi-return-active-course",e=>safe(()=>{
+ const id=e.detail?.courseId,c=controller.snapshot().courses.find(x=>x.id===id);
+ if(c?.status==="in_progress"){selected=id;show("ride");message("Course en cours. Termine-la uniquement à l’arrivée.");}
+ if(id&&typeof window.TaxiContacts?.ackWazeReturn==="function")window.TaxiContacts.ackWazeReturn(id);
+}));
+window.addEventListener("taxi-native-resume",resumeWaze);
 const actions={planned:"Charger",loaded:"Démarrer la course",in_progress:"Terminer la course"};
 function card(c,archived=false){
  const box=document.createElement("article");box.className="card";
@@ -50,6 +69,8 @@ function show(id){
   if(id==="ride"){
    $('ride-step').textContent=labels[c.status];$('ride-route').textContent=route(c);
    $('ride-next').textContent=actions[c.status]||"Accéder au paiement";$('ride-next').disabled=c.status==="payment_pending";
+   $('waze-reopen').hidden=c.status!=="in_progress";
+   $('waze-overlay').hidden=c.status!=="in_progress";
    document.querySelectorAll('[data-step]').forEach(e=>{if(e.dataset.step===c.status)e.setAttribute("aria-current","step");else e.removeAttribute("aria-current");});
   }else $('payment-route').textContent=route(c);
  }
@@ -80,12 +101,15 @@ document.addEventListener("click",e=>{
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");
   if(c.status==="planned"){controller.load(c.id);show("ride");}
-  else if(c.status==="loaded"){controller.start(c.id);show("ride");}
+  else if(c.status==="loaded"){controller.start(c.id);show("ride");launchWaze(current());}
   else if(c.status==="in_progress"){controller.finish(c.id);show("payment");}
   else if(c.status==="awaiting_payment")show("payment");
   else throw Error("Action incompatible avec le statut de la course.");
  });return;}
+ if(b.id==="waze-reopen"){safe(()=>{const c=current();if(!c)throw Error("Course inconnue");launchWaze(c);});return;}
+ if(b.id==="waze-overlay"){safe(()=>{if(current()?.status!=="in_progress")throw Error("Aucune course en cours.");if(typeof window.TaxiContacts?.enableWazeOverlay!=="function")throw Error("Disponible uniquement sur Android.");window.TaxiContacts.enableWazeOverlay();});return;}
  const id=b.dataset.page||b.dataset.go;if(id)safe(()=>show(id));
 });
 renderLists();
+resumeWaze();
 })();

@@ -37,6 +37,13 @@ jobs:
                     if(url.origin!=='http://taxi-refonte.test'||r.request().method()!=='GET'||!['interface.html','clean-core.js','course-controller.js','sumup-course-payment.js','course-ui.js'].includes(file))return r.abort();
                     return r.fulfill({contentType:file.endsWith('.js')?'application/javascript':'text/html',body:fs.readFileSync(root+'/'+file)});
                   });
+                  await context.addInitScript(()=>{
+                    window.wazeCalls=[];window.wazeAcks=[];window.overlayRequests=0;
+                    window.TaxiContacts={
+                      navigateWaze:(id,destination)=>{window.wazeCalls.push({id,destination});window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'opened',overlay:true}}));},
+                      requestWazeReturn:()=>{},ackWazeReturn:id=>window.wazeAcks.push(id),enableWazeOverlay:()=>window.overlayRequests++
+                    };
+                  });
                   const page=await context.newPage(),errors=[];
                   page.on('pageerror',e=>errors.push(e.message));
                   await page.goto('http://taxi-refonte.test/');
@@ -101,14 +108,32 @@ jobs:
                   assert.match(await page.locator('#ride-step').innerText(),/Client chargé/);
                   await page.locator('#ride-next').click();
                   assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
+                  const call=await page.evaluate(()=>window.wazeCalls[0]);
+                  assert.equal(call.destination,'Destination test');
+                  assert.equal(await page.evaluate(()=>window.wazeCalls.length),1);
+                  assert.equal(await page.locator('#waze-reopen').isVisible(),true);
+                  await page.locator('#waze-overlay').click();assert.equal(await page.evaluate(()=>window.overlayRequests),1);
+                  await page.locator('[data-page=home]').click();
+                  await page.evaluate(id=>window.dispatchEvent(new CustomEvent('taxi-return-active-course',{detail:{courseId:id}})),call.id);
+                  assert.equal(await page.locator('#ride').isVisible(),true);
+                  assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
+                  assert.deepEqual(await page.evaluate(()=>window.wazeAcks),[call.id]);
+                  await page.evaluate(id=>window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'error',error:'Waze indisponible'}})),call.id);
+                  assert.match(await page.locator('#status').innerText(),/Waze indisponible/);
+                  assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
+                  await page.locator('#waze-reopen').click();assert.equal(await page.evaluate(()=>window.wazeCalls.length),2);
                   await page.locator('#ride-next').click();await inspect('payment');
                   await page.locator('#pay-cash').click();await inspect('cash');
                   await page.locator('[data-go=payment]:visible').click();await page.locator('#pay-sumup').click();await inspect('sumup');
                   await page.locator('[data-page=planning]').click();
+                  await page.locator('#course-list article').filter({hasText:'Client direct fictif'}).locator('button').click();
+                  await page.locator('#ride-next').click();await page.locator('#ride-next').click();
+                  assert.equal(await page.evaluate(()=>window.wazeCalls[2].destination),'Destination directe');
+                  await page.locator('[data-page=planning]').click();
                   const pending=page.locator('#course-list article').filter({hasText:'Client réservation fictif'});
                   assert.match(await pending.innerText(),/En attente de paiement/);
                   const untouched=page.locator('#course-list article').filter({hasText:'Client direct fictif'});
-                  assert.match(await untouched.innerText(),/Client à charger/);
+                  assert.match(await untouched.innerText(),/Course en cours/);
                   await page.reload();await page.locator('[data-page=planning]').click();
                   await page.locator('#course-list article').filter({hasText:'Client réservation fictif'}).locator('button').click();
                   assert.equal(await page.locator('#payment').isVisible(),true);

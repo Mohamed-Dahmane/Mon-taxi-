@@ -37,6 +37,13 @@ jobs:
                     if(url.origin!=='http://taxi-refonte.test'||r.request().method()!=='GET'||!['interface.html','clean-core.js','course-controller.js','sumup-course-payment.js','course-ui.js'].includes(file))return r.abort();
                     return r.fulfill({contentType:file.endsWith('.js')?'application/javascript':'text/html',body:fs.readFileSync(root+'/'+file)});
                   });
+                  await context.addInitScript(()=>{
+                    window.wazeCalls=[];window.wazeAcks=[];window.overlayRequests=0;
+                    window.TaxiContacts={
+                      navigateWaze:(id,destination)=>{window.wazeCalls.push({id,destination});window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'opened',overlay:true}}));},
+                      requestWazeReturn:()=>{},ackWazeReturn:id=>window.wazeAcks.push(id),enableWazeOverlay:()=>window.overlayRequests++
+                    };
+                  });
                   const page=await context.newPage(),errors=[];
                   page.on('pageerror',e=>errors.push(e.message));
                   await page.goto('http://taxi-refonte.test/');
@@ -101,14 +108,32 @@ jobs:
                   assert.match(await page.locator('#ride-step').innerText(),/Client chargé/);
                   await page.locator('#ride-next').click();
                   assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
+                  const call=await page.evaluate(()=>window.wazeCalls[0]);
+                  assert.equal(call.destination,'Destination test');
+                  assert.equal(await page.evaluate(()=>window.wazeCalls.length),1);
+                  assert.equal(await page.locator('#waze-reopen').isVisible(),true);
+                  await page.locator('#waze-overlay').click();assert.equal(await page.evaluate(()=>window.overlayRequests),1);
+                  await page.locator('[data-page=home]').click();
+                  await page.evaluate(id=>window.dispatchEvent(new CustomEvent('taxi-return-active-course',{detail:{courseId:id}})),call.id);
+                  assert.equal(await page.locator('#ride').isVisible(),true);
+                  assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
+                  assert.deepEqual(await page.evaluate(()=>window.wazeAcks),[call.id]);
+                  await page.evaluate(id=>window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'error',error:'Waze indisponible'}})),call.id);
+                  assert.match(await page.locator('#status').innerText(),/Waze indisponible/);
+                  assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
+                  await page.locator('#waze-reopen').click();assert.equal(await page.evaluate(()=>window.wazeCalls.length),2);
                   await page.locator('#ride-next').click();await inspect('payment');
                   await page.locator('#pay-cash').click();await inspect('cash');
                   await page.locator('[data-go=payment]:visible').click();await page.locator('#pay-sumup').click();await inspect('sumup');
                   await page.locator('[data-page=planning]').click();
+                  await page.locator('#course-list article').filter({hasText:'Client direct fictif'}).locator('button').click();
+                  await page.locator('#ride-next').click();await page.locator('#ride-next').click();
+                  assert.equal(await page.evaluate(()=>window.wazeCalls[2].destination),'Destination directe');
+                  await page.locator('[data-page=planning]').click();
                   const pending=page.locator('#course-list article').filter({hasText:'Client réservation fictif'});
                   assert.match(await pending.innerText(),/En attente de paiement/);
                   const untouched=page.locator('#course-list article').filter({hasText:'Client direct fictif'});
-                  assert.match(await untouched.innerText(),/Client à charger/);
+                  assert.match(await untouched.innerText(),/Course en cours/);
                   await page.reload();await page.locator('[data-page=planning]').click();
                   await page.locator('#course-list article').filter({hasText:'Client réservation fictif'}).locator('button').click();
                   assert.equal(await page.locator('#payment').isVisible(),true);
@@ -204,6 +229,28 @@ jobs:
           console.log('ISOLATION STATIQUE OK : aucun flux comptable, hôtels, courses ou import SumUp partagé dans les sources Android embarquées.');
           console.log('Contrôle du contenu APK et validation sur appareil à effectuer séparément.');
           JS
+  waze:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier les barrières du pont Waze et le retour par identifiant
+        run: |
+          node <<'JS'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const b=fs.readFileSync('app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java','utf8');
+          const m=fs.readFileSync('app/src/main/java/be/montaxi/gestion/MainActivity.java','utf8');
+          const u=fs.readFileSync('refonte/course-ui.js','utf8');
+          assert.match(b,/intent\.setPackage\("com\.waze"\)/);
+          assert.match(b,/appendQueryParameter\("q",address\)\.appendQueryParameter\("navigate","yes"\)/);
+          assert.doesNotMatch(b,/intent\.setPackage\(null\)|public void showBubble\(/);
+          assert.match(b,/putString\("returnCourse",returning\)\.commit\(\)/);
+          assert.match(b,/ackWazeReturn\(String id\)/);
+          assert.match(m,/taxi-native-resume/);
+          assert.match(u,/navigateWaze\(c\.id,c\.to\)/);
+          assert.match(u,/controller\.start\(c\.id\);show\("ride"\);launchWaze\(current\(\)\)/);
+          console.log('Point 4 : pont Waze exclusif, destination encodée, retour associé à la course et aucune clôture automatique.');
+          JS
+
   integration:
     runs-on: ubuntu-24.04
     steps:
@@ -211,6 +258,6 @@ jobs:
       - name: Empêcher une validation finale prématurée
         run: |
           if grep -q 'non raccordé' refonte/interface.html; then
-            echo 'RESTE A FAIRE : raccordement des boutons, persistance, navigation Waze, paiements et comptabilité.'
+            echo 'RESTE A FAIRE : paiements réels, comptabilité et répertoire définitifs ; validation matérielle Waze.'
             exit 1
           fi

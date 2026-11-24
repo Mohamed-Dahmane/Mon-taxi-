@@ -849,6 +849,7 @@ public class MainActivity extends Activity {
  @Override protected void onResume(){
   super.onResume();
   if(taxiContacts!=null)taxiContacts.hideBubble();
+  if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))web.evaluateJavascript("window.dispatchEvent(new Event('taxi-native-resume'))",null);
   resumed=true;
   if(unlocked)checkIdleTimeout();
   else scheduleFingerprint();
@@ -864,5 +865,6 @@ public class MainActivity extends Activity {
    attempt.cancel();
   }
  }
+ @Override protected void onDestroy(){if(taxiContacts!=null)taxiContacts.hideBubble();super.onDestroy();}
  @Override public void onBackPressed(){if(unlocked&&web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
 }
