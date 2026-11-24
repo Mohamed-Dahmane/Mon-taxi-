@@ -404,7 +404,10 @@ jobs:
           for(const name of fs.readdirSync('.github/workflows')){
             if(name.startsWith('refonte-'))continue;
             const s=read(path.join('.github/workflows',name));
-            assert.doesNotMatch(s,/api\.sumup\.com|functions\/v1\/taxi-sumup-sync|SUMUP_API_KEY|taxi_sumup_transactions/,name);
+            assert.doesNotMatch(s,/api\.sumup\.com|functions\/v1\/taxi-sumup-sync|SUMUP_API_KEY/,name);
+            // Android build contains the table name only in negative assertions on packaged assets.
+            const executable=s.split('\n').filter(line=>name!=='android-apk.yml'||(!line.trim().startsWith('! grep -rE ')&&!line.trim().startsWith('for forbidden in ('))).join('\n');
+            assert.doesNotMatch(executable,/taxi_sumup_transactions/,name);
           }
           const scan=p=>fs.statSync(p).isDirectory()?fs.readdirSync(p).flatMap(n=>scan(path.join(p,n))):[p];
           for(const p of [...scan('refonte'),...scan('app/src/main/java')].filter(p=>/\.(js|html|java)$/.test(p))){
