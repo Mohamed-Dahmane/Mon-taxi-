@@ -89,6 +89,52 @@ document.addEventListener("paste",e=>{
   else throw Error("Montant collé invalide : utilise des chiffres ou deux décimales.");
  }catch(err){message(err.message,true);}
 });
+let moneyTarget=null;
+const moneyPad=document.createElement("div");
+moneyPad.className="money-pad";moneyPad.hidden=true;moneyPad.setAttribute("role","group");moneyPad.setAttribute("aria-label","Clavier des montants");
+const keys=[["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],["00","00"],["0","0"],["back","⌫"],["clear","Effacer"],["done","Terminé"]];
+for(const [key,label] of keys){
+ const button=document.createElement("button");button.type="button";button.dataset.moneyKey=key;button.textContent=label;
+ if(key==="back")button.setAttribute("aria-label","Effacer le dernier chiffre");
+ if(key==="00")button.setAttribute("aria-label","Double zéro");
+ if(key==="clear"||key==="done")button.className="money-pad-action";
+ moneyPad.append(button);
+}
+function closeMoneyPad(){
+ const el=moneyTarget;moneyTarget=null;moneyPad.hidden=true;moneyPad.remove();
+ if(el&&document.activeElement===el)el.blur();
+}
+function openMoneyPad(el){
+ if(el.disabled||el.readOnly)return;
+ moneyTarget=el;const field=el.closest(".field")||el;
+ field.after(moneyPad);moneyPad.hidden=false;
+}
+function moneyKeyValue(value,key){
+ if(!/^\d{1,9}[,.]\d{2}$/.test(value)&&value!==""&&value!=="0")throw Error("Montant invalide : efface-le avant de recommencer.");
+ const digits=value.replace(/\D/g,"").replace(/^0+(?=\d)/,"");
+ if(key==="clear")return "";
+ if(key==="back")return moneyFormat(digits.slice(0,-1));
+ if(!/^\d{1,2}$/.test(key))throw Error("Touche inconnue.");
+ return moneyFormat(digits+key);
+}
+moneyPad.addEventListener("pointerdown",e=>{if(e.target.closest("button"))e.preventDefault();});
+moneyPad.addEventListener("click",e=>{
+ const b=e.target.closest("button[data-money-key]");if(!b)return;
+ e.stopPropagation();const el=moneyTarget;if(!el||!el.isConnected){closeMoneyPad();return;}
+ const key=b.dataset.moneyKey;if(key==="done"){closeMoneyPad();return;}
+ try{
+  // Effacer is also available when a pasted amount was malformed.
+  el.value=key==="clear"?"":moneyKeyValue(el.value,key);
+  el.setSelectionRange(el.value.length,el.value.length);
+  el.dispatchEvent(new Event("change",{bubbles:true}));
+ }catch(err){message(err.message,true);}
+});
+document.addEventListener("focusin",e=>{if(moneyField(e))openMoneyPad(e.target);});
+document.addEventListener("click",e=>{
+ if(moneyField(e)){openMoneyPad(e.target);return;}
+ if(moneyTarget&&!moneyPad.contains(e.target))closeMoneyPad();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&moneyTarget){e.preventDefault();closeMoneyPad();}});
 function readCashCents(raw){
  const normalized=String(raw).trim();
  if(!/^\d{1,9}(?:[,.]\d{1,2})?$/.test(normalized))throw Error("Montant espèces invalide : deux décimales maximum.");
@@ -302,7 +348,7 @@ function card(c,archived=false){
    const panel=document.createElement("div");panel.className="card";panel.hidden=true;
    const note=document.createElement("p");note.textContent=c.payment.method==="sumup"?"SumUp · uniquement après remboursement confirmé dans SumUp. Aucun remboursement bancaire déclenché ici. Les frais estimés et commissions restent inchangés.":"Espèces · uniquement après avoir rendu l’argent. Les commissions restent inchangées.";
    const amountLabel=document.createElement("label");amountLabel.className="field";amountLabel.textContent="Montant remboursé (€)";
-   const amount=document.createElement("input");amount.type="text";amount.inputMode="numeric";amount.setAttribute("data-money","");amount.value=(c.payment.amountCents/100).toFixed(2).replace(".",",");amountLabel.append(amount);
+   const amount=document.createElement("input");amount.type="text";amount.inputMode="none";amount.setAttribute("data-money","");amount.value=(c.payment.amountCents/100).toFixed(2).replace(".",",");amountLabel.append(amount);
    const label=document.createElement("label");label.className="field";label.textContent="Date effective du remboursement ";
    const date=document.createElement("input");date.type="date";date.min=window.TaxiCleanCore.paymentDay(c.payment.paidAt);date.max=today();date.value=today();label.append(date);
    const yes=document.createElement("button");yes.type="button";yes.textContent="Confirmer le remboursement effectué";
@@ -325,6 +371,7 @@ function renderLists(){
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
 }
 function show(id){
+ closeMoneyPad();
  if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
  if(['ride','payment','cash','sumup'].includes(id)){
   const c=current();if(!c||c.status==="archived")throw Error("Aucune course active");
