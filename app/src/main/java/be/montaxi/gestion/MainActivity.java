@@ -116,6 +116,8 @@ public class MainActivity extends Activity {
  }
  private CancellationSignal biometric;
  private static final int SUMUP_LOGIN=701, SUMUP_READER=702, SUMUP_CHECKOUT=703;
+ // Process-local marker: never cancel an SDK setup that may still be running.
+ private static String activeSumUpAttempt;
  // One durable checkout at a time. No history import and no automatic retry.
  private android.content.SharedPreferences sumUpState(){return getSharedPreferences("taxi_sumup_refonte_v1",MODE_PRIVATE);}
  private org.json.JSONObject pendingSumUp(){
@@ -134,6 +136,22 @@ public class MainActivity extends Activity {
    web.evaluateJavascript("window.dispatchEvent(new CustomEvent('mon-taxi-sumup-result',{detail:"+p.toString()+"}))",null);
   }catch(Exception e){showSumUpMessage("Journal SumUp à vérifier.");}
  }
+ private void recoverInterruptedSumUp(String courseId,String attempt){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl()))return;
+  try{
+   org.json.JSONObject p=pendingSumUp();
+   if(p==null){showSumUpMessage("Journal natif absent : vérifier cette tentative dans SumUp avant toute nouvelle opération.");return;}
+   if(!attempt.equals(p.optString("attemptId"))||!courseId.equals(p.optString("courseId"))){showSumUpMessage("Tentative différente dans le journal natif : vérifier dans SumUp.");return;}
+   String stage=p.optString("stage");
+   if("result".equals(stage)){publishSumUp();return;}
+   // Only stages durably recorded BEFORE checkout can be cancelled after a process restart.
+   if(activeSumUpAttempt==null&&("setup".equals(stage)||"login".equals(stage)||"reconnecting".equals(stage)||"reader".equals(stage))){
+    finishSumUp("cancelled",null,null,null);return;
+   }
+   publishSumUp();
+   showSumUpMessage("checkout".equals(stage)?"Paiement potentiellement envoyé : vérifier dans SumUp. Aucun nouvel encaissement.":"Configuration encore active : fermer puis rouvrir Mon Taxi avant vérification.");
+  }catch(Exception e){showSumUpMessage("Journal SumUp à vérifier. Aucun nouvel encaissement.");}
+ }
  private void ackSumUp(String attempt){
   try{
    org.json.JSONObject p=pendingSumUp();
@@ -150,6 +168,7 @@ public class MainActivity extends Activity {
    org.json.JSONObject p=new org.json.JSONObject();
    p.put("courseId",courseId);p.put("attemptId",attempt);p.put("requestedCents",cents);p.put("stage","setup");p.put("status","pending");
    persistSumUp(p);
+   activeSumUpAttempt=attempt;
    if(SumUpAPI.isLoggedIn())openSumUpReader();else askSumUpAffiliateKey();
   }catch(Exception e){showSumUpMessage("SumUp non lancé ou statut à vérifier. Ne pas recommencer automatiquement.");}
  }
@@ -160,7 +179,7 @@ public class MainActivity extends Activity {
    if(tx!=null)p.put("transactionCode",tx);
    if(actualCents!=null)p.put("amountCents",actualCents);
    if(currency!=null)p.put("currency",currency);
-   persistSumUp(p);publishSumUp();
+   persistSumUp(p);activeSumUpAttempt=null;publishSumUp();
    if("uncertain".equals(status))showSumUpMessage("Statut incertain : ne pas encaisser à nouveau avant vérification.");
   }catch(Exception e){showSumUpMessage("Résultat SumUp non enregistré : vérification nécessaire.");}
  }
@@ -715,6 +734,7 @@ public class MainActivity extends Activity {
      runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))beginSumUpPayment(courseId,attemptId,cents);});
     }
     @android.webkit.JavascriptInterface public void recover(){runOnUiThread(()->publishSumUp());}
+    @android.webkit.JavascriptInterface public void recoverInterrupted(String courseId,String attemptId){runOnUiThread(()->recoverInterruptedSumUp(courseId,attemptId));}
     @android.webkit.JavascriptInterface public void ack(String attemptId){runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))ackSumUp(attemptId);});}
    },"TaxiSumUp");
    taxiContacts=new TaxiContactsBridge(this,web);
