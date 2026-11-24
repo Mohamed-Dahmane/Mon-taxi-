@@ -2,12 +2,72 @@ name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
     branches: [refonte/base-saine-20261124]
-    paths: ['refonte/**', 'app/src/main/java/be/montaxi/gestion/MainActivity.java', '.github/workflows/android-apk.yml', '.github/workflows/refonte-fiabilite.yml']
+    paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
+  clean-data-gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Règle bloquante - aucune reprise implicite des données anciennes
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+          const core=require('./refonte/clean-core.js'),create=require('./refonte/course-controller.js');
+          const clean=core.empty();
+          for(const [key,value] of Object.entries(clean)) {
+            assert.ok(value && typeof value==='object',key);
+            assert.equal(Object.keys(value).length,0,key+' doit commencer vide');
+          }
+          assert.deepEqual(create().snapshot(),clean);
+          const source=fs.readFileSync('refonte/course-ui.js','utf8');
+          const boundary=source.indexOf('let controller,');
+          assert.ok(boundary>0,'Adaptateur de stockage à réauditer');
+          const prefix=source.slice(0,boundary);
+          const freshKey='mon-taxi-android-refonte:v1';
+          const legacy=JSON.stringify({hotels:[{name:'ANCIEN HOTEL'}],contacts:[{name:'ANCIEN CONTACT'}],drivers:[{name:'ANCIEN CHAUFFEUR'}],courses:[{id:'old'}],destinations:['ANCIEN LIEU'],monuments:['ANCIEN MONUMENT'],administrations:['ANCIENNE ADMINISTRATION'],entries:{old:999}});
+          const oldKeys=['taxi_management_backups','taxi_hotel_sync','taxi_sumup_transactions','mon-taxi','hotels','contacts','drivers','courses','destinations','monuments','administrations','entries'];
+          const values=new Map(oldKeys.map(k=>[k,legacy]));
+          const reads=[],writes=[];
+          const localStorage={
+            getItem(k){reads.push(k);return values.get(k)??null;},
+            setItem(k,v){writes.push(k);values.set(k,v);}
+          };
+          const adapter=vm.runInNewContext(prefix+'return storage;})();',{document:{querySelectorAll:()=>[]},localStorage});
+          assert.equal(adapter.load(),null);
+          const c=create(adapter);
+          assert.deepEqual(c.snapshot(),clean);
+          assert.ok(reads.length>0 && reads.every(k=>k===freshKey));
+          assert.equal(writes.length,0);
+          for(const raw of [legacy,JSON.stringify({version:1,state:clean}),JSON.stringify({format:'ancien-format',version:1,state:clean})]){
+            assert.throws(()=>c.restore(raw));
+            assert.deepEqual(c.snapshot(),clean);
+          }
+          assert.equal(writes.length,0);
+          c.saveDirectory('hotels',{id:'h',name:'Hôtel test'});
+          c.saveDirectory('contacts',{id:'c',hotelId:'h',name:'Contact test',phone:'+32470000001'});
+          c.saveDirectory('drivers',{id:'d',name:'Chauffeur test',phone:'+32470000002'});
+          c.plan({id:'new-ride',hotelId:'h',hotelName:'Hôtel test',contactId:'c',contactName:'Contact test',driverId:'d',driverName:'Chauffeur test',from:'Départ test',to:'Destination test'});
+          c.load('new-ride');c.start('new-ride');c.finish('new-ride');c.cash('new-ride',1000);
+          const before=c.snapshot();
+          assert.equal(before.courses[0].status,'archived');
+          c.removeDirectory('hotels','h');c.removeDirectory('drivers','d');
+          const after=c.snapshot();
+          assert.equal(after.hotels.length+after.contacts.length+after.drivers.length,0);
+          assert.deepEqual(after.courses,before.courses);
+          assert.deepEqual(after.ledger,before.ledger);
+          assert.deepEqual(create(adapter).snapshot(),after);
+          assert.deepEqual(core.readBackup(c.backup()),after);
+          assert.ok(writes.length>0 && writes.every(k=>k===freshKey));
+          for(const k of oldKeys)assert.equal(values.get(k),legacy);
+          const manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
+          assert.match(manifest,/android:allowBackup="false"/);
+          console.log('Base vierge, ancien stockage ignoré et intact, anciens formats rejetés, archives nouvelles indépendantes du répertoire.');
+          JS
   point8-precheck:
+    needs: clean-data-gate
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
