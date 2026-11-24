@@ -186,6 +186,13 @@ public class MainActivity extends Activity {
   try{setSumUpStage("login");SumUpAPI.openLoginActivity(this,SumUpLogin.builder(key).build(),SUMUP_LOGIN);}
   catch(Exception e){cancelSumUpSetup();}
  }
+ // Prepare only a previously paired reader, never initiate or retry a payment.
+ private void prepareIdleSumUpReader(){
+  if(!unlocked||!resumed)return;
+  try{
+   if(pendingSumUp()==null&&SumUpAPI.isLoggedIn()&&!SumUpAPI.isCardReaderConnected())SumUpAPI.prepareForCheckout();
+  }catch(RuntimeException e){android.util.Log.w("TaxiSumUp","Reader preparation unavailable",e);}
+ }
  private void openSumUpReader(){
   try{
    if(SumUpAPI.isCardReaderConnected())openSumUpCheckout();
@@ -588,6 +595,7 @@ public class MainActivity extends Activity {
   unlockedWithFingerprint=withFingerprint;
   unlocked=true;
   touchSession();
+  prepareIdleSumUpReader();
   FrameLayout content=unlockContent;
   Runnable reveal=revealHome;
   unlockContent=null;
@@ -932,7 +940,7 @@ public class MainActivity extends Activity {
   if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))web.evaluateJavascript("window.dispatchEvent(new Event('taxi-native-resume'))",null);
   resumed=true;
   if(unlocked)publishSumUp();
-  if(unlocked)checkIdleTimeout();
+  if(unlocked){checkIdleTimeout();prepareIdleSumUpReader();}
   else scheduleFingerprint();
  }
  @Override protected void onStop(){
