@@ -41,6 +41,8 @@ jobs:
                     const result=await page.evaluate(()=>{
                       const controls=[...document.querySelectorAll('button,input')].filter(e=>e.getClientRects().length);
                       const rs=controls.map(e=>({e,r:e.getBoundingClientRect()})),problems=[];
+                      const routes=controls.map(e=>e.dataset.page||e.dataset.go).filter(Boolean);
+                      if(new Set(routes).size!==routes.length)problems.push('Accès redondants sur la même page');
                       const name=e=>e.id||e.textContent.trim()||e.placeholder||e.type;
                       for(const {e,r} of rs){
                         if(r.width<48||r.height<48)problems.push('Taille '+name(e));
