@@ -19,7 +19,9 @@ function makeCore(){
    if(event.type==="paymentFailed"){
     if(!["cancelled","declined"].includes(event.result))throw Error("Statut incertain : ne pas relancer le paiement");
     c.paymentDraftCents=course.payment.amountCents;
-    c.lastPaymentAttempt={attemptId:event.attemptId,status:event.result};c.payment=null;
+    c.lastPaymentAttempt={attemptId:event.attemptId,status:event.result};
+    if(event.verifiedBy==="sumup_transactions_api"){c.lastPaymentAttempt.reference=event.reference;c.lastPaymentAttempt.verifiedBy=event.verifiedBy;}
+    c.payment=null;
    }else{
     if(event.result!=="confirmed"||!event.reference)throw Error("Confirmation de paiement manquante");
     c.payment={...course.payment,reference:event.reference,paidAt:event.paidAt||new Date().toISOString()};

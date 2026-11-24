@@ -676,7 +676,21 @@ jobs:
           }
           const scan=p=>fs.statSync(p).isDirectory()?fs.readdirSync(p).flatMap(n=>scan(path.join(p,n))):[p];
           for(const p of [...scan('refonte'),...scan('app/src/main/java')].filter(p=>/\.(js|html|java)$/.test(p))){
-            assert.doesNotMatch(read(p),/transactions\/history|taxi_sumup_transactions|loadPrivatePayments|taxi-sumup-sync|SUMUP_API_KEY|api\.sumup\.com/,p);
+            const source=read(p);
+            assert.doesNotMatch(source,/transactions\/history|taxi_sumup_transactions|loadPrivatePayments|taxi-sumup-sync|SUMUP_API_KEY/,p);
+            if(p==='app/src/main/java/be/montaxi/gestion/MainActivity.java'){
+              // Allow exactly two fixed, read-only API requests in the dedicated reconciliation helper.
+              const start=source.indexOf('// Read-only reconciliation;'),end=source.indexOf('private void ackSumUp(');
+              assert.ok(start>=0&&end>start);
+              const lookup=source.slice(start,end);
+              assert.doesNotMatch(source.slice(0,start)+source.slice(end),/api\.sumup\.com/);
+              assert.equal((lookup.match(/api\.sumup\.com/g)||[]).length,1);
+              assert.deepEqual([...lookup.matchAll(/sumUpRead\("([^"]+)"/g)].map(x=>x[1]),['/v0.1/me','/v2.1/merchants/']);
+              assert.match(lookup,/\/transactions\?foreign_transaction_id=/);
+              assert.match(lookup,/setRequestMethod\("GET"\)/);
+              assert.match(lookup,/setInstanceFollowRedirects\(false\)/);
+              assert.doesNotMatch(lookup,/SumUpAPI\.checkout|\.getOutputStream\(|setDoOutput\(true\)|\.putString\("pending"/);
+            }else assert.doesNotMatch(source,/api\.sumup\.com/,p);
           }
           const create=require('./refonte/course-controller.js'),c=create();
           c.plan({id:'local'});c.load('local');c.start('local');c.finish('local');
@@ -687,6 +701,15 @@ jobs:
           c.receiveSumUp('local',{status:'success',attemptId:'local-attempt',transactionCode:'LOCAL-TEST',amountCents:5000,currency:'EUR'});
           assert.equal(c.snapshot().ledger.length,1);assert.equal(c.snapshot().ledger[0].reference,'LOCAL-TEST');
           assert.throws(()=>c.receiveSumUp('local',{status:'success',attemptId:'local-attempt',transactionCode:'LOCAL-TEST',amountCents:5000,currency:'EUR'}));
+          const verified=create();verified.plan({id:'verified'});verified.load('verified');verified.start('verified');verified.finish('verified');
+          verified.beginSumUp('verified',100,'unique-attempt');
+          verified.receiveSumUp('verified',{status:'declined',attemptId:'unique-attempt',transactionCode:'TEST-FAILED',amountCents:100,currency:'EUR',verifiedBy:'sumup_transactions_api'});
+          assert.equal(verified.snapshot().ledger.length,0);assert.equal(verified.snapshot().courses[0].status,'awaiting_payment');
+          assert.equal(verified.snapshot().courses[0].lastPaymentAttempt.reference,'TEST-FAILED');
+          verified.beginSumUp('verified',150,'new-attempt');
+          verified.receiveSumUp('verified',{status:'success',attemptId:'new-attempt',transactionCode:'TEST-PAID',amountCents:150,currency:'EUR',verifiedBy:'sumup_transactions_api',paidAt:'2026-11-24T14:28:00Z'});
+          assert.equal(verified.snapshot().ledger[0].paidAt,'2026-11-24T14:28:00.000Z');
+          assert.equal(verified.snapshot().ledger.length,1);
           console.log('Point 7 : aucun import général dans Android, anciens déclencheurs et importateur retirés de la branche, paiement individuel conservé.');
           JS
   accounting:
@@ -891,7 +914,7 @@ jobs:
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2110'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2111'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -919,7 +942,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2110-signe
+          name: Mon-Taxi-Pro-2111-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt
