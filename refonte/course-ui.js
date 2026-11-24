@@ -17,7 +17,7 @@ const storage={
  },
  save(state){localStorage.setItem(storeKey,JSON.stringify({version:1,state}));}
 };
-let controller,selected=null,cashDraft=null,sumupDraft=null;
+let controller,selected=null,cashDraft=null,sumupDraft=null,restoreDraft=null;
 function message(value="",error=false){$('status').textContent=value;$('status').dataset.error=String(error);}
 function safe(action){try{message();action();}catch(e){message(e.message||"Action impossible",true);}}
 try{controller=window.createTaxiCourseController(storage);}catch(e){message(e.message,true);document.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);return;}
@@ -32,16 +32,57 @@ function readCashCents(raw){
  if(!Number.isSafeInteger(cents)||cents<=0)throw Error("Renseigne le montant positif réellement reçu.");
  return cents;
 }
-function renderCashTotals(){
- const today=localDate(new Date());
- const ledger=controller.snapshot().ledger;
- const cash=ledger.filter(e=>e.method==="cash"&&e.paidAt&&localDate(new Date(e.paidAt))===today).reduce((sum,e)=>sum+e.amountCents,0);
- $('home-cash').textContent=euros(cash);
- const card=ledger.filter(e=>e.method==="sumup"&&e.paidAt&&localDate(new Date(e.paidAt))===today).reduce((sum,e)=>sum+e.amountCents,0);
- $('home-card').textContent=euros(card);$('accounts-card').textContent=euros(card);
- $('home-receipts').textContent=euros(cash+card);
- $('accounts-cash').textContent=euros(cash);
+const today=()=>window.TaxiCleanCore.paymentDay(new Date().toISOString());
+function entryCents(raw){
+ const value=String(raw).trim();
+ if(!value)return 0;
+ if(!/^\d{1,9}(?:[,.]\d{1,2})?$/.test(value))throw Error("Montant invalide : deux décimales maximum.");
+ const [whole,fraction=""]=value.replace(",",".").split(".");
+ return Number(whole)*100+Number(fraction.padEnd(2,"0"));
 }
+function renderCashTotals(){
+ const daily=controller.daily(today());
+ $('home-cash').textContent=euros(daily.cash);
+ $('home-card').textContent=euros(daily.cardGross);
+ $('home-receipts').textContent=euros(daily.revenue);
+ const day=$('account-day').value||today();
+ const row=controller.daily(day),month=controller.monthly(day.slice(0,7));
+ for(const [id,key] of Object.entries({cash:"cash",commission:"commission",cashReal:"cashReal",card:"cardGross",fee:"fee",cardNet:"cardNet",appli:"appli",invoiceTtc:"invoiceTtc",revenue:"revenue",fuel:"fuel",expense:"expense",fixed:"fixed",result:"result"}))$('accounts-'+id).textContent=euros(row[key]);
+ $('month-label').textContent="Bilan "+day.slice(0,7);
+ for(const id of ["revenue","costs","result","average"])$('month-'+id).textContent=euros(month[id]);
+ $('month-workedDays').textContent=String(month.workedDays);
+}
+function loadAccountFields(){
+ const day=$('account-day').value||today();$('account-day').value=day;
+ const state=controller.snapshot();
+ for(const k of window.TaxiCleanCore.fields){const n=state.entries?.[day]?.[k]||0;$('entry-'+k).value=n?(n/100).toFixed(2).replace(".",","):"";}
+ const fixed=state.fixed?.[day.slice(0,7)]||0;$('monthly-fixed').value=fixed?(fixed/100).toFixed(2).replace(".",","):"";
+ renderCashTotals();
+}
+$('account-day').value=today();
+$('account-day').addEventListener("change",()=>safe(loadAccountFields));
+$('accounts-entry').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
+ const entry=Object.fromEntries(window.TaxiCleanCore.fields.map(k=>[k,entryCents($('entry-'+k).value)]));
+ controller.setDay($('account-day').value,entry);loadAccountFields();message("Journal enregistré.");
+});});
+$('fixed-entry').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
+ controller.setFixed($('account-day').value.slice(0,7),entryCents($('monthly-fixed').value));loadAccountFields();message("Frais fixes enregistrés.");
+});});
+function clearRestore(){restoreDraft=null;$('backup-review').hidden=true;}
+window.addEventListener("taxi-backup-result",e=>safe(()=>{
+ const d=e.detail;if(!d)return;
+ if(d.error)throw Error(d.error);
+ if(d.action==="exported"){message("Sauvegarde enregistrée dans Téléchargements.");return;}
+ if(d.action==="restore-approved"){
+  if(!restoreDraft||$('accounts').hidden)throw Error("Restauration non confirmée.");
+  controller.restore(restoreDraft);clearRestore();selected=null;renderLists();loadAccountFields();message("Sauvegarde restaurée localement.");return;
+ }
+ if(d.action==="imported"){
+  clearRestore();const candidate=window.TaxiCleanCore.readBackup(d.content);
+  restoreDraft=d.content;$('backup-summary').textContent="Sauvegarde : "+candidate.courses.length+" courses, "+candidate.ledger.length+" encaissements. Le remplacement est irréversible sans autre sauvegarde. Sauvegarde d’abord les données actuelles.";
+  $('backup-review').hidden=false;
+ }
+}));
 function recoverSumUp(){if(typeof window.TaxiSumUp?.recover==="function")window.TaxiSumUp.recover();}
 function ackSumUp(id){if(typeof window.TaxiSumUp?.ack==="function")window.TaxiSumUp.ack(id);}
 window.addEventListener("mon-taxi-sumup-result",e=>{
@@ -138,7 +179,8 @@ function show(id){
  if(id!=="cash")cashDraft=null;
  if(id!=="sumup")sumupDraft=null;
  if(id==="planning"||id==="archives")renderLists();
- if(id==="home"||id==="accounts")renderCashTotals();
+ if(id==="home")renderCashTotals();
+ if(id==="accounts")loadAccountFields();else clearRestore();
  screens.forEach(e=>e.hidden=e.id!==id);
  document.querySelectorAll('[data-page]').forEach(e=>{if(e.dataset.page===id)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current')});
  window.scrollTo(0,0);
@@ -169,6 +211,21 @@ document.addEventListener("click",e=>{
   else if(c.status==="in_progress"){controller.finish(c.id);show("payment");}
   else if(c.status==="awaiting_payment")show("payment");
   else throw Error("Action incompatible avec le statut de la course.");
+ });return;}
+ if(b.id==="backup-export"){safe(()=>{
+  if($('accounts').hidden||typeof window.TaxiBackup?.exportJson!=="function")throw Error("Sauvegarde disponible sur Android.");
+  window.TaxiBackup.exportJson(controller.backup());
+ });return;}
+ if(b.id==="backup-import"){safe(()=>{
+  if($('accounts').hidden||typeof window.TaxiBackup?.pickJson!=="function")throw Error("Restauration disponible sur Android.");
+  if(controller.snapshot().courses.some(c=>c.status==="payment_pending"))throw Error("Paiement en attente : restauration interdite.");
+  clearRestore();window.TaxiBackup.pickJson();
+ });return;}
+ if(b.id==="backup-cancel"){clearRestore();return;}
+ if(b.id==="backup-restore"){safe(()=>{
+  if($('accounts').hidden||!restoreDraft)throw Error("Aucune sauvegarde à restaurer.");
+  if(typeof window.TaxiBackup?.approveRestore!=="function")throw Error("Restauration disponible sur Android.");
+  window.TaxiBackup.approveRestore(); 
  });return;}
  if(b.id==="pay-sumup"){safe(()=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");

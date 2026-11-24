@@ -39,7 +39,8 @@ jobs:
                   });
                   await context.addInitScript(()=>{
                     window.wazeCalls=[];window.wazeAcks=[];window.overlayRequests=0;window.terminalCalls=0;
-                    window.sumupAttempts=[];window.sumupAcks=[];
+                    window.sumupAttempts=[];window.sumupAcks=[];window.savedBackup=null;
+                    window.TaxiBackup={exportJson:raw=>{window.savedBackup=raw;window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'exported'}}));},pickJson:()=>window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'imported',content:window.savedBackup}})),approveRestore:()=>window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'restore-approved'}}))};
                     window.TaxiSumUp={checkout:(courseId,attemptId,amountCents)=>{window.terminalCalls++;window.sumupAttempts.push({courseId,attemptId,amountCents,currency:'EUR'});},recover:()=>{},ack:id=>window.sumupAcks.push(id)};
                     window.TaxiContacts={
                       navigateWaze:(id,destination)=>{window.wazeCalls.push({id,destination});window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'opened',overlay:true}}));},
@@ -200,6 +201,22 @@ jobs:
                   const finalLedger=await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state.ledger);
                   assert.equal(finalLedger.length,2);assert.equal(finalLedger[1].method,'sumup');assert.equal(finalLedger[1].amountCents,6000);
                   await page.locator('[data-go=archives]').click();assert.equal(await page.locator('#archive-list article').count(),2);
+                  await page.locator('[data-page=accounts]').click();
+                  await page.locator('#entry-appli').fill('20,00');await page.locator('#entry-commission').fill('10,00');await page.locator('#entry-fuel').fill('15,00');await page.locator('#entry-expense').fill('5,00');
+                  await page.locator('#accounts-entry button[type=submit]').click();
+                  assert.match(await page.locator('#accounts-cashReal').innerText(),/40,25/);
+                  assert.match(await page.locator('#accounts-fee').innerText(),/1,01/);
+                  assert.match(await page.locator('#accounts-cardNet').innerText(),/58,99/);
+                  assert.match(await page.locator('#accounts-revenue').innerText(),/119,24/);
+                  await page.locator('#monthly-fixed').fill('300,00');await page.locator('#fixed-entry button[type=submit]').click();
+                  await page.locator('#backup-export').click();
+                  const backup=await page.evaluate(()=>window.savedBackup);assert.equal(JSON.parse(backup).state.ledger.length,2);
+                  await page.locator('#entry-appli').fill('30,00');await page.locator('#accounts-entry button[type=submit]').click();
+                  await page.locator('#backup-import').click();assert.equal(await page.locator('#backup-review').isVisible(),true);
+                  await page.locator('#backup-cancel').click();assert.match(await page.locator('#accounts-revenue').innerText(),/129,24/);
+                  await page.locator('#backup-import').click();await page.locator('#backup-restore').click();
+                  assert.match(await page.locator('#accounts-revenue').innerText(),/119,24/);
+                  await page.reload();await page.locator('[data-page=accounts]').click();assert.match(await page.locator('#accounts-revenue').innerText(),/119,24/);
                 }catch(e){report.push({width,height,ok:false,error:e.message});process.exitCode=1}
                 finally{await context.close();fs.writeFileSync('interface-report/results.json',JSON.stringify(report,null,2))}
               }

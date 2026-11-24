@@ -3,13 +3,22 @@
 (function(root){
 "use strict";
 function create(core,sumupEvent,storage){
-  let state=storage?.load()??core.empty();
+  let state=core.validateState(storage?.load()??core.empty());
   function commit(next){if(storage)storage.save(next);state=next;}
   function clone(value){return JSON.parse(JSON.stringify(value));}
   const get=id=>{const c=state.courses.find(c=>c.id===id);if(!c)throw Error("Course inconnue");return c};
   function apply(id,event){commit(core.apply(state,id,event));return clone(get(id))}
   return {
     snapshot:()=>clone(state),
+    setDay(day,entry){commit(core.setDay(state,day,entry));},
+    setFixed(month,cents){commit(core.setFixed(state,month,cents));},
+    daily:day=>core.dayTotals(state,day),
+    monthly:month=>core.monthTotals(state,month),
+    backup:()=>core.backup(state),
+    restore(raw){
+      if(state.courses.some(c=>c.status==="payment_pending"))throw Error("Paiement en attente : restauration interdite.");
+      const next=core.readBackup(raw);commit(clone(next));
+    },
     plan(course){commit(core.addCourse(state,clone(course)));return clone(get(course.id))},
     load:id=>apply(id,{type:"load"}),
     start:id=>apply(id,{type:"start"}),

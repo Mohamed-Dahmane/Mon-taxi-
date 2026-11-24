@@ -232,6 +232,62 @@ public class MainActivity extends Activity {
    }else finishSumUp("uncertain",null,null,null);
   }catch(Exception e){finishSumUp("uncertain",null,null,null);}
  }
+ private static final int BACKUP_PICK=704, BACKUP_MAX_BYTES=16*1024*1024;
+ private boolean backupTrusted(){return unlocked&&web!=null&&isLocalAppPage(web.getUrl());}
+ private void backupEvent(String action,String content,String error){
+  if(!backupTrusted())return;
+  try{org.json.JSONObject d=new org.json.JSONObject();if(action!=null)d.put("action",action);if(content!=null)d.put("content",content);if(error!=null)d.put("error",error);
+   web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:"+d.toString()+"}))",null);
+  }catch(Exception ignored){}
+ }
+ private void exportLocalBackup(String json){
+  if(!backupTrusted())return;
+  try{
+   if(pendingSumUp()!=null)throw new IllegalStateException("Journal SumUp actif");
+   if(json==null||json.length()>BACKUP_MAX_BYTES)throw new IllegalArgumentException();
+   byte[] bytes=json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+   if(bytes.length>BACKUP_MAX_BYTES||!"mon-taxi-android-autonome".equals(new org.json.JSONObject(json).optString("format")))throw new IllegalArgumentException();
+   if(android.os.Build.VERSION.SDK_INT<29)throw new IllegalStateException("Android 10 requis");
+   new Thread(()->{
+    android.net.Uri target=null;
+    try{
+     android.content.ContentValues v=new android.content.ContentValues();
+     v.put(android.provider.MediaStore.Downloads.DISPLAY_NAME,"mon_taxi_autonome_"+new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS",java.util.Locale.ROOT).format(new java.util.Date())+".json");
+     v.put(android.provider.MediaStore.Downloads.MIME_TYPE,"application/json");
+     v.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,android.os.Environment.DIRECTORY_DOWNLOADS);
+     v.put(android.provider.MediaStore.Downloads.IS_PENDING,1);
+     target=getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,v);
+     if(target==null)throw new IOException();
+     try(java.io.OutputStream out=getContentResolver().openOutputStream(target)){if(out==null)throw new IOException();out.write(bytes);}
+     v.clear();v.put(android.provider.MediaStore.Downloads.IS_PENDING,0);
+     if(getContentResolver().update(target,v,null,null)!=1)throw new IOException();
+     runOnUiThread(()->backupEvent("exported",null,null));
+    }catch(Exception e){if(target!=null)try{getContentResolver().delete(target,null,null);}catch(Exception ignored){}runOnUiThread(()->backupEvent(null,null,"Échec de la sauvegarde locale."));}
+   }).start();
+  }catch(Exception e){backupEvent(null,null,"Sauvegarde indisponible : vérifier le journal SumUp et le format.");}
+ }
+ private void pickLocalBackup(){
+  if(!backupTrusted())return;
+  try{
+   if(pendingSumUp()!=null)throw new IllegalStateException();
+   Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("application/json");
+   startActivityForResult(intent,BACKUP_PICK);
+  }catch(Exception e){backupEvent(null,null,"Sélecteur indisponible ou paiement SumUp en attente.");}
+ }
+ private void readLocalBackup(int code,Intent data){
+  if(code!=RESULT_OK||data==null||data.getData()==null)return;
+  android.net.Uri uri=data.getData();
+  if(!"content".equals(uri.getScheme())){backupEvent(null,null,"Fichier invalide.");return;}
+  new Thread(()->{
+   try(InputStream in=getContentResolver().openInputStream(uri);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){
+    if(in==null)throw new IOException();
+    byte[] buf=new byte[8192];int n;
+    while((n=in.read(buf))!=-1){if(out.size()+n>BACKUP_MAX_BYTES)throw new IOException();out.write(buf,0,n);}
+    String json=new String(out.toByteArray(),java.nio.charset.StandardCharsets.UTF_8);
+    runOnUiThread(()->backupEvent("imported",json,null));
+   }catch(Exception e){runOnUiThread(()->backupEvent(null,null,"Fichier de sauvegarde illisible ou trop volumineux."));}
+  }).start();
+ }
  private static final String LOCAL_APP_URL="file:///android_asset/index.html";
  private static boolean isLocalAppPage(String url){
   if(url==null)return false;
@@ -456,6 +512,7 @@ public class MainActivity extends Activity {
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
   super.onActivityResult(requestCode,resultCode,data);
+  if(requestCode==BACKUP_PICK){readLocalBackup(resultCode,data);return;}
   if(requestCode==SUMUP_LOGIN){
    if(sumUpStage("login")){
     int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
@@ -579,38 +636,15 @@ public class MainActivity extends Activity {
      return !isLocalAppPage(url);
     }
    });
-   web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
-    try{
-     if(url.startsWith("blob:")){
-      Toast.makeText(this,"Préparation de la sauvegarde…",Toast.LENGTH_SHORT).show();
-      String js="(function(){fetch("+org.json.JSONObject.quote(url)+").then(r=>r.blob()).then(b=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(b)})).then(v=>window.TaxiDownload.save(v)).catch(e=>console.error('Export',e))})()";
-      web.evaluateJavascript(js,null);
-     }else{
-      android.app.DownloadManager.Request request=new android.app.DownloadManager.Request(android.net.Uri.parse(url));
-      request.setTitle("Sauvegarde Gestion Taxi");
-      request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-      request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS,"sauvegarde_gestion_taxi.json");
-      ((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(request);
-     }
-    }catch(Exception e){Toast.makeText(this,"Export impossible : "+e.getMessage(),Toast.LENGTH_LONG).show();}
-   });
    web.addJavascriptInterface(new Object(){
-    @android.webkit.JavascriptInterface public void save(String dataUrl){
-     try{
-      int comma=dataUrl.indexOf(',');
-      if(comma<0)throw new IllegalArgumentException("Données invalides");
-      byte[] bytes=android.util.Base64.decode(dataUrl.substring(comma+1),android.util.Base64.DEFAULT);
-      android.content.ContentValues values=new android.content.ContentValues();
-      values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME,"sauvegarde_gestion_taxi_"+new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss",java.util.Locale.ROOT).format(new java.util.Date())+".json");
-      values.put(android.provider.MediaStore.Downloads.MIME_TYPE,"application/json");
-      values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,android.os.Environment.DIRECTORY_DOWNLOADS);
-      android.net.Uri target=getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);
-      if(target==null)throw new IllegalStateException("Enregistrement impossible");
-      try(java.io.OutputStream out=getContentResolver().openOutputStream(target)){if(out==null)throw new IllegalStateException("Fichier inaccessible");out.write(bytes);}
-      runOnUiThread(()->Toast.makeText(MainActivity.this,"Sauvegarde enregistrée dans Téléchargements",Toast.LENGTH_LONG).show());
-     }catch(Exception e){runOnUiThread(()->Toast.makeText(MainActivity.this,"Échec sauvegarde : "+e.getMessage(),Toast.LENGTH_LONG).show());}
-    }
-   },"TaxiDownload");
+    @android.webkit.JavascriptInterface public void exportJson(String json){runOnUiThread(()->exportLocalBackup(json));}
+    @android.webkit.JavascriptInterface public void pickJson(){runOnUiThread(()->pickLocalBackup());}
+    @android.webkit.JavascriptInterface public void approveRestore(){runOnUiThread(()->{
+     if(!backupTrusted())return;
+     try{if(pendingSumUp()!=null){backupEvent(null,null,"Journal SumUp encore actif : restauration interdite.");return;}backupEvent("restore-approved",null,null);}
+     catch(Exception e){backupEvent(null,null,"Journal SumUp à vérifier.");}
+    });}
+   },"TaxiBackup");
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void schedule(String json){
      runOnUiThread(()->{
