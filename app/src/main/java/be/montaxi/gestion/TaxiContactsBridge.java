@@ -2,7 +2,6 @@ package be.montaxi.gestion;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -26,7 +25,7 @@ public final class TaxiContactsBridge {
  private boolean trusted(){
   String url=web.getUrl();if(url==null)return false;
   Uri uri=Uri.parse(url);
-  return ("https".equals(uri.getScheme())&&"mohamed-dahmane.github.io".equals(uri.getHost())&&"/Mon-taxi-/".equals(uri.getPath())&&(uri.getPort()==-1||uri.getPort()==443))||url.equals("file:///android_asset/index.html");
+  return "file".equals(uri.getScheme())&&(uri.getAuthority()==null||uri.getAuthority().isEmpty())&&"/android_asset/index.html".equals(uri.getPath());
  }
  private void result(String mode,JSONArray contacts,String error){
   try{JSONObject data=new JSONObject();data.put("mode",mode);if(contacts!=null)data.put("contacts",contacts);if(error!=null)data.put("error",error);
@@ -128,38 +127,6 @@ public final class TaxiContactsBridge {
   try{Intent intent=new Intent(Intent.ACTION_EDIT,Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI,nativeId));activity.startActivity(intent);}
   catch(Exception e){result("edit",null,"Impossible d’ouvrir le contact téléphone.");}
  });}
- @JavascriptInterface public void openWhatsApp(String number){openWhatsAppChat(number,null);}
- @JavascriptInterface public void openWhatsAppMessage(String number,String message){
-  if(message==null||message.length()>1000)return;
-  openWhatsAppChat(number,message);
- }
- private void openWhatsAppChat(String number,String message){activity.runOnUiThread(()->{
-  if(!trusted()||number==null||!number.matches("\\+[1-9][0-9]{7,14}"))return;
-  Uri.Builder address=Uri.parse("https://wa.me/"+number.substring(1)).buildUpon();
-  if(message!=null)address.appendQueryParameter("text",message);
-  Uri chat=address.build();
-  for(String app:new String[]{"com.whatsapp","com.whatsapp.w4b"}){
-   try{
-    activity.startActivity(new Intent(Intent.ACTION_VIEW,chat).setPackage(app));
-    return;
-   }catch(ActivityNotFoundException|SecurityException ignored){}
-  }
-  if(message!=null){
-   try{
-    activity.startActivity(new Intent(Intent.ACTION_VIEW,chat));
-   }catch(ActivityNotFoundException|SecurityException e){
-    result("open",null,"Impossible d’ouvrir WhatsApp.");
-   }
-   return;
-  }
-  new AlertDialog.Builder(activity)
-   .setTitle("WhatsApp indisponible")
-   .setMessage("Ouvrir les SMS pour contacter ce client ?")
-   .setNegativeButton("Annuler",null)
-   .setPositiveButton("Ouvrir SMS",(dialog,which)->open("sms:"+number))
-   .show();
- });}
-
  private android.view.WindowManager bubbleManager;
  private android.widget.TextView bubble;
  private android.view.WindowManager.LayoutParams bubbleParams;
@@ -236,7 +203,7 @@ public final class TaxiContactsBridge {
    }else if("https".equals(scheme)&&"waze.com".equalsIgnoreCase(uri.getHost())&&"/ul".equals(uri.getPath())){
     intent=new Intent(Intent.ACTION_VIEW,uri);
     try{intent.setPackage("com.waze");activity.startActivity(intent);return;}
-    catch(ActivityNotFoundException ignored){intent.setPackage(null);}
+    catch(ActivityNotFoundException ignored){result("open",null,"Waze n’est pas installé.");return;}
    }else return;
    activity.startActivity(intent);
   }catch(Exception e){result("open",null,"Aucune application compatible n’a pu être ouverte.");}
