@@ -41,9 +41,14 @@ for(let i=0;i<24;i++){
  assert.equal(c.snapshot().ledger.reduce((sum,p)=>sum+p.amountCents,0),expected);
 }
 prepare("a");prepare("b");
+c.savePaymentDraft("b",100);reopen();
+assert.equal(c.snapshot().courses.find(x=>x.id==="b").paymentDraftCents,100);
 c.beginSumUp("a",1000,"single-pending");
+unchanged(()=>c.savePaymentDraft("a",100));
 unchanged(()=>c.beginSumUp("b",1000,"second-pending"));
 c.receiveSumUp("a",{attemptId:"single-pending",status:"declined"});reopen();
+assert.equal(c.snapshot().courses.find(x=>x.id==="a").paymentDraftCents,1000);
+assert.equal(c.snapshot().courses.find(x=>x.id==="b").paymentDraftCents,100);
 unchanged(()=>c.beginSumUp("a",1000,"single-pending"));
 c.beginSumUp("a",1000,"new-attempt");
 c.receiveSumUp("a",{attemptId:"new-attempt",status:"cancelled"});reopen();
