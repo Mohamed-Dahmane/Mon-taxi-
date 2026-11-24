@@ -569,7 +569,14 @@ jobs:
           assert.doesNotMatch(reconnect,/SumUpAPI\.checkout\(/);
           assert.match(m,/transactionField\(info,"getAmount"\)/);
           assert.match(m,/cents!=p.getInt\("requestedCents"\)/);
-          assert.match(m,/persistSumUp\(p\);publishSumUp\(\)/);
+          assert.match(m,/persistSumUp\(p\);activeSumUpAttempt=null;publishSumUp\(\)/);
+          const recovery=m.slice(m.indexOf('private void recoverInterruptedSumUp('),m.indexOf('private void ackSumUp('));
+          assert.ok(recovery.includes('!attempt.equals(p.optString("attemptId"))||!courseId.equals(p.optString("courseId"))'));
+          assert.ok(recovery.includes('if(activeSumUpAttempt==null&&("setup".equals(stage)||"login".equals(stage)||"reconnecting".equals(stage)||"reader".equals(stage)))'));
+          assert.match(recovery,/finishSumUp\("cancelled",null,null,null\)/);
+          assert.doesNotMatch(recovery,/SumUpAPI\.checkout|openSumUpCheckout|remove\("pending"\)/);
+          assert.ok(recovery.includes('"checkout".equals(stage)?'));
+          assert.match(u,/recoverInterrupted\(c.id,c.payment.attemptId\)/);
           assert.match(u,/controller.beginSumUp\(c.id,draft.cents,attempt\)/);
           assert.match(u,/window.TaxiSumUp.checkout\(c.id,attempt,draft.cents\)/);
           console.log('Point 6 : contrat SDK, référence unique, montant confirmé, journal persistant et blocage en cas de doute.');
