@@ -837,7 +837,6 @@ public class MainActivity extends Activity {
  }
  @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){
   super.onRequestPermissionsResult(code,permissions,results);
-  if(code==TaxiContactsBridge.CONTACT_PERMISSION&&taxiContacts!=null)taxiContacts.permissionResult(results);
   if(code==36&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED){
    enableExactTaxiReminders();
   }
