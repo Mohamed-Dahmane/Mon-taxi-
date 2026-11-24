@@ -14,9 +14,6 @@ import org.json.JSONObject;
 /** Explicit contact actions. Editing is performed in the phone's own contact editor. */
 public final class TaxiContactsBridge {
  static final int CONTACT_PICK=72;
- // Compatibilité de compilation temporaire, retirée avec le gestionnaire de permission historique.
- static final int CONTACT_PERMISSION=71;
- void permissionResult(int[] grants){}
  private final Activity activity;
  private final WebView web;
 
