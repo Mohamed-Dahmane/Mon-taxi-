@@ -2,7 +2,7 @@ name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
     branches: [refonte/base-saine-20261124]
-    paths: ['refonte/**', 'app/src/main/java/be/montaxi/gestion/MainActivity.java', 'index.html', '.github/workflows/refonte-fiabilite.yml']
+    paths: ['refonte/**', 'app/src/main/java/be/montaxi/gestion/MainActivity.java', '.github/workflows/android-apk.yml', '.github/workflows/refonte-fiabilite.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -152,29 +152,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Vérifier les nouvelles barrières et inventorier les dépendances restantes
+      - name: Vérifier la séparation permanente des sources et des accès réseau
         run: |
           node <<'JS'
           const fs=require('node:fs'),assert=require('node:assert/strict');
           const read=p=>fs.readFileSync(p,'utf8');
           const native=read('app/src/main/java/be/montaxi/gestion/MainActivity.java');
           const prototype=read('refonte/interface.html');
-          const old=read('index.html');
           const apk=read('.github/workflows/android-apk.yml');
+          const paths=['refonte/interface.html','refonte/clean-core.js','refonte/course-controller.js','refonte/sumup-course-payment.js'];
           assert.doesNotMatch(native,/github\.io|Ouvrir dans Chrome|\bAPP_URL\b/);
-          assert.ok(native.includes('isLocalAppPage(url)'));
-          assert.ok(native.includes('return !url.startsWith("file:///android_asset/");'));
+          assert.ok(native.includes('return !isLocalAppPage(url);'));
           assert.ok(native.includes('web.loadUrl(LOCAL_APP_URL)'));
-          console.log('Barrière de navigation native : vérifiée statiquement');
-          assert.doesNotMatch(prototype,/<script[^>]+src=|fetch\s*\(|localStorage|DoubleTree|The Standard|Papa/);
-          console.log('Prototype : aucune ancienne liste, aucun accès réseau ou stockage partagé');
-          const blockers=[
-            ['Synchronisation comptable historique',/taxi_management_backups/.test(old)],
-            ['Synchronisation des hôtels historique',/taxi_hotel_sync/.test(old)],
-            ['Import global SumUp historique',/taxi_sumup_transactions/.test(old)],
-            ['Interface de refonte non intégrée à APK',!apk.includes('refonte/interface.html')],
-            ['Prototype encore non raccordé',/non raccordé/.test(prototype)]
-          ];
-          for(const [label,blocked] of blockers)console.log((blocked?'RESTE A FAIRE : ':'OK : ')+label);
-          if(blockers.some(x=>x[1])){console.error('Validation finale impossible : intégration incomplète');process.exitCode=1}
+          for(const setting of ['setBlockNetworkLoads(true)','setAllowFileAccessFromFileURLs(false)','setAllowUniversalAccessFromFileURLs(false)'])assert.ok(native.includes(setting),setting);
+          assert.ok(apk.includes('cp refonte/interface.html app/src/main/assets/index.html'));
+          assert.ok(apk.includes('rm -rf app/src/main/assets'));
+          assert.doesNotMatch(apk,/cp (?:index\.html|taxi-interface\.css|hotel-sync\.js|pickup-reservation\.html)/);
+          for(const p of paths)assert.doesNotMatch(read(p),/taxi_management_backups|taxi_hotel_sync|taxi_sumup_transactions|github\.io|\bfetch\s*\(|XMLHttpRequest|WebSocket|BroadcastChannel/);
+          assert.doesNotMatch(prototype,/<script[^>]+src=|DoubleTree|The Standard|Papa/);
+          console.log('ISOLATION STATIQUE OK : aucun flux comptable, hôtels, courses ou import SumUp partagé dans les sources Android embarquées.');
+          console.log('Contrôle du contenu APK et validation sur appareil à effectuer séparément.');
           JS
+  integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Empêcher une validation finale prématurée
+        run: |
+          if grep -q 'non raccordé' refonte/interface.html; then
+            echo 'RESTE A FAIRE : raccordement des boutons, persistance, navigation Waze, paiements et comptabilité.'
+            exit 1
+          fi
