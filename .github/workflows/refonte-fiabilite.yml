@@ -7,7 +7,65 @@ on:
 permissions:
   contents: read
 jobs:
+  point8-precheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Calculs en centimes, bilan, sauvegarde locale et restauration contrôlée
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict'),core=require('./refonte/clean-core.js'),create=require('./refonte/course-controller.js');
+          let s=core.empty();
+          for(const id of ['cash','card','not-worked']){
+            s=core.addCourse(s,{id,driverIsMe:id==='cash',commissionCents:500});
+            if(id!=='not-worked')for(const type of ['load','start','finish'])s=core.apply(s,id,{type});
+          }
+          s=core.recordCash(s,'cash',5000);
+          s=core.apply(s,'card',{type:'beginPayment',method:'sumup',amountCents:6000,attemptId:'a'});
+          s=core.apply(s,'card',{type:'paymentConfirmed',attemptId:'a',result:'confirmed',reference:'T'});
+          for(const p of s.ledger){p.paidAt='2026-12-01T12:00:00Z';s.courses.find(c=>c.id===p.courseId).payment.paidAt=p.paidAt;}
+          s=core.setDay(s,'2026-12-01',{cash:0,appli:2000,commission:500,fuel:1500,expense:500,invoiceHt:1000});
+          s=core.setFixed(s,'2026-12',31000);
+          const d=core.dayTotals(s,'2026-12-01');
+          assert.equal(d.cardGross,6000);assert.equal(d.fee,101);assert.equal(d.cardNet,5899);
+          assert.equal(d.cashReal,4000);assert.equal(d.invoiceTtc,1060);
+          assert.equal(d.revenue,12959);assert.equal(d.result,9959);
+          const m=core.monthTotals(s,'2026-12');
+          assert.equal(m.workedDays,1);assert.equal(m.average,12959);assert.equal(m.fixed,31000);assert.equal(m.result,-20041);
+          assert.equal(core.paymentDay('2026-11-30T23:05:00Z'),'2026-12-01');
+          const raw=core.backup(s);assert.deepEqual(core.readBackup(raw),s);
+          assert.throws(()=>core.readBackup(JSON.stringify({version:1,state:s})));
+          const broken=JSON.parse(raw);broken.state.ledger.push(broken.state.ledger[0]);assert.throws(()=>core.readBackup(JSON.stringify(broken)));
+          const c=create();c.restore(raw);assert.equal(c.monthly('2026-12').revenue,12959);
+          assert.throws(()=>c.restore('invalid'));assert.equal(c.snapshot().ledger.length,2);
+          let pending=core.addCourse(core.empty(),{id:'pending'});for(const type of ['load','start','finish'])pending=core.apply(pending,'pending',{type});
+          pending=core.apply(pending,'pending',{type:'beginPayment',method:'sumup',amountCents:100,attemptId:'p'});
+          assert.throws(()=>core.backup(pending));
+          assert.throws(()=>core.readBackup(JSON.stringify({format:'mon-taxi-android-autonome',version:1,state:pending})));
+          const source=require('node:fs').readFileSync('app/src/main/java/be/montaxi/gestion/MainActivity.java','utf8');
+          assert.match(source,/MediaStore.Downloads.IS_PENDING/);assert.match(source,/Intent.ACTION_OPEN_DOCUMENT/);
+          assert.doesNotMatch(source,/DownloadManager.Request|web.setDownloadListener/);
+          // Additional regression cases: non-worked day, negative cash, rounding, and failed writes.
+          const empty=core.empty();
+          assert.equal(core.monthTotals(empty,'2026-12').workedDays,0);
+          assert.equal(core.monthTotals(empty,'2026-12').average,0);
+          let edge=core.setFixed(empty,'2028-02',10001);
+          assert.equal(core.monthTotals(edge,'2028-02').fixed,10001);
+          edge=core.setDay(edge,'2028-02-29',{cash:100,appli:0,commission:200,fuel:0,expense:0,invoiceHt:0});
+          assert.equal(core.dayTotals(edge,'2028-02-29').cashReal,-100);
+          assert.equal(core.dayTotals(edge,'2028-02-29').worked,false);
+          assert.throws(()=>core.setDay(edge,'2028-02-30',{cash:0,appli:0,commission:0,fuel:0,expense:0,invoiceHt:0}));
+          let persisted=core.empty(),fail=false;
+          const guarded=create({load:()=>persisted,save:s=>{if(fail)throw Error('écriture interrompue');persisted=JSON.parse(JSON.stringify(s));}});
+          guarded.restore(raw);fail=true;
+          assert.throws(()=>guarded.restore(core.backup(empty)));
+          assert.equal(guarded.snapshot().ledger.length,2);assert.equal(persisted.ledger.length,2);
+          assert.throws(()=>guarded.setFixed('2026-12',99999));assert.equal(guarded.monthly('2026-12').fixed,31000);
+          assert.match(source,/import android\.content\.Intent;/);
+          console.log('Point 8 : calculs, moyenne, mois, frais, commission, sauvegarde et restauration contrôlée OK.');
+          JS
   interface:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -231,6 +289,7 @@ jobs:
           name: prototype-fold
           path: interface-report/
   course:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -278,6 +337,7 @@ jobs:
           console.log('Parcours cash autonome, SumUp simulé, refus, statut incertain et dédoublonnage : OK');
           JS
   isolation:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -307,6 +367,7 @@ jobs:
           console.log('Contrôle du contenu APK et validation sur appareil à effectuer séparément.');
           JS
   waze:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -329,6 +390,7 @@ jobs:
           JS
 
   cash:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -352,6 +414,7 @@ jobs:
           console.log('Point 5 : espèces locales, aucun terminal, écriture atomique, reprise et dédoublonnage OK.');
           JS
   sumup:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -374,6 +437,7 @@ jobs:
           console.log('Point 6 : contrat SDK, référence unique, montant confirmé, journal persistant et blocage en cas de doute.');
           JS
   assainissement:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -408,6 +472,7 @@ jobs:
           console.log('Point 2 : anciennes routes ciblées absentes, répertoire sans données imposées, deux paiements distincts.');
           JS
   no-history-import:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -442,6 +507,7 @@ jobs:
           console.log('Point 7 : aucun import général dans Android, anciens déclencheurs et importateur retirés de la branche, paiement individuel conservé.');
           JS
   accounting:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -479,9 +545,27 @@ jobs:
           const source=require('node:fs').readFileSync('app/src/main/java/be/montaxi/gestion/MainActivity.java','utf8');
           assert.match(source,/MediaStore.Downloads.IS_PENDING/);assert.match(source,/Intent.ACTION_OPEN_DOCUMENT/);
           assert.doesNotMatch(source,/DownloadManager.Request|web.setDownloadListener/);
+          // Additional regression cases: non-worked day, negative cash, rounding, and failed writes.
+          const empty=core.empty();
+          assert.equal(core.monthTotals(empty,'2026-12').workedDays,0);
+          assert.equal(core.monthTotals(empty,'2026-12').average,0);
+          let edge=core.setFixed(empty,'2028-02',10001);
+          assert.equal(core.monthTotals(edge,'2028-02').fixed,10001);
+          edge=core.setDay(edge,'2028-02-29',{cash:100,appli:0,commission:200,fuel:0,expense:0,invoiceHt:0});
+          assert.equal(core.dayTotals(edge,'2028-02-29').cashReal,-100);
+          assert.equal(core.dayTotals(edge,'2028-02-29').worked,false);
+          assert.throws(()=>core.setDay(edge,'2028-02-30',{cash:0,appli:0,commission:0,fuel:0,expense:0,invoiceHt:0}));
+          let persisted=core.empty(),fail=false;
+          const guarded=create({load:()=>persisted,save:s=>{if(fail)throw Error('écriture interrompue');persisted=JSON.parse(JSON.stringify(s));}});
+          guarded.restore(raw);fail=true;
+          assert.throws(()=>guarded.restore(core.backup(empty)));
+          assert.equal(guarded.snapshot().ledger.length,2);assert.equal(persisted.ledger.length,2);
+          assert.throws(()=>guarded.setFixed('2026-12',99999));assert.equal(guarded.monthly('2026-12').fixed,31000);
+          assert.match(source,/import android\.content\.Intent;/);
           console.log('Point 8 : calculs, moyenne, mois, frais, commission, sauvegarde et restauration contrôlée OK.');
           JS
   integration:
+    needs: point8-precheck
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
