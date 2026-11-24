@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
   new AlertDialog.Builder(this).setTitle("Mon Taxi ne s'affiche pas")
    .setMessage("L'empreinte a fonctionne, mais le tableau n'a pas pu se charger. Aucune donnee ne sera effacee.")
    .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl("file:///android_asset/index.html");webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
-   .setNegativeButton("Ouvrir dans Chrome",(dialog,which)->{recoveryShown=false;startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(APP_URL)));})
+   .setNegativeButton("Fermer",(dialog,which)->{recoveryShown=false;finish();})
    .setOnCancelListener(dialog->recoveryShown=false).show();
  }
  private FrameLayout unlockContent;
@@ -177,7 +177,12 @@ public class MainActivity extends Activity {
   else if("uncertain".equals(status))showSumUpMessage("Statut incertain : vérifier SumUp avant de réessayer");
   else if("error".equals(status))showSumUpMessage("Paiement non confirmé : "+code);
  }
- private static final String APP_URL="https://mohamed-dahmane.github.io/Mon-taxi-/";
+ private static final String LOCAL_APP_URL="file:///android_asset/index.html";
+ private static boolean isLocalAppPage(String url){
+  if(url==null)return false;
+  android.net.Uri uri=android.net.Uri.parse(url);
+  return "file".equals(uri.getScheme())&&(uri.getAuthority()==null||uri.getAuthority().isEmpty())&&"/android_asset/index.html".equals(uri.getPath());
+ }
  private android.media.SoundPool paymentSoundPool;
  private int paymentSoundId=0;
  private boolean paymentSoundReady=false;
@@ -505,11 +510,8 @@ public class MainActivity extends Activity {
      if(!req.isForMainFrame())return;
      android.net.Uri uri=req.getUrl();
      // Une ressource secondaire indisponible ne doit pas remplacer toute la page.
-     if(uri==null||!uri.toString().startsWith(APP_URL))return;
-     if(!"file".equals(view.getUrl()==null?"":android.net.Uri.parse(view.getUrl()).getScheme())){
-      view.loadUrl("file:///android_asset/index.html");
-      webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,10000L);
-     }
+     if(uri==null||!isLocalAppPage(uri.toString()))return;
+     webHealthHandler.postDelayed(MainActivity.this::verifyWebContent,1000L);
     }
     @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){
      // Le processus WebView est mort : ne jamais réutiliser cette instance.
@@ -528,7 +530,7 @@ public class MainActivity extends Activity {
     }
     @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){
      String url=req.getUrl().toString();
-     return !(url.startsWith("file:///android_asset/")||url.startsWith(APP_URL));
+     return !url.startsWith("file:///android_asset/");
     }
    });
    web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
@@ -566,8 +568,7 @@ public class MainActivity extends Activity {
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void schedule(String json){
      runOnUiThread(()->{
-      if(web!=null&&web.getUrl()!=null&&(web.getUrl().startsWith(APP_URL)||
-          web.getUrl().equals("file:///android_asset/index.html"))){
+      if(web!=null&&isLocalAppPage(web.getUrl())){
        TaxiReminderReceiver.schedule(MainActivity.this,json);
       }
      });
@@ -586,8 +587,7 @@ public class MainActivity extends Activity {
      runOnUiThread(()->{
       if(web==null||!web.hasWindowFocus())return;
       String url=web.getUrl();
-      if(url!=null&&(url.equals(APP_URL)||url.startsWith(APP_URL+"?")||
-          url.startsWith(APP_URL+"#")||url.equals("file:///android_asset/index.html"))){
+      if(isLocalAppPage(url)){
        web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
       }
      });
@@ -603,7 +603,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void checkout(String amount){
      runOnUiThread(()->{
       String url=web==null?null:web.getUrl();
-      if(url!=null&&(url.startsWith(APP_URL)||url.equals("file:///android_asset/index.html")))beginSumUpPayment(amount);
+      if(isLocalAppPage(url))beginSumUpPayment(amount);
      });
     }
    },"TaxiSumUp");
@@ -613,7 +613,7 @@ public class MainActivity extends Activity {
    WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // L APK Android utilise exclusivement son interface embarquee, independante de Chrome.
-  if(web.getUrl()==null)web.loadUrl("file:///android_asset/index.html");
+  if(!isLocalAppPage(web.getUrl()))web.loadUrl(LOCAL_APP_URL);
   webHealthHandler.postDelayed(this::verifyWebContent,15000L);
   if(web.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)web.getParent()).removeView(web);
   web.setVisibility(covered?View.INVISIBLE:View.VISIBLE);
