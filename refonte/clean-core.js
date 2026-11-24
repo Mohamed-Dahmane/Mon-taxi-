@@ -22,7 +22,7 @@ function makeCore(){
     c.lastPaymentAttempt={attemptId:event.attemptId,status:event.result};c.payment=null;
    }else{
     if(event.result!=="confirmed"||!event.reference)throw Error("Confirmation de paiement manquante");
-    c.payment={...course.payment,reference:event.reference,paidAt:new Date().toISOString()};
+    c.payment={...course.payment,reference:event.reference,paidAt:event.paidAt||new Date().toISOString()};
    }
   }
   return c;

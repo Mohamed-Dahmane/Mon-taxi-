@@ -305,9 +305,13 @@ window.addEventListener("mon-taxi-sumup-result",e=>{
    message("Paiement non effectué. La course reste à payer.");
   }else{
    if(selected===c.id&& !$('sumup').hidden)show("sumup");
-   if(d.status==="uncertain")message("Statut incertain : ne pas relancer ni encaisser en espèces pour cette course avant vérification.",true);
+   if(d.status==="uncertain"||d.stage==="checkout"){const warning="Statut incertain : ne pas relancer ni encaisser en espèces pour cette course avant vérification.";message(warning,true);if(selected===c.id){$('sumup-diagnostic').textContent=warning;$('sumup-diagnostic').hidden=false;}}
   }
  }catch(error){message(error.message||"Résultat SumUp à vérifier. Ne pas relancer.",true);}
+});
+window.addEventListener("taxi-sumup-diagnostic",e=>{
+ const d=e.detail,c=current();if(!c||c.id!==d?.courseId||c.payment?.attemptId!==d.attemptId)return;
+ $('sumup-diagnostic').textContent=String(d.message||"");$('sumup-diagnostic').hidden=false;
 });
 window.addEventListener("taxi-native-resume",recoverSumUp);
 const labels={planned:"Client à charger",loaded:"Client chargé",in_progress:"Course en cours",awaiting_payment:"En attente de paiement",payment_pending:"Paiement en attente",archived:"Course archivée"};
@@ -394,6 +398,9 @@ function show(id){
     $('sumup-route').textContent=route(c);
     $('sumup-amount').textContent=euros(pending?c.payment.amountCents:sumupDraft.cents);
     $('sumup-confirm').hidden=pending;$('sumup-back').hidden=pending;$('sumup-recover').hidden=!pending;
+    $('sumup-online').hidden=!pending;$('sumup-reference').hidden=!pending;
+    $('sumup-reference').textContent=pending?"Référence de tentative : "+c.payment.attemptId:"";
+    $('sumup-diagnostic').hidden=true;$('sumup-diagnostic').textContent="";
     $('sumup-message').textContent=pending?"Paiement en attente de confirmation. Ne pas recommencer.":"Confirme l’envoi du montant au terminal SumUp.";
    }
   }
@@ -484,6 +491,7 @@ document.addEventListener("click",e=>{
   controller.beginSumUp(c.id,draft.cents,attempt);
   show("sumup");window.TaxiSumUp.checkout(c.id,attempt,draft.cents);
  });return;}
+ if(b.id==="sumup-online"){safe(()=>{const c=current();if(c?.status!=="payment_pending"||$('sumup').hidden)throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.verifyOnline!=="function")throw Error("Vérification officielle disponible uniquement sur Android.");window.TaxiSumUp.verifyOnline(c.id,c.payment.attemptId);});return;}
  if(b.id==="sumup-recover"){safe(()=>{const c=current();if(c?.status!=="payment_pending")throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.recoverInterrupted==="function")window.TaxiSumUp.recoverInterrupted(c.id,c.payment.attemptId);else recoverSumUp();});return;}
  if(b.id==="pay-cash"){safe(()=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");

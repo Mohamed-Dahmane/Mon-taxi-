@@ -152,6 +152,70 @@ public class MainActivity extends Activity {
    showSumUpMessage("checkout".equals(stage)?"Paiement potentiellement envoyé : vérifier dans SumUp. Aucun nouvel encaissement.":"Configuration encore active : fermer puis rouvrir Mon Taxi avant vérification.");
   }catch(Exception e){showSumUpMessage("Journal SumUp à vérifier. Aucun nouvel encaissement.");}
  }
+ // Read-only reconciliation; no checkout, no stored API credential, no history import.
+ private boolean sumUpLookupRunning;
+ private void lookupMessage(String courseId,String attempt,String message){
+  if(web==null||!unlocked||!isLocalAppPage(web.getUrl()))return;
+  try{org.json.JSONObject d=new org.json.JSONObject();d.put("courseId",courseId);d.put("attemptId",attempt);d.put("message",message);
+   web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-sumup-diagnostic',{detail:"+d.toString()+"}))",null);
+  }catch(Exception ignored){}
+ }
+ private static org.json.JSONObject sumUpRead(String path,String key)throws Exception{
+  java.net.URL url=new java.net.URL("https://api.sumup.com"+path);
+  javax.net.ssl.HttpsURLConnection connection=(javax.net.ssl.HttpsURLConnection)url.openConnection();
+  try{
+   connection.setInstanceFollowRedirects(false);connection.setRequestMethod("GET");connection.setConnectTimeout(10000);connection.setReadTimeout(15000);
+   connection.setRequestProperty("Authorization","Bearer "+key);connection.setRequestProperty("Accept","application/json");
+   int code=connection.getResponseCode();if(code!=200)throw new IOException("HTTP "+code);
+   try(InputStream in=connection.getInputStream();java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){
+    byte[] buffer=new byte[4096];int n;while((n=in.read(buffer))!=-1){if(out.size()+n>262144)throw new IOException("Response too large");out.write(buffer,0,n);}
+    return new org.json.JSONObject(out.toString("UTF-8"));
+   }
+  }finally{connection.disconnect();}
+ }
+ private void verifySumUpOnline(String courseId,String attempt){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||sumUpLookupRunning)return;
+  try{
+   org.json.JSONObject p=pendingSumUp();
+   if(p==null||!attempt.equals(p.optString("attemptId"))||!courseId.equals(p.optString("courseId"))){lookupMessage(courseId,attempt,"Journal différent ou absent : aucune modification.");return;}
+   String stage=p.optString("stage"),status=p.optString("status");
+   if(activeSumUpAttempt!=null){lookupMessage(courseId,attempt,"SDK encore actif : fermer complètement Mon Taxi, puis rouvrir avant de vérifier.");return;}
+   if(!"checkout".equals(stage)&&!("result".equals(stage)&&"uncertain".equals(status))){publishSumUp();lookupMessage(courseId,attempt,"Ce stade doit être traité par la vérification locale.");return;}
+   final EditText field=new EditText(this);field.setSingleLine(true);field.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);field.setHint("Clé API SumUp");
+   new AlertDialog.Builder(this).setTitle("Vérification officielle SumUp")
+    .setMessage("Recherche en lecture seule, par référence unique. Saisis une clé API autorisée à lire les transactions. Elle ne sera ni enregistrée ni affichée dans les journaux.")
+    .setView(field).setNegativeButton("Annuler",(d,b)->field.setText(""))
+    .setPositiveButton("Vérifier",(d,b)->{
+     final String key=field.getText().toString().trim();field.setText("");
+     if(key.isEmpty()||key.length()>512||key.contains("\\n")||key.contains("\\r")){lookupMessage(courseId,attempt,"Clé API manquante ou invalide.");return;}
+     sumUpLookupRunning=true;lookupMessage(courseId,attempt,"Vérification officielle en cours. Ne pas relancer.");
+     new Thread(()->{
+      try{
+       org.json.JSONObject me=sumUpRead("/v0.1/me",key);org.json.JSONObject profile=me.optJSONObject("merchant_profile");
+       String merchant=me.optString("merchant_code",profile==null?"":profile.optString("merchant_code",""));
+       if(!merchant.matches("[A-Za-z0-9_-]{1,80}"))throw new IOException("Merchant unavailable");
+       org.json.JSONObject tx=sumUpRead("/v2.1/merchants/"+merchant+"/transactions?foreign_transaction_id="+android.net.Uri.encode(attempt),key);
+       if(!attempt.equals(tx.optString("foreign_transaction_id"))||!merchant.equals(tx.optString("merchant_code"))||!"EUR".equals(tx.optString("currency"))||new BigDecimal(tx.getString("amount")).movePointRight(2).intValueExact()!=p.getInt("requestedCents"))throw new IOException("Mismatch");
+       final String result=tx.optString("status"),reference=tx.optString("transaction_code"),timestamp=tx.optString("timestamp");
+       if(!reference.matches("[A-Za-z0-9_-]{1,128}"))throw new IOException("Missing reference");
+       if("SUCCESSFUL".equals(result))java.time.OffsetDateTime.parse(timestamp);
+       runOnUiThread(()->{
+        sumUpLookupRunning=false;
+        try{
+         org.json.JSONObject latest=pendingSumUp();
+         if(!unlocked||latest==null||activeSumUpAttempt!=null||!latest.toString().equals(p.toString())){lookupMessage(courseId,attempt,"Journal modifié : recommencer la vérification.");return;}
+         String mapped="SUCCESSFUL".equals(result)?"success":"FAILED".equals(result)?"declined":"CANCELLED".equals(result)?"cancelled":null;
+         if(mapped==null){lookupMessage(courseId,attempt,"SumUp : paiement non définitif. Aucun nouvel encaissement.");return;}
+         latest.put("stage","result");latest.put("status",mapped);latest.put("transactionCode",reference);latest.put("amountCents",p.getInt("requestedCents"));latest.put("currency","EUR");
+         latest.put("verifiedBy","sumup_transactions_api");if("success".equals(mapped))latest.put("paidAt",timestamp);
+         persistSumUp(latest);publishSumUp();lookupMessage(courseId,attempt,"Résultat officiel vérifié : "+result+" · "+reference);
+        }catch(Exception ex){lookupMessage(courseId,attempt,"Résultat non enregistré. Protection maintenue.");}
+       });
+      }catch(Exception ex){runOnUiThread(()->{sumUpLookupRunning=false;lookupMessage(courseId,attempt,"Vérification impossible (accès, réseau ou référence non concordante). Aucun nouvel encaissement.");});}
+     },"TaxiSumUpReadOnly").start();
+    }).show();
+  }catch(Exception ex){lookupMessage(courseId,attempt,"Journal non vérifiable. Protection maintenue.");}
+ }
  private void ackSumUp(String attempt){
   try{
    org.json.JSONObject p=pendingSumUp();
@@ -735,6 +799,7 @@ public class MainActivity extends Activity {
     }
     @android.webkit.JavascriptInterface public void recover(){runOnUiThread(()->publishSumUp());}
     @android.webkit.JavascriptInterface public void recoverInterrupted(String courseId,String attemptId){runOnUiThread(()->recoverInterruptedSumUp(courseId,attemptId));}
+    @android.webkit.JavascriptInterface public void verifyOnline(String courseId,String attemptId){runOnUiThread(()->verifySumUpOnline(courseId,attemptId));}
     @android.webkit.JavascriptInterface public void ack(String attemptId){runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))ackSumUp(attemptId);});}
    },"TaxiSumUp");
    taxiContacts=new TaxiContactsBridge(this,web);

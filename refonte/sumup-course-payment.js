@@ -8,7 +8,8 @@ function sumupEvent(course, result) {
  if(result.status==="success"){
   if(typeof result.transactionCode!=="string" || !result.transactionCode.trim()) throw Error("Code de transaction absent : statut incertain");
   if(result.amountCents!==p.amountCents || result.currency!=="EUR") throw Error("Montant ou devise non concordants : vérifier avant de clôturer");
-  return {type:"paymentConfirmed",attemptId:p.attemptId,result:"confirmed",reference:result.transactionCode.trim()};
+  const event={type:"paymentConfirmed",attemptId:p.attemptId,result:"confirmed",reference:result.transactionCode.trim()};
+  if(result.verifiedBy==="sumup_transactions_api"){if(typeof result.paidAt!=="string"||!Number.isFinite(Date.parse(result.paidAt)))throw Error("Date officielle absente");event.paidAt=new Date(result.paidAt).toISOString();}return event;
  }
  if(result.status==="cancelled"||result.status==="declined")return {type:"paymentFailed",attemptId:p.attemptId,result:result.status};
  return null; // Incertain : maintenir la course et ne pas relancer automatiquement.

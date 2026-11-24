@@ -606,7 +606,7 @@ jobs:
           assert.match(m,/transactionField\(info,"getAmount"\)/);
           assert.match(m,/cents!=p.getInt\("requestedCents"\)/);
           assert.match(m,/persistSumUp\(p\);activeSumUpAttempt=null;publishSumUp\(\)/);
-          const recovery=m.slice(m.indexOf('private void recoverInterruptedSumUp('),m.indexOf('private void ackSumUp('));
+          const recovery=m.slice(m.indexOf('private void recoverInterruptedSumUp('),m.indexOf('// Read-only reconciliation;'));
           assert.ok(recovery.includes('!attempt.equals(p.optString("attemptId"))||!courseId.equals(p.optString("courseId"))'));
           assert.ok(recovery.includes('if(activeSumUpAttempt==null&&("setup".equals(stage)||"login".equals(stage)||"reconnecting".equals(stage)||"reader".equals(stage)))'));
           assert.match(recovery,/finishSumUp\("cancelled",null,null,null\)/);
@@ -615,6 +615,8 @@ jobs:
           assert.match(u,/recoverInterrupted\(c.id,c.payment.attemptId\)/);
           assert.match(u,/controller.beginSumUp\(c.id,draft.cents,attempt\)/);
           assert.match(u,/window.TaxiSumUp.checkout\(c.id,attempt,draft.cents\)/);
+          const lookup=m.slice(m.indexOf('// Read-only reconciliation;'),m.indexOf('private void ackSumUp('));
+          assert.match(lookup,/foreign_transaction_id=/);assert.match(lookup,/setRequestMethod\("GET"\)/);assert.match(lookup,/!attempt.equals\(tx.optString\("foreign_transaction_id"\)\)/);assert.doesNotMatch(lookup,/SumUpAPI\.checkout|remove\("pending"\)/);
           console.log('Point 6 : contrat SDK, référence unique, montant confirmé, journal persistant et blocage en cas de doute.');
           JS
   assainissement:
@@ -889,7 +891,7 @@ jobs:
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2109'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2110'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -917,7 +919,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2109-signe
+          name: Mon-Taxi-Pro-2110-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt
