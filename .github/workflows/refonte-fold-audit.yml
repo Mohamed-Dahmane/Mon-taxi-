@@ -1,0 +1,134 @@
+name: Audit Fold - refonte isolée
+on:
+  push:
+    branches: [refonte/base-saine-20261124]
+    paths:
+      - '.github/workflows/refonte-fold-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - name: Contrôle tactile isolé sans réseau externe
+        run: |
+          mkdir -p audit-fold
+          cat > .fold-audit.cjs <<'JS'
+          const {chromium}=require('playwright');
+          const fs=require('fs'),path=require('path');
+          const root=process.cwd();
+          const sizes=[[320,640],[360,780],[400,850],[600,720],[720,800],[840,720]];
+          const report=[];
+          async function main(){
+            const browser=await chromium.launch({executablePath:fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':undefined,headless:true,args:['--no-sandbox']});
+            try{
+              for(const [width,height] of sizes) for(const populated of [false,true]){
+                const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:true,deviceScaleFactor:1,serviceWorkers:'block'});
+                const tag=width+'x'+height+(populated?'-fictif':'-vide');
+                try{
+                  await context.route('**/*',async r=>{
+                    const u=new URL(r.request().url());
+                    if(u.origin!=='http://taxi-audit.test'||r.request().method()!=='GET')return r.abort();
+                    const f=path.resolve(root,'.'+(u.pathname==='/'?'/index.html':u.pathname));
+                    if(!f.startsWith(root+path.sep)||!fs.existsSync(f)||!fs.statSync(f).isFile())return r.fulfill({status:404,body:''});
+                    const ext=path.extname(f);
+                    return r.fulfill({contentType:({'.js':'application/javascript','.css':'text/css','.html':'text/html','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg'})[ext]||'application/octet-stream',body:fs.readFileSync(f)});
+                  });
+                  await context.addInitScript(populated=>{
+                    try{
+                      if(localStorage.getItem('audit-seeded'))return;
+                      localStorage.setItem('audit-seeded','1');
+                      const hotel='Hôtel fictif au nom volontairement très long';
+                      const contact='Contact fictif';
+                      const dir={hotels:populated?{[hotel]:contact}:{},contacts:populated?[contact]:[],hotelSequence:populated?[hotel]:[],driverOrder:[],allowedContacts:populated?{[hotel]:[contact]}:{},tariffNames:{},referralOnlyContacts:[],standardReceptionNames:[],doubleTreeContactNames:{}};
+                      localStorage.setItem('montaxi:hotel-commissions:directory-v1',JSON.stringify(dir));
+                      localStorage.setItem('montaxi:driver-directory:v1',JSON.stringify({version:1,drivers:populated?[{id:'audit1',name:'Chauffeur fictif au nom très long',phone:'0000000000',category:'car',source:'chosen'}]:[],deletedNativeIds:[]}));
+                      localStorage.setItem('montaxi:hotel-commissions:courses-v1','[]');
+                    }catch{}
+                  },populated);
+                  const page=await context.newPage(),errors=[];
+                  page.on('pageerror',e=>errors.push(e.message));
+                  await page.goto('http://taxi-audit.test/',{waitUntil:'domcontentloaded'});
+                  await page.waitForFunction(()=>typeof window.openTaxiDrivers==='function',null,{timeout:15000});
+                  await page.evaluate(()=>{
+                    document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');
+                    document.querySelector('main').hidden=false;
+                    document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());
+                  });
+                  const inspect=async(label)=>{
+                    await page.waitForTimeout(250);
+                    const frames=[];
+                    for(const frame of page.frames()){
+                      if(frame!==page.mainFrame()){
+                        const host=await frame.frameElement();
+                        if(!await host.isVisible())continue;
+                      }
+                      const data=await frame.evaluate(()=>{
+                        const scope=document.querySelectorAll('dialog[open]');
+                        const modal=scope.length?scope[scope.length-1]:null;
+                        const nodes=[...document.querySelectorAll('button,summary,input:not([type=hidden]),select,textarea,a[href],[role=button]')];
+                        const active=nodes.filter(e=>{
+                          if(e.disabled||e.closest('[hidden],[inert]')||(modal&&!modal.contains(e)))return false;
+                          const r=e.getBoundingClientRect(),s=getComputedStyle(e);
+                          return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth&&s.visibility==='visible'&&s.display!=='none';
+                        });
+                        const name=e=>e.id||e.getAttribute('aria-label')||e.textContent.trim().slice(0,65)||e.tagName;
+                        const small=[],covered=[],overlap=[],overflow=[],spacing=[];
+                        for(const e of active){
+                          const r=e.getBoundingClientRect();
+                          if(r.width<48||r.height<48)small.push({name:name(e),width:Math.round(r.width),height:Math.round(r.height)});
+                          if(r.left<-.5||r.right>innerWidth+.5||e.scrollWidth>e.clientWidth+2&&e.tagName==='BUTTON')overflow.push(name(e));
+                          const x=Math.max(0,Math.min(innerWidth-1,(Math.max(0,r.left)+Math.min(innerWidth,r.right))/2)), y=Math.max(0,Math.min(innerHeight-1,(Math.max(0,r.top)+Math.min(innerHeight,r.bottom))/2));
+                          const hit=document.elementFromPoint(x,y);
+                          if(hit&&!e.contains(hit)&&!hit.contains(e))covered.push({name:name(e),by:name(hit)});
+                        }
+                        for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){
+                          const a=active[i],b=active[j];if(a.contains(b)||b.contains(a))continue;
+                          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+                          const w=Math.min(x.right,y.right)-Math.max(x.left,y.left),h=Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top);
+                          if(w>1&&h>1)overlap.push({a:name(a),b:name(b),width:Math.round(w),height:Math.round(h)});
+                          else if(h>8&&w<=0&&w>-8||w>8&&h<=0&&h>-8)spacing.push({a:name(a),b:name(b),gap:Math.round(-Math.min(w,h))});
+                        }
+                        let directory=null;
+                        try{const d=JSON.parse(localStorage.getItem('montaxi:hotel-commissions:directory-v1'));directory={hotels:Object.keys(d?.hotels||{}).length,contacts:(d?.contacts||[]).length};}catch{}
+                        return {controls:active.length,documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,small,covered,overlap,overflow,spacing,directory};
+                      });
+                      frames.push({url:frame.url(),...data});
+                    }
+                    await page.screenshot({path:'audit-fold/'+tag+'-'+label+'.png',fullPage:true,timeout:10000});
+                    report.push({tag,label,frames,errors:[...errors]});
+                  };
+                  await inspect('accueil');
+                  for(const [label,selector] of [['menu','#quickMenuBtn'],['planning','#openHotelPlanning'],['nouvelle-course','#openNewTaxiCourse']]){
+                    try{
+                      await page.reload({waitUntil:'domcontentloaded'});
+                      await page.waitForFunction(()=>typeof window.openTaxiDrivers==='function',null,{timeout:12000});
+                      await page.evaluate(()=>{document.body.classList.remove('taxi-intro-pending','taxi-opening','taxi-entering');document.querySelector('main').hidden=false;document.querySelectorAll('.taxi-access,.taxi-splash').forEach(e=>e.remove());});
+                      await page.locator(selector).click({timeout:4000});
+                      await inspect(label);
+                    }catch(e){report.push({tag,label,error:e.message,errors:[...errors]});}
+                  }
+                }catch(e){report.push({tag,error:e.message});}
+                finally{await context.close();fs.writeFileSync('audit-fold/report.json',JSON.stringify(report,null,2));}
+              }
+            }finally{await browser.close();}
+            for(const r of report)console.log(JSON.stringify({tag:r.tag,page:r.label,error:r.error,frames:r.frames?.map(f=>({controls:f.controls,small:f.small.length,covered:f.covered.length,overlap:f.overlap.length,overflow:f.overflow.length,spacing:f.spacing.length,directory:f.directory})),errors:r.errors}));
+            const failed=report.some(r=>r.error||r.errors?.length||r.frames?.some(f=>f.covered.length||f.overlap.length||f.overflow.length||f.documentWidth>f.viewportWidth+1));
+            if(failed)process.exitCode=1;
+          }
+          main().catch(e=>{console.error(e);process.exitCode=1});
+          JS
+          node .fold-audit.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-fold-refonte
+          path: audit-fold/
