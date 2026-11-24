@@ -7,6 +7,7 @@ on:
       - 'refonte/interface.html'
       - 'refonte/clean-core.js'
       - 'refonte/course-controller.js'
+      - 'refonte/course-ui.js'
       - 'refonte/sumup-course-payment.js'
       - 'app/**'
       - 'build.gradle'
@@ -37,7 +38,7 @@ jobs:
           rm -rf app/src/main/assets
           mkdir -p app/src/main/assets/app app/src/main/res/drawable-nodpi
           cp refonte/interface.html app/src/main/assets/index.html
-          cp refonte/clean-core.js refonte/course-controller.js refonte/sumup-course-payment.js app/src/main/assets/
+          cp refonte/clean-core.js refonte/course-controller.js refonte/sumup-course-payment.js refonte/course-ui.js app/src/main/assets/
           cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
           base64 -d app/icon/mon_taxi.jpg.base64 > app/src/main/res/drawable-nodpi/mon_taxi_icon.jpg
           cmp refonte/interface.html app/src/main/assets/index.html
@@ -54,7 +55,7 @@ jobs:
           import zipfile
           from pathlib import Path
           apk=Path('app/build/outputs/apk/debug/app-debug.apk')
-          expected={'index.html','clean-core.js','course-controller.js','sumup-course-payment.js'}
+          expected={'index.html','clean-core.js','course-controller.js','sumup-course-payment.js','course-ui.js'}
           with zipfile.ZipFile(apk) as z:
               app_sources={n.removeprefix('assets/') for n in z.namelist() if n.startswith('assets/') and n.endswith(('.html','.js','.css')) and '/' not in n.removeprefix('assets/')}
               assert app_sources==expected, f'Sources embarquées inattendues: {app_sources}'

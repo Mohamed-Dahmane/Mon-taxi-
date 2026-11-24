@@ -23,7 +23,7 @@ jobs:
           cat > .interface-test.cjs <<'JS'
           const {chromium}=require('playwright');
           const fs=require('fs'),assert=require('node:assert/strict');
-          const html=fs.readFileSync('refonte/interface.html','utf8');
+          const root=require('node:path').resolve('refonte');
           (async()=>{
             const browser=await chromium.launch({executablePath:fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':undefined,headless:true,args:['--no-sandbox']});
             const report=[];
@@ -31,15 +31,20 @@ jobs:
               for(const [width,height] of [[320,640],[360,780],[400,850],[600,720],[720,800],[840,720],[320,300],[720,350]]){
                 const context=await browser.newContext({viewport:{width,height},isMobile:true,hasTouch:true,deviceScaleFactor:1,serviceWorkers:'block'});
                 try{
-                  await context.route('**/*',r=>r.abort());
+                  await context.route('**/*',r=>{
+                    const url=new URL(r.request().url());
+                    const file=url.pathname.slice(1)||'interface.html';
+                    if(url.origin!=='http://taxi-refonte.test'||r.request().method()!=='GET'||!['interface.html','clean-core.js','course-controller.js','sumup-course-payment.js','course-ui.js'].includes(file))return r.abort();
+                    return r.fulfill({contentType:file.endsWith('.js')?'application/javascript':'text/html',body:fs.readFileSync(root+'/'+file)});
+                  });
                   const page=await context.newPage(),errors=[];
                   page.on('pageerror',e=>errors.push(e.message));
-                  await page.setContent(html);
+                  await page.goto('http://taxi-refonte.test/');
                   const inspect=async screen=>{
                     const visible=page.locator('.screen:not([hidden])');
                     assert.equal(await visible.getAttribute('id'),screen);
                     const result=await page.evaluate(()=>{
-                      const controls=[...document.querySelectorAll('button,input')].filter(e=>e.getClientRects().length);
+                      const controls=[...document.querySelectorAll('button,input,select')].filter(e=>e.getClientRects().length);
                       const rs=controls.map(e=>({e,r:e.getBoundingClientRect()})),problems=[];
                       const routes=controls.map(e=>e.dataset.page||e.dataset.go).filter(Boolean);
                       if(new Set(routes).size!==routes.length)problems.push('Accès redondants sur la même page');
@@ -58,7 +63,7 @@ jobs:
                       if(document.documentElement.scrollWidth>innerWidth+1)problems.push('Débordement horizontal');
                       return {problems,controls:controls.length};
                     });
-                    for(const control of await page.locator('button:visible:not(:disabled),input:visible').all()){
+                    for(const control of await page.locator('button:visible:not(:disabled),input:visible,select:visible').all()){
                       await control.scrollIntoViewIfNeeded();
                       assert.ok(await control.evaluate(e=>{const r=e.getBoundingClientRect();const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&(e===hit||e.contains(hit));}),'Cible tactile masquée '+await control.getAttribute('id'));
                     }
@@ -73,17 +78,43 @@ jobs:
                   };
                   await inspect('home');
                   await page.locator('#home [data-go=reservation]').click();await inspect('reservation');
-                  await page.locator('[data-page=home]').click();await page.locator('[data-go=direct]').click();await inspect('direct');
+                  await page.locator('#reservation-client').fill('Client réservation fictif');
+                  await page.locator('#reservation-from').fill('Départ test');
+                  await page.locator('#reservation-to').fill('Destination test');
+                  await page.locator('#reservation-date').fill('2030-01-01');
+                  await page.locator('#reservation-time').fill('12:30');
+                  await page.locator('#reservation button[type=submit]').click();
+                  await page.locator('[data-go=direct]').click();await inspect('direct');
+                  await page.locator('#direct-client').fill('Client direct fictif');
+                  await page.locator('#direct-from').fill('Départ direct');
+                  await page.locator('#direct-to').fill('Destination directe');
+                  await page.locator('#direct button[type=submit]').click();
                   await page.locator('[data-page=directory]').click();await inspect('directory');
                   assert.match(await page.locator('#directory').innerText(),/Aucun hôtel/);
                   await page.locator('[data-page=accounts]').click();await inspect('accounts');
                   await page.locator('[data-page=home]').click();await page.locator('[data-go=archives]').click();await inspect('archives');
-                  await page.locator('[data-page=planning]').click();await inspect('planning');
-                  await page.locator('[data-go=ride]:visible').click();await inspect('ride');
-                  for(let n=0;n<4;n++)await page.locator('#ride-next').click();
-                  await inspect('payment');
+                  assert.equal(await page.locator('#archive-list article').count(),0);
+                  await page.reload();await page.locator('[data-page=planning]').click();await inspect('planning');
+                  assert.equal(await page.locator('#course-list article').count(),2);
+                  await page.locator('#course-list article').filter({hasText:'Client réservation fictif'}).locator('button').click();await inspect('ride');
+                  await page.locator('#ride-next').click();
+                  assert.match(await page.locator('#ride-step').innerText(),/Client chargé/);
+                  await page.locator('#ride-next').click();
+                  assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
+                  await page.locator('#ride-next').click();await inspect('payment');
                   await page.locator('#pay-cash').click();await inspect('cash');
                   await page.locator('[data-go=payment]:visible').click();await page.locator('#pay-sumup').click();await inspect('sumup');
+                  await page.locator('[data-page=planning]').click();
+                  const pending=page.locator('#course-list article').filter({hasText:'Client réservation fictif'});
+                  assert.match(await pending.innerText(),/En attente de paiement/);
+                  const untouched=page.locator('#course-list article').filter({hasText:'Client direct fictif'});
+                  assert.match(await untouched.innerText(),/Client à charger/);
+                  await page.reload();await page.locator('[data-page=planning]').click();
+                  await page.locator('#course-list article').filter({hasText:'Client réservation fictif'}).locator('button').click();
+                  assert.equal(await page.locator('#payment').isVisible(),true);
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=archives]').click();
+                  assert.equal(await page.locator('#archive-list article').count(),0);
+                  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state.ledger.length),0);
                 }catch(e){report.push({width,height,ok:false,error:e.message});process.exitCode=1}
                 finally{await context.close();fs.writeFileSync('interface-report/results.json',JSON.stringify(report,null,2))}
               }
@@ -97,7 +128,6 @@ jobs:
         with:
           name: prototype-fold
           path: interface-report/
-
   course:
     runs-on: ubuntu-24.04
     steps:
@@ -160,7 +190,7 @@ jobs:
           const native=read('app/src/main/java/be/montaxi/gestion/MainActivity.java');
           const prototype=read('refonte/interface.html');
           const apk=read('.github/workflows/android-apk.yml');
-          const paths=['refonte/interface.html','refonte/clean-core.js','refonte/course-controller.js','refonte/sumup-course-payment.js'];
+          const paths=['refonte/interface.html','refonte/clean-core.js','refonte/course-controller.js','refonte/sumup-course-payment.js','refonte/course-ui.js'];
           assert.doesNotMatch(native,/github\.io|Ouvrir dans Chrome|\bAPP_URL\b/);
           assert.ok(native.includes('return !isLocalAppPage(url);'));
           assert.ok(native.includes('web.loadUrl(LOCAL_APP_URL)'));
@@ -169,7 +199,8 @@ jobs:
           assert.ok(apk.includes('rm -rf app/src/main/assets'));
           assert.doesNotMatch(apk,/cp (?:index\.html|taxi-interface\.css|hotel-sync\.js|pickup-reservation\.html)/);
           for(const p of paths)assert.doesNotMatch(read(p),/taxi_management_backups|taxi_hotel_sync|taxi_sumup_transactions|github\.io|\bfetch\s*\(|XMLHttpRequest|WebSocket|BroadcastChannel/);
-          assert.doesNotMatch(prototype,/<script[^>]+src=|DoubleTree|The Standard|Papa/);
+          assert.doesNotMatch(prototype,/DoubleTree|The Standard|Papa/);
+          assert.deepEqual([...prototype.matchAll(/<script defer src="([^"]+)"/g)].map(m=>m[1]),['clean-core.js','sumup-course-payment.js','course-controller.js','course-ui.js']);
           console.log('ISOLATION STATIQUE OK : aucun flux comptable, hôtels, courses ou import SumUp partagé dans les sources Android embarquées.');
           console.log('Contrôle du contenu APK et validation sur appareil à effectuer séparément.');
           JS

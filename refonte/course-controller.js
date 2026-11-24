@@ -2,27 +2,29 @@
 // Le stockage et le terminal seront injectés seulement après validation.
 (function(root){
 "use strict";
-function create(core,sumupEvent){
-  let state=core.empty();
+function create(core,sumupEvent,storage){
+  let state=storage?.load()??core.empty();
+  function commit(next){if(storage)storage.save(next);state=next;}
+  function clone(value){return JSON.parse(JSON.stringify(value));}
   const get=id=>{const c=state.courses.find(c=>c.id===id);if(!c)throw Error("Course inconnue");return c};
-  function apply(id,event){state=core.apply(state,id,event);return get(id)}
+  function apply(id,event){commit(core.apply(state,id,event));return clone(get(id))}
   return {
-    snapshot:()=>JSON.parse(JSON.stringify(state)),
-    plan(course){state=core.addCourse(state,course);return get(course.id)},
+    snapshot:()=>clone(state),
+    plan(course){commit(core.addCourse(state,clone(course)));return clone(get(course.id))},
     load:id=>apply(id,{type:"load"}),
     start:id=>apply(id,{type:"start"}),
     finish:id=>apply(id,{type:"finish"}),
-    cash(id,cents){state=core.recordCash(state,id,cents);return get(id)},
+    cash(id,cents){commit(core.recordCash(state,id,cents));return clone(get(id))},
     beginSumUp(id,cents,attemptId){
       if(!Number.isSafeInteger(cents)||cents<=0)throw Error("Montant terminal invalide");
       return apply(id,{type:"beginPayment",method:"sumup",amountCents:cents,attemptId});
     },
     receiveSumUp(id,result){
       const event=sumupEvent(get(id),result);
-      return event?apply(id,event):get(id);
+      return event?apply(id,event):clone(get(id));
     }
   };
 }
-if(typeof module==="object"&&module.exports)module.exports=()=>create(require("./clean-core"),require("./sumup-course-payment"));
-else root.createTaxiCourseController=()=>create(root.TaxiCleanCore,root.TaxiSumUpEvent);
+if(typeof module==="object"&&module.exports)module.exports=(storage)=>create(require("./clean-core"),require("./sumup-course-payment"),storage);
+else root.createTaxiCourseController=(storage)=>create(root.TaxiCleanCore,root.TaxiSumUpEvent,storage);
 })(typeof window==="undefined"?globalThis:window);
