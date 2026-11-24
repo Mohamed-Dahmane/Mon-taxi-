@@ -70,7 +70,7 @@ jobs:
                     if(height>=640&&(width===360||width===720))await page.screenshot({path:'interface-report/'+width+'-'+screen+'.png',fullPage:true});
                   };
                   await inspect('home');
-                  await page.locator('[data-go=reservation]').click();await inspect('reservation');
+                  await page.locator('#home [data-go=reservation]').click();await inspect('reservation');
                   await page.locator('[data-page=home]').click();await page.locator('[data-go=direct]').click();await inspect('direct');
                   await page.locator('[data-page=directory]').click();await inspect('directory');
                   assert.match(await page.locator('#directory').innerText(),/Aucun hôtel/);
