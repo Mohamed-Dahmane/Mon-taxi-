@@ -130,7 +130,7 @@ function renderDirectory(){
 }
 function resetHotel(){hotelEdit=null;$('hotel-form').reset();$('hotel-form-title').textContent="Ajouter un hôtel";$('hotel-cancel').hidden=true;}
 function clearPerson(){personDraft=null;$('person-form').hidden=true;$('person-form').reset();}
-function editPerson(kind,item){personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi":"Contact de l'hôtel dans Mon Taxi";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
+function editPerson(kind,item){personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi Pro":"Contact de l'hôtel dans Mon Taxi Pro";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
 function clearDelete(){deleteDraft=null;$('directory-delete').hidden=true;}
 $('directory-sort').addEventListener("change",()=>safe(renderDirectory));
 $('contact-hotel').addEventListener("change",()=>safe(renderDirectory));
@@ -142,7 +142,7 @@ $('hotel-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
 $('person-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
  if(!personDraft)throw Error("Aucun contact sélectionné.");
  controller.saveDirectory(personDraft.kind,{...personDraft,name:$('person-name').value,phone:$('person-phone').value});
- clearPerson();renderDirectory();message("Contact enregistré uniquement dans Mon Taxi.");
+ clearPerson();renderDirectory();message("Contact enregistré uniquement dans Mon Taxi Pro.");
 });});
 function pickPerson(kind){
  if(contactRequest)throw Error("Sélection déjà ouverte.");
@@ -170,7 +170,7 @@ function directoryAction(b){
  }else if(action==="default"){
   const h=s.hotels.find(h=>h.id===item.hotelId);controller.saveDirectory("hotels",{...h,defaultContactId:id});renderDirectory();
  }else if(action==="up"||action==="down"){controller.moveDirectory(kind,id,action==="up"?-1:1);renderDirectory();}
- else if(action==="delete"){deleteDraft={kind,id};$('directory-delete-label').textContent="Supprimer "+item.name+" uniquement de Mon Taxi ?"+(kind==="hotels"?" Ses contacts associés seront retirés du répertoire local.":"");$('directory-delete').hidden=false;$('directory-delete').scrollIntoView({block:"nearest"});}
+ else if(action==="delete"){deleteDraft={kind,id};$('directory-delete-label').textContent="Supprimer "+item.name+" uniquement de Mon Taxi Pro ?"+(kind==="hotels"?" Ses contacts associés seront retirés du répertoire local.":"");$('directory-delete').hidden=false;$('directory-delete').scrollIntoView({block:"nearest"});}
 }
 function recoverSumUp(){if(typeof window.TaxiSumUp?.recover==="function")window.TaxiSumUp.recover();}
 function ackSumUp(id){if(typeof window.TaxiSumUp?.ack==="function")window.TaxiSumUp.ack(id);}

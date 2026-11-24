@@ -64,7 +64,7 @@ public class MainActivity extends Activity {
  private void showWebRecovery(){
   if(recoveryShown||!unlocked)return;
   recoveryShown=true;
-  new AlertDialog.Builder(this).setTitle("Mon Taxi ne s'affiche pas")
+  new AlertDialog.Builder(this).setTitle("Mon Taxi Pro ne s'affiche pas")
    .setMessage("L'empreinte a fonctionne, mais le tableau n'a pas pu se charger. Aucune donnee ne sera effacee.")
    .setPositiveButton("Reessayer",(dialog,which)->{recoveryShown=false;if(web!=null)web.loadUrl("file:///android_asset/index.html");webHealthHandler.postDelayed(this::verifyWebContent,12000L);})
    .setNegativeButton("Fermer",(dialog,which)->{recoveryShown=false;finish();})
@@ -196,7 +196,7 @@ public class MainActivity extends Activity {
   try{
    org.json.JSONObject p=pendingSumUp();if(p==null||"checkout".equals(p.optString("stage"))||"result".equals(p.optString("stage")))return;
    SumUpPayment payment=SumUpPayment.builder().total(BigDecimal.valueOf(p.getInt("requestedCents"),2))
-    .currency(SumUpPayment.Currency.EUR).title("Course Mon Taxi")
+    .currency(SumUpPayment.Currency.EUR).title("Course Mon Taxi Pro")
     .foreignTransactionId(p.getString("attemptId")).configureRetryPolicy(2000,60000,true).build();
    setSumUpStage("checkout"); // Durable before any external debit is possible.
    SumUpAPI.checkout(this,payment,SUMUP_CHECKOUT);
@@ -448,7 +448,7 @@ public class MainActivity extends Activity {
   if(lockAction!=null)lockAction.setVisibility(View.INVISIBLE);
   CancellationSignal attempt=new CancellationSignal();
   biometric=attempt;
-  BiometricPrompt.Builder builder=new BiometricPrompt.Builder(this).setTitle("Ouvrir Mon Taxi")
+  BiometricPrompt.Builder builder=new BiometricPrompt.Builder(this).setTitle("Ouvrir Mon Taxi Pro")
    .setAllowedAuthenticators(useCode?BiometricManager.Authenticators.DEVICE_CREDENTIAL:
     BiometricManager.Authenticators.BIOMETRIC_STRONG);
   if(!useCode){
@@ -505,7 +505,7 @@ public class MainActivity extends Activity {
    showSystemPrompt(true);
    return;
   }
-  android.content.Intent intent=km.createConfirmDeviceCredentialIntent("Ouvrir Mon Taxi","Confirme avec ton code Samsung");
+  android.content.Intent intent=km.createConfirmDeviceCredentialIntent("Ouvrir Mon Taxi Pro","Confirme avec ton code Samsung");
   if(intent!=null){
    prompting=true;
    startActivityForResult(intent,91);
@@ -538,7 +538,7 @@ public class MainActivity extends Activity {
   LinearLayout fields=new LinearLayout(this);fields.setPadding(28,12,28,12);fields.setOrientation(LinearLayout.VERTICAL);
   EditText pin=new EditText(this);pin.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_VARIATION_PASSWORD);pin.setHint("PIN de 6 chiffres");fields.addView(pin);
   EditText confirm=new EditText(this);confirm.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_VARIATION_PASSWORD);confirm.setHint("Confirmer le PIN");if(setup)fields.addView(confirm);
-  AlertDialog dialog=new AlertDialog.Builder(this).setTitle(setup?"Créer le PIN Mon Taxi":"PIN Mon Taxi").setView(fields).setNegativeButton("Annuler",null).setPositiveButton(setup?"Enregistrer":"Ouvrir",null).create();
+  AlertDialog dialog=new AlertDialog.Builder(this).setTitle(setup?"Créer le PIN Mon Taxi Pro":"PIN Mon Taxi Pro").setView(fields).setNegativeButton("Annuler",null).setPositiveButton(setup?"Enregistrer":"Ouvrir",null).create();
   dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
    String value=pin.getText().toString();
    if(!value.matches("[0-9]{6}")){pin.setError("Saisis 6 chiffres");return;}
@@ -627,7 +627,7 @@ public class MainActivity extends Activity {
      recoveryShown=false;
      runOnUiThread(()->{
       if(isFinishing()||isDestroyed())return;
-      Toast.makeText(MainActivity.this,"Affichage interrompu. Rouvre Mon Taxi pour récupérer tes saisies sauvegardées.",Toast.LENGTH_LONG).show();
+      Toast.makeText(MainActivity.this,"Affichage interrompu. Rouvre Mon Taxi Pro pour récupérer tes saisies sauvegardées.",Toast.LENGTH_LONG).show();
       showLock();
      });
      return true;

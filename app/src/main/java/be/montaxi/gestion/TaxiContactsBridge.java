@@ -70,7 +70,7 @@ public final class TaxiContactsBridge {
   try{
    overlay=showBubble(courseId);
    activity.startActivity(intent);
-   if(!overlay)android.widget.Toast.makeText(activity,"Retour manuel à Mon Taxi possible. Autorise le bouton flottant pour la prochaine navigation.",android.widget.Toast.LENGTH_LONG).show();
+   if(!overlay)android.widget.Toast.makeText(activity,"Retour manuel à Mon Taxi Pro possible. Autorise le bouton flottant pour la prochaine navigation.",android.widget.Toast.LENGTH_LONG).show();
    wazeResult(courseId,"opened",overlay,null);
   }catch(Exception e){hideBubble();wazeResult(courseId,"error",false,"Waze indisponible. La course reste en cours.");}
  });}
@@ -94,7 +94,7 @@ public final class TaxiContactsBridge {
   bubbleManager=(android.view.WindowManager)activity.getSystemService(Activity.WINDOW_SERVICE);
   bubble=new android.widget.TextView(activity);
   bubble.setText("🚕");
-  bubble.setContentDescription("Retour à la course Mon Taxi");
+  bubble.setContentDescription("Retour à la course Mon Taxi Pro");
   bubble.setTextSize(25f);
   bubble.setGravity(android.view.Gravity.CENTER);
   bubble.setTextColor(android.graphics.Color.WHITE);

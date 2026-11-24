@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<title>Mon Taxi</title>
+<title>Mon Taxi Pro</title>
 <style>
 :root{color-scheme:dark;font:16px system-ui,sans-serif;background:#141414;color:#f2f2f2;--line:#626262;--surface:#222222}
 *{box-sizing:border-box}body{margin:0}main{max-width:920px;margin:auto;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));display:grid;gap:16px}
@@ -26,7 +26,7 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <script defer src="course-ui.js"></script>
 </head>
 <body><main>
-<header><h1>Mon Taxi</h1><span class="muted">Refonte · test technique</span></header>
+<header><h1>Mon Taxi Pro</h1><span class="muted">Refonte · test technique</span></header>
 <p class="notice">Version de test locale. Waze et l’enregistrement local des espèces sont raccordés. Le terminal est raccordé au SDK Android ; essais matériels et comptabilité définitive restent à valider. Répertoire local, vierge au départ.</p>
 <nav class="nav" aria-label="Navigation principale"><button data-page="home" aria-current="page">Accueil</button><button data-page="planning">Planning</button><button data-page="accounts">Comptabilité</button><button data-page="directory">Répertoire</button></nav>
 <p id="status" role="status" aria-live="polite"></p>
@@ -93,7 +93,7 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <div class="card"><h3>Hôtels</h3><p id="hotels-empty">Aucun hôtel enregistré.</p><div id="hotels-list" class="actions"></div></div>
 <div class="card"><h3>Contacts des hôtels</h3><div class="field"><label for="contact-hotel">Hôtel associé</label><select id="contact-hotel"></select></div><button id="pick-contact" type="button" class="primary">Choisir un contact Samsung</button><p id="contacts-empty">Aucun contact enregistré.</p><div id="contacts-list" class="actions"></div></div>
 <div class="card"><h3>Chauffeurs</h3><button id="pick-driver" type="button" class="primary">Choisir un chauffeur Samsung</button><p id="drivers-empty">Aucun chauffeur enregistré.</p><div id="drivers-list" class="actions"></div></div>
-<form class="card" id="person-form" hidden><h3 id="person-title">Confirmer le contact</h3><div class="field"><label for="person-name">Nom dans Mon Taxi</label><input id="person-name" required maxlength="160"></div><div class="field"><label for="person-phone">Téléphone</label><input id="person-phone" type="tel" required maxlength="40"></div><button type="submit" class="primary">Enregistrer dans Mon Taxi</button><button id="person-cancel" type="button">Annuler</button></form>
+<form class="card" id="person-form" hidden><h3 id="person-title">Confirmer le contact</h3><div class="field"><label for="person-name">Nom dans Mon Taxi Pro</label><input id="person-name" required maxlength="160"></div><div class="field"><label for="person-phone">Téléphone</label><input id="person-phone" type="tel" required maxlength="40"></div><button type="submit" class="primary">Enregistrer dans Mon Taxi Pro</button><button id="person-cancel" type="button">Annuler</button></form>
 <div class="card" id="directory-delete" hidden><p id="directory-delete-label"></p><button id="directory-delete-confirm" type="button">Confirmer la suppression locale</button><button id="directory-delete-cancel" type="button">Annuler</button></div>
 </section>
 </main></body></html>
