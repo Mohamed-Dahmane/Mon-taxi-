@@ -18,6 +18,7 @@ const storage={
  save(state){localStorage.setItem(storeKey,JSON.stringify({version:1,state}));}
 };
 let controller,selected=null,cashDraft=null,sumupDraft=null,restoreDraft=null;
+let hotelEdit=null,personDraft=null,contactRequest=null,deleteDraft=null;
 function message(value="",error=false){$('status').textContent=value;$('status').dataset.error=String(error);}
 function safe(action){try{message();action();}catch(e){message(e.message||"Action impossible",true);}}
 try{controller=window.createTaxiCourseController(storage);}catch(e){message(e.message,true);document.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);return;}
@@ -83,6 +84,94 @@ window.addEventListener("taxi-backup-result",e=>safe(()=>{
   $('backup-review').hidden=false;
  }
 }));
+function selectOptions(select,items,emptyLabel,preferred=select.value){
+ const options=[new Option(emptyLabel,""),...items.map(x=>new Option(x.name,x.id))];
+ select.replaceChildren(...options);select.value=items.some(x=>x.id===preferred)?preferred:"";
+}
+function refreshCourseContacts(kind,applyDefault=false){
+ const s=controller.snapshot(),hotel=s.hotels.find(h=>h.id===$(kind+'-hotel').value);
+ const contacts=s.contacts.filter(c=>c.hotelId===hotel?.id),sel=$(kind+'-contact');
+ selectOptions(sel,contacts,"Aucun",applyDefault?hotel?.defaultContactId||"":sel.value);
+}
+function refreshCourseDirectory(){
+ const s=controller.snapshot();
+ for(const kind of ["reservation","direct"]){
+  selectOptions($(kind+'-hotel'),s.hotels,"Autre / aucun");
+  selectOptions($(kind+'-driver'),s.drivers,"Moi");refreshCourseContacts(kind);
+ }
+}
+for(const kind of ["reservation","direct"])$(kind+'-hotel').addEventListener("change",()=>refreshCourseContacts(kind,true));
+function localButton(label,action,kind,id){
+ const b=document.createElement("button");b.type="button";b.textContent=label;b.dataset.dirAction=action;b.dataset.dirKind=kind;b.dataset.dirId=id;return b;
+}
+function renderDirectory(){
+ const s=controller.snapshot(),mode=$('directory-sort').value;
+ selectOptions($('contact-hotel'),s.hotels,"Choisir un hôtel");
+ $('pick-contact').disabled=!$('contact-hotel').value||!!contactRequest;$('pick-driver').disabled=!!contactRequest;
+ for(const kind of ["hotels","contacts","drivers"]){
+  const items=s[kind].slice();if(mode!=="priority")items.sort((a,b)=>(mode==="az"?1:-1)*a.name.localeCompare(b.name,"fr",{sensitivity:"base"}));
+  const root=$(kind+'-list');root.replaceChildren();
+  $(kind+'-empty').hidden=items.length>0;
+  for(const item of items){
+   const box=document.createElement("article");box.className="card";
+   const h=document.createElement("h3");h.textContent=item.name;box.append(h);
+   if(kind!=="hotels"){const p=document.createElement("p");p.textContent=item.phone+(kind==="contacts"?" · "+(s.hotels.find(h=>h.id===item.hotelId)?.name||""):"");box.append(p);}
+   if(kind==="contacts"){const h=s.hotels.find(h=>h.id===item.hotelId);if(h?.defaultContactId===item.id){const p=document.createElement("p");p.textContent="Contact par défaut";box.append(p);}else box.append(localButton("Définir par défaut","default",kind,item.id));}
+   box.append(localButton("Modifier","edit",kind,item.id),localButton("Supprimer","delete",kind,item.id));
+   if(mode==="priority"){
+    const row=document.createElement("div");row.className="grid";
+    const up=localButton("Monter","up",kind,item.id),down=localButton("Descendre","down",kind,item.id);
+    up.disabled=s[kind][0]?.id===item.id;down.disabled=s[kind].at(-1)?.id===item.id;row.append(up,down);box.append(row);
+   }
+   root.append(box);
+  }
+ }
+ refreshCourseDirectory();
+}
+function resetHotel(){hotelEdit=null;$('hotel-form').reset();$('hotel-form-title').textContent="Ajouter un hôtel";$('hotel-cancel').hidden=true;}
+function clearPerson(){personDraft=null;$('person-form').hidden=true;$('person-form').reset();}
+function editPerson(kind,item){personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi":"Contact de l'hôtel dans Mon Taxi";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
+function clearDelete(){deleteDraft=null;$('directory-delete').hidden=true;}
+$('directory-sort').addEventListener("change",()=>safe(renderDirectory));
+$('contact-hotel').addEventListener("change",()=>safe(renderDirectory));
+$('hotel-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
+ const old=controller.snapshot().hotels.find(h=>h.id===hotelEdit);
+ controller.saveDirectory("hotels",{id:old?.id||newId(),name:$('hotel-name').value,defaultContactId:old?.defaultContactId});
+ resetHotel();renderDirectory();message("Hôtel enregistré.");
+});});
+$('person-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
+ if(!personDraft)throw Error("Aucun contact sélectionné.");
+ controller.saveDirectory(personDraft.kind,{...personDraft,name:$('person-name').value,phone:$('person-phone').value});
+ clearPerson();renderDirectory();message("Contact enregistré uniquement dans Mon Taxi.");
+});});
+function pickPerson(kind){
+ if(contactRequest)throw Error("Sélection déjà ouverte.");
+ if(typeof window.TaxiContacts?.pick!=="function")throw Error("Sélecteur disponible sur Samsung.");
+ const hotelId=kind==="contacts"?$('contact-hotel').value:null;
+ if(kind==="contacts"&&!hotelId)throw Error("Choisir l’hôtel.");
+ clearPerson();contactRequest={kind,hotelId,requestId:newId()};
+ renderDirectory();try{window.TaxiContacts.pick(contactRequest.requestId);}catch(e){contactRequest=null;renderDirectory();throw e;}
+}
+window.addEventListener("taxi-contacts-result",e=>{
+ const d=e.detail,request=contactRequest;
+ if(!request||d?.requestId!==request.requestId)return;
+ contactRequest=null;safe(()=>{
+  renderDirectory();if(d.error)throw Error(d.error);
+  if($('directory').hidden||d.contacts?.length!==1)throw Error("Aucun contact sélectionné.");
+  const c=d.contacts[0];editPerson(request.kind,{id:newId(),hotelId:request.hotelId,nativeId:c.nativeId,name:c.name||"",phone:c.phone||""});
+ });
+});
+function directoryAction(b){
+ const {dirAction:action,dirKind:kind,dirId:id}=b.dataset,s=controller.snapshot(),item=s[kind]?.find(x=>x.id===id);
+ if(!item)throw Error("Élément introuvable.");
+ if(action==="edit"){
+  if(kind==="hotels"){hotelEdit=id;$('hotel-name').value=item.name;$('hotel-form-title').textContent="Modifier l'hôtel";$('hotel-cancel').hidden=false;$('hotel-form').scrollIntoView({block:"nearest"});}
+  else editPerson(kind,item);
+ }else if(action==="default"){
+  const h=s.hotels.find(h=>h.id===item.hotelId);controller.saveDirectory("hotels",{...h,defaultContactId:id});renderDirectory();
+ }else if(action==="up"||action==="down"){controller.moveDirectory(kind,id,action==="up"?-1:1);renderDirectory();}
+ else if(action==="delete"){deleteDraft={kind,id};$('directory-delete-label').textContent="Supprimer "+item.name+" uniquement de Mon Taxi ?"+(kind==="hotels"?" Ses contacts associés seront retirés du répertoire local.":"");$('directory-delete').hidden=false;$('directory-delete').scrollIntoView({block:"nearest"});}
+}
 function recoverSumUp(){if(typeof window.TaxiSumUp?.recover==="function")window.TaxiSumUp.recover();}
 function ackSumUp(id){if(typeof window.TaxiSumUp?.ack==="function")window.TaxiSumUp.ack(id);}
 window.addEventListener("mon-taxi-sumup-result",e=>{
@@ -137,6 +226,7 @@ function card(c,archived=false){
  const p=document.createElement("p");p.textContent=route(c);
  const detail=document.createElement("p");detail.className="muted";detail.textContent=[c.kind==="reservation"?"Réservation":"Course directe",c.direction==="pickup"?"Pick-up":"Dépose",c.date,c.time,labels[c.status]].filter(Boolean).join(" · ");
  box.append(h,p,detail);
+ if(c.hotelName||c.driverName){const a=document.createElement("p");a.textContent=[c.hotelName,c.driverName,c.commissionCents?euros(c.commissionCents):""].filter(Boolean).join(" · ");box.append(a);}
  if(archived&&c.payment){const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);}
  if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
  return box;
@@ -179,6 +269,8 @@ function show(id){
  if(id!=="cash")cashDraft=null;
  if(id!=="sumup")sumupDraft=null;
  if(id==="planning"||id==="archives")renderLists();
+ if(id==="directory")renderDirectory();
+ if(id==="reservation"||id==="direct")refreshCourseDirectory();
  if(id==="home")renderCashTotals();
  if(id==="accounts")loadAccountFields();else clearRestore();
  screens.forEach(e=>e.hidden=e.id!==id);
@@ -197,7 +289,9 @@ document.addEventListener("submit",e=>{
   if(!from||!to)throw Error("Renseigne le départ et la destination.");
   const date=kind==="reservation"?fields.date:localDate(now),time=kind==="reservation"?fields.time:localTime(now);
   if(!date||!time)throw Error("Renseigne la date et l’heure.");
-  controller.plan({id:newId(),kind,direction:fields.direction,client:String(fields.client||"").trim(),phone:String(fields.phone||"").trim(),from,to,date,time,scheduledAt:date+"T"+time});
+  const s=controller.snapshot(),hotel=s.hotels.find(x=>x.id===fields.hotelId),contact=s.contacts.find(x=>x.id===fields.contactId&&x.hotelId===hotel?.id),driver=s.drivers.find(x=>x.id===fields.driverId);
+  if((fields.hotelId&&!hotel)||(fields.contactId&&!contact)||(fields.driverId&&!driver))throw Error("Répertoire modifié : vérifier la sélection.");
+  controller.plan({id:newId(),kind,direction:fields.direction,client:String(fields.client||"").trim(),phone:String(fields.phone||"").trim(),from,to,date,time,scheduledAt:date+"T"+time,hotelId:hotel?.id||null,hotelName:hotel?.name||"",contactId:contact?.id||null,contactName:contact?.name||"",driverId:driver?.id||null,driverName:driver?.name||"Moi",driverPhone:driver?.phone||"",driverIsMe:!driver,commissionCents:entryCents(fields.commission||"")});
   form.reset();show("home");message("Course enregistrée dans le planning.");
  });
 });
@@ -212,6 +306,12 @@ document.addEventListener("click",e=>{
   else if(c.status==="awaiting_payment")show("payment");
   else throw Error("Action incompatible avec le statut de la course.");
  });return;}
+ if(b.dataset.dirAction){safe(()=>directoryAction(b));return;}
+ if(b.id==="hotel-cancel"){resetHotel();return;}
+ if(b.id==="person-cancel"){clearPerson();return;}
+ if(b.id==="pick-contact"||b.id==="pick-driver"){safe(()=>pickPerson(b.id==="pick-contact"?"contacts":"drivers"));return;}
+ if(b.id==="directory-delete-cancel"){clearDelete();return;}
+ if(b.id==="directory-delete-confirm"){safe(()=>{if(!deleteDraft)throw Error("Aucune suppression à confirmer.");controller.removeDirectory(deleteDraft.kind,deleteDraft.id);clearDelete();clearPerson();resetHotel();renderDirectory();message("Suppression locale effectuée.");});return;}
  if(b.id==="backup-export"){safe(()=>{
   if($('accounts').hidden||typeof window.TaxiBackup?.exportJson!=="function")throw Error("Sauvegarde disponible sur Android.");
   window.TaxiBackup.exportJson(controller.backup());

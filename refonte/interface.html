@@ -27,7 +27,7 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 </head>
 <body><main>
 <header><h1>Mon Taxi</h1><span class="muted">Refonte · test technique</span></header>
-<p class="notice">Version de test locale. Waze et l’enregistrement local des espèces sont raccordés. Le terminal est raccordé au SDK Android ; essais matériels et comptabilité définitive restent à valider. Aucun ancien répertoire n'est chargé.</p>
+<p class="notice">Version de test locale. Waze et l’enregistrement local des espèces sont raccordés. Le terminal est raccordé au SDK Android ; essais matériels et comptabilité définitive restent à valider. Répertoire local, vierge au départ.</p>
 <nav class="nav" aria-label="Navigation principale"><button data-page="home" aria-current="page">Accueil</button><button data-page="planning">Planning</button><button data-page="accounts">Comptabilité</button><button data-page="directory">Répertoire</button></nav>
 <p id="status" role="status" aria-live="polite"></p>
 <section class="screen" id="home">
@@ -40,6 +40,10 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <section class="screen" id="reservation" hidden><h2>Réservation</h2>
 <form class="card" data-kind="reservation">
 <div class="field"><label for="reservation-direction">Type de course</label><select id="reservation-direction" name="direction"><option value="dropoff">Dépose</option><option value="pickup">Pick-up</option></select></div>
+<div class="field"><label for="reservation-hotel">Hôtel (facultatif)</label><select id="reservation-hotel" name="hotelId"><option value="">Autre / aucun</option></select></div>
+<div class="field"><label for="reservation-contact">Contact de l'hôtel</label><select id="reservation-contact" name="contactId"><option value="">Aucun</option></select></div>
+<div class="field"><label for="reservation-driver">Chauffeur</label><select id="reservation-driver" name="driverId"><option value="">Moi</option></select></div>
+<div class="field"><label for="reservation-commission">Commission annoncée (€)</label><input id="reservation-commission" name="commission" inputmode="decimal" placeholder="0,00"></div>
 <div class="field"><label for="reservation-client">Nom du client</label><input id="reservation-client" name="client" autocomplete="off" maxlength="160"></div>
 <div class="field"><label for="reservation-phone">Téléphone</label><input id="reservation-phone" name="phone" type="tel" autocomplete="off" maxlength="40"></div>
 <div class="field"><label for="reservation-from">Départ</label><input id="reservation-from" name="from" required maxlength="250"></div>
@@ -50,6 +54,10 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <section class="screen" id="direct" hidden><h2>Course directe</h2>
 <form class="card" data-kind="direct">
 <div class="field"><label for="direct-direction">Type de course</label><select id="direct-direction" name="direction"><option value="dropoff">Dépose</option><option value="pickup">Pick-up</option></select></div>
+<div class="field"><label for="direct-hotel">Hôtel (facultatif)</label><select id="direct-hotel" name="hotelId"><option value="">Autre / aucun</option></select></div>
+<div class="field"><label for="direct-contact">Contact de l'hôtel</label><select id="direct-contact" name="contactId"><option value="">Aucun</option></select></div>
+<div class="field"><label for="direct-driver">Chauffeur</label><select id="direct-driver" name="driverId"><option value="">Moi</option></select></div>
+<div class="field"><label for="direct-commission">Commission annoncée (€)</label><input id="direct-commission" name="commission" inputmode="decimal" placeholder="0,00"></div>
 <div class="field"><label for="direct-client">Nom du client</label><input id="direct-client" name="client" autocomplete="off" maxlength="160"></div>
 <div class="field"><label for="direct-phone">Téléphone</label><input id="direct-phone" name="phone" type="tel" autocomplete="off" maxlength="40"></div>
 <div class="field"><label for="direct-from">Départ</label><input id="direct-from" name="from" required maxlength="250"></div>
@@ -79,5 +87,13 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <div class="card"><h3>Sauvegardes indépendantes</h3><p class="muted">Fichier JSON local de la nouvelle application uniquement. Aucun lien avec Chrome.</p><button id="backup-export">Exporter la sauvegarde</button><button id="backup-import">Choisir une sauvegarde à restaurer</button><div id="backup-review" hidden class="card"><p id="backup-summary"></p><button id="backup-restore" class="primary">Confirmer le remplacement des données locales</button><button id="backup-cancel">Annuler la restauration</button></div></div>
 </section>
 <section class="screen" id="archives" hidden><h2>Historique</h2><div class="card" id="archives-empty"><p>Aucune course archivée.</p></div><div id="archive-list"></div></section>
-<section class="screen" id="directory" hidden><h2>Répertoire</h2><div class="card"><p>Aucun hôtel, contact ou chauffeur préenregistré.</p><button disabled>Importer depuis Samsung · à configurer ensemble</button></div></section>
+<section class="screen" id="directory" hidden><h2>Répertoire local</h2>
+<div class="card"><p class="muted">Sélection individuelle depuis Samsung. Les contacts du téléphone restent inchangés.</p><div class="field"><label for="directory-sort">Classement</label><select id="directory-sort"><option value="priority">Prioritaire (manuel)</option><option value="az">Alphabétique A → Z</option><option value="za">Alphabétique Z → A</option></select></div></div>
+<form class="card" id="hotel-form"><h3 id="hotel-form-title">Ajouter un hôtel</h3><div class="field"><label for="hotel-name">Nom de l'hôtel</label><input id="hotel-name" maxlength="160" required></div><button class="primary" type="submit">Enregistrer l'hôtel</button><button id="hotel-cancel" type="button" hidden>Annuler la modification</button></form>
+<div class="card"><h3>Hôtels</h3><p id="hotels-empty">Aucun hôtel enregistré.</p><div id="hotels-list" class="actions"></div></div>
+<div class="card"><h3>Contacts des hôtels</h3><div class="field"><label for="contact-hotel">Hôtel associé</label><select id="contact-hotel"></select></div><button id="pick-contact" type="button" class="primary">Choisir un contact Samsung</button><p id="contacts-empty">Aucun contact enregistré.</p><div id="contacts-list" class="actions"></div></div>
+<div class="card"><h3>Chauffeurs</h3><button id="pick-driver" type="button" class="primary">Choisir un chauffeur Samsung</button><p id="drivers-empty">Aucun chauffeur enregistré.</p><div id="drivers-list" class="actions"></div></div>
+<form class="card" id="person-form" hidden><h3 id="person-title">Confirmer le contact</h3><div class="field"><label for="person-name">Nom dans Mon Taxi</label><input id="person-name" required maxlength="160"></div><div class="field"><label for="person-phone">Téléphone</label><input id="person-phone" type="tel" required maxlength="40"></div><button type="submit" class="primary">Enregistrer dans Mon Taxi</button><button id="person-cancel" type="button">Annuler</button></form>
+<div class="card" id="directory-delete" hidden><p id="directory-delete-label"></p><button id="directory-delete-confirm" type="button">Confirmer la suppression locale</button><button id="directory-delete-cancel" type="button">Annuler</button></div>
+</section>
 </main></body></html>

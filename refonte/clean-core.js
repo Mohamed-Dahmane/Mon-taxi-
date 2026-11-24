@@ -98,8 +98,54 @@ function makeCore(){
   total.average=total.workedDays?Math.round(total.revenue/total.workedDays):0;
   return total;
  }
+ const cleanName=n=>typeof n==="string"?n.trim():"";
+ const nameKey=n=>cleanName(n).normalize("NFKC").toLocaleLowerCase("fr-BE");
+ const validId=id=>typeof id==="string"&&/^[a-zA-Z0-9_-]{1,80}$/.test(id);
+ function validateDirectory(s){
+  const ids=new Set(),hotelNames=new Set();
+  for(const k of ["hotels","contacts","drivers"])for(const item of s[k]){
+   if(!item||!validId(item.id)||ids.has(item.id)||!cleanName(item.name)||item.name.length>160)throw Error("Répertoire invalide ou doublon");
+   ids.add(item.id);
+   if(k==="hotels"){
+    const key=nameKey(item.name);if(hotelNames.has(key))throw Error("Hôtel déjà présent");hotelNames.add(key);
+    if(item.defaultContactId&&!s.contacts.some(c=>c.id===item.defaultContactId&&c.hotelId===item.id))throw Error("Contact par défaut invalide");
+   }else{
+    if(typeof item.phone!=="string"||!/^\+?[0-9]{3,20}$/.test(item.phone))throw Error("Téléphone invalide");
+    if(k==="contacts"&&!s.hotels.some(h=>h.id===item.hotelId))throw Error("Hôtel du contact manquant");
+   }
+  }
+  for(const k of ["contacts","drivers"]){
+   const keys=new Set();for(const item of s[k]){
+    const key=(k==="contacts"?item.hotelId+":":"")+item.phone;
+    if(keys.has(key))throw Error("Numéro déjà présent dans cette liste");keys.add(key);
+   }
+  }
+ }
+ function saveDirectory(s,kind,item){
+  if(!["hotels","contacts","drivers"].includes(kind)||!item||!validId(item.id))throw Error("Élément inconnu");
+  const name=cleanName(item.name);
+  const next=kind==="hotels"?{id:item.id,name,defaultContactId:item.defaultContactId||null}:
+   {id:item.id,name,phone:String(item.phone||"").trim().replace(/[\s().-]/g,""),nativeId:String(item.nativeId||"").slice(0,120),...(kind==="contacts"?{hotelId:item.hotelId}:{})};
+  const list=s[kind],existing=list.findIndex(x=>x.id===item.id);
+  const updated=existing<0?[...list,next]:list.map(x=>x.id===item.id?next:x);
+  const result={...s,[kind]:updated};validateDirectory(result);return result;
+ }
+ function removeDirectory(s,kind,id){
+  if(!["hotels","contacts","drivers"].includes(kind)||!s[kind].some(x=>x.id===id))throw Error("Élément inconnu");
+  let next={...s,[kind]:s[kind].filter(x=>x.id!==id)};
+  if(kind==="hotels")next={...next,contacts:next.contacts.filter(c=>c.hotelId!==id)};
+  if(kind==="contacts")next={...next,hotels:next.hotels.map(h=>h.defaultContactId===id?{...h,defaultContactId:null}:h)};
+  validateDirectory(next);return next;
+ }
+ function moveDirectory(s,kind,id,delta){
+  if(!["hotels","contacts","drivers"].includes(kind)||![1,-1].includes(delta))throw Error("Déplacement invalide");
+  const list=s[kind].slice(),i=list.findIndex(x=>x.id===id);if(i<0)throw Error("Élément inconnu");
+  const j=i+delta;if(j<0||j>=list.length)return s;
+  [list[i],list[j]]=[list[j],list[i]];return {...s,[kind]:list};
+ }
  function validateState(s){
   if(!s||typeof s!=="object"||!["hotels","contacts","drivers","courses","ledger"].every(k=>Array.isArray(s[k])))throw Error("Sauvegarde invalide");
+  validateDirectory(s);
   const ids=new Set(),ledgerIds=new Set(),attempts=new Set(),references=new Set(),statuses=new Set(["planned","loaded","in_progress","awaiting_payment","payment_pending","archived"]);
   for(const c of s.courses){
    if(!c||typeof c.id!=="string"||!c.id||ids.has(c.id)||!statuses.has(c.status))throw Error("Course invalide ou doublon");
@@ -131,7 +177,7 @@ function makeCore(){
   if(s.courses.some(c=>c.status==="payment_pending"))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
   return s;
  }
- return {empty,addCourse,apply,recordCash,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay};
+ return {empty,addCourse,apply,recordCash,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();

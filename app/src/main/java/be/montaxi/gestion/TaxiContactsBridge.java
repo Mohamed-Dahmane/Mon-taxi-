@@ -22,20 +22,23 @@ public final class TaxiContactsBridge {
   Uri uri=Uri.parse(url);
   return "file".equals(uri.getScheme())&&(uri.getAuthority()==null||uri.getAuthority().isEmpty())&&"/android_asset/index.html".equals(uri.getPath());
  }
+ private String pendingContactRequest;
  private void result(String mode,JSONArray contacts,String error){
-  try{JSONObject data=new JSONObject();data.put("mode",mode);if(contacts!=null)data.put("contacts",contacts);if(error!=null)data.put("error",error);
+  try{JSONObject data=new JSONObject();data.put("mode",mode);if("chosen".equals(mode)){data.put("requestId",pendingContactRequest);pendingContactRequest=null;}if(contacts!=null)data.put("contacts",contacts);if(error!=null)data.put("error",error);
    activity.runOnUiThread(()->{if(trusted())web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:"+data.toString()+"}))",null);});
   }catch(Exception ignored){}
  }
  private JSONObject contact(Cursor cursor)throws Exception{
   JSONObject c=new JSONObject();c.put("nativeId",cursor.getString(0));c.put("name",cursor.getString(1));c.put("phone",cursor.getString(2));return c;
  }
- @JavascriptInterface public void pick(){activity.runOnUiThread(()->{
-  if(!trusted())return;
+ @JavascriptInterface public void pick(String requestId){activity.runOnUiThread(()->{
+  if(!trusted()||requestId==null||!requestId.matches("[a-zA-Z0-9_-]{1,80}")||pendingContactRequest!=null)return;
+  pendingContactRequest=requestId;
   try{Intent intent=new Intent(Intent.ACTION_PICK,ContactsContract.CommonDataKinds.Phone.CONTENT_URI);activity.startActivityForResult(intent,CONTACT_PICK);}
   catch(Exception e){result("chosen",null,"Le sélecteur de contacts n’est pas disponible.");}
  });}
  void picked(int code,Intent data){
+  if(pendingContactRequest==null)return;
   if(code!=Activity.RESULT_OK||data==null||data.getData()==null){result("chosen",null,"Import annulé.");return;}
   if(!trusted())return;
   Uri uri=data.getData();if(!"content".equals(uri.getScheme())||!ContactsContract.AUTHORITY.equals(uri.getAuthority())){result("chosen",null,"Contact invalide.");return;}

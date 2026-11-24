@@ -101,6 +101,7 @@ jobs:
                     window.TaxiBackup={exportJson:raw=>{window.savedBackup=raw;window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'exported'}}));},pickJson:()=>window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'imported',content:window.savedBackup}})),approveRestore:()=>window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'restore-approved'}}))};
                     window.TaxiSumUp={checkout:(courseId,attemptId,amountCents)=>{window.terminalCalls++;window.sumupAttempts.push({courseId,attemptId,amountCents,currency:'EUR'});},recover:()=>{},ack:id=>window.sumupAcks.push(id)};
                     window.TaxiContacts={
+                      pick:requestId=>{window.contactPicks=(window.contactPicks||0)+1;window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{requestId,contacts:[{nativeId:'demo-'+window.contactPicks,name:'Personne fictive '+window.contactPicks,phone:'+3247000000'+window.contactPicks}]}}));},
                       navigateWaze:(id,destination)=>{window.wazeCalls.push({id,destination});window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'opened',overlay:true}}));},
                       requestWazeReturn:()=>{},ackWazeReturn:id=>window.wazeAcks.push(id),enableWazeOverlay:()=>window.overlayRequests++
                     };
@@ -159,6 +160,25 @@ jobs:
                   await page.locator('#direct button[type=submit]').click();
                   await page.locator('[data-page=directory]').click();await inspect('directory');
                   assert.match(await page.locator('#directory').innerText(),/Aucun hôtel/);
+                  await page.locator('#hotel-name').fill('Hôtel fictif');await page.locator('#hotel-form button[type=submit]').click();
+                  await page.locator('#contact-hotel').selectOption({label:'Hôtel fictif'});
+                  await page.locator('#pick-contact').click();assert.equal(await page.locator('#person-form').isVisible(),true);
+                  await page.locator('#person-form button[type=submit]').click();
+                  await page.locator('#contacts-list [data-dir-action=default]').click();
+                  await page.locator('#pick-driver').click();await page.locator('#person-form button[type=submit]').click();
+                  await page.locator('#directory-sort').selectOption('az');
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=reservation]').click();
+                  await page.locator('#reservation-hotel').selectOption({label:'Hôtel fictif'});
+                  assert.equal(await page.locator('#reservation-contact option:checked').innerText(),'Personne fictive 1');
+                  await page.locator('#reservation-driver').selectOption({label:'Personne fictive 2'});
+                  await page.locator('[data-page=directory]').click();
+                  await page.locator('#drivers-list [data-dir-action=delete]').click();await page.locator('#directory-delete-cancel').click();
+                  assert.equal(await page.locator('#drivers-list article').count(),1);
+                  await page.locator('#drivers-list [data-dir-action=delete]').click();await page.locator('#directory-delete-confirm').click();
+                  assert.equal(await page.locator('#drivers-list article').count(),0);
+                  await page.reload();await page.locator('[data-page=directory]').click();
+                  assert.equal(await page.locator('#hotels-list article').count(),1);assert.match(await page.locator('#contacts-list').innerText(),/Contact par défaut/);
+                  assert.equal(await page.locator('#drivers-list article').count(),0);
                   await page.locator('[data-page=accounts]').click();await inspect('accounts');
                   await page.locator('[data-page=home]').click();await page.locator('[data-go=archives]').click();await inspect('archives');
                   assert.equal(await page.locator('#archive-list article').count(),0);
@@ -563,6 +583,38 @@ jobs:
           assert.throws(()=>guarded.setFixed('2026-12',99999));assert.equal(guarded.monthly('2026-12').fixed,31000);
           assert.match(source,/import android\.content\.Intent;/);
           console.log('Point 8 : calculs, moyenne, mois, frais, commission, sauvegarde et restauration contrôlée OK.');
+          JS
+  directory:
+    needs: point8-precheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Répertoire vierge, catégories, défauts, doublons et conservation des courses
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict'),create=require('./refonte/course-controller.js'),fs=require('node:fs');
+          let saved=null;const storage={load:()=>saved,save:s=>saved=JSON.parse(JSON.stringify(s))};
+          const c=create(storage);
+          for(const k of ['hotels','contacts','drivers'])assert.equal(c.snapshot()[k].length,0);
+          c.saveDirectory('hotels',{id:'h1',name:'Hôtel fictif'});
+          c.saveDirectory('hotels',{id:'h2',name:'Hôtel second'});
+          assert.throws(()=>c.saveDirectory('hotels',{id:'dup',name:' hôtel fictif '}));
+          c.saveDirectory('contacts',{id:'c1',hotelId:'h1',name:'Contact fictif',phone:'+32 470 00 00 01',nativeId:'test'});
+          assert.throws(()=>c.saveDirectory('contacts',{id:'c2',hotelId:'h1',name:'Doublon',phone:'+32470000001'}));
+          assert.throws(()=>c.saveDirectory('contacts',{id:'orphan',hotelId:'missing',name:'Test',phone:'1234'}));
+          c.saveDirectory('drivers',{id:'d1',name:'Chauffeur fictif',phone:'+32470000002'});
+          c.saveDirectory('hotels',{id:'h1',name:'Hôtel fictif',defaultContactId:'c1'});
+          c.moveDirectory('hotels','h2',-1);assert.equal(c.snapshot().hotels[0].id,'h2');
+          c.plan({id:'course',hotelId:'h1',hotelName:'Hôtel fictif',driverId:'d1',driverName:'Chauffeur fictif'});
+          const backup=c.backup();assert.equal(create(storage).snapshot().hotels.length,2);
+          c.removeDirectory('hotels','h1');assert.equal(c.snapshot().contacts.length,0);
+          c.removeDirectory('drivers','d1');assert.equal(c.snapshot().courses[0].driverName,'Chauffeur fictif');
+          c.restore(backup);assert.equal(c.snapshot().hotels.find(h=>h.id==='h1').defaultContactId,'c1');
+          const native=fs.readFileSync('app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java','utf8'),manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
+          assert.match(native,/Intent.ACTION_PICK,ContactsContract.CommonDataKinds.Phone.CONTENT_URI/);
+          assert.match(native,/requestId/);assert.doesNotMatch(native,/getContentResolver\(\)\.(insert|update|delete|applyBatch)/);
+          assert.doesNotMatch(manifest,/READ_CONTACTS|WRITE_CONTACTS/);
+          console.log('Point 9 : répertoire vierge, sélection individuelle, défauts, classement, suppression locale et historique préservé.');
           JS
   integration:
     needs: point8-precheck
