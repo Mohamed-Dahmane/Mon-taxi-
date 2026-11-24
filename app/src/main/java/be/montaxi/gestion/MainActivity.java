@@ -530,7 +530,7 @@ public class MainActivity extends Activity {
     }
     @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){
      String url=req.getUrl().toString();
-     return !url.startsWith("file:///android_asset/");
+     return !isLocalAppPage(url);
     }
    });
    web.setDownloadListener((url,userAgent,contentDisposition,mimeType,contentLength)->{
@@ -610,7 +610,7 @@ public class MainActivity extends Activity {
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());
-   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowFileAccessFromFileURLs(false);s.setAllowUniversalAccessFromFileURLs(false);s.setBlockNetworkLoads(true);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setCacheMode(WebSettings.LOAD_NO_CACHE);
   }
   // L APK Android utilise exclusivement son interface embarquee, independante de Chrome.
   if(!isLocalAppPage(web.getUrl()))web.loadUrl(LOCAL_APP_URL);
