@@ -28,6 +28,7 @@ function create(core,sumupEvent,storage){
     finish:id=>apply(id,{type:"finish"}),
     refund(id,day,amountCents){commit(core.recordRefund(state,id,day,amountCents));return clone(get(id))},
     cash(id,cents){commit(core.recordCash(state,id,cents));return clone(get(id))},
+    savePaymentDraft(id,cents){commit(core.savePaymentDraft(state,id,cents));return clone(get(id));},
     beginSumUp(id,cents,attemptId){
       if(!Number.isSafeInteger(cents)||cents<=0)throw Error("Montant terminal invalide");
       return apply(id,{type:"beginPayment",method:"sumup",amountCents:cents,attemptId});
