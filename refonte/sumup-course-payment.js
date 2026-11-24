@@ -1,0 +1,17 @@
+// Adaptateur de refonte : uniquement les paiements déclenchés par Mon Taxi.
+// Ne lit jamais l'historique SumUp. Le pont natif doit fournir attemptId, le code de transaction
+// et le montant/devise associés au retour SDK de confiance. Aucun événement global non corrélé.
+function sumupEvent(course, result) {
+ if (!course || course.status !== "payment_pending" || course.payment?.method !== "sumup") throw Error("Aucun paiement SumUp attendu pour cette course");
+ const p=course.payment;
+ if (!result || result.attemptId !== p.attemptId) throw Error("Retour SumUp non associé à la tentative");
+ if(result.status==="success"){
+  if(typeof result.transactionCode!=="string" || !result.transactionCode.trim()) throw Error("Code de transaction absent : statut incertain");
+  if(result.amountCents!==p.amountCents || result.currency!=="EUR") throw Error("Montant ou devise non concordants : vérifier avant de clôturer");
+  return {type:"paymentConfirmed",attemptId:p.attemptId,result:"confirmed",reference:result.transactionCode.trim()};
+ }
+ if(result.status==="cancelled"||result.status==="declined")return {type:"paymentFailed",attemptId:p.attemptId,result:result.status};
+ return null; // Incertain : maintenir la course et ne pas relancer automatiquement.
+}
+if(typeof module==='object'&&module.exports)module.exports=sumupEvent;
+else if(typeof window!=='undefined')window.TaxiSumUpEvent=sumupEvent;
