@@ -1,0 +1,13 @@
+name: Paiements 2107 - prototype isole
+on:
+  push:
+    branches: [test/payment-ledger-2107-20261124]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  domain-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node tests/payment-ledger-experimental.cjs
