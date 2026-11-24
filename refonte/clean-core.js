@@ -8,7 +8,7 @@ function makeCore(){
   if(!course||!event||states[event.type]!==course.status)throw Error("Action incompatible avec le statut de la course");
   const c={...course,status:next[event.type]};
   if(event.type==="beginPayment"){
-   if(!["sumup","payment_express"].includes(event.method)||!Number.isSafeInteger(event.amountCents)||event.amountCents<0||!event.attemptId)throw Error("Paiement invalide");
+   if(event.method!=="sumup"||!Number.isSafeInteger(event.amountCents)||event.amountCents<=0||!event.attemptId)throw Error("Paiement invalide");
    c.payment={method:event.method,amountCents:event.amountCents,attemptId:event.attemptId};
   }
   if(event.type==="paymentFailed"||event.type==="paymentConfirmed"){
