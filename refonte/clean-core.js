@@ -9,12 +9,14 @@ function makeCore(){
   const c={...course,status:next[event.type]};
   if(event.type==="beginPayment"){
    if(event.method!=="sumup"||!Number.isSafeInteger(event.amountCents)||event.amountCents<=0||!event.attemptId)throw Error("Paiement invalide");
+   c.paymentDraftCents=event.amountCents;
    c.payment={method:event.method,amountCents:event.amountCents,attemptId:event.attemptId};
   }
   if(event.type==="paymentFailed"||event.type==="paymentConfirmed"){
    if(!course.payment||event.attemptId!==course.payment.attemptId)throw Error("Tentative de paiement inconnue");
    if(event.type==="paymentFailed"){
     if(!["cancelled","declined"].includes(event.result))throw Error("Statut incertain : ne pas relancer le paiement");
+    c.paymentDraftCents=course.payment.amountCents;
     c.lastPaymentAttempt={attemptId:event.attemptId,status:event.result};c.payment=null;
    }else{
     if(event.result!=="confirmed"||!event.reference)throw Error("Confirmation de paiement manquante");
@@ -50,6 +52,13 @@ function makeCore(){
   const courses=state.courses.slice();
   courses[index]={...courses[index],status:"archived",payment};
   return {...state,courses,ledger:[...state.ledger,{courseId:id,...payment}]};
+ }
+ function savePaymentDraft(state,id,cents){
+  if(!Number.isSafeInteger(cents)||cents<100||cents>9999900)throw Error("Montant terminal invalide");
+  const index=state.courses.findIndex(c=>c.id===id);
+  if(index<0||state.courses[index].status!=="awaiting_payment")throw Error("Course non disponible pour la saisie du montant");
+  const courses=state.courses.slice();courses[index]={...courses[index],paymentDraftCents:cents};
+  return {...state,courses};
  }
  function addCourse(state,course){
   if(!course?.id||state.courses.some(c=>c.id===course.id))throw Error("Identifiant de course manquant ou en double");
@@ -167,6 +176,7 @@ function makeCore(){
    if(!c||typeof c.id!=="string"||!c.id||ids.has(c.id)||!statuses.has(c.status))throw Error("Course invalide ou doublon");
    ids.add(c.id);
    if(c.commissionCents!==undefined&&!validAmount(c.commissionCents))throw Error("Commission invalide");
+   if(c.paymentDraftCents!==undefined&&(!validAmount(c.paymentDraftCents)||c.paymentDraftCents===0))throw Error("Montant à payer invalide");
    if(c.status==="payment_pending"&&(!c.payment||c.payment.method!=="sumup"||!validAmount(c.payment.amountCents)||c.payment.amountCents<=0||typeof c.payment.attemptId!=="string"||!c.payment.attemptId))throw Error("Tentative en attente invalide");
   }
   for(const p of s.ledger){
@@ -199,7 +209,7 @@ function makeCore(){
   if(s.courses.some(c=>c.status==="payment_pending"))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
   return s;
  }
- return {empty,addCourse,apply,recordCash,recordRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
+ return {empty,addCourse,apply,savePaymentDraft,recordCash,recordRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();
