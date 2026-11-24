@@ -1,0 +1,97 @@
+name: Vérifier la nouvelle interface Fold
+on:
+  push:
+    branches: [refonte/base-saine-20261124]
+    paths: ['refonte/interface.html', '.github/workflows/refonte-interface-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  interface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - name: Tester la géométrie et les deux chemins de paiement
+        run: |
+          mkdir -p interface-report
+          cat > .interface-test.cjs <<'JS'
+          const {chromium}=require('playwright');
+          const fs=require('fs'),assert=require('node:assert/strict');
+          const html=fs.readFileSync('refonte/interface.html','utf8');
+          (async()=>{
+            const browser=await chromium.launch({executablePath:fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':undefined,headless:true,args:['--no-sandbox']});
+            const report=[];
+            try{
+              for(const [width,height] of [[320,640],[360,780],[400,850],[600,720],[720,800],[840,720],[320,300],[720,350]]){
+                const context=await browser.newContext({viewport:{width,height},isMobile:true,hasTouch:true,deviceScaleFactor:1,serviceWorkers:'block'});
+                try{
+                  await context.route('**/*',r=>r.abort());
+                  const page=await context.newPage(),errors=[];
+                  page.on('pageerror',e=>errors.push(e.message));
+                  await page.setContent(html);
+                  const inspect=async screen=>{
+                    const visible=page.locator('.screen:not([hidden])');
+                    assert.equal(await visible.getAttribute('id'),screen);
+                    const result=await page.evaluate(()=>{
+                      const controls=[...document.querySelectorAll('button,input')].filter(e=>e.getClientRects().length);
+                      const rs=controls.map(e=>({e,r:e.getBoundingClientRect()})),problems=[];
+                      const name=e=>e.id||e.textContent.trim()||e.placeholder||e.type;
+                      for(const {e,r} of rs){
+                        if(r.width<48||r.height<48)problems.push('Taille '+name(e));
+                        if(r.left<-.5||r.right>innerWidth+.5)problems.push('Hors écran '+name(e));
+                        if(e.tagName==='BUTTON'&&(e.scrollWidth>e.clientWidth+1||e.scrollHeight>e.clientHeight+1))problems.push('Texte tronqué '+name(e));
+                      }
+                      for(let i=0;i<rs.length;i++)for(let j=i+1;j<rs.length;j++){
+                        const a=rs[i],b=rs[j],x=a.r,y=b.r;
+                        const w=Math.min(x.right,y.right)-Math.max(x.left,y.left),h=Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top);
+                        if(w>.5&&h>.5)problems.push('Superposition '+name(a.e)+' / '+name(b.e));
+                        else if((w>8&&h<=0&&h>-7.5)||(h>8&&w<=0&&w>-7.5))problems.push('Espacement '+name(a.e)+' / '+name(b.e));
+                      }
+                      if(document.documentElement.scrollWidth>innerWidth+1)problems.push('Débordement horizontal');
+                      return {problems,controls:controls.length};
+                    });
+                    for(const control of await page.locator('button:visible:not(:disabled),input:visible').all()){
+                      await control.scrollIntoViewIfNeeded();
+                      assert.ok(await control.evaluate(e=>{const r=e.getBoundingClientRect();const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&(e===hit||e.contains(hit));}),'Cible tactile masquée '+await control.getAttribute('id'));
+                    }
+                    if(screen==='payment'){
+                      const a=await page.locator('#pay-cash').boundingBox(),b=await page.locator('#pay-sumup').boundingBox();
+                      assert.ok(Math.abs(a.y-b.y)<1&&Math.abs(a.width-b.width)<1&&Math.abs(a.height-b.height)<1&&b.x>a.x+a.width,'Paiements non alignés');
+                    }
+                    assert.deepEqual(result.problems,[],width+'x'+height+' '+screen);
+                    assert.deepEqual(errors,[]);
+                    report.push({width,height,screen,controls:result.controls,ok:true});
+                    if(height>=640&&(width===360||width===720))await page.screenshot({path:'interface-report/'+width+'-'+screen+'.png',fullPage:true});
+                  };
+                  await inspect('home');
+                  await page.locator('[data-go=reservation]').click();await inspect('reservation');
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=direct]').click();await inspect('direct');
+                  await page.locator('[data-page=directory]').click();await inspect('directory');
+                  assert.match(await page.locator('#directory').innerText(),/Aucun hôtel/);
+                  await page.locator('[data-page=accounts]').click();await inspect('accounts');
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=archives]').click();await inspect('archives');
+                  await page.locator('[data-page=planning]').click();await inspect('planning');
+                  await page.locator('[data-go=ride]:visible').click();await inspect('ride');
+                  for(let n=0;n<4;n++)await page.locator('#ride-next').click();
+                  await inspect('payment');
+                  await page.locator('#pay-cash').click();await inspect('cash');
+                  await page.locator('[data-go=payment]:visible').click();await page.locator('#pay-sumup').click();await inspect('sumup');
+                }catch(e){report.push({width,height,ok:false,error:e.message});process.exitCode=1}
+                finally{await context.close();fs.writeFileSync('interface-report/results.json',JSON.stringify(report,null,2))}
+              }
+            }finally{await browser.close()}
+            for(const row of report)console.log(JSON.stringify(row));
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
+          node .interface-test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prototype-fold
+          path: interface-report/
