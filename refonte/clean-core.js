@@ -8,7 +8,7 @@ function makeCore(){
   if(!course||!event||states[event.type]!==course.status)throw Error("Action incompatible avec le statut de la course");
   const c={...course,status:next[event.type]};
   if(event.type==="beginPayment"){
-   if(!["cash","sumup","payment_express"].includes(event.method)||!Number.isSafeInteger(event.amountCents)||event.amountCents<0||!event.attemptId)throw Error("Paiement invalide");
+   if(!["sumup","payment_express"].includes(event.method)||!Number.isSafeInteger(event.amountCents)||event.amountCents<0||!event.attemptId)throw Error("Paiement invalide");
    c.payment={method:event.method,amountCents:event.amountCents,attemptId:event.attemptId};
   }
   if(event.type==="paymentFailed"||event.type==="paymentConfirmed"){
@@ -35,11 +35,23 @@ function makeCore(){
   }
   return {...state,courses,ledger};
  }
+ // Le cash suit une action locale unique, sans adaptateur carte ni état de paiement externe.
+ function recordCash(state,id,amountCents){
+  if(!Number.isSafeInteger(amountCents)||amountCents<0)throw Error("Montant espèces invalide");
+  const index=state.courses.findIndex(c=>c.id===id);
+  if(index<0||state.courses[index].status!=="awaiting_payment")throw Error("Course non disponible pour le paiement en espèces");
+  const reference="cash:"+id;
+  if(state.ledger.some(x=>x.courseId===id||x.attemptId===reference))throw Error("Paiement déjà enregistré");
+  const payment={method:"cash",amountCents,attemptId:reference,reference};
+  const courses=state.courses.slice();
+  courses[index]={...courses[index],status:"archived",payment};
+  return {...state,courses,ledger:[...state.ledger,{courseId:id,...payment}]};
+ }
  function addCourse(state,course){
   if(!course?.id||state.courses.some(c=>c.id===course.id))throw Error("Identifiant de course manquant ou en double");
   return {...state,courses:[...state.courses,{...course,status:"planned",payment:null}]};
  }
- return {empty,addCourse,apply};
+ return {empty,addCourse,apply,recordCash};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();
