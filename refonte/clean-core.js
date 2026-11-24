@@ -15,10 +15,10 @@ function makeCore(){
    if(!course.payment||event.attemptId!==course.payment.attemptId)throw Error("Tentative de paiement inconnue");
    if(event.type==="paymentFailed"){
     if(!["cancelled","declined"].includes(event.result))throw Error("Statut incertain : ne pas relancer le paiement");
-    c.payment=null;
+    c.lastPaymentAttempt={attemptId:event.attemptId,status:event.result};c.payment=null;
    }else{
     if(event.result!=="confirmed"||!event.reference)throw Error("Confirmation de paiement manquante");
-    c.payment={...course.payment,reference:event.reference};
+    c.payment={...course.payment,reference:event.reference,paidAt:new Date().toISOString()};
    }
   }
   return c;

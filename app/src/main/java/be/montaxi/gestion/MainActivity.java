@@ -115,67 +115,122 @@ public class MainActivity extends Activity {
  }
  private CancellationSignal biometric;
  private static final int SUMUP_LOGIN=701, SUMUP_READER=702, SUMUP_CHECKOUT=703;
- private BigDecimal pendingSumUpAmount;
- private String pendingSumUpReference;
- private boolean sumUpInProgress=false;
+ // One durable checkout at a time. No history import and no automatic retry.
+ private android.content.SharedPreferences sumUpState(){return getSharedPreferences("taxi_sumup_refonte_v1",MODE_PRIVATE);}
+ private org.json.JSONObject pendingSumUp(){
+  String raw=sumUpState().getString("pending",null);
+  if(raw==null)return null;
+  try{return new org.json.JSONObject(raw);}catch(Exception e){throw new IllegalStateException("Journal SumUp illisible",e);}
+ }
+ private void persistSumUp(org.json.JSONObject p){
+  if(!sumUpState().edit().putString("pending",p.toString()).commit())throw new IllegalStateException("Journal SumUp non enregistré");
+ }
  private void showSumUpMessage(String message){Toast.makeText(this,message,Toast.LENGTH_LONG).show();}
- private void sendSumUpResult(String status,String code){
-  if(web==null)return;
-  String js="window.dispatchEvent(new CustomEvent('mon-taxi-sumup-result',{detail:{status:"+org.json.JSONObject.quote(status)+",transactionCode:"+org.json.JSONObject.quote(code==null?"":code)+"}}))";
-  web.evaluateJavascript(js,null);
+ private void publishSumUp(){
+  if(web==null||!unlocked||!isLocalAppPage(web.getUrl()))return;
+  try{
+   org.json.JSONObject p=pendingSumUp();if(p==null)return;
+   web.evaluateJavascript("window.dispatchEvent(new CustomEvent('mon-taxi-sumup-result',{detail:"+p.toString()+"}))",null);
+  }catch(Exception e){showSumUpMessage("Journal SumUp à vérifier.");}
  }
- private void beginSumUpPayment(String raw){
-  if(sumUpInProgress){showSumUpMessage("Un encaissement SumUp est déjà en cours");return;}
-  final BigDecimal amount;
-  try{amount=new BigDecimal(raw.replace(',','.')).setScale(2,java.math.RoundingMode.UNNECESSARY);
-   if(amount.compareTo(BigDecimal.ONE)<0||amount.compareTo(new BigDecimal("99999"))>0)throw new IllegalArgumentException();
-  }catch(Exception e){showSumUpMessage("Montant invalide (minimum 1,00 €)");return;}
-  new AlertDialog.Builder(this).setTitle("Encaisser par carte · SumUp")
-   .setMessage("Envoyer "+amount.toPlainString()+" € au Solo Lite ? Un paiement réel sera possible.")
-   .setNegativeButton("Annuler",null)
-   .setPositiveButton("Continuer",(d,w)->{
-     pendingSumUpAmount=amount;pendingSumUpReference=UUID.randomUUID().toString();sumUpInProgress=true;
-     if(SumUpAPI.isLoggedIn())openSumUpCheckout();
-     else askSumUpAffiliateKey();
-   }).show();
+ private void ackSumUp(String attempt){
+  try{
+   org.json.JSONObject p=pendingSumUp();
+   if(p!=null&&attempt.equals(p.optString("attemptId"))&&"result".equals(p.optString("stage"))&&
+      ("success".equals(p.optString("status"))||"cancelled".equals(p.optString("status"))||"declined".equals(p.optString("status")))){
+    if(!sumUpState().edit().remove("pending").commit())showSumUpMessage("Journal SumUp conservé : réessayer la synchronisation locale.");
+   }
+  }catch(Exception e){showSumUpMessage("Journal SumUp à vérifier.");}
  }
+ private void beginSumUpPayment(String courseId,String attempt,int cents){
+  try{
+   if(courseId==null||!courseId.matches("[a-zA-Z0-9_-]{1,80}")||attempt==null||!attempt.matches("[a-zA-Z0-9_-]{1,80}")||cents<100||cents>9999900){showSumUpMessage("Demande SumUp invalide.");return;}
+   if(pendingSumUp()!=null){publishSumUp();showSumUpMessage("Une tentative SumUp reste à vérifier.");return;}
+   org.json.JSONObject p=new org.json.JSONObject();
+   p.put("courseId",courseId);p.put("attemptId",attempt);p.put("requestedCents",cents);p.put("stage","setup");p.put("status","pending");
+   persistSumUp(p);
+   if(SumUpAPI.isLoggedIn())openSumUpReader();else askSumUpAffiliateKey();
+  }catch(Exception e){showSumUpMessage("SumUp non lancé ou statut à vérifier. Ne pas recommencer automatiquement.");}
+ }
+ private void finishSumUp(String status,String tx,Integer actualCents,String currency){
+  try{
+   org.json.JSONObject p=pendingSumUp();if(p==null||"result".equals(p.optString("stage")))return;
+   p.put("stage","result");p.put("status",status);
+   if(tx!=null)p.put("transactionCode",tx);
+   if(actualCents!=null)p.put("amountCents",actualCents);
+   if(currency!=null)p.put("currency",currency);
+   persistSumUp(p);publishSumUp();
+   if("uncertain".equals(status))showSumUpMessage("Statut incertain : ne pas encaisser à nouveau avant vérification.");
+  }catch(Exception e){showSumUpMessage("Résultat SumUp non enregistré : vérification nécessaire.");}
+ }
+ private boolean sumUpStage(String stage){try{org.json.JSONObject p=pendingSumUp();return p!=null&&stage.equals(p.optString("stage"));}catch(Exception e){return false;}}
+ private void setSumUpStage(String stage)throws Exception{
+  org.json.JSONObject p=pendingSumUp();if(p==null)throw new IllegalStateException();p.put("stage",stage);persistSumUp(p);
+ }
+ private void cancelSumUpSetup(){finishSumUp("cancelled",null,null,null);}
  private void askSumUpAffiliateKey(){
   String saved=getSharedPreferences("taxi-sumup",MODE_PRIVATE).getString("affiliate","");
   if(!saved.isEmpty()){openSumUpLogin(saved);return;}
   EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Clé d'affiliation SumUp");
   new AlertDialog.Builder(this).setTitle("Configurer SumUp").setMessage("Saisis la clé d'affiliation une seule fois sur ton téléphone.")
-   .setView(field).setNegativeButton("Annuler",(d,w)->finishSumUp("cancelled",""))
+   .setView(field).setNegativeButton("Annuler",(d,w)->cancelSumUpSetup())
+   .setOnCancelListener(d->cancelSumUpSetup())
    .setPositiveButton("Enregistrer",(d,w)->{
      String key=field.getText().toString().trim();
-     if(key.isEmpty()){finishSumUp("error","Clé SumUp manquante");return;}
-     getSharedPreferences("taxi-sumup",MODE_PRIVATE).edit().putString("affiliate",key).apply();
-     openSumUpLogin(key);
+     if(key.isEmpty()){cancelSumUpSetup();return;}
+     getSharedPreferences("taxi-sumup",MODE_PRIVATE).edit().putString("affiliate",key).apply();openSumUpLogin(key);
    }).show();
  }
  private void openSumUpLogin(String key){
-  try{SumUpAPI.openLoginActivity(this,SumUpLogin.builder(key).build(),SUMUP_LOGIN);}
-  catch(Exception e){finishSumUp("error","Connexion SumUp impossible");}
+  try{setSumUpStage("login");SumUpAPI.openLoginActivity(this,SumUpLogin.builder(key).build(),SUMUP_LOGIN);}
+  catch(Exception e){cancelSumUpSetup();}
  }
  private void openSumUpReader(){
   try{
    if(SumUpAPI.isCardReaderConnected())openSumUpCheckout();
-   else SumUpAPI.openCardReaderPage(this,SUMUP_READER);
-  }catch(Exception e){finishSumUp("error","Lecteur SumUp indisponible");}
+   else{setSumUpStage("reader");SumUpAPI.openCardReaderPage(this,SUMUP_READER);}
+  }catch(Exception e){cancelSumUpSetup();}
  }
  private void openSumUpCheckout(){
   try{
-   SumUpPayment payment=SumUpPayment.builder().total(pendingSumUpAmount)
+   org.json.JSONObject p=pendingSumUp();if(p==null||"checkout".equals(p.optString("stage"))||"result".equals(p.optString("stage")))return;
+   SumUpPayment payment=SumUpPayment.builder().total(BigDecimal.valueOf(p.getInt("requestedCents"),2))
     .currency(SumUpPayment.Currency.EUR).title("Course Mon Taxi")
-    .foreignTransactionId(pendingSumUpReference).build();
+    .foreignTransactionId(p.getString("attemptId")).configureRetryPolicy(2000,60000,true).build();
+   setSumUpStage("checkout"); // Durable before any external debit is possible.
    SumUpAPI.checkout(this,payment,SUMUP_CHECKOUT);
-  }catch(Exception e){finishSumUp("error","Impossible de lancer le paiement");}
+  }catch(Exception e){if(sumUpStage("checkout"))finishSumUp("uncertain",null,null,null);else cancelSumUpSetup();}
  }
- private void finishSumUp(String status,String code){
-  sumUpInProgress=false;pendingSumUpAmount=null;pendingSumUpReference=null;
-  sendSumUpResult(status,code);
-  if("success".equals(status))showSumUpMessage("Paiement SumUp confirmé");
-  else if("uncertain".equals(status))showSumUpMessage("Statut incertain : vérifier SumUp avant de réessayer");
-  else if("error".equals(status))showSumUpMessage("Paiement non confirmé : "+code);
+ private static Object transactionField(Object info,String... names)throws Exception{
+  if(info==null)throw new IllegalArgumentException("Transaction info missing");
+  for(String name:names)try{return info.getClass().getMethod(name).invoke(info);}catch(NoSuchMethodException ignored){}
+  throw new IllegalArgumentException("Transaction field missing");
+ }
+ private void handleSumUpCheckout(android.content.Intent data){
+  if(!sumUpStage("checkout"))return;
+  try{
+   org.json.JSONObject p=pendingSumUp();
+   int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
+   String foreign=data==null?null:data.getStringExtra(SumUpAPI.Param.FOREIGN_TRANSACTION_ID);
+   if(!p.getString("attemptId").equals(foreign)){finishSumUp("uncertain",null,null,null);return;}
+   if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL){
+    String tx=data.getStringExtra(SumUpAPI.Response.TX_CODE);
+    Object info=data.getParcelableExtra(SumUpAPI.Response.TX_INFO);
+    int cents=new BigDecimal(String.valueOf(transactionField(info,"getAmount"))).movePointRight(2).intValueExact();
+    String currency=String.valueOf(transactionField(info,"getCurrency"));
+    String status=String.valueOf(transactionField(info,"getPaymentStatus","getStatus"));
+    if(tx==null||tx.trim().isEmpty()||cents!=p.getInt("requestedCents")||!"EUR".equals(currency)||!"SUCCESSFUL".equals(status)){
+     finishSumUp("uncertain",tx,cents,currency);return;
+    }
+    finishSumUp("success",tx,cents,currency);
+   }else if(code==SumUpAPI.Response.ResultCode.ERROR_TRANSACTION_FAILED){
+    // Retry policy enabled; require a definitive transaction status, not a generic error.
+    Object info=data.getParcelableExtra(SumUpAPI.Response.TX_INFO);
+    String status=String.valueOf(transactionField(info,"getPaymentStatus","getStatus"));
+    if("FAILED".equals(status)||"CANCELLED".equals(status))finishSumUp("FAILED".equals(status)?"declined":"cancelled",null,null,null);
+    else finishSumUp("uncertain",null,null,null);
+   }else finishSumUp("uncertain",null,null,null);
+  }catch(Exception e){finishSumUp("uncertain",null,null,null);}
  }
  private static final String LOCAL_APP_URL="file:///android_asset/index.html";
  private static boolean isLocalAppPage(String url){
@@ -402,26 +457,17 @@ public class MainActivity extends Activity {
  @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
   super.onActivityResult(requestCode,resultCode,data);
   if(requestCode==SUMUP_LOGIN){
-   int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
-   if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL)openSumUpCheckout();
-   else finishSumUp("error","Connexion SumUp refusée");
-   return;
+   if(sumUpStage("login")){
+    int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
+    if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL)openSumUpReader();else cancelSumUpSetup();
+   }return;
   }
   if(requestCode==SUMUP_READER){
-   if(SumUpAPI.isCardReaderConnected())openSumUpCheckout();
-   else finishSumUp("cancelled","");
-   return;
+   if(sumUpStage("reader")){
+    if(SumUpAPI.isCardReaderConnected())openSumUpCheckout();else cancelSumUpSetup();
+   }return;
   }
-  if(requestCode==SUMUP_CHECKOUT){
-   int code=data==null?-1:data.getIntExtra(SumUpAPI.Response.RESULT_CODE,-1);
-   if(code==SumUpAPI.Response.ResultCode.SUCCESSFUL){
-    String tx=data.getStringExtra(SumUpAPI.Response.TX_CODE);
-    if(tx!=null&&!tx.isEmpty())finishSumUp("success",tx);
-    else finishSumUp("uncertain","");
-   }else if(code==SumUpAPI.Response.ResultCode.ERROR_UNKNOWN_TRANSACTION_STATUS)finishSumUp("uncertain","");
-   else finishSumUp("cancelled","");
-   return;
-  }
+  if(requestCode==SUMUP_CHECKOUT){handleSumUpCheckout(data);return;}
   if(requestCode==TaxiContactsBridge.CONTACT_PICK&&taxiContacts!=null)taxiContacts.picked(resultCode,data);
   if(requestCode==91){
    prompting=false;
@@ -600,12 +646,11 @@ public class MainActivity extends Activity {
     }
    },"TaxiPaymentSound");
    web.addJavascriptInterface(new Object(){
-    @android.webkit.JavascriptInterface public void checkout(String amount){
-     runOnUiThread(()->{
-      String url=web==null?null:web.getUrl();
-      if(isLocalAppPage(url))beginSumUpPayment(amount);
-     });
+    @android.webkit.JavascriptInterface public void checkout(String courseId,String attemptId,int cents){
+     runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))beginSumUpPayment(courseId,attemptId,cents);});
     }
+    @android.webkit.JavascriptInterface public void recover(){runOnUiThread(()->publishSumUp());}
+    @android.webkit.JavascriptInterface public void ack(String attemptId){runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))ackSumUp(attemptId);});}
    },"TaxiSumUp");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
@@ -851,6 +896,7 @@ public class MainActivity extends Activity {
   if(taxiContacts!=null)taxiContacts.hideBubble();
   if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))web.evaluateJavascript("window.dispatchEvent(new Event('taxi-native-resume'))",null);
   resumed=true;
+  if(unlocked)publishSumUp();
   if(unlocked)checkIdleTimeout();
   else scheduleFingerprint();
  }

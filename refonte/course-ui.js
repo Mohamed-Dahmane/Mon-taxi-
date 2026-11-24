@@ -17,7 +17,7 @@ const storage={
  },
  save(state){localStorage.setItem(storeKey,JSON.stringify({version:1,state}));}
 };
-let controller,selected=null,cashDraft=null;
+let controller,selected=null,cashDraft=null,sumupDraft=null;
 function message(value="",error=false){$('status').textContent=value;$('status').dataset.error=String(error);}
 function safe(action){try{message();action();}catch(e){message(e.message||"Action impossible",true);}}
 try{controller=window.createTaxiCourseController(storage);}catch(e){message(e.message,true);document.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);return;}
@@ -37,9 +37,38 @@ function renderCashTotals(){
  const ledger=controller.snapshot().ledger;
  const cash=ledger.filter(e=>e.method==="cash"&&e.paidAt&&localDate(new Date(e.paidAt))===today).reduce((sum,e)=>sum+e.amountCents,0);
  $('home-cash').textContent=euros(cash);
- $('home-receipts').textContent=euros(cash);
+ const card=ledger.filter(e=>e.method==="sumup"&&e.paidAt&&localDate(new Date(e.paidAt))===today).reduce((sum,e)=>sum+e.amountCents,0);
+ $('home-card').textContent=euros(card);$('accounts-card').textContent=euros(card);
+ $('home-receipts').textContent=euros(cash+card);
  $('accounts-cash').textContent=euros(cash);
 }
+function recoverSumUp(){if(typeof window.TaxiSumUp?.recover==="function")window.TaxiSumUp.recover();}
+function ackSumUp(id){if(typeof window.TaxiSumUp?.ack==="function")window.TaxiSumUp.ack(id);}
+window.addEventListener("mon-taxi-sumup-result",e=>{
+ try{
+  const d=e.detail;if(!d||!d.courseId||!d.attemptId)return;
+  const c=controller.snapshot().courses.find(x=>x.id===d.courseId);
+  if(!c)return;
+  if(c.status==="archived"&&c.payment?.attemptId===d.attemptId&&c.payment?.reference===d.transactionCode){ackSumUp(d.attemptId);return;}
+  if(c.lastPaymentAttempt?.attemptId===d.attemptId&&c.lastPaymentAttempt.status===d.status){ackSumUp(d.attemptId);return;}
+  if(c.status!=="payment_pending"||c.payment?.attemptId!==d.attemptId)return;
+  const result=controller.receiveSumUp(c.id,d);
+  if(result.status==="archived"){
+   ackSumUp(d.attemptId);
+   if(selected===c.id){selected=null;sumupDraft=null;$('amount').value="";show("home");}
+   else{renderLists();renderCashTotals();}
+   message("Paiement SumUp confirmé : "+euros(result.payment.amountCents)+". Course archivée.");
+  }else if(result.status==="awaiting_payment"){
+   ackSumUp(d.attemptId);
+   if(selected===c.id){$('amount').value=String(c.payment.amountCents/100).replace(".",",");show("payment");}
+   message("Paiement non effectué. La course reste à payer.");
+  }else{
+   if(selected===c.id&& !$('sumup').hidden)show("sumup");
+   if(d.status==="uncertain")message("Statut incertain : ne pas relancer ni encaisser en espèces pour cette course avant vérification.",true);
+  }
+ }catch(error){message(error.message||"Résultat SumUp à vérifier. Ne pas relancer.",true);}
+});
+window.addEventListener("taxi-native-resume",recoverSumUp);
 const labels={planned:"Client à charger",loaded:"Client chargé",in_progress:"Course en cours",awaiting_payment:"En attente de paiement",payment_pending:"Paiement en attente",archived:"Course archivée"};
 function launchWaze(c){
  if(c.status!=="in_progress")throw Error("La course doit être démarrée.");
@@ -68,7 +97,7 @@ function card(c,archived=false){
  const detail=document.createElement("p");detail.className="muted";detail.textContent=[c.kind==="reservation"?"Réservation":"Course directe",c.direction==="pickup"?"Pick-up":"Dépose",c.date,c.time,labels[c.status]].filter(Boolean).join(" · ");
  box.append(h,p,detail);
  if(archived&&c.payment){const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);}
- if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
+ if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
  return box;
 }
 function renderLists(){
@@ -83,7 +112,7 @@ function show(id){
  if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
  if(['ride','payment','cash','sumup'].includes(id)){
   const c=current();if(!c||c.status==="archived")throw Error("Aucune course active");
-  if(id!=="ride"&&c.status!=="awaiting_payment")throw Error("La course doit être terminée avant le paiement");
+  if(id!=="ride"&&c.status!=="awaiting_payment"&&!(id==="sumup"&&c.status==="payment_pending"))throw Error("La course doit être terminée avant le paiement");
   if(id==="ride"){
    $('ride-step').textContent=labels[c.status];$('ride-route').textContent=route(c);
    $('ride-next').textContent=actions[c.status]||"Accéder au paiement";$('ride-next').disabled=c.status==="payment_pending";
@@ -96,9 +125,18 @@ function show(id){
     if(!cashDraft||cashDraft.id!==c.id)throw Error("Montant espèces à confirmer.");
     $('cash-route').textContent=route(c);$('cash-confirm-amount').textContent=euros(cashDraft.cents);
    }
+   if(id==="sumup"){
+    const pending=c.status==="payment_pending";
+    if(!pending&&(!sumupDraft||sumupDraft.id!==c.id))throw Error("Montant carte à confirmer.");
+    $('sumup-route').textContent=route(c);
+    $('sumup-amount').textContent=euros(pending?c.payment.amountCents:sumupDraft.cents);
+    $('sumup-confirm').hidden=pending;$('sumup-back').hidden=pending;$('sumup-recover').hidden=!pending;
+    $('sumup-message').textContent=pending?"Paiement en attente de confirmation. Ne pas recommencer.":"Confirme l’envoi du montant au Solo Lite.";
+   }
   }
  }
  if(id!=="cash")cashDraft=null;
+ if(id!=="sumup")sumupDraft=null;
  if(id==="planning"||id==="archives")renderLists();
  if(id==="home"||id==="accounts")renderCashTotals();
  screens.forEach(e=>e.hidden=e.id!==id);
@@ -123,7 +161,7 @@ document.addEventListener("submit",e=>{
 });
 document.addEventListener("click",e=>{
  const b=e.target.closest("button");if(!b||b.disabled)return;
- if(b.dataset.course){safe(()=>{selected=b.dataset.course;$('amount').value="";const c=current();if(!c)throw Error("Course inconnue");show(c.status==="awaiting_payment"?"payment":"ride");});return;}
+ if(b.dataset.course){safe(()=>{selected=b.dataset.course;$('amount').value="";const c=current();if(!c)throw Error("Course inconnue");show(c.status==="awaiting_payment"?"payment":c.status==="payment_pending"?"sumup":"ride");if(c.status==="payment_pending")recoverSumUp();});return;}
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");
   if(c.status==="planned"){controller.load(c.id);show("ride");}
@@ -132,6 +170,22 @@ document.addEventListener("click",e=>{
   else if(c.status==="awaiting_payment")show("payment");
   else throw Error("Action incompatible avec le statut de la course.");
  });return;}
+ if(b.id==="pay-sumup"){safe(()=>{
+  const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
+  const cents=readCashCents($('amount').value);
+  if(cents<100||cents>9999900)throw Error("Montant terminal : de 1 à 99 999 euros.");
+  sumupDraft={id:c.id,cents};show("sumup");
+ });return;}
+ if(b.id==="sumup-confirm"){safe(()=>{
+  const c=current(),draft=sumupDraft;
+  if($('sumup').hidden||!draft||draft.id!==c?.id||c.status!=="awaiting_payment")throw Error("Aucun paiement carte à confirmer.");
+  if(typeof window.TaxiSumUp?.checkout!=="function")throw Error("Terminal disponible uniquement sur Android.");
+  if(controller.snapshot().courses.some(x=>x.status==="payment_pending"))throw Error("Une tentative SumUp doit être vérifiée avant une nouvelle.");
+  const attempt=newId();
+  controller.beginSumUp(c.id,draft.cents,attempt);
+  show("sumup");window.TaxiSumUp.checkout(c.id,attempt,draft.cents);
+ });return;}
+ if(b.id==="sumup-recover"){safe(()=>{recoverSumUp();});return;}
  if(b.id==="pay-cash"){safe(()=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
   cashDraft={id:c.id,cents:readCashCents($('amount').value)};
@@ -154,4 +208,5 @@ document.addEventListener("click",e=>{
 renderLists();
 renderCashTotals();
 resumeWaze();
+recoverSumUp();
 })();
