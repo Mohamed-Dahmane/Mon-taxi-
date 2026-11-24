@@ -38,6 +38,57 @@ function showPaymentSuccess(c){
   show("success");
 }
 const euros=cents=>new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR"}).format(cents/100);
+// A monetary field always represents integer cents; typing appends digits from the right.
+function moneyFormat(digits){
+ const clean=String(digits).replace(/^0+(?=\d)/,"");
+ if(!/^\d{0,11}$/.test(clean))throw Error("Montant trop élevé ou invalide.");
+ const padded=(clean||"0").padStart(3,"0");
+ return padded.slice(0,-2)+","+padded.slice(-2);
+}
+function moneyField(e){return e.target instanceof HTMLInputElement&&e.target.hasAttribute("data-money");}
+function writeMoney(el,digits){
+ const value=moneyFormat(digits);el.value=value;el.setSelectionRange(value.length,value.length);
+}
+function selectedDigits(el){
+ const v=el.value,lo=el.selectionStart??v.length,hi=el.selectionEnd??v.length;
+ return {before:v.slice(0,lo).replace(/\D/g,""),after:v.slice(hi).replace(/\D/g,""),all:lo===0&&hi===v.length,selected:hi>lo};
+}
+document.addEventListener("beforeinput",e=>{
+ if(!moneyField(e)||!e.cancelable||e.isComposing)return;
+ const el=e.target,sel=selectedDigits(el),type=e.inputType||"";
+ if(type==="insertText"&&typeof e.data==="string"&&/^[0-9.,]+$/.test(e.data)){
+  // Multi-character values with an explicit decimal separator can come from autofill.
+  if(e.data.length>1&&/^\d{1,9}[,.]\d{2}$/.test(e.data))return;
+  e.preventDefault();
+  if(!/^\d+$/.test(e.data))return;
+  try{writeMoney(el,sel.before+e.data+sel.after);}catch(err){message(err.message,true);}
+ }else if(["deleteContentBackward","deleteContentForward","deleteByCut"].includes(type)){
+  e.preventDefault();
+  let before=sel.before,after=sel.after;
+  if(!sel.selected){if(type==="deleteContentBackward")before=before.slice(0,-1);else if(type==="deleteContentForward")after=after.slice(1);}
+  writeMoney(el,before+after);
+ }
+});
+document.addEventListener("input",e=>{
+ if(!moneyField(e)||e.isComposing)return;
+ const el=e.target,v=el.value;
+ // Non-cancelable mobile edits may append a digit after the two decimal places.
+ // Do not turn malformed pasted decimal amounts into other financial amounts.
+ if(/^\d+$/.test(v)||(/^\d+,\d{0,3}$/.test(v)&&e.inputType==="deleteContentBackward")){
+  try{writeMoney(el,v.replace(/\D/g,""));}catch(err){message(err.message,true);}
+ }else if(/^\d+,\d{3}$/.test(v)&&e.inputType==="insertText"&&/^\d$/.test(e.data||"")){
+  try{writeMoney(el,v.replace(/\D/g,""));}catch(err){message(err.message,true);}
+ }else if(/^\d{1,9}\.\d{2}$/.test(v)){el.value=v.replace(".",",");}
+});
+document.addEventListener("paste",e=>{
+ if(!moneyField(e)||!e.clipboardData)return;
+ e.preventDefault();const v=e.clipboardData.getData("text").trim();
+ try{
+  if(/^\d{1,9}[,.]\d{2}$/.test(v))writeMoney(e.target,v.replace(/\D/g,""));
+  else if(/^\d{1,11}$/.test(v))writeMoney(e.target,v);
+  else throw Error("Montant collé invalide : utilise des chiffres ou deux décimales.");
+ }catch(err){message(err.message,true);}
+});
 function readCashCents(raw){
  const normalized=String(raw).trim();
  if(!/^\d{1,9}(?:[,.]\d{1,2})?$/.test(normalized))throw Error("Montant espèces invalide : deux décimales maximum.");
@@ -251,7 +302,7 @@ function card(c,archived=false){
    const panel=document.createElement("div");panel.className="card";panel.hidden=true;
    const note=document.createElement("p");note.textContent=c.payment.method==="sumup"?"SumUp · uniquement après remboursement confirmé dans SumUp. Aucun remboursement bancaire déclenché ici. Les frais estimés et commissions restent inchangés.":"Espèces · uniquement après avoir rendu l’argent. Les commissions restent inchangées.";
    const amountLabel=document.createElement("label");amountLabel.className="field";amountLabel.textContent="Montant remboursé (€)";
-   const amount=document.createElement("input");amount.type="text";amount.inputMode="decimal";amount.value=(c.payment.amountCents/100).toFixed(2).replace(".",",");amountLabel.append(amount);
+   const amount=document.createElement("input");amount.type="text";amount.inputMode="numeric";amount.setAttribute("data-money","");amount.value=(c.payment.amountCents/100).toFixed(2).replace(".",",");amountLabel.append(amount);
    const label=document.createElement("label");label.className="field";label.textContent="Date effective du remboursement ";
    const date=document.createElement("input");date.type="date";date.min=window.TaxiCleanCore.paymentDay(c.payment.paidAt);date.max=today();date.value=today();label.append(date);
    const yes=document.createElement("button");yes.type="button";yes.textContent="Confirmer le remboursement effectué";

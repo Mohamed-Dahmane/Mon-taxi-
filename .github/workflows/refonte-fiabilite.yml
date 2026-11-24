@@ -316,6 +316,11 @@ jobs:
                     assert.equal(await page.locator('#payment').isVisible(),true);
                     assert.equal(await page.locator('#status').getAttribute('data-error'),'true');
                   }
+                  const money=page.locator('#amount');await money.fill('');
+                  await money.pressSequentially('6100');assert.equal(await money.inputValue(),'61,00');
+                  await money.press('Backspace');assert.equal(await money.inputValue(),'6,10');
+                  await money.fill('');await money.pressSequentially('5487');assert.equal(await money.inputValue(),'54,87');
+                  await money.fill('');await money.pressSequentially('150');assert.equal(await money.inputValue(),'1,50');
                   await page.locator('#amount').fill('50,25');await page.locator('#pay-cash').click();await inspect('cash');
                   assert.match(await page.locator('#cash-confirm-amount').innerText(),/50,25/);
                   await page.locator('[data-go=payment]:visible').click();await page.locator('#pay-sumup').click();await inspect('sumup');
@@ -394,7 +399,10 @@ jobs:
                   assert.equal(finalLedger.length,2);assert.equal(finalLedger[1].method,'sumup');assert.equal(finalLedger[1].amountCents,6000);
                   await page.locator('[data-go=archives]').click();assert.equal(await page.locator('#archive-list article').count(),2);
                   await page.locator('[data-page=accounts]').click();
-                  await page.locator('#entry-appli').fill('20,00');await page.locator('#entry-commission').fill('10,00');await page.locator('#entry-fuel').fill('15,00');await page.locator('#entry-expense').fill('5,00');
+                  await page.locator('#entry-appli').fill('');await page.locator('#entry-appli').pressSequentially('2000');assert.equal(await page.locator('#entry-appli').inputValue(),'20,00');
+                  await page.locator('#entry-commission').fill('');await page.locator('#entry-commission').pressSequentially('1000');assert.equal(await page.locator('#entry-commission').inputValue(),'10,00');
+                  await page.locator('#entry-fuel').fill('1500');assert.equal(await page.locator('#entry-fuel').inputValue(),'15,00');
+                  await page.locator('#entry-expense').fill('500');assert.equal(await page.locator('#entry-expense').inputValue(),'5,00');
                   await page.locator('#accounts-entry button[type=submit]').click();
                   assert.match(await page.locator('#accounts-cashReal').innerText(),/40,25/);
                   assert.match(await page.locator('#accounts-fee').innerText(),/1,01/);
@@ -869,7 +877,7 @@ jobs:
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2107'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2108'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -897,7 +905,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2107-signe
+          name: Mon-Taxi-Pro-2108-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt
