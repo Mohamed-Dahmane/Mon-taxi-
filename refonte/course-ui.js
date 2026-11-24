@@ -17,12 +17,29 @@ const storage={
  },
  save(state){localStorage.setItem(storeKey,JSON.stringify({version:1,state}));}
 };
-let controller,selected=null;
+let controller,selected=null,cashDraft=null;
 function message(value="",error=false){$('status').textContent=value;$('status').dataset.error=String(error);}
 function safe(action){try{message();action();}catch(e){message(e.message||"Action impossible",true);}}
 try{controller=window.createTaxiCourseController(storage);}catch(e){message(e.message,true);document.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);return;}
 const current=()=>controller.snapshot().courses.find(c=>c.id===selected);
 const route=c=>c.from+" → "+c.to;
+const euros=cents=>new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR"}).format(cents/100);
+function readCashCents(raw){
+ const normalized=String(raw).trim();
+ if(!/^\d{1,9}(?:[,.]\d{1,2})?$/.test(normalized))throw Error("Montant espèces invalide : deux décimales maximum.");
+ const [whole,fraction=""]=normalized.replace(",",".").split(".");
+ const cents=Number(whole)*100+Number(fraction.padEnd(2,"0"));
+ if(!Number.isSafeInteger(cents)||cents<=0)throw Error("Renseigne le montant positif réellement reçu.");
+ return cents;
+}
+function renderCashTotals(){
+ const today=localDate(new Date());
+ const ledger=controller.snapshot().ledger;
+ const cash=ledger.filter(e=>e.method==="cash"&&e.paidAt&&localDate(new Date(e.paidAt))===today).reduce((sum,e)=>sum+e.amountCents,0);
+ $('home-cash').textContent=euros(cash);
+ $('home-receipts').textContent=euros(cash);
+ $('accounts-cash').textContent=euros(cash);
+}
 const labels={planned:"Client à charger",loaded:"Client chargé",in_progress:"Course en cours",awaiting_payment:"En attente de paiement",payment_pending:"Paiement en attente",archived:"Course archivée"};
 function launchWaze(c){
  if(c.status!=="in_progress")throw Error("La course doit être démarrée.");
@@ -50,6 +67,7 @@ function card(c,archived=false){
  const p=document.createElement("p");p.textContent=route(c);
  const detail=document.createElement("p");detail.className="muted";detail.textContent=[c.kind==="reservation"?"Réservation":"Course directe",c.direction==="pickup"?"Pick-up":"Dépose",c.date,c.time,labels[c.status]].filter(Boolean).join(" · ");
  box.append(h,p,detail);
+ if(archived&&c.payment){const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);}
  if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
  return box;
 }
@@ -72,9 +90,17 @@ function show(id){
    $('waze-reopen').hidden=c.status!=="in_progress";
    $('waze-overlay').hidden=c.status!=="in_progress";
    document.querySelectorAll('[data-step]').forEach(e=>{if(e.dataset.step===c.status)e.setAttribute("aria-current","step");else e.removeAttribute("aria-current");});
-  }else $('payment-route').textContent=route(c);
+  }else {
+   $('payment-route').textContent=route(c);
+   if(id==="cash"){
+    if(!cashDraft||cashDraft.id!==c.id)throw Error("Montant espèces à confirmer.");
+    $('cash-route').textContent=route(c);$('cash-confirm-amount').textContent=euros(cashDraft.cents);
+   }
+  }
  }
+ if(id!=="cash")cashDraft=null;
  if(id==="planning"||id==="archives")renderLists();
+ if(id==="home"||id==="accounts")renderCashTotals();
  screens.forEach(e=>e.hidden=e.id!==id);
  document.querySelectorAll('[data-page]').forEach(e=>{if(e.dataset.page===id)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current')});
  window.scrollTo(0,0);
@@ -106,10 +132,26 @@ document.addEventListener("click",e=>{
   else if(c.status==="awaiting_payment")show("payment");
   else throw Error("Action incompatible avec le statut de la course.");
  });return;}
+ if(b.id==="pay-cash"){safe(()=>{
+  const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
+  cashDraft={id:c.id,cents:readCashCents($('amount').value)};
+  show("cash");
+ });return;}
+ if(b.id==="cash-confirm"){safe(()=>{
+  const c=current(),draft=cashDraft;
+  if($('cash').hidden||!draft||c?.id!==draft.id||c.status!=="awaiting_payment")throw Error("Aucun paiement espèces à confirmer.");
+  b.disabled=true;
+  try{
+   controller.cash(draft.id,draft.cents);
+   cashDraft=null;selected=null;$('amount').value="";
+   show("home");message("Espèces enregistrées : "+euros(draft.cents)+". Course archivée.");
+  }finally{b.disabled=false;}
+ });return;}
  if(b.id==="waze-reopen"){safe(()=>{const c=current();if(!c)throw Error("Course inconnue");launchWaze(c);});return;}
  if(b.id==="waze-overlay"){safe(()=>{if(current()?.status!=="in_progress")throw Error("Aucune course en cours.");if(typeof window.TaxiContacts?.enableWazeOverlay!=="function")throw Error("Disponible uniquement sur Android.");window.TaxiContacts.enableWazeOverlay();});return;}
  const id=b.dataset.page||b.dataset.go;if(id)safe(()=>show(id));
 });
 renderLists();
+renderCashTotals();
 resumeWaze();
 })();

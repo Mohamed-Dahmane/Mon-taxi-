@@ -38,7 +38,8 @@ jobs:
                     return r.fulfill({contentType:file.endsWith('.js')?'application/javascript':'text/html',body:fs.readFileSync(root+'/'+file)});
                   });
                   await context.addInitScript(()=>{
-                    window.wazeCalls=[];window.wazeAcks=[];window.overlayRequests=0;
+                    window.wazeCalls=[];window.wazeAcks=[];window.overlayRequests=0;window.terminalCalls=0;
+                    window.TaxiSumUp={checkout:()=>{window.terminalCalls++;throw Error('Appel terminal interdit pendant le test espèces');}};
                     window.TaxiContacts={
                       navigateWaze:(id,destination)=>{window.wazeCalls.push({id,destination});window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'opened',overlay:true}}));},
                       requestWazeReturn:()=>{},ackWazeReturn:id=>window.wazeAcks.push(id),enableWazeOverlay:()=>window.overlayRequests++
@@ -123,7 +124,15 @@ jobs:
                   assert.match(await page.locator('#ride-step').innerText(),/Course en cours/);
                   await page.locator('#waze-reopen').click();assert.equal(await page.evaluate(()=>window.wazeCalls.length),2);
                   await page.locator('#ride-next').click();await inspect('payment');
-                  await page.locator('#pay-cash').click();await inspect('cash');
+                  await page.locator('#pay-cash').click();
+                  assert.equal(await page.locator('#payment').isVisible(),true);
+                  for(const invalid of ['0','-10','2,345','1e3','abc']){
+                    await page.locator('#amount').fill(invalid);await page.locator('#pay-cash').click();
+                    assert.equal(await page.locator('#payment').isVisible(),true);
+                    assert.equal(await page.locator('#status').getAttribute('data-error'),'true');
+                  }
+                  await page.locator('#amount').fill('50,25');await page.locator('#pay-cash').click();await inspect('cash');
+                  assert.match(await page.locator('#cash-confirm-amount').innerText(),/50,25/);
                   await page.locator('[data-go=payment]:visible').click();await page.locator('#pay-sumup').click();await inspect('sumup');
                   await page.locator('[data-page=planning]').click();
                   await page.locator('#course-list article').filter({hasText:'Client direct fictif'}).locator('button').click();
@@ -137,9 +146,31 @@ jobs:
                   await page.reload();await page.locator('[data-page=planning]').click();
                   await page.locator('#course-list article').filter({hasText:'Client réservation fictif'}).locator('button').click();
                   assert.equal(await page.locator('#payment').isVisible(),true);
-                  await page.locator('[data-page=home]').click();await page.locator('[data-go=archives]').click();
-                  assert.equal(await page.locator('#archive-list article').count(),0);
+                  await page.locator('#amount').fill('50,25');await page.locator('#pay-cash').click();
+                  await page.evaluate(()=>{window.originalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw Error('Écriture locale impossible');};});
+                  await page.locator('#cash-confirm').click();
+                  assert.equal(await page.locator('#cash').isVisible(),true);
+                  assert.match(await page.locator('#status').innerText(),/Écriture locale impossible/);
                   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state.ledger.length),0);
+                  await page.evaluate(()=>{Storage.prototype.setItem=window.originalSetItem;});
+                  await page.locator('#cash-confirm').click();
+                  assert.equal(await page.locator('#home').isVisible(),true);
+                  assert.match(await page.locator('#home-cash').innerText(),/50,25/);
+                  await page.evaluate(()=>document.getElementById('cash-confirm').click());
+                  assert.equal(await page.evaluate(()=>window.terminalCalls),0);
+                  const ledger=await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state.ledger);
+                  assert.equal(ledger.length,1);assert.equal(ledger[0].method,'cash');assert.equal(ledger[0].amountCents,5025);
+                  assert.equal(ledger[0].reference,'cash:'+ledger[0].courseId);assert.ok(ledger[0].paidAt);
+                  await page.locator('[data-page=accounts]').click();
+                  assert.match(await page.locator('#accounts-cash').innerText(),/50,25/);
+                  await page.reload();
+                  assert.match(await page.locator('#home-cash').innerText(),/50,25/);
+                  await page.locator('[data-go=archives]').click();
+                  assert.equal(await page.locator('#archive-list article').count(),1);
+                  assert.match(await page.locator('#archive-list').innerText(),/Espèces.*50,25/);
+                  await page.locator('[data-page=planning]').click();
+                  assert.equal(await page.locator('#course-list article').count(),1);
+                  assert.match(await page.locator('#course-list').innerText(),/Client direct fictif/);
                 }catch(e){report.push({width,height,ok:false,error:e.message});process.exitCode=1}
                 finally{await context.close();fs.writeFileSync('interface-report/results.json',JSON.stringify(report,null,2))}
               }
@@ -251,6 +282,29 @@ jobs:
           console.log('Point 4 : pont Waze exclusif, destination encodée, retour associé à la course et aucune clôture automatique.');
           JS
 
+  cash:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier l’écriture atomique et l’autonomie des espèces
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict'),create=require('./refonte/course-controller.js');
+          let stored=null,fail=false;
+          const storage={load:()=>stored,save:s=>{if(fail)throw Error('disque indisponible');stored=JSON.parse(JSON.stringify(s));}};
+          const c=create(storage);
+          c.plan({id:'cash'});assert.throws(()=>c.cash('cash',5025));
+          c.load('cash');c.start('cash');c.finish('cash');
+          for(const n of [0,-1,0.5,Infinity,NaN])assert.throws(()=>c.cash('cash',n));
+          fail=true;assert.throws(()=>c.cash('cash',5025));assert.equal(c.snapshot().ledger.length,0);
+          assert.equal(c.snapshot().courses[0].status,'awaiting_payment');
+          fail=false;c.cash('cash',5025);assert.throws(()=>c.cash('cash',5025));
+          const recovered=create(storage).snapshot();
+          assert.equal(recovered.courses[0].status,'archived');assert.equal(recovered.ledger.length,1);
+          assert.equal(recovered.ledger[0].amountCents,5025);assert.equal(recovered.ledger[0].method,'cash');
+          assert.equal(recovered.ledger[0].reference,'cash:cash');assert.ok(recovered.ledger[0].paidAt);
+          console.log('Point 5 : espèces locales, aucun terminal, écriture atomique, reprise et dédoublonnage OK.');
+          JS
   integration:
     runs-on: ubuntu-24.04
     steps:
@@ -258,6 +312,6 @@ jobs:
       - name: Empêcher une validation finale prématurée
         run: |
           if grep -q 'non raccordé' refonte/interface.html; then
-            echo 'RESTE A FAIRE : paiements réels, comptabilité et répertoire définitifs ; validation matérielle Waze.'
+            echo 'RESTE A FAIRE : terminal réel, comptabilité et répertoire définitifs ; validation matérielle Waze.'
             exit 1
           fi
