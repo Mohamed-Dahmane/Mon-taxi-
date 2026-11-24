@@ -1,7 +1,7 @@
 name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
-    branches: [test/sumup-air-2104-20261124]
+    branches: [fix/sumup-air-reconnect-2105-20261124]
     paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
 permissions:
@@ -559,6 +559,14 @@ jobs:
           assert.match(warm,/pendingSumUp\(\)==null&&SumUpAPI.isLoggedIn\(\)&&!SumUpAPI.isCardReaderConnected\(\)/);
           assert.match(warm,/SumUpAPI.prepareForCheckout\(\)/);
           assert.doesNotMatch(warm,/SumUpAPI\.checkout|openSumUpCheckout|openCardReaderPage|setSumUpStage/);
+          const reconnect=m.slice(m.indexOf('private void openSumUpReader()'),m.indexOf('private void openSumUpCheckout()'));
+          assert.ok(reconnect.includes('SumUpAPI.prepareForCheckout()'));
+          assert.ok(reconnect.includes('setSumUpStage("reconnecting")'));
+          assert.ok(reconnect.includes('elapsedRealtime()+8000L'));
+          assert.ok(reconnect.includes('!attempt.equals(p.optString("attemptId"))'));
+          assert.ok(reconnect.includes('if(resumed&&SumUpAPI.isCardReaderConnected()){openSumUpCheckout();return;}'));
+          assert.ok(reconnect.includes('if(android.os.SystemClock.elapsedRealtime()>=deadline)'));
+          assert.doesNotMatch(reconnect,/SumUpAPI\.checkout\(/);
           assert.match(m,/transactionField\(info,"getAmount"\)/);
           assert.match(m,/cents!=p.getInt\("requestedCents"\)/);
           assert.match(m,/persistSumUp\(p\);publishSumUp\(\)/);
@@ -838,7 +846,7 @@ jobs:
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2104'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2105'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -866,7 +874,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2104-signe
+          name: Mon-Taxi-Pro-2105-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt
