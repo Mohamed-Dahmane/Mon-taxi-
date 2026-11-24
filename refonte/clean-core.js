@@ -84,13 +84,28 @@ function makeCore(){
   return {...s,fixed:{...(s.fixed||{}),[month]:cents}};
  }
  // Contre-écriture locale, uniquement après remboursement réellement effectué.
- function recordRefund(s,id,day,amountCents){
+ function recordRefund(s,id,day,amountCents,proof){
   const c=s.courses.find(x=>x.id===id),p=s.ledger.find(x=>x.courseId===id);
   if(!c||c.status!=="archived"||!p||!["cash","sumup"].includes(p.method)||c.refund)throw Error("Course non remboursable ou déjà remboursée");
   if(!validDay(day)||day<paymentDay(p.paidAt)||day>paymentDay(new Date().toISOString()))throw Error("Date de remboursement invalide");
   if(!validAmount(amountCents)||amountCents<=0||amountCents>p.amountCents)throw Error("Montant de remboursement invalide");
+  if(c.refundPending&&(!proof||proof.eventId==null||proof.reference!==p.reference||c.refundPending.amountCents!==amountCents))throw Error("Remboursement bancaire en attente de confirmation");
   const refund={amountCents,day,recordedAt:new Date().toISOString()};
-  return {...s,courses:s.courses.map(x=>x.id===id?{...x,refund}:x)};
+  if(proof){refund.eventId=String(proof.eventId);refund.verifiedBy="sumup";}
+  return {...s,courses:s.courses.map(x=>{if(x.id!==id)return x;const next={...x,refund};delete next.refundPending;return next;})};
+ }
+ function prepareRefund(s,id,amountCents){
+  const c=s.courses.find(x=>x.id===id),p=s.ledger.find(x=>x.courseId===id);
+  if(!c||c.status!=="archived"||p?.method!=="sumup"||c.refund||!Number.isSafeInteger(amountCents)||amountCents<1||amountCents>p.amountCents)throw Error("Remboursement non disponible");
+  if(c.refundPending){if(c.refundPending.amountCents!==amountCents)throw Error("Montant déjà réservé");return s;}
+  return {...s,courses:s.courses.map(x=>x.id===id?{...x,refundPending:{amountCents}}:x)};
+ }
+ function confirmRefund(s,id,result){
+  const c=s.courses.find(x=>x.id===id),p=s.ledger.find(x=>x.courseId===id);
+  if(!c||!p||p.method!=="sumup"||!result||result.reference!==p.reference||result.attemptId!==p.attemptId||result.status!=="confirmed"||typeof result.eventId!=="string"||!result.eventId||!Number.isFinite(Date.parse(result.timestamp)))throw Error("Confirmation SumUp non concordante");
+  if(c.refund){if(c.refund.eventId===result.eventId&&c.refund.amountCents===result.amountCents)return s;throw Error("Remboursement déjà enregistré");}
+  if(!c.refundPending||c.refundPending.amountCents!==result.amountCents)throw Error("Montant du remboursement non concordant");
+  return recordRefund(s,id,paymentDay(result.timestamp),result.amountCents,result);
  }
  function dayTotals(s,day){
   if(!validDay(day))throw Error("Jour invalide");
@@ -191,6 +206,10 @@ function makeCore(){
   }
   for(const c of s.courses){
    if(c.status==="archived"&&!ledgerIds.has(c.id))throw Error("Archive sans encaissement");
+   if(c.refundPending!==undefined){
+    const p=s.ledger.find(x=>x.courseId===c.id);
+    if(c.status!=="archived"||p?.method!=="sumup"||c.refund||!validAmount(c.refundPending?.amountCents)||c.refundPending.amountCents<1||c.refundPending.amountCents>p.amountCents)throw Error("Remboursement en attente invalide");
+   }
    if(c.refund!==undefined){
     const p=s.ledger.find(x=>x.courseId===c.id),r=c.refund;
     if(!r||c.status!=="archived"||!p||!["cash","sumup"].includes(p.method)||!validAmount(r.amountCents)||r.amountCents<=0||r.amountCents>p.amountCents||!validDay(r.day)||r.day<paymentDay(p.paidAt)||typeof r.recordedAt!=="string"||!Number.isFinite(Date.parse(r.recordedAt))||r.day>paymentDay(r.recordedAt))throw Error("Remboursement incohérent");
@@ -203,17 +222,17 @@ function makeCore(){
   return {...s,entries:s.entries||{},fixed:s.fixed||{}};
  }
  function backup(s){
-  validateState(s);if(s.courses.some(c=>c.status==="payment_pending"))throw Error("Attendre la résolution du paiement avant sauvegarde.");
+  validateState(s);if(s.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Attendre la résolution du paiement avant sauvegarde.");
   return JSON.stringify({format:"mon-taxi-android-autonome",version:1,createdAt:new Date().toISOString(),state:s});
  }
  function readBackup(raw){
   const b=JSON.parse(raw);
   if(b?.format!=="mon-taxi-android-autonome"||b.version!==1)throw Error("Ce fichier ne provient pas de la nouvelle application.");
   const s=validateState(b.state);
-  if(s.courses.some(c=>c.status==="payment_pending"))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
+  if(s.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
   return s;
  }
- return {empty,addCourse,apply,savePaymentDraft,recordCash,recordRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
+ return {empty,addCourse,apply,savePaymentDraft,recordCash,recordRefund,prepareRefund,confirmRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();

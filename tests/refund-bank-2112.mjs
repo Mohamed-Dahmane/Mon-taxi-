@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import {processRefund} from "../supabase/functions/taxi-refund-v1/refund-engine.mjs";
+const x={mode:"start",reference:"TTEST",attemptId:"attempt",courseId:"course",paidCents:120,amountCents:120};
+const base={merchant_code:"M",transaction_code:"TTEST",foreign_transaction_id:"attempt",currency:"EUR",amount:1.2,id:"id",status:"SUCCESSFUL",payment_type:"POS",transaction_events:[]};
+let tx=structuredClone(base),locked=false,posts=0;
+const io={read:async()=>tx,reserve:async()=>{if(locked)return false;locked=true;return true;},refund:async()=>{posts++;throw Error("timeout");}};
+assert.equal((await processRefund(x,"M",io)).status,"pending");assert.equal(posts,1);
+assert.equal((await processRefund(x,"M",io)).status,"pending");assert.equal(posts,1);
+assert.equal((await processRefund({...x,mode:"status"},"M",io)).status,"pending");assert.equal(posts,1);
+tx={...base,status:"REFUNDED",transaction_events:[{id:12,event_type:"REFUND",status:"REFUNDED",amount:1.2,date:"2026-11-24"}]};
+assert.equal((await processRefund(x,"M",io)).status,"confirmed");assert.equal(posts,1);
+tx={...base,foreign_transaction_id:"other"};await assert.rejects(processRefund(x,"M",io));assert.equal(posts,1);
+tx={...base,transaction_events:[{event_type:"REFUND",status:"PENDING",amount:1.2}]};assert.equal((await processRefund(x,"M",io)).status,"pending");assert.equal(posts,1);
+console.log("Refund: exact identity, durable reservation, uncertain response, no duplicate, official event");

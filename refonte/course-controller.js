@@ -19,7 +19,7 @@ function create(core,sumupEvent,storage){
     monthly:month=>core.monthTotals(state,month),
     backup:()=>core.backup(state),
     restore(raw){
-      if(state.courses.some(c=>c.status==="payment_pending"))throw Error("Paiement en attente : restauration interdite.");
+      if(state.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Paiement en attente : restauration interdite.");
       const next=core.readBackup(raw);commit(clone(next));
     },
     plan(course){commit(core.addCourse(state,clone(course)));return clone(get(course.id))},
@@ -31,6 +31,8 @@ function create(core,sumupEvent,storage){
     load:id=>apply(id,{type:"load"}),
     start:id=>apply(id,{type:"start"}),
     finish:id=>apply(id,{type:"finish"}),
+    prepareRefund(id,amountCents){commit(core.prepareRefund(state,id,amountCents));return clone(get(id))},
+    confirmRefund(id,result){commit(core.confirmRefund(state,id,result));return clone(get(id))},
     refund(id,day,amountCents){commit(core.recordRefund(state,id,day,amountCents));return clone(get(id))},
     cash(id,cents){commit(core.recordCash(state,id,cents));return clone(get(id))},
     savePaymentDraft(id,cents){commit(core.savePaymentDraft(state,id,cents));return clone(get(id));},

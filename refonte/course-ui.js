@@ -92,6 +92,7 @@ document.addEventListener("paste",e=>{
 let moneyTarget=null;
 const moneyPad=document.createElement("div");
 moneyPad.className="money-pad";moneyPad.hidden=true;moneyPad.setAttribute("role","group");moneyPad.setAttribute("aria-label","Clavier des montants");
+const moneyCurrency=document.createElement("div");moneyCurrency.className="money-pad-currency";moneyCurrency.textContent="EUR · €";moneyPad.append(moneyCurrency);
 const keys=[["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],["00","00"],["0","0"],["back","⌫"],["clear","Effacer"],["done","Terminé"]];
 for(const [key,label] of keys){
  const button=document.createElement("button");button.type="button";button.dataset.moneyKey=key;button.textContent=label;
@@ -335,6 +336,20 @@ window.addEventListener("taxi-return-active-course",e=>safe(()=>{
 }));
 window.addEventListener("taxi-native-resume",resumeWaze);
 const actions={planned:"Charger",loaded:"Démarrer la course",in_progress:"Terminer la course"};
+const refundMessages=new Map();
+window.addEventListener("taxi-refund-result",e=>safe(()=>{
+ const d=e.detail,c=controller.snapshot().courses.find(x=>x.id===d?.courseId);
+ if(!c?.refundPending||c.payment?.reference!==d.reference||c.payment?.attemptId!==d.attemptId)return;
+ if(d.status==="confirmed"){controller.confirmRefund(c.id,d);refundMessages.set(c.id,"Remboursement confirmé par SumUp.");renderCashTotals();}
+ else refundMessages.set(c.id,String(d.message||"Remboursement en attente : ne pas recommencer hors de Mon Taxi."));
+ renderLists();
+}));
+function requestBankRefund(c,amount,mode){
+ if(typeof window.TaxiRefund?.request!=="function")throw Error("Remboursement bancaire disponible uniquement sur Android.");
+ const updated=controller.prepareRefund(c.id,amount);
+ window.TaxiRefund.request(updated.id,updated.payment.reference,updated.payment.attemptId,updated.payment.amountCents,amount,mode);
+ refundMessages.set(c.id,"Vérification SumUp en cours…");renderLists();
+}
 function card(c,archived=false){
  const box=document.createElement("article");box.className="card";
  const h=document.createElement("h3");h.textContent=c.client||(c.kind==="free"?"Course libre":"Course sans nom");
@@ -347,6 +362,25 @@ function card(c,archived=false){
   const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
   if(c.refund){
    const note=document.createElement("p");note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
+  }else if(c.payment.method==="sumup"&&typeof window.TaxiRefund?.request==="function"){
+   const note=document.createElement("p");note.setAttribute("role","status");note.textContent=refundMessages.get(c.id)||(c.refundPending?"Remboursement en attente de vérification officielle.":"Remboursement bancaire SumUp · les frais initiaux restent comptabilisés.");
+   box.append(note);
+   if(c.refundPending){
+    const verify=document.createElement("button");verify.type="button";verify.textContent="Vérifier le remboursement · "+euros(c.refundPending.amountCents);box.append(verify);
+    verify.addEventListener("click",()=>safe(()=>requestBankRefund(c,c.refundPending.amountCents,"status")));
+    const retry=document.createElement("button");retry.type="button";retry.textContent="Reprendre la demande après vérification";box.append(retry);
+    retry.addEventListener("click",()=>safe(()=>{if(confirm("Vérifier et poursuivre uniquement si aucune demande bancaire n’a été envoyée ?"))requestBankRefund(c,c.refundPending.amountCents,"start");}));
+   }else{
+    const b=document.createElement("button");b.type="button";b.textContent="Remboursement";box.append(b);
+    const panel=document.createElement("div");panel.className="card";panel.hidden=true;
+    const label=document.createElement("label");label.className="field";label.textContent="Montant à rembourser (€)";
+    const amount=document.createElement("input");amount.type="text";amount.inputMode="none";amount.setAttribute("data-money","");amount.value=(c.payment.amountCents/100).toFixed(2).replace(".",",");label.append(amount);
+    const yes=document.createElement("button");yes.type="button";yes.textContent="Confirmer le remboursement bancaire";
+    const no=document.createElement("button");no.type="button";no.textContent="Annuler";
+    panel.append(label,yes,no);box.append(panel);b.addEventListener("click",()=>{b.hidden=true;panel.hidden=false;});
+    no.addEventListener("click",()=>{panel.hidden=true;b.hidden=false;});
+    yes.addEventListener("click",()=>safe(()=>{const cents=entryCents(amount.value);if(cents<1||cents>c.payment.amountCents)throw Error("Montant invalide.");if(confirm("Rembourser "+euros(cents)+" via SumUp ?"))requestBankRefund(c,cents,"start");}));
+   }
   }else if(["cash","sumup"].includes(c.payment.method)){
    const b=document.createElement("button");b.type="button";b.textContent="Remboursement";box.append(b);
    const panel=document.createElement("div");panel.className="card";panel.hidden=true;
@@ -465,7 +499,7 @@ document.addEventListener("click",e=>{
  });return;}
  if(b.id==="backup-import"){safe(()=>{
   if($('accounts').hidden||typeof window.TaxiBackup?.pickJson!=="function")throw Error("Restauration disponible sur Android.");
-  if(controller.snapshot().courses.some(c=>c.status==="payment_pending"))throw Error("Paiement en attente : restauration interdite.");
+  if(controller.snapshot().courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Paiement en attente : restauration interdite.");
   clearRestore();window.TaxiBackup.pickJson();
  });return;}
  if(b.id==="backup-cancel"){clearRestore();return;}

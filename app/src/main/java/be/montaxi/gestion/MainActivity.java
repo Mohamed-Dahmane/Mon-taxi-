@@ -802,6 +802,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void verifyOnline(String courseId,String attemptId){runOnUiThread(()->verifySumUpOnline(courseId,attemptId));}
     @android.webkit.JavascriptInterface public void ack(String attemptId){runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))ackSumUp(attemptId);});}
    },"TaxiSumUp");
+   web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
    web.setWebChromeClient(new WebChromeClient());

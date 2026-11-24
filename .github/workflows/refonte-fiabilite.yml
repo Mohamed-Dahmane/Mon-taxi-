@@ -813,8 +813,26 @@ jobs:
             echo 'RESTE A FAIRE : essais matériels SumUp Air/Waze, comptabilité et répertoire définitifs.'
             exit 1
           fi
+  refund-contract:
+    needs: point8-precheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test remboursements isolés sans API réelle
+        run: |
+          node tests/refund-bank-2112.mjs
+          node <<'JS'
+          const assert=require('node:assert/strict'),create=require('./refonte/course-controller.js');
+          const c=create();c.plan({id:'r'});c.load('r');c.start('r');c.finish('r');c.beginSumUp('r',120,'a');
+          c.receiveSumUp('r',{status:'success',attemptId:'a',transactionCode:'T',amountCents:120,currency:'EUR'});
+          c.prepareRefund('r',120);assert.equal(c.snapshot().ledger.length,1);assert.equal(c.snapshot().courses[0].refund,undefined);
+          assert.throws(()=>c.refund('r',new Date().toISOString().slice(0,10),120));
+          const result={status:'confirmed',reference:'T',attemptId:'a',amountCents:120,eventId:'test-event',timestamp:new Date().toISOString()};
+          c.confirmRefund('r',result);c.confirmRefund('r',result);assert.equal(c.snapshot().courses[0].refund.amountCents,120);
+          assert.equal(c.snapshot().ledger.length,1);
+          JS
   points-1-to-9:
-    needs: [clean-data-gate, point8-precheck, isolation, assainissement, interface, course, waze, cash, sumup, no-history-import, accounting, directory]
+    needs: [clean-data-gate, point8-precheck, isolation, assainissement, interface, course, waze, cash, sumup, no-history-import, accounting, directory, refund-contract]
     runs-on: ubuntu-24.04
     steps:
       - name: Validation cumulative technique des points 1 à 9
@@ -914,7 +932,7 @@ jobs:
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2111'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2112'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -942,7 +960,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2111-signe
+          name: Mon-Taxi-Pro-2112-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt
