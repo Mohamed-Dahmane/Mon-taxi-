@@ -1,0 +1,56 @@
+name: Vérifier le parcours de course refondu
+on:
+  push:
+    branches: [refonte/base-saine-20261124]
+    paths: ['refonte/clean-core.js','refonte/course-controller.js','refonte/sumup-course-payment.js','.github/workflows/refonte-course-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  course:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests du parcours sans terminal ni données réelles
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict');
+          const create=require('./refonte/course-controller.js');
+          const c=create();
+          assert.deepEqual(c.snapshot(),{hotels:[],contacts:[],drivers:[],courses:[],ledger:[]});
+          function ready(id){c.plan({id});assert.equal(c.load(id).status,'loaded');assert.equal(c.start(id).status,'in_progress');assert.equal(c.finish(id).status,'awaiting_payment');}
+          ready('cash');
+          assert.equal(c.cash('cash',5000).status,'archived');
+          assert.throws(()=>c.cash('cash',5000));
+          assert.equal(c.snapshot().ledger.length,1);
+          assert.equal(c.snapshot().ledger[0].method,'cash');
+          assert.equal(c.snapshot().ledger[0].amountCents,5000);
+          ready('card');
+          assert.throws(()=>c.beginSumUp('card',0,'a'));
+          assert.equal(c.beginSumUp('card',5000,'a').status,'payment_pending');
+          assert.throws(()=>c.cash('card',5000));
+          assert.throws(()=>c.receiveSumUp('card',{attemptId:'other',status:'success'}));
+          assert.throws(()=>c.receiveSumUp('card',{attemptId:'a',status:'success',transactionCode:'t',amountCents:4900,currency:'EUR'}));
+          assert.equal(c.receiveSumUp('card',{attemptId:'a',status:'unknown'}).status,'payment_pending');
+          assert.equal(c.snapshot().ledger.length,1);
+          assert.throws(()=>c.beginSumUp('card',5000,'retry'));
+          assert.equal(c.receiveSumUp('card',{attemptId:'a',status:'declined'}).status,'awaiting_payment');
+          c.beginSumUp('card',5000,'b');
+          assert.equal(c.receiveSumUp('card',{attemptId:'b',status:'success',transactionCode:'t',amountCents:5000,currency:'EUR'}).status,'archived');
+          assert.throws(()=>c.receiveSumUp('card',{attemptId:'b',status:'success',transactionCode:'t',amountCents:5000,currency:'EUR'}));
+          assert.equal(c.snapshot().ledger.length,2);
+          ready('no-terminal');
+          assert.equal(c.cash('no-terminal',3500).status,'archived');
+          assert.equal(c.snapshot().ledger.length,3);
+          const snapshot=c.snapshot();snapshot.ledger.length=0;
+          assert.equal(c.snapshot().ledger.length,3);
+          ready('duplicate');
+          c.beginSumUp('duplicate',5000,'c');
+          assert.throws(()=>c.receiveSumUp('duplicate',{attemptId:'c',status:'success',transactionCode:'t',amountCents:5000,currency:'EUR'}));
+          assert.equal(c.snapshot().ledger.length,3);
+          assert.equal(c.snapshot().courses.find(x=>x.id==='duplicate').status,'payment_pending');
+          console.log('Parcours cash autonome, SumUp simulé, refus, statut incertain et dédoublonnage : OK');
+          JS
