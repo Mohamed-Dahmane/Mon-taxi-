@@ -193,10 +193,32 @@ public class MainActivity extends Activity {
    if(pendingSumUp()==null&&SumUpAPI.isLoggedIn()&&!SumUpAPI.isCardReaderConnected())SumUpAPI.prepareForCheckout();
   }catch(RuntimeException e){android.util.Log.w("TaxiSumUp","Reader preparation unavailable",e);}
  }
+ // Reconnect a remembered reader before opening manual settings. Never retry a debit.
  private void openSumUpReader(){
   try{
-   if(SumUpAPI.isCardReaderConnected())openSumUpCheckout();
-   else{setSumUpStage("reader");SumUpAPI.openCardReaderPage(this,SUMUP_READER);}
+   if(SumUpAPI.isCardReaderConnected()){openSumUpCheckout();return;}
+   org.json.JSONObject p=pendingSumUp();
+   if(p==null)return;
+   String attempt=p.getString("attemptId");
+   setSumUpStage("reconnecting");
+   try{SumUpAPI.prepareForCheckout();}
+   catch(RuntimeException e){android.util.Log.w("TaxiSumUp","Automatic reader preparation unavailable",e);}
+   awaitSumUpReader(attempt,android.os.SystemClock.elapsedRealtime()+8000L);
+  }catch(Exception e){cancelSumUpSetup();}
+ }
+ private void awaitSumUpReader(String attempt,long deadline){
+  try{
+   org.json.JSONObject p=pendingSumUp();
+   if(p==null||!"reconnecting".equals(p.optString("stage"))||!attempt.equals(p.optString("attemptId")))return;
+   if(isFinishing()||isDestroyed()||!unlocked){cancelSumUpSetup();return;}
+   if(resumed&&SumUpAPI.isCardReaderConnected()){openSumUpCheckout();return;}
+   if(android.os.SystemClock.elapsedRealtime()>=deadline){
+    if(!resumed){cancelSumUpSetup();return;}
+    setSumUpStage("reader");
+    SumUpAPI.openCardReaderPage(this,SUMUP_READER);
+    return;
+   }
+   new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->awaitSumUpReader(attempt,deadline),400L);
   }catch(Exception e){cancelSumUpSetup();}
  }
  private void openSumUpCheckout(){
