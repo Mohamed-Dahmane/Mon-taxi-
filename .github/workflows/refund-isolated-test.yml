@@ -23,3 +23,15 @@ jobs:
         run: node tests/refonte-reliability.cjs
       - name: Tests des remboursements fictifs
         run: node tests/refonte-refund.cjs
+      - run: npm install --no-save playwright
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - name: Test interface Fold sans paiement réel
+        run: |
+          mkdir -p refund-preview
+          node tests/refonte-refund-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures-remboursement-fictif
+          path: refund-preview/
+          if-no-files-found: ignore
