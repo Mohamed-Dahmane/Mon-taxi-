@@ -1,7 +1,7 @@
 name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
-    branches: [fix/sumup-pending-diagnostics-2106-20261124, test/payment-ledger-2107-20261124]
+    branches: [test/payment-ledger-2107-20261124]
     paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
 permissions:
@@ -342,7 +342,7 @@ jobs:
                   await inspect('success');
                   assert.match(await page.locator('#success-amount').innerText(),/50,25/);
                   assert.equal(await page.evaluate(()=>window.paymentSounds),1);
-                  await page.locator('#success [data-go=home]').click();
+                  await page.locator('#success-home').click();
                   assert.equal(await page.locator('#home').isVisible(),true);
                   assert.match(await page.locator('#home-cash').innerText(),/50,25/);
                   await page.evaluate(()=>document.getElementById('cash-confirm').click());
@@ -385,7 +385,7 @@ jobs:
                   await inspect('success');
                   assert.match(await page.locator('#success-amount').innerText(),/60,00/);
                   assert.equal(await page.evaluate(()=>window.paymentSounds),1);
-                  await page.locator('#success [data-go=home]').click();
+                  await page.locator('#success-home').click();
                   assert.equal(await page.locator('#home').isVisible(),true);
                   assert.match(await page.locator('#home-card').innerText(),/60,00/);
                   await emit({...second,status:'success',transactionCode:'TX-TEST'});
@@ -409,6 +409,11 @@ jobs:
                   await page.locator('#backup-import').click();await page.locator('#backup-restore').click();
                   assert.match(await page.locator('#accounts-revenue').innerText(),/119,24/);
                   await page.reload();await page.locator('[data-page=accounts]').click();assert.match(await page.locator('#accounts-revenue').innerText(),/119,24/);
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=free-ride]').click();await inspect('free-ride');
+                  await page.locator('#free-ride-form button[type=submit]').click();await inspect('ride');
+                  await page.locator('#ride-next').click();await inspect('payment');
+                  const freeState=await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state);
+                  const freeRide=freeState.courses.find(c=>c.kind==='free');assert.ok(freeRide.startedAt&&freeRide.finishedAt);assert.equal(freeRide.status,'awaiting_payment');assert.equal(freeState.ledger.length,2);
                 }catch(e){report.push({width,height,ok:false,error:e.message});process.exitCode=1}
                 finally{await context.close();fs.writeFileSync('interface-report/results.json',JSON.stringify(report,null,2))}
               }

@@ -339,6 +339,7 @@ document.addEventListener("submit",e=>{
 document.addEventListener("click",e=>{
  const b=e.target.closest("button");if(!b||b.disabled)return;
  if(b.dataset.course){safe(()=>{selected=b.dataset.course;const c=current();if(!c)throw Error("Course inconnue");$('amount').value=c.paymentDraftCents?(c.paymentDraftCents/100).toFixed(2).replace(".",","):"";show(c.status==="awaiting_payment"?"payment":c.status==="payment_pending"?"sumup":"ride");if(c.status==="payment_pending")recoverSumUp();});return;}
+ if(b.id==="success-home"){safe(()=>show("home"));return;}
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");
   if(c.status==="planned"){controller.load(c.id);show("ride");}
