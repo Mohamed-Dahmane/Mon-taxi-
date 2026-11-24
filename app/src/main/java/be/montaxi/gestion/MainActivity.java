@@ -1,5 +1,6 @@
 package be.montaxi.gestion;
 import android.app.Activity;
+import android.content.Intent;
 import com.sumup.merchant.reader.api.SumUpAPI;
 import com.sumup.merchant.reader.api.SumUpLogin;
 import com.sumup.merchant.reader.api.SumUpPayment;
