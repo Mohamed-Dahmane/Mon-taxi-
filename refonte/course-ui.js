@@ -23,7 +23,20 @@ function message(value="",error=false){$('status').textContent=value;$('status')
 function safe(action){try{message();action();}catch(e){message(e.message||"Action impossible",true);}}
 try{controller=window.createTaxiCourseController(storage);}catch(e){message(e.message,true);document.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);return;}
 const current=()=>controller.snapshot().courses.find(c=>c.id===selected);
-const route=c=>c.from+" → "+c.to;
+const route=c=>[c.from,c.to].filter(x=>typeof x==="string"&&x.trim()).join(" → ")||"Course libre";
+function playConfirmedPayment(){try{window.TaxiPaymentSound?.play();}catch(_){/* A sound cannot reverse a recorded receipt. */}}
+function showPaymentSuccess(c){
+  $('success-amount').textContent=euros(c.payment.amountCents);
+  $('success-route').textContent=route(c);
+  $('success-method').textContent=c.payment.method==="cash"?"Espèces enregistrées":"Paiement réussi";
+  const now=new Date(),local=localDate(now)+"T"+localTime(now);
+  const planned=controller.snapshot().courses.filter(x=>x.status==="planned"&&typeof x.scheduledAt==="string"&&x.scheduledAt>=local).sort((a,b)=>a.scheduledAt.localeCompare(b.scheduledAt));
+  const next=planned[0],button=$('success-next');
+  $('success-next-time').textContent=next?(next.date===localDate(now)?"Aujourd’hui":next.date||"")+" · "+(next.time||""):"Aucune course planifiée";
+  button.hidden=!next;
+  if(next)button.dataset.course=next.id;else delete button.dataset.course;
+  show("success");
+}
 const euros=cents=>new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR"}).format(cents/100);
 function readCashCents(raw){
  const normalized=String(raw).trim();
@@ -185,7 +198,8 @@ window.addEventListener("mon-taxi-sumup-result",e=>{
   const result=controller.receiveSumUp(c.id,d);
   if(result.status==="archived"){
    ackSumUp(d.attemptId);
-   if(selected===c.id){selected=null;sumupDraft=null;$('amount').value="";show("home");}
+   playConfirmedPayment();
+   if(selected===c.id){selected=null;sumupDraft=null;$('amount').value="";showPaymentSuccess(result);}
    else{renderLists();renderCashTotals();}
    message("Paiement SumUp confirmé : "+euros(result.payment.amountCents)+". Course archivée.");
   }else if(result.status==="awaiting_payment"){
@@ -222,10 +236,11 @@ window.addEventListener("taxi-native-resume",resumeWaze);
 const actions={planned:"Charger",loaded:"Démarrer la course",in_progress:"Terminer la course"};
 function card(c,archived=false){
  const box=document.createElement("article");box.className="card";
- const h=document.createElement("h3");h.textContent=c.client||"Course sans nom";
+ const h=document.createElement("h3");h.textContent=c.client||(c.kind==="free"?"Course libre":"Course sans nom");
  const p=document.createElement("p");p.textContent=route(c);
- const detail=document.createElement("p");detail.className="muted";detail.textContent=[c.kind==="reservation"?"Réservation":"Course directe",c.direction==="pickup"?"Pick-up":"Dépose",c.date,c.time,labels[c.status]].filter(Boolean).join(" · ");
+ const detail=document.createElement("p");detail.className="muted";detail.textContent=[c.kind==="reservation"?"Réservation":c.kind==="free"?"Course libre":"Course directe",c.direction==="pickup"?"Pick-up":"Dépose",c.date,c.time,labels[c.status]].filter(Boolean).join(" · ");
  box.append(h,p,detail);
+ if(c.startedAt||c.finishedAt){const times=document.createElement("p");times.className="muted";const format=t=>t?new Date(t).toLocaleString("fr-BE",{timeZone:"Europe/Brussels",dateStyle:"short",timeStyle:"short"}):"—";times.textContent="Début : "+format(c.startedAt)+" · Fin : "+format(c.finishedAt);box.append(times);}
  if(c.hotelName||c.driverName){const a=document.createElement("p");a.textContent=[c.hotelName,c.driverName,c.commissionCents?euros(c.commissionCents):""].filter(Boolean).join(" · ");box.append(a);}
  if(archived&&c.payment){
   const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
@@ -266,7 +281,7 @@ function show(id){
   if(id==="ride"){
    $('ride-step').textContent=labels[c.status];$('ride-route').textContent=route(c);
    $('ride-next').textContent=actions[c.status]||"Accéder au paiement";$('ride-next').disabled=c.status==="payment_pending";
-   $('waze-reopen').hidden=c.status!=="in_progress";
+   $('waze-reopen').hidden=c.status!=="in_progress"||!c.to;
    $('waze-overlay').hidden=c.status!=="in_progress";
    document.querySelectorAll('[data-step]').forEach(e=>{if(e.dataset.step===c.status)e.setAttribute("aria-current","step");else e.removeAttribute("aria-current");});
   }else {
@@ -300,6 +315,13 @@ function localDate(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,
 function localTime(d){return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function newId(){if(globalThis.crypto?.randomUUID)return crypto.randomUUID();const bytes=crypto.getRandomValues(new Uint8Array(16));return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");}
 document.addEventListener("submit",e=>{
+ const free=e.target.closest("#free-ride-form");if(free){e.preventDefault();safe(()=>{
+   if(!free.reportValidity())return;
+   const fields=Object.fromEntries(new FormData(free)),now=new Date();
+   const from=String(fields.from||"").trim().slice(0,250),to=String(fields.to||"").trim().slice(0,250);
+   const id=newId();controller.startFree({id,from,to,client:String(fields.label||"").trim().slice(0,160),date:localDate(now),time:localTime(now),scheduledAt:localDate(now)+"T"+localTime(now)});
+   selected=id;$('amount').value="";free.reset();show("ride");if(to)launchWaze(current());
+ });return;}
  const form=e.target.closest("form[data-kind]");if(!form)return;e.preventDefault();
  safe(()=>{
   if(!form.reportValidity())return;
@@ -374,9 +396,9 @@ document.addEventListener("click",e=>{
   if($('cash').hidden||!draft||c?.id!==draft.id||c.status!=="awaiting_payment")throw Error("Aucun paiement espèces à confirmer.");
   b.disabled=true;
   try{
-   controller.cash(draft.id,draft.cents);
+   const result=controller.cash(draft.id,draft.cents);
    cashDraft=null;selected=null;$('amount').value="";
-   show("home");message("Espèces enregistrées : "+euros(draft.cents)+". Course archivée.");
+   playConfirmedPayment();showPaymentSuccess(result);message("Espèces enregistrées : "+euros(draft.cents)+". Course archivée.");
   }finally{b.disabled=false;}
  });return;}
  if(b.id==="waze-reopen"){safe(()=>{const c=current();if(!c)throw Error("Course inconnue");launchWaze(c);});return;}

@@ -23,6 +23,11 @@ function create(core,sumupEvent,storage){
       const next=core.readBackup(raw);commit(clone(next));
     },
     plan(course){commit(core.addCourse(state,clone(course)));return clone(get(course.id))},
+    startFree(course){
+      const id=course?.id;
+      const next=core.apply(core.apply(core.addCourse(state,{...clone(course),kind:"free",driverIsMe:true,commissionCents:0}),id,{type:"load"}),id,{type:"start"});
+      commit(next);return clone(get(id));
+    },
     load:id=>apply(id,{type:"load"}),
     start:id=>apply(id,{type:"start"}),
     finish:id=>apply(id,{type:"finish"}),

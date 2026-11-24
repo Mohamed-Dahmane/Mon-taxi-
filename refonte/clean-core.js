@@ -7,6 +7,8 @@ function makeCore(){
  function transition(course,event){
   if(!course||!event||states[event.type]!==course.status)throw Error("Action incompatible avec le statut de la course");
   const c={...course,status:next[event.type]};
+  if(event.type==="start")c.startedAt=new Date().toISOString();
+  if(event.type==="finish")c.finishedAt=new Date().toISOString();
   if(event.type==="beginPayment"){
    if(event.method!=="sumup"||!Number.isSafeInteger(event.amountCents)||event.amountCents<=0||!event.attemptId)throw Error("Paiement invalide");
    c.paymentDraftCents=event.amountCents;
