@@ -363,7 +363,7 @@ document.addEventListener("click",e=>{
   controller.beginSumUp(c.id,draft.cents,attempt);
   show("sumup");window.TaxiSumUp.checkout(c.id,attempt,draft.cents);
  });return;}
- if(b.id==="sumup-recover"){safe(()=>{recoverSumUp();});return;}
+ if(b.id==="sumup-recover"){safe(()=>{const c=current();if(c?.status!=="payment_pending")throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.recoverInterrupted==="function")window.TaxiSumUp.recoverInterrupted(c.id,c.payment.attemptId);else recoverSumUp();});return;}
  if(b.id==="pay-cash"){safe(()=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
   cashDraft={id:c.id,cents:readCashCents($('amount').value)};
