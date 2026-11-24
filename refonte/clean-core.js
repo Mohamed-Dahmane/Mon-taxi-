@@ -99,7 +99,8 @@ function makeCore(){
   return total;
  }
  const cleanName=n=>typeof n==="string"?n.trim():"";
- const nameKey=n=>cleanName(n).normalize("NFKC").toLocaleLowerCase("fr-BE");
+ const nameKey=n=>cleanName(n).normalize("NFKD").replace(/\p{M}/gu,"").toLocaleLowerCase("fr-BE").replace(/[\p{P}\p{Z}\s]+/gu," ").trim();
+ const phoneKey=n=>{let p=String(n||"").trim().replace(/[\s().-]/g,"");if(p.startsWith("00"))p="+"+p.slice(2);if(/^0[1-9]\d{6,9}$/.test(p))p="+32"+p.slice(1);return p;};
  const validId=id=>typeof id==="string"&&/^[a-zA-Z0-9_-]{1,80}$/.test(id);
  function validateDirectory(s){
   const ids=new Set(),hotelNames=new Set();
@@ -116,8 +117,9 @@ function makeCore(){
   }
   for(const k of ["contacts","drivers"]){
    const keys=new Set();for(const item of s[k]){
-    const key=(k==="contacts"?item.hotelId+":":"")+item.phone;
-    if(keys.has(key))throw Error("Numéro déjà présent dans cette liste");keys.add(key);
+    const scope=k==="contacts"?item.hotelId+":":"";
+    const candidates=["phone:"+phoneKey(item.phone),"name:"+nameKey(item.name),...(item.nativeId?["native:"+item.nativeId]:[])];
+    for(const candidate of candidates){const key=scope+candidate;if(keys.has(key))throw Error("Doublon possible : vérifier la fiche existante avant tout ajout.");keys.add(key);}
    }
   }
  }
@@ -125,7 +127,7 @@ function makeCore(){
   if(!["hotels","contacts","drivers"].includes(kind)||!item||!validId(item.id))throw Error("Élément inconnu");
   const name=cleanName(item.name);
   const next=kind==="hotels"?{id:item.id,name,defaultContactId:item.defaultContactId||null}:
-   {id:item.id,name,phone:String(item.phone||"").trim().replace(/[\s().-]/g,""),nativeId:String(item.nativeId||"").slice(0,120),...(kind==="contacts"?{hotelId:item.hotelId}:{})};
+   {id:item.id,name,phone:phoneKey(item.phone),nativeId:String(item.nativeId||"").slice(0,120),...(kind==="contacts"?{hotelId:item.hotelId}:{})};
   const list=s[kind],existing=list.findIndex(x=>x.id===item.id);
   const updated=existing<0?[...list,next]:list.map(x=>x.id===item.id?next:x);
   const result={...s,[kind]:updated};validateDirectory(result);return result;

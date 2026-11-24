@@ -48,7 +48,16 @@ jobs:
           assert.equal(writes.length,0);
           c.saveDirectory('hotels',{id:'h',name:'Hôtel test'});
           c.saveDirectory('contacts',{id:'c',hotelId:'h',name:'Contact test',phone:'+32470000001'});
-          c.saveDirectory('drivers',{id:'d',name:'Chauffeur test',phone:'+32470000002'});
+          c.saveDirectory('drivers',{id:'d',name:'Chauffeur test',phone:'+32470000002',nativeId:'samsung-demo'});
+          const directoryBefore=c.snapshot();
+          assert.throws(()=>c.saveDirectory('hotels',{id:'dup-h',name:' HOTEL TEST '}));
+          assert.throws(()=>c.saveDirectory('contacts',{id:'dup-c',hotelId:'h',name:'Contact différent',phone:'0470 00 00 01'}));
+          assert.throws(()=>c.saveDirectory('drivers',{id:'dup-d1',name:'Chauffeur renommé',phone:'+32470000003',nativeId:'samsung-demo'}));
+          assert.throws(()=>c.saveDirectory('drivers',{id:'dup-d2',name:'Chaufféur test',phone:'+32470000003'}));
+          assert.deepEqual(c.snapshot(),directoryBefore);
+          c.saveDirectory('drivers',{id:'d',name:'Chauffeur nouveau',phone:'+32470000003',nativeId:'samsung-demo'});
+          assert.equal(c.snapshot().drivers.length,1);
+          assert.equal(c.snapshot().drivers[0].phone,'+32470000003');
           c.plan({id:'new-ride',hotelId:'h',hotelName:'Hôtel test',contactId:'c',contactName:'Contact test',driverId:'d',driverName:'Chauffeur test',from:'Départ test',to:'Destination test'});
           c.load('new-ride');c.start('new-ride');c.finish('new-ride');c.cash('new-ride',1000);
           const before=c.snapshot();
@@ -64,6 +73,10 @@ jobs:
           for(const k of oldKeys)assert.equal(values.get(k),legacy);
           const manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
           assert.match(manifest,/android:allowBackup="false"/);
+          assert.ok(manifest.includes('android:dataExtractionRules="@xml/refonte_data_extraction_rules"'));
+          const rules=fs.readFileSync('app/src/main/res/xml/refonte_data_extraction_rules.xml','utf8');
+          assert.ok(rules.includes('<device-transfer>')&&rules.includes('<cloud-backup>'));
+          assert.equal((rules.match(/<exclude domain=/g)||[]).length,18);
           console.log('Base vierge, ancien stockage ignoré et intact, anciens formats rejetés, archives nouvelles indépendantes du répertoire.');
           JS
   point8-precheck:
