@@ -69,6 +69,13 @@ jobs:
           assert.deepEqual(after.ledger,before.ledger);
           assert.deepEqual(create(adapter).snapshot(),after);
           assert.deepEqual(core.readBackup(c.backup()),after);
+          // Rebuilding a directory with similar names and new numbers must never mutate past courses.
+          c.saveDirectory('hotels',{id:'h-new',name:'HOTEL TEST'});
+          c.saveDirectory('contacts',{id:'c-new',hotelId:'h-new',name:'Contact test',phone:'+32470000004'});
+          c.saveDirectory('drivers',{id:'d-new',name:'Chauffeur nouveau',phone:'+32470000005'});
+          assert.deepEqual(c.snapshot().courses,before.courses);
+          assert.deepEqual(c.snapshot().ledger,before.ledger);
+          assert.deepEqual(create(adapter).snapshot(),c.snapshot());
           assert.ok(writes.length>0 && writes.every(k=>k===freshKey));
           for(const k of oldKeys)assert.equal(values.get(k),legacy);
           const manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
@@ -700,3 +707,9 @@ jobs:
             echo 'RESTE A FAIRE : essais matériels Solo Lite/Waze, comptabilité et répertoire définitifs.'
             exit 1
           fi
+  points-1-to-9:
+    needs: [clean-data-gate, point8-precheck, isolation, assainissement, interface, course, waze, cash, sumup, no-history-import, accounting, directory]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validation cumulative technique des points 1 à 9
+        run: echo "Points 1 à 9 et règle de base vierge validés techniquement. La mise en service reste bloquée jusqu'aux vérifications finales."
