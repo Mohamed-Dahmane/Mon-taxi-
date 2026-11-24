@@ -70,16 +70,25 @@ function makeCore(){
   if(!validMonth(month)||!validAmount(cents))throw Error("Frais fixes invalides");
   return {...s,fixed:{...(s.fixed||{}),[month]:cents}};
  }
+ // Une contre-écriture locale, uniquement après remboursement intégral réellement effectué.
+ function recordRefund(s,id,day){
+  const c=s.courses.find(x=>x.id===id),p=s.ledger.find(x=>x.courseId===id);
+  if(!c||c.status!=="archived"||!p||p.method!=="sumup"||c.refund)throw Error("Course non remboursable ou déjà remboursée");
+  if(!validDay(day)||day<paymentDay(p.paidAt)||day>paymentDay(new Date().toISOString()))throw Error("Date de remboursement invalide");
+  const refund={amountCents:p.amountCents,day,recordedAt:new Date().toISOString()};
+  return {...s,courses:s.courses.map(x=>x.id===id?{...x,refund}:x)};
+ }
  function dayTotals(s,day){
   if(!validDay(day))throw Error("Jour invalide");
   const e={...blank(),...(s.entries?.[day]||{})};
   let cardGross=0,fee=0,cash=e.cash,hotelCommission=0;
   const byId=new Map(s.courses.map(c=>[c.id,c]));
   for(const p of s.ledger){
+   const c=byId.get(p.courseId);
+   if(c?.refund?.day===day)cardGross-=c.refund.amountCents;
    if(paymentDay(p.paidAt)!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
    else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*169/10000);}
-   const c=byId.get(p.courseId);
    if(c?.driverIsMe===true&&validAmount(c.commissionCents))hotelCommission+=c.commissionCents;
   }
   const commission=e.commission+hotelCommission,cashReal=cash-commission,cardNet=cardGross-fee;
@@ -165,7 +174,13 @@ function makeCore(){
    if(c.status!=="archived"||!c.payment||!["method","amountCents","attemptId","reference","paidAt"].every(k=>c.payment[k]===p[k]))throw Error("Course et encaissement incohérents");
    ledgerIds.add(p.courseId);attempts.add(p.attemptId);references.add(p.method+":"+p.reference);
   }
-  for(const c of s.courses)if(c.status==="archived"&&!ledgerIds.has(c.id))throw Error("Archive sans encaissement");
+  for(const c of s.courses){
+   if(c.status==="archived"&&!ledgerIds.has(c.id))throw Error("Archive sans encaissement");
+   if(c.refund!==undefined){
+    const p=s.ledger.find(x=>x.courseId===c.id),r=c.refund;
+    if(!r||c.status!=="archived"||p?.method!=="sumup"||r.amountCents!==p.amountCents||!validDay(r.day)||r.day<paymentDay(p.paidAt)||typeof r.recordedAt!=="string"||!Number.isFinite(Date.parse(r.recordedAt))||r.day>paymentDay(r.recordedAt))throw Error("Remboursement incohérent");
+   }
+  }
   if(s.courses.filter(c=>c.status==="payment_pending").length>1)throw Error("Plusieurs paiements en attente");
   for(const key of ["entries","fixed"])if(s[key]!==undefined&&(!s[key]||typeof s[key]!=="object"||Array.isArray(s[key])))throw Error("Comptabilité invalide");
   for(const [day,e] of Object.entries(s.entries||{}))if(!validDay(day)||!e||!fields.every(k=>validAmount(e[k])))throw Error("Journal invalide");
@@ -183,7 +198,7 @@ function makeCore(){
   if(s.courses.some(c=>c.status==="payment_pending"))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
   return s;
  }
- return {empty,addCourse,apply,recordCash,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
+ return {empty,addCourse,apply,recordCash,recordRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();
