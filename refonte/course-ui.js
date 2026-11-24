@@ -230,19 +230,21 @@ function card(c,archived=false){
  if(archived&&c.payment){
   const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
   if(c.refund){
-   const note=document.createElement("p");note.textContent="Remboursée · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
-  }else if(c.payment.method==="sumup"){
-   const b=document.createElement("button");b.type="button";b.textContent="Course remboursée";box.append(b);
-   const panel=document.createElement("div");panel.hidden=true;
-   const note=document.createElement("p");note.textContent="Uniquement après remboursement intégral confirmé dans SumUp. Cette action ne déclenche aucun remboursement bancaire. Montant : "+euros(c.payment.amountCents)+". Les frais SumUp estimés et commissions restent inchangés.";
-   const label=document.createElement("label");label.textContent="Date effective du remboursement ";
+   const note=document.createElement("p");note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
+  }else if(["cash","sumup"].includes(c.payment.method)){
+   const b=document.createElement("button");b.type="button";b.textContent="Remboursement";box.append(b);
+   const panel=document.createElement("div");panel.className="card";panel.hidden=true;
+   const note=document.createElement("p");note.textContent=c.payment.method==="sumup"?"SumUp · uniquement après remboursement confirmé dans SumUp. Aucun remboursement bancaire déclenché ici. Les frais estimés et commissions restent inchangés.":"Espèces · uniquement après avoir rendu l’argent. Les commissions restent inchangées.";
+   const amountLabel=document.createElement("label");amountLabel.className="field";amountLabel.textContent="Montant remboursé (€)";
+   const amount=document.createElement("input");amount.type="text";amount.inputMode="decimal";amount.value=(c.payment.amountCents/100).toFixed(2).replace(".",",");amountLabel.append(amount);
+   const label=document.createElement("label");label.className="field";label.textContent="Date effective du remboursement ";
    const date=document.createElement("input");date.type="date";date.min=window.TaxiCleanCore.paymentDay(c.payment.paidAt);date.max=today();date.value=today();label.append(date);
    const yes=document.createElement("button");yes.type="button";yes.textContent="Confirmer le remboursement effectué";
    const no=document.createElement("button");no.type="button";no.textContent="Annuler";
-   panel.append(note,label,yes,no);box.append(panel);
+   panel.append(note,amountLabel,label,yes,no);box.append(panel);
    b.addEventListener("click",()=>{panel.hidden=false;b.hidden=true;});
    no.addEventListener("click",()=>{panel.hidden=true;b.hidden=false;});
-   yes.addEventListener("click",()=>safe(()=>{if($('archives').hidden)throw Error("Ouvre l’historique.");controller.refund(c.id,date.value);renderLists();renderCashTotals();message("Remboursement enregistré localement.");}));
+   yes.addEventListener("click",()=>safe(()=>{if($('archives').hidden)throw Error("Ouvre l’historique.");controller.refund(c.id,date.value,entryCents(amount.value));renderLists();renderCashTotals();message("Remboursement enregistré localement.");}));
   }
  }
  if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}

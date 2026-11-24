@@ -70,12 +70,13 @@ function makeCore(){
   if(!validMonth(month)||!validAmount(cents))throw Error("Frais fixes invalides");
   return {...s,fixed:{...(s.fixed||{}),[month]:cents}};
  }
- // Une contre-écriture locale, uniquement après remboursement intégral réellement effectué.
- function recordRefund(s,id,day){
+ // Contre-écriture locale, uniquement après remboursement réellement effectué.
+ function recordRefund(s,id,day,amountCents){
   const c=s.courses.find(x=>x.id===id),p=s.ledger.find(x=>x.courseId===id);
-  if(!c||c.status!=="archived"||!p||p.method!=="sumup"||c.refund)throw Error("Course non remboursable ou déjà remboursée");
+  if(!c||c.status!=="archived"||!p||!["cash","sumup"].includes(p.method)||c.refund)throw Error("Course non remboursable ou déjà remboursée");
   if(!validDay(day)||day<paymentDay(p.paidAt)||day>paymentDay(new Date().toISOString()))throw Error("Date de remboursement invalide");
-  const refund={amountCents:p.amountCents,day,recordedAt:new Date().toISOString()};
+  if(!validAmount(amountCents)||amountCents<=0||amountCents>p.amountCents)throw Error("Montant de remboursement invalide");
+  const refund={amountCents,day,recordedAt:new Date().toISOString()};
   return {...s,courses:s.courses.map(x=>x.id===id?{...x,refund}:x)};
  }
  function dayTotals(s,day){
@@ -85,7 +86,7 @@ function makeCore(){
   const byId=new Map(s.courses.map(c=>[c.id,c]));
   for(const p of s.ledger){
    const c=byId.get(p.courseId);
-   if(c?.refund?.day===day)cardGross-=c.refund.amountCents;
+   if(c?.refund?.day===day){if(p.method==="cash")cash-=c.refund.amountCents;else cardGross-=c.refund.amountCents;}
    if(paymentDay(p.paidAt)!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
    else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*169/10000);}
@@ -178,7 +179,7 @@ function makeCore(){
    if(c.status==="archived"&&!ledgerIds.has(c.id))throw Error("Archive sans encaissement");
    if(c.refund!==undefined){
     const p=s.ledger.find(x=>x.courseId===c.id),r=c.refund;
-    if(!r||c.status!=="archived"||p?.method!=="sumup"||r.amountCents!==p.amountCents||!validDay(r.day)||r.day<paymentDay(p.paidAt)||typeof r.recordedAt!=="string"||!Number.isFinite(Date.parse(r.recordedAt))||r.day>paymentDay(r.recordedAt))throw Error("Remboursement incohérent");
+    if(!r||c.status!=="archived"||!p||!["cash","sumup"].includes(p.method)||!validAmount(r.amountCents)||r.amountCents<=0||r.amountCents>p.amountCents||!validDay(r.day)||r.day<paymentDay(p.paidAt)||typeof r.recordedAt!=="string"||!Number.isFinite(Date.parse(r.recordedAt))||r.day>paymentDay(r.recordedAt))throw Error("Remboursement incohérent");
    }
   }
   if(s.courses.filter(c=>c.status==="payment_pending").length>1)throw Error("Plusieurs paiements en attente");
