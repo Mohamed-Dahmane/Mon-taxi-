@@ -1,0 +1,43 @@
+name: Point 2 - assainissement des sources Android
+on:
+  push:
+    branches: [refonte/base-saine-20261124]
+    paths: ['refonte/**','app/**','.github/workflows/refonte-assainissement.yml','.github/workflows/android-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  assainissement:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Interdire la réintroduction des anciennes routes et données
+        run: |
+          node <<'JS'
+          const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
+          const read=p=>fs.readFileSync(p,'utf8');
+          const source=['refonte/interface.html','refonte/clean-core.js','refonte/course-controller.js','refonte/sumup-course-payment.js'];
+          for(const path of source)assert.doesNotMatch(read(path),/DoubleTree|The Standard|Papa|Moncef|Yacine|payment_express|github\.io|taxi_management_backups|taxi_hotel_sync|taxi_sumup_transactions/i,path);
+          const bridge=read('app/src/main/java/be/montaxi/gestion/TaxiContactsBridge.java');
+          const main=read('app/src/main/java/be/montaxi/gestion/MainActivity.java');
+          const manifest=read('app/src/main/AndroidManifest.xml');
+          assert.doesNotMatch(bridge,/WhatsApp|wa\.me|github\.io|importTx\s*\(|syncDirectory\s*\(|findReferrer\s*\(|findDriver\s*\(|ACTION_EDIT|CONTACT_PERMISSION|permissionResult\s*\(/i);
+          assert.doesNotMatch(main,/TaxiContactsBridge\.CONTACT_PERMISSION|taxiContacts\.permissionResult/);
+          assert.doesNotMatch(manifest,/READ_CONTACTS|WRITE_CONTACTS/);
+          assert.match(bridge,/Intent\.ACTION_PICK/);
+          assert.match(bridge,/intent\.setPackage\("com\.waze"\)/);
+          assert.doesNotMatch(bridge,/intent\.setPackage\(null\)/);
+          assert.match(main,/setBlockNetworkLoads\(true\)/);
+          const html=read(source[0]);for(const match of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
+          const core=require('./refonte/clean-core.js');
+          let s=core.addCourse(core.empty(),{id:'test'});
+          for(const type of ['load','start','finish'])s=core.apply(s,'test',{type});
+          for(const method of ['payment_express','cash','autre'])assert.throws(()=>core.apply(s,'test',{type:'beginPayment',method,amountCents:5000,attemptId:'a'}));
+          assert.throws(()=>core.apply(s,'test',{type:'beginPayment',method:'sumup',amountCents:0,attemptId:'a'}));
+          assert.equal(core.recordCash(s,'test',5000).ledger[0].method,'cash');
+          assert.equal(core.apply(s,'test',{type:'beginPayment',method:'sumup',amountCents:5000,attemptId:'a'}).courses[0].status,'payment_pending');
+          console.log('Point 2 : anciennes routes ciblées absentes, répertoire sans données imposées, deux paiements distincts.');
+          JS
