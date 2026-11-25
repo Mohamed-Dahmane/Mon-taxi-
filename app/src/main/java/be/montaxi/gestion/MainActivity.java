@@ -98,7 +98,7 @@ public class MainActivity extends Activity {
   lastInteraction=SystemClock.elapsedRealtime();
   checkIdleTimeout();
  }
- private void lockTaxi(){idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null){web.setVisibility(View.INVISIBLE);web.onPause();}showLock();}
+ private void lockTaxi(){cancelRemoval();idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null){web.setVisibility(View.INVISIBLE);web.onPause();}showLock();}
  private boolean acceptSessionInteraction(){
   if(!unlocked)return true;
   if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS){
@@ -310,6 +310,48 @@ public class MainActivity extends Activity {
   try{org.json.JSONObject d=new org.json.JSONObject();d.put("reference",reference);if(verified!=null)d.put("verified",verified);if(error!=null)d.put("error",error);
    web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-receipt-result',{detail:"+d.toString()+"}))",null);
   }catch(Exception ignored){}
+ }
+ private CancellationSignal removalPrompt;
+ private String removalId,removalMode,removalRequest,removalGrant;
+ private long removalExpiry;
+ private synchronized boolean consumeRemoval(String id,String mode,String request,String grant){
+  boolean ok=removalGrant!=null&&removalGrant.equals(grant)&&id!=null&&id.equals(removalId)&&mode!=null&&mode.equals(removalMode)&&request!=null&&request.equals(removalRequest)&&android.os.SystemClock.elapsedRealtime()<=removalExpiry;
+  if(ok){removalGrant=null;removalExpiry=0;}
+  return ok;
+ }
+ private synchronized void clearRemovalGrant(){removalGrant=null;removalExpiry=0;}
+ private void removalEvent(String id,String mode,String request,String grant){
+  if(!receiptTrusted())return;
+  try{org.json.JSONObject d=new org.json.JSONObject();d.put("id",id);d.put("mode",mode);d.put("request",request);if(grant!=null)d.put("grant",grant);
+   web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-course-removal',{detail:"+d.toString()+"}))",null);
+  }catch(Exception ignored){}
+ }
+ private void cancelRemoval(){
+  clearRemovalGrant();CancellationSignal p=removalPrompt;removalPrompt=null;
+  if(p!=null){p.cancel();removalEvent(removalId,removalMode,removalRequest,null);}
+ }
+ private void requestRemoval(String id,String mode,String request,String label){
+  if(!receiptTrusted()||id==null||!id.matches("[a-zA-Z0-9_-]{1,80}")||request==null||!request.matches("[a-zA-Z0-9_-]{1,80}")||(!"hide".equals(mode)&&!"void-test".equals(mode)))return;
+  if(removalPrompt!=null||!canUseFingerprint()){removalEvent(id,mode,request,null);return;}
+  clearRemovalGrant();removalId=id;removalMode=mode;removalRequest=request;
+  CancellationSignal signal=new CancellationSignal();removalPrompt=signal;
+  String description=label==null?"":label.substring(0,Math.min(label.length(),140));
+  try{
+   new BiometricPrompt.Builder(this).setTitle("void-test".equals(mode)?"Annuler la saisie fictive":"Retirer la course")
+    .setSubtitle("void-test".equals(mode)?"Aucune espèce réellement reçue":"Recette et justificatif conservés")
+    .setDescription(description).setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+    .setNegativeButton("Annuler",getMainExecutor(),(d,w)->cancelRemoval()).build()
+    .authenticate(signal,getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){
+     @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result){
+      if(removalPrompt!=signal)return;removalPrompt=null;
+      if(!receiptTrusted()){clearRemovalGrant();return;}
+      String grant=java.util.UUID.randomUUID().toString();
+      synchronized(MainActivity.this){removalGrant=grant;removalExpiry=android.os.SystemClock.elapsedRealtime()+10000L;}
+      removalEvent(id,mode,request,grant);
+     }
+     @Override public void onAuthenticationError(int code,CharSequence message){if(removalPrompt==signal){removalPrompt=null;clearRemovalGrant();removalEvent(id,mode,request,null);}}
+    });
+  }catch(Exception ex){cancelRemoval();}
  }
  private boolean receiptTrusted(){return unlocked&&web!=null&&isLocalAppPage(web.getUrl());}
  private boolean validReceiptRequest(String reference,int cents){return receiptTrusted()&&!receiptLookupRunning&&reference!=null&&reference.matches("[A-Za-z0-9_-]{1,128}")&&cents>=100&&cents<=9999900;}
@@ -989,6 +1031,10 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void sharePdf(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPdf(token,raw,card));}
     @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
    },"TaxiReceipt");
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void request(String id,String mode,String request,String label){runOnUiThread(()->requestRemoval(id,mode,request,label));}
+    @android.webkit.JavascriptInterface public boolean consume(String id,String mode,String request,String grant){return consumeRemoval(id,mode,request,grant);}
+   },"TaxiCourseRemoval");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
@@ -1240,6 +1286,7 @@ public class MainActivity extends Activity {
  }
  @Override protected void onStop(){
   super.onStop();
+  cancelRemoval();
   // Une courte sortie de l'application ne ferme plus la session.
   if(!unlocked&&biometric!=null&&!credentialPrompt){
    CancellationSignal attempt=biometric;
@@ -1249,6 +1296,6 @@ public class MainActivity extends Activity {
    attempt.cancel();
   }
  }
- @Override protected void onDestroy(){if(taxiContacts!=null)taxiContacts.hideBubble();super.onDestroy();}
+ @Override protected void onDestroy(){cancelRemoval();if(taxiContacts!=null)taxiContacts.hideBubble();super.onDestroy();}
  @Override public void onBackPressed(){if(unlocked&&web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
 }
