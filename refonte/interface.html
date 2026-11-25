@@ -34,7 +34,7 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 .success-check{width:84px;height:84px;margin:auto}
 #signature-pad,#receipt-signature{display:block;width:100%;max-width:360px;height:auto;background:#ffffff;border:1px solid #898989;border-radius:8px;touch-action:none}
 #receipt-summary{white-space:pre-line}
-#receipt-profile input[type=checkbox]{width:48px;height:48px;min-height:48px;margin:0;vertical-align:middle}
+#receipt-profile input[type=checkbox]{box-sizing:border-box;width:48px;min-width:48px;max-width:48px;height:48px;min-height:48px;max-height:48px;flex:0 0 48px;margin:0;padding:0;vertical-align:middle}
 #receipt-profile label:has(#signature-enabled){display:flex;align-items:center;gap:12px}
 #receipt-profile .grid{gap:8px}
 </style>
