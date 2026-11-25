@@ -344,6 +344,42 @@ public class MainActivity extends Activity {
  private void pickReceiptProfile(){if(!backupTrusted())return;try{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RECEIPT_PROFILE_PICK);}catch(Exception ex){receiptProfileEvent(null,"Sélecteur indisponible.");}}
  private void readReceiptProfile(int code,Intent data){if(code!=RESULT_OK||data==null||data.getData()==null||!backupTrusted())return;android.net.Uri uri=data.getData();if(!"content".equals(uri.getScheme()))return;new Thread(()->{try(InputStream in=getContentResolver().openInputStream(uri);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){if(in==null)throw new IOException();byte[] buf=new byte[4096];int n;while((n=in.read(buf))!=-1){if(out.size()+n>50000)throw new IOException();out.write(buf,0,n);}String raw=new String(out.toByteArray(),java.nio.charset.StandardCharsets.UTF_8);org.json.JSONObject doc=new org.json.JSONObject(raw);if(!"taximo-receipt-profile-v1".equals(doc.optString("format")))throw new IOException();String png=doc.getJSONObject("profile").optString("signaturePng","");if(!png.isEmpty()){if(png.length()>20000)throw new IOException();byte[] bytes=Base64.decode(png,Base64.DEFAULT);BitmapFactory.Options b=new BitmapFactory.Options();b.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(bytes,0,bytes.length,b);if(b.outWidth<1||b.outHeight<1||b.outWidth>1200||b.outHeight>600||!"image/png".equals(b.outMimeType))throw new IOException();}runOnUiThread(()->receiptProfileEvent(raw,null));}catch(Exception e){runOnUiThread(()->receiptProfileEvent(null,"Profil chauffeur invalide ou illisible."));}},"ReceiptProfileImport").start();}
 
+ private void previewReceiptPdf(String token,String raw,boolean card){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.matches("[0-9]{1,12}")||raw==null||raw.length()>50000)return;
+  new Thread(()->{
+   java.io.File file=null;android.graphics.Bitmap bitmap=null;
+   try{
+    org.json.JSONObject r=new org.json.JSONObject(raw);
+    byte[] pdf=card?TaxiCardReceiptPdf.render(r):TaxiCashReceiptPdf.render(r);
+    file=java.io.File.createTempFile("receipt-preview-",".pdf",getCacheDir());
+    try(java.io.FileOutputStream out=new java.io.FileOutputStream(file)){out.write(pdf);}
+    android.os.ParcelFileDescriptor fd=android.os.ParcelFileDescriptor.open(file,android.os.ParcelFileDescriptor.MODE_READ_ONLY);
+    android.graphics.pdf.PdfRenderer renderer;
+    try{renderer=new android.graphics.pdf.PdfRenderer(fd);}catch(Exception ex){fd.close();throw ex;}
+    try(android.graphics.pdf.PdfRenderer closeRenderer=renderer){
+     if(renderer.getPageCount()!=1)throw new IOException("Unexpected page count");
+     try(android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)){
+      float scale=Math.min(2.5f,Math.min(900f/page.getWidth(),2600f/page.getHeight()));
+      bitmap=android.graphics.Bitmap.createBitmap(Math.max(1,Math.round(page.getWidth()*scale)),Math.max(1,Math.round(page.getHeight()*scale)),android.graphics.Bitmap.Config.ARGB_8888);
+      bitmap.eraseColor(android.graphics.Color.WHITE);
+      page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+     }
+    }
+    java.io.ByteArrayOutputStream image=new java.io.ByteArrayOutputStream();
+    if(!bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,image))throw new IOException("Preview encoding");
+    String png=android.util.Base64.encodeToString(image.toByteArray(),android.util.Base64.NO_WRAP);
+    if(png.length()>8000000)throw new IOException("Preview size");
+    runOnUiThread(()->receiptPreviewEvent(token,png,null));
+   }catch(Exception ex){runOnUiThread(()->receiptPreviewEvent(token,null,"Impossible de préparer l’aperçu PDF. Réessaie."));}
+   finally{if(bitmap!=null)bitmap.recycle();if(file!=null)file.delete();}
+  },"TaxiReceiptPreview").start();
+ }
+ private void receiptPreviewEvent(String token,String png,String error){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl()))return;
+  try{org.json.JSONObject d=new org.json.JSONObject();d.put("token",token);if(png!=null)d.put("png",png);if(error!=null)d.put("error",error);
+   web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-receipt-preview',{detail:"+d.toString()+"}))",null);
+  }catch(Exception ignored){}
+ }
  private byte[] pendingCashPdf;
  private void exportCashReceipt(String raw){exportReceiptPdf(raw,false);}
  private void exportReceiptPdf(String raw,boolean card){
@@ -896,6 +932,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void importProfile(){runOnUiThread(()->pickReceiptProfile());}
     @android.webkit.JavascriptInterface public void cashPdf(String raw){runOnUiThread(()->exportCashReceipt(raw));}
     @android.webkit.JavascriptInterface public void cardPdf(String raw){runOnUiThread(()->exportReceiptPdf(raw,true));}
+    @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
    },"TaxiReceipt");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);
