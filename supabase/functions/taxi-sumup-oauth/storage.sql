@@ -12,7 +12,7 @@ create table public.taxi_receipt_oauth_v1 (
  check((op_id is null)=(op_started_at is null))
 );
 alter table public.taxi_receipt_oauth_v1 enable row level security;
-revoke all on table public.taxi_receipt_oauth_v1 from public, anon, authenticated;
-grant select, insert, update on table public.taxi_receipt_oauth_v1 to service_role;
+revoke all on table public.taxi_receipt_oauth_v1 from public, anon, authenticated, service_role;
+grant select, update on table public.taxi_receipt_oauth_v1 to service_role;
 insert into public.taxi_receipt_oauth_v1(id) values (1);
 commit;
