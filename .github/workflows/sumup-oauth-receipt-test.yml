@@ -14,3 +14,16 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/sumup-oauth-receipt-contract.mjs
+  pdf-interface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - run: node tests/refonte-cash-receipt.cjs
+      - run: node tests/refonte-receipt-browser.cjs
+      - run: node tests/refonte-receipt-credential.cjs

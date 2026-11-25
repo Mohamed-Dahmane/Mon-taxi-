@@ -2,7 +2,7 @@ name: Android autonome - compilation technique de refonte
 on:
   workflow_dispatch:
   push:
-    branches: [refonte/base-saine-20261124]
+    branches: [refonte/base-saine-20261124, test/sumup-oauth-receipts-2122-20261125]
     paths:
       - 'refonte/interface.html'
       - 'refonte/clean-core.js'
