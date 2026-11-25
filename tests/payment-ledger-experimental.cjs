@@ -15,6 +15,28 @@ function testLedger(make,assert){
  test("free card, no route and optional label",()=>{m.begin("free","free",150,"f1");m.terminal({kind:"free",key:"free",attempt:"f1",cents:150,currency:"EUR",status:"confirmed",ref:"free-tx"});eq(m.view("free","free").balance,0);eq(m.snapshot().courses.free,undefined);eq(m.view("free","free").label,"")});
  test("duplicate reference and overpayment",()=>{m.openFree("second",200,"acompte");throws(()=>m.cash("free","second",201,"c6"));throws(()=>m.cash("free","second",100,"c5"));eq(m.view("free","second").paid,0)});
  test("reload maintains partial balance and pending",()=>{m.begin("free","second",200,"f2");const re=make(m.snapshot());eq(re.pending().attempt,"f2");eq(re.view("free","second").balance,200);eq(re.view("course","ride").balance,0);throws(()=>re.begin("free","second",200,"f3"))});
+ test("Settled cash then card supplement, immutable original, retries and reload",()=>{
+  const x=make(undefined,()=>"2026-11-25T03:00:00Z");
+  x.openCourse("cash-first");x.finish("cash-first",5000);x.cash("course","cash-first",5000,"cash-original");
+  const original=x.snapshot().receipts[0];x.increaseTotal("cash-first",6000,"bagages");
+  eq(x.view("course","cash-first").balance,1000);eq(x.snapshot().receipts.length,1);
+  x.begin("course","cash-first",1000,"extra-a");x.terminal(result("cash-first","extra-a",1000,{status:"uncertain"}));
+  throws(()=>x.increaseTotal("cash-first",6500));throws(()=>x.cash("course","cash-first",1000,"extra-cash"));
+  const y=make(x.snapshot());eq(y.pending().attempt,"extra-a");y.terminal(result("cash-first","extra-a",1000));y.terminal(result("cash-first","extra-a",1000));
+  eq(y.view("course","cash-first").paid,6000);eq(y.snapshot().receipts.length,2);assert(JSON.stringify(original)===JSON.stringify(y.snapshot().receipts[0]));
+  eq(y.view("course","cash-first").adjustments[0].previousCents,5000);
+  y.increaseTotal("cash-first",6500);y.cash("course","cash-first",500,"extra-cash");eq(y.view("course","cash-first").balance,0);
+  throws(()=>y.increaseTotal("cash-first",6400));throws(()=>y.cash("course","cash-first",100,"over"));
+ });
+ test("Settled card then cash supplement, declined card can switch to cash",()=>{
+  const x=make();x.openCourse("card-first");x.finish("card-first",5000);
+  x.begin("course","card-first",5000,"original");x.terminal(result("card-first","original",5000));
+  x.increaseTotal("card-first",6000);x.begin("course","card-first",1000,"declined");
+  x.terminal(result("card-first","declined",1000,{status:"declined"}));x.cash("course","card-first",1000,"supplement");
+  eq(x.view("course","card-first").paymentStatus,"settled");eq(x.snapshot().receipts.length,2);
+  eq(x.snapshot().receipts[0].method,"sumup");eq(x.snapshot().receipts[1].method,"cash");
+  eq(x.snapshot().receipts[1].cents,1000);
+ });
  return count;
 }
 console.log(testLedger(make,assert.ok)+" payment scenarios passed");

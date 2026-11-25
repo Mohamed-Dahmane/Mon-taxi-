@@ -20,6 +20,16 @@ function createPaymentLedger(initial, now=()=>new Date().toISOString()){
  function openFree(key,price,label=""){id(key);cents(price);check(!own(s.free,key),"Encaissement existant");check(typeof label==="string"&&label.length<=200,"Libellé invalide");s.free[key]={price,label:label.trim(),waived:false,expected:null};}
  function defer(kind,key,method){const t=target(kind,key);check(["invoice","cash","sumup","link"].includes(method),"Mode inconnu");available(kind,key,1);t.expected=method;}
  function waive(key,note=""){const t=target("course",key);noPendingFor("course",key);check(t.rideStatus==="finished"&&!t.waived&&paid("course",key)===0,"Clôture sans paiement impossible");check(typeof note==="string"&&note.length<=500,"Remarque invalide");t.waived=true;t.note=note;t.expected=null;}
+ // Raise the agreed total without rewriting receipts or charging the terminal.
+ function increaseTotal(key,newTotal,reason=""){
+  const t=target("course",key);noPendingFor("course",key);
+  check(t.rideStatus==="finished"&&!t.waived&&paid("course",key)>0,"Course non encaissée ou annulée");
+  cents(newTotal);check(newTotal>t.price,"Pour diminuer le montant, utiliser le remboursement");
+  check(typeof reason==="string"&&reason.length<=500,"Motif invalide");
+  const change={previousCents:t.price,newTotalCents:newTotal,reason:reason.trim(),changedAt:now()};
+  t.adjustments=[...(t.adjustments||[]),change];t.price=newTotal;t.expected=null;
+  return view("course",key);
+ }
  function cash(kind,key,n,ref){noPendingFor(kind,key);return record(kind,key,n,"cash",ref)}
  function begin(kind,key,n,attempt){available(kind,key,n);id(attempt);check(n>=100,"Minimum terminal 1 euro");check(!pending(),"Une tentative terminal doit être résolue");check(!s.attempts.some(a=>a.attempt===attempt),"Tentative déjà utilisée");s.attempts.push({kind,key,cents:n,attempt,status:"pending",createdAt:now()});return copy(pending());}
  function terminal(result){check(result&&typeof result==="object","Retour invalide");const a=s.attempts.find(a=>a.attempt===result.attempt);check(a&&a.key===result.key&&a.kind===result.kind,"Tentative inconnue");if(a.status!=="pending"){check(a.status===result.status&&(a.status!=="confirmed"||(a.ref===result.ref&&a.cents===result.cents&&result.currency==="EUR")),"Retour contradictoire");return copy(a);}
@@ -27,6 +37,6 @@ function createPaymentLedger(initial, now=()=>new Date().toISOString()){
  if(["declined","cancelled"].includes(result.status)){a.status=result.status;return copy(a);}
  check(result.status==="confirmed"&&result.currency==="EUR"&&result.cents===a.cents,"Confirmation ou montant invalide");record(a.kind,a.key,a.cents,"sumup",result.ref);a.ref=result.ref;a.status="confirmed";return copy(a);}
  function view(kind,key){const t=target(kind,key);return {...copy(t),paid:paid(kind,key),balance:t.price===null?null:balance(kind,key),paymentStatus:t.price===null?"unpriced":t.waived?"waived":balance(kind,key)===0?"settled":paid(kind,key)>0?"partial":"due"}}
- return {snapshot:()=>copy(s),openCourse,finish,openFree,defer,waive,cash,begin,terminal,view,pending:()=>copy(pending()||null)};
+ return {snapshot:()=>copy(s),openCourse,finish,openFree,defer,waive,increaseTotal,cash,begin,terminal,view,pending:()=>copy(pending()||null)};
 }
 module.exports=createPaymentLedger;
