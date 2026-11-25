@@ -356,8 +356,12 @@ public class MainActivity extends Activity {
  private void pickReceiptProfile(){if(!backupTrusted())return;try{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RECEIPT_PROFILE_PICK);}catch(Exception ex){receiptProfileEvent(null,"Sélecteur indisponible.");}}
  private void readReceiptProfile(int code,Intent data){if(code!=RESULT_OK||data==null||data.getData()==null||!backupTrusted())return;android.net.Uri uri=data.getData();if(!"content".equals(uri.getScheme()))return;new Thread(()->{try(InputStream in=getContentResolver().openInputStream(uri);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){if(in==null)throw new IOException();byte[] buf=new byte[4096];int n;while((n=in.read(buf))!=-1){if(out.size()+n>50000)throw new IOException();out.write(buf,0,n);}String raw=new String(out.toByteArray(),java.nio.charset.StandardCharsets.UTF_8);org.json.JSONObject doc=new org.json.JSONObject(raw);if(!"taximo-receipt-profile-v1".equals(doc.optString("format")))throw new IOException();String png=doc.getJSONObject("profile").optString("signaturePng","");if(!png.isEmpty()){if(png.length()>20000)throw new IOException();byte[] bytes=Base64.decode(png,Base64.DEFAULT);BitmapFactory.Options b=new BitmapFactory.Options();b.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(bytes,0,bytes.length,b);if(b.outWidth<1||b.outHeight<1||b.outWidth>1200||b.outHeight>600||!"image/png".equals(b.outMimeType))throw new IOException();}runOnUiThread(()->receiptProfileEvent(raw,null));}catch(Exception e){runOnUiThread(()->receiptProfileEvent(null,"Profil chauffeur invalide ou illisible."));}},"ReceiptProfileImport").start();}
 
+ private String sharePreviewToken,sharePreviewRaw;
+ private byte[] sharePreviewBytes;
+ private boolean sharePreviewCard;
  private void previewReceiptPdf(String token,String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.matches("[0-9]{1,12}")||raw==null||raw.length()>50000)return;
+  sharePreviewToken=token;sharePreviewRaw=null;sharePreviewBytes=null;
   new Thread(()->{
    java.io.File file=null;android.graphics.Bitmap bitmap=null;
    try{
@@ -381,7 +385,7 @@ public class MainActivity extends Activity {
     if(!bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,image))throw new IOException("Preview encoding");
     String png=android.util.Base64.encodeToString(image.toByteArray(),android.util.Base64.NO_WRAP);
     if(png.length()>8000000)throw new IOException("Preview size");
-    runOnUiThread(()->receiptPreviewEvent(token,png,null));
+    runOnUiThread(()->{if(!token.equals(sharePreviewToken)||!unlocked||web==null||!isLocalAppPage(web.getUrl()))return;sharePreviewRaw=raw;sharePreviewCard=card;sharePreviewBytes=pdf;receiptPreviewEvent(token,png,null);});
    }catch(Exception ex){runOnUiThread(()->receiptPreviewEvent(token,null,"Impossible de préparer l’aperçu PDF. Réessaie."));}
    finally{if(bitmap!=null)bitmap.recycle();if(file!=null)file.delete();}
   },"TaxiReceiptPreview").start();
@@ -391,6 +395,18 @@ public class MainActivity extends Activity {
   try{org.json.JSONObject d=new org.json.JSONObject();d.put("token",token);if(png!=null)d.put("png",png);if(error!=null)d.put("error",error);
    web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-receipt-preview',{detail:"+d.toString()+"}))",null);
   }catch(Exception ignored){}
+ }
+ private void shareReceiptPdf(String token,String raw,boolean card){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewBytes==null)return;
+  try{
+   java.io.File dir=new java.io.File(getCacheDir(),"receipt-share");if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException();
+   java.io.File[] old=dir.listFiles();if(old!=null)for(java.io.File f:old)if(f.isFile()&&System.currentTimeMillis()-f.lastModified()>86400000L)f.delete();
+   java.io.File file=java.io.File.createTempFile(card?"Recu-carte-":"Recu-especes-",".pdf",dir);
+   try(java.io.FileOutputStream out=new java.io.FileOutputStream(file)){out.write(sharePreviewBytes);}
+   android.net.Uri uri=androidx.core.content.FileProvider.getUriForFile(this,getPackageName()+".receiptfiles",file);
+   Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("application/pdf");intent.putExtra(Intent.EXTRA_STREAM,uri);intent.setClipData(android.content.ClipData.newRawUri("Reçu PDF",uri));intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+   startActivity(Intent.createChooser(intent,"Partager le reçu PDF"));
+  }catch(Exception ex){Toast.makeText(this,"Partage PDF impossible. Aucun paiement supplémentaire.",Toast.LENGTH_LONG).show();}
  }
  private byte[] pendingCashPdf;
  private void exportCashReceipt(String raw){exportReceiptPdf(raw,false);}
@@ -945,6 +961,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void importProfile(){runOnUiThread(()->pickReceiptProfile());}
     @android.webkit.JavascriptInterface public void cashPdf(String raw){runOnUiThread(()->exportCashReceipt(raw));}
     @android.webkit.JavascriptInterface public void cardPdf(String raw){runOnUiThread(()->exportReceiptPdf(raw,true));}
+    @android.webkit.JavascriptInterface public void sharePdf(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPdf(token,raw,card));}
     @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
    },"TaxiReceipt");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
