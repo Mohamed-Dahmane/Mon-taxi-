@@ -4,6 +4,11 @@ on:
     branches: [test/sumup-oauth-receipts-2122-20261125]
     paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
+    inputs:
+      compile_apk:
+        description: 'Autoriser explicitement la compilation signée après audit'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -700,6 +705,18 @@ jobs:
               assert.match(lookup,/setRequestMethod\("GET"\)/);
               assert.match(lookup,/setInstanceFollowRedirects\(false\)/);
               assert.doesNotMatch(lookup,/SumUpAPI\.checkout|\.getOutputStream\(|setDoOutput\(true\)|\.putString\("pending"/);
+            }else if(p==='app/src/main/java/be/montaxi/gestion/TaxiReceiptOAuthClient.java'){
+              // Only the fixed browser authorization host is allowed; network requests go to the dedicated receipt service.
+              const authority='"api.sumup.com".equals(uri.getEncodedAuthority())';
+              assert.equal(source.split(authority).length,2,p);
+              assert.doesNotMatch(source.replace(authority,''),/api\.sumup\.com/,p);
+              assert.match(source,/ENDPOINT="https:\/\/uenyvsiturkihectolxp\.supabase\.co\/functions\/v1\/taxi-sumup-oauth"/);
+              assert.match(source,/new URL\(ENDPOINT\)\.openConnection\(\)/);
+              assert.match(source,/setInstanceFollowRedirects\(false\)/);
+              assert.match(source,/"\/authorize"\.equals\(uri\.getPath\(\)\)/);
+              assert.match(source,/"transactions\.history user\.profile_readonly"\.equals\(uri\.getQueryParameter\("scope"\)\)/);
+              assert.deepEqual([...source.matchAll(/\.put\("action","([^"]+)"\)/g)].map(x=>x[1]).sort(),['receipt','start','status']);
+              assert.doesNotMatch(source,/SumUpAPI\.checkout|\/payments|\/refunds|client_secret/);
             }else assert.doesNotMatch(source,/api\.sumup\.com/,p);
           }
           const create=require('./refonte/course-controller.js'),c=create();
@@ -856,6 +873,7 @@ jobs:
         run: echo "Points 1 à 10 validés techniquement, sans ancienne donnée. Compilation et essais matériels restent à confirmer."
 
   point11-signed-apk:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.compile_apk == true }}
     needs: [points-1-to-10, receipt-contract, pdf-interface]
     runs-on: ubuntu-24.04
     timeout-minutes: 35
