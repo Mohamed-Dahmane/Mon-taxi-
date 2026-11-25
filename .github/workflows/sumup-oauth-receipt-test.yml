@@ -16,6 +16,7 @@ jobs:
       - run: node tests/sumup-oauth-receipt-contract.mjs
       - run: node tests/sumup-oauth-transport.mjs
       - run: node tests/sumup-oauth-protection.mjs
+      - run: node tests/sumup-oauth-integration.mjs
   pdf-interface:
     runs-on: ubuntu-24.04
     timeout-minutes: 12

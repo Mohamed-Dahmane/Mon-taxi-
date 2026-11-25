@@ -15,7 +15,7 @@ export function createStore({url,serviceKey,device,merchant,fetchImpl=globalThis
  }
  const read=()=>request("GET");
  const patch=(filters,data)=>request("PATCH",filters,data);
- let claimed=false;
+ let claimed=false,unsafe=false;
  return Object.freeze({
   async insertState(row){
    if(row.device!==device||row.merchant!==merchant)throw Error("binding_invalid");
@@ -38,9 +38,13 @@ export function createStore({url,serviceKey,device,merchant,fetchImpl=globalThis
    if(!r)throw Error("busy");claimed=true;return r.token_envelope;
   },
   async save(envelope){
+   // If the save outcome is uncertain, preserve the fenced lock. A later fresh authorization can recover; no worker may reuse a possibly rotated token.
+   unsafe=true;
    if(!claimed||!await patch({op_id:"eq."+op},{token_envelope:envelope}))throw Error("storage_conflict");
+   unsafe=false;
   },
   async finish(){
+   if(unsafe)throw Error("storage_conflict");
    if(claimed){if(!await patch({op_id:"eq."+op},{op_id:null,op_started_at:null}))throw Error("storage_conflict");claimed=false;}
   },
   async status(){
