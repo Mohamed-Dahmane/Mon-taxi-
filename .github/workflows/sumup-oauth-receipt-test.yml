@@ -1,0 +1,16 @@
+name: OAuth SumUp 2122 - tests isolés
+on:
+  push:
+    branches: [test/sumup-oauth-receipts-2122-20261125]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  receipt-contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/sumup-oauth-receipt-contract.mjs
