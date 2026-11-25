@@ -68,6 +68,14 @@ function makeCore(){
   courses[index]={...courses[index],status:"archived",payment,...(receiptIdentity?{receiptIdentity}: {})};
   return {...state,courses,ledger:[...state.ledger,{courseId:id,...payment}]};
  }
+ // Archive removal retains the original payment for audit and duplicate prevention.
+ function removeArchived(s,id,mode){
+  const c=s.courses.find(x=>x.id===id);
+  if(!c||c.status!=="archived"||!c.payment||c.removal||c.refundPending)throw Error("Suppression indisponible pour cette course");
+  if(mode!=="hide"&&mode!=="void-test")throw Error("Action inconnue");
+  if(mode==="void-test"&&(c.payment.method!=="cash"||c.refund))throw Error("Seule une saisie espèces fictive non remboursée peut être annulée");
+  return {...s,courses:s.courses.map(x=>x.id===id?{...x,removal:{mode,at:new Date().toISOString()}}:x)};
+ }
  function savePaymentDraft(state,id,cents){
   if(!Number.isSafeInteger(cents)||cents<100||cents>9999900)throw Error("Montant terminal invalide");
   const index=state.courses.findIndex(c=>c.id===id);
@@ -97,7 +105,7 @@ function makeCore(){
  // Contre-écriture locale, uniquement après remboursement réellement effectué.
  function recordRefund(s,id,day,amountCents,proof){
   const c=s.courses.find(x=>x.id===id),p=s.ledger.find(x=>x.courseId===id);
-  if(!c||c.status!=="archived"||!p||!["cash","sumup"].includes(p.method)||c.refund)throw Error("Course non remboursable ou déjà remboursée");
+  if(!c||c.status!=="archived"||!p||!["cash","sumup"].includes(p.method)||c.refund||c.removal?.mode==="void-test")throw Error("Course non remboursable ou déjà remboursée");
   if(!validDay(day)||day<paymentDay(p.paidAt)||day>paymentDay(new Date().toISOString()))throw Error("Date de remboursement invalide");
   if(!validAmount(amountCents)||amountCents<=0||amountCents>p.amountCents)throw Error("Montant de remboursement invalide");
   if(c.refundPending&&(!proof||proof.eventId==null||proof.reference!==p.reference||c.refundPending.amountCents!==amountCents))throw Error("Remboursement bancaire en attente de confirmation");
@@ -125,6 +133,7 @@ function makeCore(){
   const byId=new Map(s.courses.map(c=>[c.id,c]));
   for(const p of s.ledger){
    const c=byId.get(p.courseId);
+   if(c?.removal?.mode==="void-test")continue;
    if(c?.refund?.day===day){if(p.method==="cash")cash-=c.refund.amountCents;else cardGross-=c.refund.amountCents;}
    if(paymentDay(p.paidAt)!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
@@ -206,6 +215,7 @@ function makeCore(){
   for(const c of s.courses){
    if(!c||typeof c.id!=="string"||!c.id||ids.has(c.id)||!statuses.has(c.status))throw Error("Course invalide ou doublon");
    ids.add(c.id);
+   if(c.removal!==undefined){const r=c.removal;if(!r||c.status!=="archived"||!["hide","void-test"].includes(r.mode)||typeof r.at!=="string"||!Number.isFinite(Date.parse(r.at))||(r.mode==="void-test"&&(c.payment?.method!=="cash"||c.refund||c.refundPending)))throw Error("Suppression incohérente");}
    if(c.receiptIdentity!==undefined){if(c.status!=="archived"||c.payment?.method!=="cash")throw Error("Identité de reçu incompatible");validateReceiptProfile(c.receiptIdentity);}
    if(c.commissionCents!==undefined&&!validAmount(c.commissionCents))throw Error("Commission invalide");
    if(c.paymentDraftCents!==undefined&&(!validAmount(c.paymentDraftCents)||c.paymentDraftCents===0))throw Error("Montant à payer invalide");
@@ -245,7 +255,7 @@ function makeCore(){
   if(s.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
   return s;
  }
- return {empty,setReceiptProfile,addCourse,apply,savePaymentDraft,recordCash,recordRefund,prepareRefund,confirmRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
+ return {empty,setReceiptProfile,addCourse,removeArchived,apply,savePaymentDraft,recordCash,recordRefund,prepareRefund,confirmRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();
