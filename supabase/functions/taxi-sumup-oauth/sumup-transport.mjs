@@ -29,10 +29,15 @@ export function createSumUpTransport({clientId,clientSecret,fetchImpl=globalThis
    const scope=validateScopes(previous.scope);
    return validateTokens(await token({grant_type:"refresh_token",refresh_token:previous.refreshToken}),scope,previous.refreshToken);
   },
+  async verifyMerchant(accessToken,merchant){
+   if(!valid(accessToken)||!segment(merchant,80))throw Error("request_invalid");
+   const result=await request("/v1/merchants/"+encodeURIComponent(merchant),{method:"GET",headers:{Authorization:"Bearer "+accessToken,Accept:"application/json"}});
+   if(!result||result.merchant_code!==merchant)throw Error("merchant_mismatch");
+   return true;
+  },
   async getReceipt({accessToken,merchant,reference,cents}){
    if(!valid(accessToken)||!segment(merchant,80)||!segment(reference,128)||!Number.isSafeInteger(cents)||cents<1||cents>9999900)throw Error("request_invalid");
-   // The dedicated receipt endpoint requires receipts.read, not the configured
-   // transactions.history scope. Read exactly one transaction by its code instead.
+   // Single transaction route explicitly supports transactions.history; use it first.
    const tx=await request("/v2.1/merchants/"+encodeURIComponent(merchant)+"/transactions?transaction_code="+encodeURIComponent(reference),{method:"GET",headers:{Authorization:"Bearer "+accessToken,Accept:"application/json"}});
    if(!tx||typeof tx.amount!=="number"||!Number.isFinite(tx.amount))throw Error("amount_invalid");
    // Preserve strict cent and merchant checks; do not round a mismatched amount.
