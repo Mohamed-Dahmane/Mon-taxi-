@@ -31,8 +31,12 @@ export function createSumUpTransport({clientId,clientSecret,fetchImpl=globalThis
   },
   async getReceipt({accessToken,merchant,reference,cents}){
    if(!valid(accessToken)||!segment(merchant,80)||!segment(reference,128)||!Number.isSafeInteger(cents)||cents<1||cents>9999900)throw Error("request_invalid");
-   const raw=await request("/v1.1/receipts/"+encodeURIComponent(reference)+"?mid="+encodeURIComponent(merchant),{method:"GET",headers:{Authorization:"Bearer "+accessToken,Accept:"application/json"}});
-   return validateReceipt(raw,reference,cents,merchant);
+   // The dedicated receipt endpoint requires receipts.read, not the configured
+   // transactions.history scope. Read exactly one transaction by its code instead.
+   const tx=await request("/v2.1/merchants/"+encodeURIComponent(merchant)+"/transactions?transaction_code="+encodeURIComponent(reference),{method:"GET",headers:{Authorization:"Bearer "+accessToken,Accept:"application/json"}});
+   if(!tx||typeof tx.amount!=="number"||!Number.isFinite(tx.amount))throw Error("amount_invalid");
+   // Preserve strict cent and merchant checks; do not round a mismatched amount.
+   return validateReceipt({transaction_data:{transaction_code:tx.transaction_code,merchant_code:tx.merchant_code,amount:String(tx.amount),currency:tx.currency,status:tx.status,timestamp:tx.timestamp}},reference,cents,merchant);
   }
  });
 }
