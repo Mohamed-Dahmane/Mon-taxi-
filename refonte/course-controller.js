@@ -10,6 +10,7 @@ function create(core,sumupEvent,storage){
   function apply(id,event){commit(core.apply(state,id,event));return clone(get(id))}
   return {
     snapshot:()=>clone(state),
+    setReceiptProfile(p){commit(core.setReceiptProfile(state,clone(p)));},
     saveDirectory(kind,item){commit(core.saveDirectory(state,kind,clone(item)));},
     removeDirectory(kind,id){commit(core.removeDirectory(state,kind,id));},
     moveDirectory(kind,id,delta){commit(core.moveDirectory(state,kind,id,delta));},

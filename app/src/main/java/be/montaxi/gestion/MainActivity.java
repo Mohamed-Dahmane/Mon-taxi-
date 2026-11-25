@@ -339,6 +339,23 @@ public class MainActivity extends Activity {
     },"TaxiReceiptReadOnly").start();
    }).show();
  }
+ private static final int CASH_RECEIPT_PICK=706;
+ private byte[] pendingCashPdf;
+ private void exportCashReceipt(String raw){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||raw==null||raw.length()>50000||pendingCashPdf!=null)return;
+  try{
+   org.json.JSONObject r=new org.json.JSONObject(raw);
+   pendingCashPdf=TaxiCashReceiptPdf.render(r);
+   Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("application/pdf");intent.putExtra(Intent.EXTRA_TITLE,"Taximo-Transport-recu-especes.pdf");
+   startActivityForResult(intent,CASH_RECEIPT_PICK);
+  }catch(Exception ex){pendingCashPdf=null;Toast.makeText(this,"Impossible de préparer le reçu PDF.",Toast.LENGTH_LONG).show();}
+ }
+ private void finishCashReceiptExport(int resultCode,Intent data){
+  byte[] bytes=pendingCashPdf;pendingCashPdf=null;
+  if(resultCode!=RESULT_OK||bytes==null||data==null||data.getData()==null)return;
+  try(java.io.OutputStream out=getContentResolver().openOutputStream(data.getData(),"w")){if(out==null)throw new IOException();out.write(bytes);out.flush();Toast.makeText(this,"Reçu PDF enregistré.",Toast.LENGTH_LONG).show();}
+  catch(Exception ex){Toast.makeText(this,"Enregistrement PDF impossible. Réessaie depuis l’historique.",Toast.LENGTH_LONG).show();}
+ }
  private void shareTaxiReceipt(String channel,String body){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||body==null||body.length()>1800||!body.startsWith("Mon Taxi Pro"))return;
   try{
@@ -686,6 +703,7 @@ public class MainActivity extends Activity {
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
   super.onActivityResult(requestCode,resultCode,data);
+  if(requestCode==CASH_RECEIPT_PICK){finishCashReceiptExport(resultCode,data);return;}
   if(requestCode==BACKUP_PICK){readLocalBackup(resultCode,data);return;}
   if(requestCode==SUMUP_LOGIN){
    if(sumUpStage("login")){
@@ -869,6 +887,7 @@ public class MainActivity extends Activity {
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void share(String channel,String body){runOnUiThread(()->shareTaxiReceipt(channel,body));}
     @android.webkit.JavascriptInterface public void retrieve(String reference,int cents){runOnUiThread(()->retrieveTaxiReceipt(reference,cents));}
+    @android.webkit.JavascriptInterface public void cashPdf(String raw){runOnUiThread(()->exportCashReceipt(raw));}
    },"TaxiReceipt");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);

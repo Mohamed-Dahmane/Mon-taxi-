@@ -46,6 +46,13 @@ function makeCore(){
   return {...state,courses,ledger};
  }
  // Le cash suit une action locale unique, sans adaptateur carte ni état de paiement externe.
+ function validateReceiptProfile(p){
+  if(!p||typeof p!=="object"||typeof p.driverNumber!=="string"||p.driverNumber.length>40||typeof p.enabled!=="boolean"||!Array.isArray(p.strokes)||p.strokes.length>40)throw Error("Profil reçu invalide");
+  let n=0;for(const stroke of p.strokes){if(!Array.isArray(stroke)||stroke.length<2)throw Error("Signature invalide");for(const pt of stroke){if(!Array.isArray(pt)||pt.length!==2||!pt.every(v=>Number.isInteger(v)&&v>=0&&v<=1000)||++n>2500)throw Error("Signature invalide");}}
+  if(p.enabled&&n<2)throw Error("Signature manquante");
+  return {driverNumber:p.driverNumber.trim(),enabled:p.enabled,strokes:p.strokes.map(s=>s.map(pt=>pt.slice()))};
+ }
+ function setReceiptProfile(s,p){return {...s,receiptProfile:validateReceiptProfile(p)};}
  function recordCash(state,id,amountCents){
   if(!Number.isSafeInteger(amountCents)||amountCents<=0)throw Error("Montant espèces invalide");
   const index=state.courses.findIndex(c=>c.id===id);
@@ -54,7 +61,9 @@ function makeCore(){
   if(state.ledger.some(x=>x.courseId===id||x.attemptId===reference))throw Error("Paiement déjà enregistré");
   const payment={method:"cash",amountCents,attemptId:reference,reference,paidAt:new Date().toISOString()};
   const courses=state.courses.slice();
-  courses[index]={...courses[index],status:"archived",payment};
+  const profile=state.receiptProfile;
+  const receiptIdentity=profile?validateReceiptProfile(profile):null;
+  courses[index]={...courses[index],status:"archived",payment,...(receiptIdentity?{receiptIdentity}: {})};
   return {...state,courses,ledger:[...state.ledger,{courseId:id,...payment}]};
  }
  function savePaymentDraft(state,id,cents){
@@ -190,10 +199,12 @@ function makeCore(){
  function validateState(s){
   if(!s||typeof s!=="object"||!["hotels","contacts","drivers","courses","ledger"].every(k=>Array.isArray(s[k])))throw Error("Sauvegarde invalide");
   validateDirectory(s);
+  if(s.receiptProfile!==undefined)validateReceiptProfile(s.receiptProfile);
   const ids=new Set(),ledgerIds=new Set(),attempts=new Set(),references=new Set(),statuses=new Set(["planned","loaded","in_progress","awaiting_payment","payment_pending","archived"]);
   for(const c of s.courses){
    if(!c||typeof c.id!=="string"||!c.id||ids.has(c.id)||!statuses.has(c.status))throw Error("Course invalide ou doublon");
    ids.add(c.id);
+   if(c.receiptIdentity!==undefined){if(c.status!=="archived"||c.payment?.method!=="cash")throw Error("Identité de reçu incompatible");validateReceiptProfile(c.receiptIdentity);}
    if(c.commissionCents!==undefined&&!validAmount(c.commissionCents))throw Error("Commission invalide");
    if(c.paymentDraftCents!==undefined&&(!validAmount(c.paymentDraftCents)||c.paymentDraftCents===0))throw Error("Montant à payer invalide");
    if(c.status==="payment_pending"&&(!c.payment||c.payment.method!=="sumup"||!validAmount(c.payment.amountCents)||c.payment.amountCents<=0||typeof c.payment.attemptId!=="string"||!c.payment.attemptId))throw Error("Tentative en attente invalide");
@@ -232,7 +243,7 @@ function makeCore(){
   if(s.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
   return s;
  }
- return {empty,addCourse,apply,savePaymentDraft,recordCash,recordRefund,prepareRefund,confirmRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
+ return {empty,setReceiptProfile,addCourse,apply,savePaymentDraft,recordCash,recordRefund,prepareRefund,confirmRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();

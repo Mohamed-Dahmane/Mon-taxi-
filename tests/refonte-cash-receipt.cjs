@@ -1,0 +1,16 @@
+"use strict";const assert=require("node:assert/strict"),create=require("../refonte/course-controller");
+let saved;const storage={load:()=>saved,save:s=>saved=JSON.parse(JSON.stringify(s))};
+let c=create(storage);const pay=id=>{c.plan({id,from:"DoubleTree",to:"BRU"});c.load(id);c.start(id);c.finish(id);return c.cash(id,3000)};
+assert.equal(pay("old").receiptIdentity,undefined);
+const p={driverNumber:"007",enabled:true,strokes:[[[10,20],[200,500]]]};
+c.setReceiptProfile(p);const cash=pay("new");assert.deepEqual(cash.receiptIdentity,p);
+c.setReceiptProfile({driverNumber:"008",enabled:false,strokes:[]});
+assert.deepEqual(c.snapshot().courses.find(x=>x.id==="new").receiptIdentity,p);
+assert.equal(pay("new2").receiptIdentity.enabled,false);
+c.plan({id:"card"});c.load("card");c.start("card");c.finish("card");c.beginSumUp("card",3000,"attempt");c.receiveSumUp("card",{status:"success",attemptId:"attempt",transactionCode:"T",amountCents:3000,currency:"EUR"});
+assert.equal(c.snapshot().courses.find(x=>x.id==="card").receiptIdentity,undefined);
+assert.throws(()=>c.setReceiptProfile({driverNumber:"",enabled:true,strokes:[]}));
+c=create(storage);assert.deepEqual(c.snapshot().courses.find(x=>x.id==="new").receiptIdentity,p);
+assert.deepEqual(require("../refonte/clean-core").readBackup(c.backup()),c.snapshot());
+assert.equal(c.snapshot().ledger.length,4);
+console.log("Cash receipt identity: immutable snapshots, profile changes, cash-only, backup and reload OK");
