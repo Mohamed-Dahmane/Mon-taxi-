@@ -29,6 +29,7 @@ function create(core,sumupEvent,storage){
       const next=core.apply(core.apply(core.addCourse(state,{...clone(course),kind:"free",driverIsMe:true,commissionCents:0}),id,{type:"load"}),id,{type:"start"});
       commit(next);return clone(get(id));
     },
+    removeArchived(id,mode){commit(core.removeArchived(state,id,mode));return clone(get(id));},
     load:id=>apply(id,{type:"load"}),
     start:id=>apply(id,{type:"start"}),
     finish:id=>apply(id,{type:"finish"}),
