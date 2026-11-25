@@ -19,8 +19,10 @@ final class TaxiCashReceiptPdf {
   String route=field(r,"route",640),vehicle=field(r,"vehicle",40),driver=field(r,"driverNumber",40);
   String date=OffsetDateTime.parse(r.getString("paidAt")).atZoneSameInstant(ZoneId.of("Europe/Brussels")).format(DateTimeFormatter.ofPattern("dd/MM/yyyy · HH:mm",Locale.FRANCE));
   JSONArray strokes=r.optJSONArray("strokes");int count=0;if(strokes!=null){if(strokes.length()>40)throw new IOException("Signature");for(int i=0;i<strokes.length();i++){JSONArray stroke=strokes.getJSONArray(i);if(stroke.length()<2)throw new IOException("Signature");for(int j=0;j<stroke.length();j++){JSONArray pt=stroke.getJSONArray(j);if(pt.length()!=2||++count>2500||pt.getInt(0)<0||pt.getInt(0)>1000||pt.getInt(1)<0||pt.getInt(1)>1000)throw new IOException("Signature");}}}
-  try(PdfDocument doc=new PdfDocument();ByteArrayOutputStream out=new ByteArrayOutputStream()){
-   PdfDocument.Page page=doc.startPage(new PdfDocument.PageInfo.Builder(360,780,1).create());Canvas c=page.getCanvas();Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);c.drawColor(Color.WHITE);
+  PdfDocument doc=new PdfDocument();
+  PdfDocument.Page page=null;
+  try(ByteArrayOutputStream out=new ByteArrayOutputStream()){
+   page=doc.startPage(new PdfDocument.PageInfo.Builder(360,780,1).create());Canvas c=page.getCanvas();Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);c.drawColor(Color.WHITE);
    text(c,p,"TAXIMO TRANSPORT",180,46,23,NAVY,true,Paint.Align.CENTER);p.setColor(GOLD);c.drawRect(145,55,215,57,p);
    text(c,p,"Reçu espèces / Cash receipt",180,81,12,GRAY,false,Paint.Align.CENTER);
    text(c,p,money(cents),180,130,35,NAVY,true,Paint.Align.CENTER);text(c,p,"PAYÉ / PAID",180,153,13,GREEN,true,Paint.Align.CENTER);text(c,p,date,180,177,11,GRAY,false,Paint.Align.CENTER);
@@ -34,7 +36,7 @@ final class TaxiCashReceiptPdf {
    String png=r.optString("signaturePng","");if(!png.isEmpty()){if(png.length()>20000)throw new IOException("Signature");byte[] image=android.util.Base64.decode(png,android.util.Base64.DEFAULT);BitmapFactory.Options bounds=new BitmapFactory.Options();bounds.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(image,0,image.length,bounds);if(bounds.outWidth<1||bounds.outHeight<1||bounds.outWidth>1200||bounds.outHeight>600)throw new IOException("Signature dimensions");Bitmap bmp=BitmapFactory.decodeByteArray(image,0,image.length);if(bmp==null)throw new IOException("Signature");y+=15;text(c,p,"Signature du chauffeur / Driver’s signature",30,y,10,GRAY,false,Paint.Align.LEFT);y+=10;float scale=Math.min(250f/bmp.getWidth(),75f/bmp.getHeight());p.setFilterBitmap(true);c.drawBitmap(bmp,null,new RectF(30,y,30+bmp.getWidth()*scale,y+bmp.getHeight()*scale),p);y+=bmp.getHeight()*scale+8;bmp.recycle();}
    else if(count>0){y+=15;text(c,p,"Signature du chauffeur / Driver's signature",30,y,10,GRAY,false,Paint.Align.LEFT);y+=10;p.setColor(Color.BLACK);p.setStrokeWidth(1.6f);p.setStrokeCap(Paint.Cap.ROUND);for(int i=0;i<strokes.length();i++){JSONArray st=strokes.getJSONArray(i);for(int j=1;j<st.length();j++){JSONArray a=st.getJSONArray(j-1),b=st.getJSONArray(j);c.drawLine(30+a.getInt(0)*.25f,y+a.getInt(1)*.07f,30+b.getInt(0)*.25f,y+b.getInt(1)*.07f,p);}}y+=78;}
    text(c,p,"Merci de votre confiance · Thank you",180,Math.max(420,y+30),11,GRAY,false,Paint.Align.CENTER);
-   doc.finishPage(page);doc.writeTo(out);return out.toByteArray();
-  }
+   doc.finishPage(page);page=null;doc.writeTo(out);return out.toByteArray();
+  }finally{try{if(page!=null)doc.finishPage(page);}finally{doc.close();}}
  }
 }
