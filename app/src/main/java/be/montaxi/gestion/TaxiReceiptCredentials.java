@@ -11,7 +11,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 final class TaxiReceiptCredentials {
- private static final String ALIAS="taxi-receipt-read-v1";
+ private static final String ALIAS="taxi-receipt-oauth-device-v1";
  private final SharedPreferences prefs;
  TaxiReceiptCredentials(Context context){prefs=context.getSharedPreferences(ALIAS,Context.MODE_PRIVATE);}
  private SecretKey key()throws Exception{
