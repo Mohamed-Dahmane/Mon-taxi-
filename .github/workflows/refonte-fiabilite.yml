@@ -85,7 +85,7 @@ jobs:
           for(const [,css] of html.matchAll(/<style>([\s\S]*?)<\/style>/gi)){
             assert.doesNotMatch(css,/@import\b|url\s*\(/i);
             for(const [hex] of css.matchAll(/#[0-9a-f]{6}\b/gi)){
-              const h=hex.toLowerCase();assert.ok(h.slice(1,3)===h.slice(3,5)&&h.slice(3,5)===h.slice(5,7),'Couleur non neutre à réauditer : '+hex);
+              const h=hex.toLowerCase();const approved=new Set(['#123e70','#2164cf','#23864d','#505965','#087e8b','#16794b']);assert.ok((h.slice(1,3)===h.slice(3,5)&&h.slice(3,5)===h.slice(5,7))||approved.has(h),'Couleur non approuvée à réauditer : '+hex);
             }
             assert.doesNotMatch(css,/\b(?:rgb|hsl)a?\s*\(/i);
           }

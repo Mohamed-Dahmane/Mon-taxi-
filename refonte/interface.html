@@ -32,6 +32,14 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 #success-amount{font-size:clamp(1.9rem,6vw,2.3rem)}
 #success-method{font-size:1.5rem}#success-next-time{font-size:1.4rem}
 .success-check{width:84px;height:84px;margin:auto}
+/* Palette validée 25/11 : seulement les actions identifiées, aucun positionnement flottant. */
+#home button[data-go="reservation"]{background:#123e70;border-color:#123e70;color:#ffffff}
+#home button[data-go="direct"],#pay-sumup,#sumup-confirm{background:#2164cf;border-color:#2164cf;color:#ffffff}
+#home button[data-go="immediate"]{background:#23864d;border-color:#23864d;color:#ffffff}
+#home button[data-go="free-ride"]{background:#505965;border-color:#505965;color:#ffffff}
+#home button[data-go="free-payment"]{background:transparent;border-color:#087e8b;color:#ffffff}
+#pay-cash,#cash-confirm{background:#16794b;border-color:#16794b;color:#ffffff}
+#home .actions>button{min-height:64px}
 </style>
 <script defer src="clean-core.js"></script>
 <script defer src="sumup-course-payment.js"></script>

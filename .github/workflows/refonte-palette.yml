@@ -1,0 +1,20 @@
+name: Charte Mon Taxi - controles tactiles
+on:
+  push:
+    branches: [test/payment-ledger-2107-20261124]
+    paths: ['refonte/interface.html', 'tests/refonte-palette-browser.cjs', '.github/workflows/refonte-palette.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  palette:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - run: node tests/refonte-palette-browser.cjs
