@@ -56,6 +56,12 @@ function cashReceipt(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;if(c?.status!=="archived"||p?.method!=="cash")throw Error("Aucun paiement espèces confirmé.");
  const ident=c.receiptIdentity;return {reference:p.reference,paidAt:p.paidAt,amountCents:p.amountCents,route:[c.from,c.to].filter(Boolean).join(" → "),vehicle:c.vehicle==="van"?"Van":"",driverNumber:ident?.driverNumber||"",strokes:ident?.enabled?ident.strokes:[],signaturePng:ident?.enabled?ident.signaturePng||"":"",refundCents:c.refund?.amountCents||0};
 }
+function cardReceipt(id){
+ const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
+ if(c?.status!=="archived"||p?.method!=="sumup"||!p.reference||!Number.isSafeInteger(p.amountCents)||p.amountCents<=0)throw Error("Aucun paiement carte confirmé.");
+ const v=receiptVerified.get(p.reference),verified=v?.reference===p.reference&&v.amountCents===p.amountCents&&v.currency==="EUR"&&Number.isFinite(Date.parse(v.timestamp));
+ return {reference:p.reference,paidAt:verified?v.timestamp:p.paidAt,amountCents:p.amountCents,from:c.from||"",to:c.to||"",vehicle:c.vehicle==="van"?"Van":"",verified:!!verified,business:verified?v.business||"":"",vat:verified?v.vat||"":"",number:verified?v.number||"":"",refundCents:c.refund?.amountCents||0};
+}
 function receiptData(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
  if(c?.status!=="archived"||!p?.reference||!Number.isSafeInteger(p.amountCents))throw Error("Aucun paiement confirmé.");
@@ -66,9 +72,9 @@ function receiptData(id){
  return "Mon Taxi Pro — Justificatif de paiement\nMontant initial payé : "+euros(p.amountCents)+"\nDate : "+new Date(v?.timestamp||p.paidAt).toLocaleString("fr-BE",{timeZone:"Europe/Brussels"})+"\nRéférence SumUp : "+p.reference+details+(c.refund?"\nRemboursement enregistré : "+euros(c.refund.amountCents):"")+"\nDocument Mon Taxi Pro, distinct du reçu émis par SumUp.";
 }
 function openReceipt(id,back){const body=receiptData(id);receiptCourse=id;receiptReturn=back;$('receipt-summary').textContent=body;$('receipt-status').textContent="";const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
- $("receipt-verify").hidden=cash;$("receipt-share-options").hidden=cash;$("receipt-share-other").hidden=cash;$("cash-receipt-pdf").hidden=!cash;
+ $("receipt-verify").hidden=cash;$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;$("cash-receipt-pdf").hidden=!cash;$("card-receipt-pdf").hidden=cash;
  const r=cash?cashReceipt(id):null,strokes=r?.strokes||[],png=r?.signaturePng||"";$("receipt-signature").hidden=!strokes.length&&!png;drawSignature($("receipt-signature"),strokes,png);$("receipt-privacy").hidden=cash;
- if(cash)$("receipt-status").textContent="PDF local disponible. Envoi par lien sécurisé à intégrer ultérieurement.";
+ $("receipt-status").textContent="PDF local disponible. Envoi sécurisé non encore disponible.";
  show("receipt");}
 window.addEventListener("taxi-receipt-profile",e=>safe(()=>{if($("accounts").hidden)return;if(e.detail?.error)throw Error(e.detail.error);const doc=JSON.parse(e.detail.content);if(doc.format!=="taximo-receipt-profile-v1")throw Error("Fichier de profil invalide.");controller.setReceiptProfile(doc.profile);loadReceiptProfile();message("Profil chauffeur privé importé. Signature automatique activée.");}));
 window.addEventListener("taxi-receipt-result",e=>safe(()=>{
@@ -151,10 +157,16 @@ function openMoneyPad(el){
  field.after(moneyPad);moneyPad.hidden=false;
 }
 function moneyKeyValue(value,key){
- if(!/^\d{1,9}[,.]\d{2}$/.test(value)&&value!==""&&value!=="0")throw Error("Montant invalide : efface-le avant de recommencer.");
- const digits=value.replace(/\D/g,"").replace(/^0+(?=\d)/,"");
  if(key==="clear")return "";
- if(key==="back")return moneyFormat(digits.slice(0,-1));
+ const valid=/^\d{1,9}[,.]\d{2}$/.test(value)||value===""||value==="0";
+ if(key==="back"){
+  // A malformed intermediate edit must remain correctable, without silently interpreting it as cents.
+  if(!valid)return value.slice(0,-1);
+  const digits=value.replace(/\D/g,"").replace(/^0+(?=\d)/,"");
+  return moneyFormat(digits.slice(0,-1));
+ }
+ if(!valid)throw Error("Montant invalide : corrige-le avant de continuer.");
+ const digits=value.replace(/\D/g,"").replace(/^0+(?=\d)/,"");
  if(!/^\d{1,2}$/.test(key))throw Error("Touche inconnue.");
  return moneyFormat(digits+key);
 }
@@ -525,11 +537,12 @@ document.addEventListener("click",e=>{
  if(b.id==="receipt-profile-save"){safe(()=>{controller.setReceiptProfile({driverNumber:$("receipt-driver").value.trim(),enabled:$("signature-enabled").checked,strokes:signatureStrokes.filter(s=>s.length>=2),...(signaturePng?{signaturePng}:{})});loadReceiptProfile();message("Préférences de reçu enregistrées.");});return;}
  if(b.id==="signature-clear"){signaturePng="";signatureStrokes=[];activeStroke=null;$("signature-enabled").checked=false;drawSignature(pad,[]);return;}
  if(b.id==="cash-receipt-pdf"){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.cashPdf!=="function")throw Error("PDF disponible sur Android.");window.TaxiReceipt.cashPdf(JSON.stringify(cashReceipt(receiptCourse)));});return;}
+ if(b.id==="card-receipt-pdf"){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.cardPdf!=="function")throw Error("PDF disponible sur Android.");window.TaxiReceipt.cardPdf(JSON.stringify(cardReceipt(receiptCourse)));});return;}
  if(b.id==="receipt-open"){safe(()=>openReceipt(successCourse,"success"));return;}
  if(b.dataset.receiptCourse){safe(()=>openReceipt(b.dataset.receiptCourse,"archives"));return;}
  if(b.id==="receipt-back"){safe(()=>show(receiptReturn));return;}
  if(b.id==="receipt-verify"){safe(()=>{receiptData(receiptCourse);const p=controller.snapshot().courses.find(x=>x.id===receiptCourse).payment;if($("receipt").hidden||typeof window.TaxiReceipt?.retrieve!=="function")throw Error("Consultation disponible sur Android.");window.TaxiReceipt.retrieve(p.reference,p.amountCents);});return;}
- if(b.dataset.receiptChannel){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.share!=="function")throw Error("Partage disponible sur Android.");window.TaxiReceipt.share(b.dataset.receiptChannel,receiptData(receiptCourse));});return;}
+ if(b.dataset.receiptChannel){message("Envoi sécurisé non encore disponible.",true);return;}
  if(b.id==="success-home"){safe(()=>show("home"));return;}
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");

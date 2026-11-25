@@ -345,12 +345,13 @@ public class MainActivity extends Activity {
  private void readReceiptProfile(int code,Intent data){if(code!=RESULT_OK||data==null||data.getData()==null||!backupTrusted())return;android.net.Uri uri=data.getData();if(!"content".equals(uri.getScheme()))return;new Thread(()->{try(InputStream in=getContentResolver().openInputStream(uri);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){if(in==null)throw new IOException();byte[] buf=new byte[4096];int n;while((n=in.read(buf))!=-1){if(out.size()+n>50000)throw new IOException();out.write(buf,0,n);}String raw=new String(out.toByteArray(),java.nio.charset.StandardCharsets.UTF_8);org.json.JSONObject doc=new org.json.JSONObject(raw);if(!"taximo-receipt-profile-v1".equals(doc.optString("format")))throw new IOException();String png=doc.getJSONObject("profile").optString("signaturePng","");if(!png.isEmpty()){if(png.length()>20000)throw new IOException();byte[] bytes=Base64.decode(png,Base64.DEFAULT);BitmapFactory.Options b=new BitmapFactory.Options();b.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(bytes,0,bytes.length,b);if(b.outWidth<1||b.outHeight<1||b.outWidth>1200||b.outHeight>600||!"image/png".equals(b.outMimeType))throw new IOException();}runOnUiThread(()->receiptProfileEvent(raw,null));}catch(Exception e){runOnUiThread(()->receiptProfileEvent(null,"Profil chauffeur invalide ou illisible."));}},"ReceiptProfileImport").start();}
 
  private byte[] pendingCashPdf;
- private void exportCashReceipt(String raw){
+ private void exportCashReceipt(String raw){exportReceiptPdf(raw,false);}
+ private void exportReceiptPdf(String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||raw==null||raw.length()>50000||pendingCashPdf!=null)return;
   try{
    org.json.JSONObject r=new org.json.JSONObject(raw);
-   pendingCashPdf=TaxiCashReceiptPdf.render(r);
-   Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("application/pdf");intent.putExtra(Intent.EXTRA_TITLE,"Taximo-Transport-recu-especes.pdf");
+   pendingCashPdf=card?TaxiCardReceiptPdf.render(r):TaxiCashReceiptPdf.render(r);
+   Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("application/pdf");intent.putExtra(Intent.EXTRA_TITLE,card?"Taximo-Transport-recu-carte.pdf":"Taximo-Transport-recu-especes.pdf");
    startActivityForResult(intent,CASH_RECEIPT_PICK);
   }catch(Exception ex){pendingCashPdf=null;Toast.makeText(this,"Impossible de préparer le reçu PDF.",Toast.LENGTH_LONG).show();}
  }
@@ -894,6 +895,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void retrieve(String reference,int cents){runOnUiThread(()->retrieveTaxiReceipt(reference,cents));}
     @android.webkit.JavascriptInterface public void importProfile(){runOnUiThread(()->pickReceiptProfile());}
     @android.webkit.JavascriptInterface public void cashPdf(String raw){runOnUiThread(()->exportCashReceipt(raw));}
+    @android.webkit.JavascriptInterface public void cardPdf(String raw){runOnUiThread(()->exportReceiptPdf(raw,true));}
    },"TaxiReceipt");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);
