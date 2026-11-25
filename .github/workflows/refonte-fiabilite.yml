@@ -326,7 +326,7 @@ jobs:
                   await key('6').click();await key('1').click();await key('00').click();
                   assert.equal(await money.inputValue(),'61,00');
                   await key('back').click();assert.equal(await money.inputValue(),'6,10');
-                  await money.fill('25,8');await money.click();await key('back').click();assert.equal(await money.inputValue(),'25,');
+                  await money.evaluate(el=>{el.value='25,8';el.setSelectionRange(el.value.length,el.value.length);el.dispatchEvent(new Event('input',{bubbles:true}));});assert.equal(await money.inputValue(),'25,8');await money.click();await key('back').click();assert.equal(await money.inputValue(),'25,');
                   await key('back').click();assert.equal(await money.inputValue(),'25');
                   await key('back').click();assert.equal(await money.inputValue(),'2');
                   await key('back').click();assert.equal(await money.inputValue(),'');
