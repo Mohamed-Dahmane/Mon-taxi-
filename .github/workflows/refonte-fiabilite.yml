@@ -291,6 +291,7 @@ jobs:
                   assert.equal(await page.locator('#archive-list article').count(),0);
                   await page.reload();await page.locator('[data-page=planning]').click();await inspect('planning');
                   assert.equal(await page.locator('#course-list article').count(),2);
+                  assert.match(await page.locator('#course-list article').first().innerText(),/Client direct fictif/);
                   await page.locator('#course-list article').filter({hasText:'Client réservation fictif'}).locator('button').click();await inspect('ride');
                   await page.locator('#ride-next').click();
                   assert.match(await page.locator('#ride-step').innerText(),/Client chargé/);
@@ -410,6 +411,7 @@ jobs:
                   const finalLedger=await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state.ledger);
                   assert.equal(finalLedger.length,2);assert.equal(finalLedger[1].method,'sumup');assert.equal(finalLedger[1].amountCents,6000);
                   await page.locator('[data-go=archives]').click();assert.equal(await page.locator('#archive-list article').count(),2);
+                  assert.match(await page.locator('#archive-list article').first().innerText(),/Client direct fictif/);
                   await page.locator('[data-page=accounts]').click();
                   await page.locator('#entry-appli').fill('');await page.locator('#entry-appli').click();
                   await key('2').click();await key('0').click();await key('00').click();assert.equal(await page.locator('#entry-appli').inputValue(),'20,00');
@@ -934,7 +936,7 @@ jobs:
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2117'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2118'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -962,7 +964,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2117-signe
+          name: Mon-Taxi-Pro-2118-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt

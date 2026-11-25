@@ -443,8 +443,10 @@ function card(c,archived=false){
 }
 function renderLists(){
  const all=controller.snapshot().courses;
- const active=all.filter(c=>c.status!=="archived").sort((a,b)=>(a.scheduledAt||"").localeCompare(b.scheduledAt||""));
- const archived=all.filter(c=>c.status==="archived");
+ // Les dernières courses ajoutées sont en haut; la prochaine réservation conserve son tri horaire propre.
+ const active=all.filter(c=>c.status!=="archived").reverse();
+ // Les dernières courses encaissées sont en haut, indépendamment de leur date de création.
+ const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>(Date.parse(b.payment?.paidAt)||0)-(Date.parse(a.payment?.paidAt)||0));
  $('course-list').replaceChildren(...active.map(c=>card(c)));
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
