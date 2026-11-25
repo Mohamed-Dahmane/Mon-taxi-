@@ -304,6 +304,41 @@ public class MainActivity extends Activity {
    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->awaitSumUpReader(attempt,deadline),400L);
   }catch(Exception e){cancelSumUpSetup();}
  }
+ private boolean receiptLookupRunning=false;
+ private void receiptLookupResult(String reference,org.json.JSONObject verified,String error){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl()))return;
+  try{org.json.JSONObject d=new org.json.JSONObject();d.put("reference",reference);if(verified!=null)d.put("verified",verified);if(error!=null)d.put("error",error);
+   web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-receipt-result',{detail:"+d.toString()+"}))",null);
+  }catch(Exception ignored){}
+ }
+ private static String receiptField(org.json.JSONObject object,String key){if(object==null||object.isNull(key))return "";String v=object.optString(key,"").replaceAll("[\\p{Cntrl}]"," ").trim();return v.length()>160?v.substring(0,160):v;}
+ private void retrieveTaxiReceipt(String reference,int cents){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||receiptLookupRunning||reference==null||!reference.matches("[A-Za-z0-9_-]{1,128}")||cents<100||cents>9999900)return;
+  final EditText field=new EditText(this);field.setSingleLine(true);field.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);field.setHint("Clé API SumUp");
+  new AlertDialog.Builder(this).setTitle("Reçu SumUp — lecture seule")
+   .setMessage("Pour cet essai, utilise une clé API autorisée à lire les reçus. Elle n’est ni enregistrée ni envoyée à Mon Taxi. La requête est adressée uniquement à SumUp.")
+   .setView(field).setNegativeButton("Retour",(d,b)->field.setText(""))
+   .setPositiveButton("Consulter",(d,b)->{
+    final String key=field.getText().toString().trim();field.setText("");
+    if(key.isEmpty()||key.length()>512||key.contains("\\n")||key.contains("\\r")){receiptLookupResult(reference,null,"Clé API invalide.");return;}
+    receiptLookupRunning=true;
+    new Thread(()->{
+     try{
+      org.json.JSONObject me=sumUpRead("/v0.1/me",key),profile=me.optJSONObject("merchant_profile");
+      String merchant=me.optString("merchant_code",profile==null?"":profile.optString("merchant_code",""));
+      if(!merchant.matches("[A-Za-z0-9_-]{1,80}"))throw new IOException("Merchant unavailable");
+      org.json.JSONObject receipt=sumUpRead("/v1.1/receipts/"+android.net.Uri.encode(reference)+"?mid="+android.net.Uri.encode(merchant),key);
+      org.json.JSONObject tx=receipt.getJSONObject("transaction_data");
+      if(!reference.equals(tx.optString("transaction_code"))||!merchant.equals(tx.optString("merchant_code"))||!"EUR".equals(tx.optString("currency"))||!"SUCCESSFUL".equals(tx.optString("status"))||new BigDecimal(tx.getString("amount")).movePointRight(2).intValueExact()!=cents)throw new IOException("Mismatch");
+      java.time.OffsetDateTime.parse(tx.getString("timestamp"));
+      org.json.JSONObject md=receipt.optJSONObject("merchant_data"),mp=md==null?null:md.optJSONObject("merchant_profile");
+      org.json.JSONObject result=new org.json.JSONObject();
+      result.put("reference",reference);result.put("amountCents",cents);result.put("currency","EUR");result.put("timestamp",tx.getString("timestamp"));result.put("business",receiptField(mp,"business_name"));result.put("vat",receiptField(mp,"vat_id"));result.put("number",receiptField(tx,"receipt_no"));
+      runOnUiThread(()->{receiptLookupRunning=false;receiptLookupResult(reference,result,null);});
+     }catch(Exception ex){runOnUiThread(()->{receiptLookupRunning=false;receiptLookupResult(reference,null,"Reçu officiel non récupéré : vérifier les droits, la connexion ou la référence. Les options locales restent disponibles.");});}
+    },"TaxiReceiptReadOnly").start();
+   }).show();
+ }
  private void shareTaxiReceipt(String channel,String body){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||body==null||body.length()>1800||!body.startsWith("Mon Taxi Pro"))return;
   try{
@@ -833,6 +868,7 @@ public class MainActivity extends Activity {
    },"TaxiSumUp");
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void share(String channel,String body){runOnUiThread(()->shareTaxiReceipt(channel,body));}
+    @android.webkit.JavascriptInterface public void retrieve(String reference,int cents){runOnUiThread(()->retrieveTaxiReceipt(reference,cents));}
    },"TaxiReceipt");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);

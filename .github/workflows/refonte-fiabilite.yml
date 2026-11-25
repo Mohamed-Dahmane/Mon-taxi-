@@ -180,6 +180,7 @@ jobs:
           node-version: '22'
       - run: npm install --no-save playwright
       - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - run: node tests/refonte-receipt-browser.cjs
       - name: Tester la géométrie et les deux chemins de paiement
         run: |
           mkdir -p interface-report

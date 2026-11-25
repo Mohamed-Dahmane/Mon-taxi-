@@ -18,7 +18,7 @@ const storage={
  save(state){localStorage.setItem(storeKey,JSON.stringify({version:1,state}));}
 };
 let controller,selected=null,cashDraft=null,sumupDraft=null,restoreDraft=null;
-let receiptCourse=null,receiptReturn='success',successCourse=null;
+let receiptCourse=null,receiptReturn='success',successCourse=null;const receiptVerified=new Map();
 let hotelEdit=null,personDraft=null,contactRequest=null,deleteDraft=null;
 function message(value="",error=false){$('status').textContent=value;$('status').dataset.error=String(error);}
 function safe(action){try{message();action();}catch(e){message(e.message||"Action impossible",true);}}
@@ -42,9 +42,17 @@ function showPaymentSuccess(c){
 function receiptData(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
  if(c?.status!=="archived"||p?.method!=="sumup"||!p.reference||!Number.isSafeInteger(p.amountCents))throw Error("Aucun paiement SumUp confirmé.");
- return "Mon Taxi Pro — Justificatif de paiement\nMontant initial payé : "+euros(p.amountCents)+"\nDate : "+new Date(p.paidAt).toLocaleString("fr-BE",{timeZone:"Europe/Brussels"})+"\nRéférence SumUp : "+p.reference+(c.refund?"\nRemboursement enregistré : "+euros(c.refund.amountCents):"")+"\nCe justificatif ne remplace pas le reçu officiel SumUp.";
+ const v=receiptVerified.get(p.reference);
+ const details=v&&v.amountCents===p.amountCents?"\nDonnées vérifiées via l’API SumUp"+(v.business?"\nCommerçant : "+v.business:"")+(v.vat?"\nTVA : "+v.vat:"")+(v.number?"\nN° de reçu : "+v.number:""):"\nJustificatif local, données officielles non consultées.";
+ return "Mon Taxi Pro — Justificatif de paiement\nMontant initial payé : "+euros(p.amountCents)+"\nDate : "+new Date(v?.timestamp||p.paidAt).toLocaleString("fr-BE",{timeZone:"Europe/Brussels"})+"\nRéférence SumUp : "+p.reference+details+(c.refund?"\nRemboursement enregistré : "+euros(c.refund.amountCents):"")+"\nDocument Mon Taxi Pro, distinct du reçu émis par SumUp.";
 }
-function openReceipt(id,back){const body=receiptData(id);receiptCourse=id;receiptReturn=back;$('receipt-summary').textContent=body;show("receipt");}
+function openReceipt(id,back){const body=receiptData(id);receiptCourse=id;receiptReturn=back;$('receipt-summary').textContent=body;$('receipt-status').textContent="";show("receipt");}
+window.addEventListener("taxi-receipt-result",e=>safe(()=>{
+ const d=e.detail,c=controller.snapshot().courses.find(x=>x.id===receiptCourse),p=c?.payment;
+ if(!p||p.method!=="sumup"||d?.reference!==p.reference)return;
+ if(d.verified?.reference===p.reference&&d.verified.amountCents===p.amountCents&&d.verified.currency==="EUR"&&Number.isFinite(Date.parse(d.verified.timestamp)))receiptVerified.set(p.reference,d.verified);
+ if(!$("receipt").hidden){$("receipt-summary").textContent=receiptData(receiptCourse);$("receipt-status").textContent=d.error||"Données SumUp vérifiées.";}
+}));
 const euros=cents=>new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR"}).format(cents/100);
 // A monetary field always represents integer cents; typing appends digits from the right.
 function moneyFormat(digits){
@@ -490,6 +498,7 @@ document.addEventListener("click",e=>{
  if(b.id==="receipt-open"){safe(()=>openReceipt(successCourse,"success"));return;}
  if(b.dataset.receiptCourse){safe(()=>openReceipt(b.dataset.receiptCourse,"archives"));return;}
  if(b.id==="receipt-back"){safe(()=>show(receiptReturn));return;}
+ if(b.id==="receipt-verify"){safe(()=>{receiptData(receiptCourse);const p=controller.snapshot().courses.find(x=>x.id===receiptCourse).payment;if($("receipt").hidden||typeof window.TaxiReceipt?.retrieve!=="function")throw Error("Consultation disponible sur Android.");window.TaxiReceipt.retrieve(p.reference,p.amountCents);});return;}
  if(b.dataset.receiptChannel){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.share!=="function")throw Error("Partage disponible sur Android.");window.TaxiReceipt.share(b.dataset.receiptChannel,receiptData(receiptCourse));});return;}
  if(b.id==="success-home"){safe(()=>show("home"));return;}
  if(b.id==="ride-next"){safe(()=>{
