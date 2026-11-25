@@ -1,0 +1,19 @@
+# Registration only: the real audit and APK jobs exist on the dedicated test branch.
+name: Fiabilité globale Mon Taxi - refonte
+on:
+  workflow_dispatch:
+    inputs:
+      compile_apk:
+        description: 'Autoriser explicitement la compilation signée après audit'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  main-protection:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Refuser toute compilation sur la branche principale
+        run: |
+          echo "Aucune compilation sur main. Sélectionner la branche test/sumup-oauth-receipts-2122-20261125."
+          exit 1
