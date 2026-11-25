@@ -3,7 +3,7 @@ android {
  namespace 'be.montaxi.gestion'
  compileSdk 35
  compileOptions { coreLibraryDesugaringEnabled true; sourceCompatibility JavaVersion.VERSION_21; targetCompatibility JavaVersion.VERSION_21 }
- defaultConfig { applicationId 'be.montaxi.pro'; minSdk 26; targetSdk 35; versionCode 2112; versionName 'Mon Taxi Pro 1.0' }
+ defaultConfig { applicationId 'be.montaxi.pro'; minSdk 26; targetSdk 35; versionCode 2113; versionName 'Mon Taxi Pro 1.0' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')
@@ -57,5 +57,6 @@ if (signingFile && signingPassword && signingAlias && signingKeyPassword) {
 // SDK SumUp pour encaissement direct sur un terminal compatible (Air ou Solo Lite).
 dependencies {
  implementation 'com.sumup:merchant-sdk:7.2.0'
+ implementation 'com.google.zxing:core:3.5.3'
  coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }

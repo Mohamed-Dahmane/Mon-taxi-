@@ -18,6 +18,7 @@ const storage={
  save(state){localStorage.setItem(storeKey,JSON.stringify({version:1,state}));}
 };
 let controller,selected=null,cashDraft=null,sumupDraft=null,restoreDraft=null;
+let receiptCourse=null,receiptReturn='success',successCourse=null;
 let hotelEdit=null,personDraft=null,contactRequest=null,deleteDraft=null;
 function message(value="",error=false){$('status').textContent=value;$('status').dataset.error=String(error);}
 function safe(action){try{message();action();}catch(e){message(e.message||"Action impossible",true);}}
@@ -26,6 +27,7 @@ const current=()=>controller.snapshot().courses.find(c=>c.id===selected);
 const route=c=>[c.from,c.to].filter(x=>typeof x==="string"&&x.trim()).join(" → ")||"Course libre";
 function playConfirmedPayment(){try{window.TaxiPaymentSound?.play();}catch(_){/* A sound cannot reverse a recorded receipt. */}}
 function showPaymentSuccess(c){
+  successCourse=c.id;$('success-receipt').hidden=c.payment.method!=='sumup';
   $('success-amount').textContent=euros(c.payment.amountCents);
   $('success-route').textContent=route(c);
   $('success-method').textContent=c.payment.method==="cash"?"Espèces enregistrées":"Paiement réussi";
@@ -37,6 +39,12 @@ function showPaymentSuccess(c){
   if(next)button.dataset.course=next.id;else delete button.dataset.course;
   show("success");
 }
+function receiptData(id){
+ const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
+ if(c?.status!=="archived"||p?.method!=="sumup"||!p.reference||!Number.isSafeInteger(p.amountCents))throw Error("Aucun paiement SumUp confirmé.");
+ return "Mon Taxi Pro — Justificatif de paiement\nMontant initial payé : "+euros(p.amountCents)+"\nDate : "+new Date(p.paidAt).toLocaleString("fr-BE",{timeZone:"Europe/Brussels"})+"\nRéférence SumUp : "+p.reference+(c.refund?"\nRemboursement enregistré : "+euros(c.refund.amountCents):"")+"\nCe justificatif ne remplace pas le reçu officiel SumUp.";
+}
+function openReceipt(id,back){const body=receiptData(id);receiptCourse=id;receiptReturn=back;$('receipt-summary').textContent=body;show("receipt");}
 const euros=cents=>new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR"}).format(cents/100);
 // A monetary field always represents integer cents; typing appends digits from the right.
 function moneyFormat(digits){
@@ -359,6 +367,7 @@ function card(c,archived=false){
  if(c.startedAt||c.finishedAt){const times=document.createElement("p");times.className="muted";const format=t=>t?new Date(t).toLocaleString("fr-BE",{timeZone:"Europe/Brussels",dateStyle:"short",timeStyle:"short"}):"—";times.textContent="Début : "+format(c.startedAt)+" · Fin : "+format(c.finishedAt);box.append(times);}
  if(c.hotelName||c.driverName){const a=document.createElement("p");a.textContent=[c.hotelName,c.driverName,c.commissionCents?euros(c.commissionCents):""].filter(Boolean).join(" · ");box.append(a);}
  if(archived&&c.payment){
+  if(c.payment.method==="sumup"){const receipt=document.createElement("button");receipt.type="button";receipt.textContent="Justificatif de paiement";receipt.dataset.receiptCourse=c.id;box.append(receipt);}
   const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
   if(c.refund){
    const note=document.createElement("p");note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
@@ -431,7 +440,7 @@ function show(id){
     if(!pending&&(!sumupDraft||sumupDraft.id!==c.id))throw Error("Montant carte à confirmer.");
     $('sumup-route').textContent=route(c);
     $('sumup-amount').textContent=euros(pending?c.payment.amountCents:sumupDraft.cents);
-    $('sumup-confirm').hidden=pending;$('sumup-back').hidden=pending;$('sumup-recover').hidden=!pending;
+    $('sumup-receipt-choice').hidden=pending;$('sumup-confirm').hidden=pending;$('sumup-back').hidden=pending;$('sumup-recover').hidden=!pending;
     $('sumup-online').hidden=!pending;$('sumup-reference').hidden=!pending;
     $('sumup-reference').textContent=pending?"Référence de tentative : "+c.payment.attemptId:"";
     $('sumup-diagnostic').hidden=true;$('sumup-diagnostic').textContent="";
@@ -478,6 +487,10 @@ document.addEventListener("submit",e=>{
 document.addEventListener("click",e=>{
  const b=e.target.closest("button");if(!b||b.disabled)return;
  if(b.dataset.course){safe(()=>{selected=b.dataset.course;const c=current();if(!c)throw Error("Course inconnue");$('amount').value=c.paymentDraftCents?(c.paymentDraftCents/100).toFixed(2).replace(".",","):"";show(c.status==="awaiting_payment"?"payment":c.status==="payment_pending"?"sumup":"ride");if(c.status==="payment_pending")recoverSumUp();});return;}
+ if(b.id==="receipt-open"){safe(()=>openReceipt(successCourse,"success"));return;}
+ if(b.dataset.receiptCourse){safe(()=>openReceipt(b.dataset.receiptCourse,"archives"));return;}
+ if(b.id==="receipt-back"){safe(()=>show(receiptReturn));return;}
+ if(b.dataset.receiptChannel){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.share!=="function")throw Error("Partage disponible sur Android.");window.TaxiReceipt.share(b.dataset.receiptChannel,receiptData(receiptCourse));});return;}
  if(b.id==="success-home"){safe(()=>show("home"));return;}
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");
@@ -513,7 +526,7 @@ document.addEventListener("click",e=>{
   const cents=readCashCents($('amount').value);
   if(cents<100||cents>9999900)throw Error("Montant terminal : de 1 à 99 999 euros.");
   controller.savePaymentDraft(c.id,cents);
-  sumupDraft={id:c.id,cents};show("sumup");
+  sumupDraft={id:c.id,cents};$("sumup-local-receipt").checked=false;show("sumup");
  });return;}
  if(b.id==="sumup-confirm"){safe(()=>{
   const c=current(),draft=sumupDraft;
@@ -521,9 +534,11 @@ document.addEventListener("click",e=>{
   if(typeof window.TaxiSumUp?.checkout!=="function")throw Error("Terminal disponible uniquement sur Android.");
   const blocking=controller.snapshot().courses.find(x=>x.status==="payment_pending");
   if(blocking)throw Error("Une tentative SumUp doit être vérifiée avant une nouvelle. Course concernée : "+(blocking.client||route(blocking))+" · "+euros(blocking.payment.amountCents)+". Ouvre cette course dans le planning. Aucun nouvel envoi au terminal.");
+  const localReceipt=$("sumup-local-receipt").checked;
+  if(localReceipt&&typeof window.TaxiSumUp.checkoutWithLocalReceipt!=="function")throw Error("Retour direct non disponible sur cette version.");
   const attempt=newId();
   controller.beginSumUp(c.id,draft.cents,attempt);
-  show("sumup");window.TaxiSumUp.checkout(c.id,attempt,draft.cents);
+  show("sumup");if(localReceipt)window.TaxiSumUp.checkoutWithLocalReceipt(c.id,attempt,draft.cents);else window.TaxiSumUp.checkout(c.id,attempt,draft.cents);
  });return;}
  if(b.id==="sumup-online"){safe(()=>{const c=current();if(c?.status!=="payment_pending"||$('sumup').hidden)throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.verifyOnline!=="function")throw Error("Vérification officielle disponible uniquement sur Android.");window.TaxiSumUp.verifyOnline(c.id,c.payment.attemptId);});return;}
  if(b.id==="sumup-recover"){safe(()=>{const c=current();if(c?.status!=="payment_pending")throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.recoverInterrupted==="function")window.TaxiSumUp.recoverInterrupted(c.id,c.payment.attemptId);else recoverSumUp();});return;}

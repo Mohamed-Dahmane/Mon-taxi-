@@ -225,12 +225,12 @@ public class MainActivity extends Activity {
    }
   }catch(Exception e){showSumUpMessage("Journal SumUp à vérifier.");}
  }
- private void beginSumUpPayment(String courseId,String attempt,int cents){
+ private void beginSumUpPayment(String courseId,String attempt,int cents,boolean localReceipt){
   try{
    if(courseId==null||!courseId.matches("[a-zA-Z0-9_-]{1,80}")||attempt==null||!attempt.matches("[a-zA-Z0-9_-]{1,80}")||cents<100||cents>9999900){showSumUpMessage("Demande SumUp invalide.");return;}
    if(pendingSumUp()!=null){publishSumUp();showSumUpMessage("Une tentative SumUp reste à vérifier.");return;}
    org.json.JSONObject p=new org.json.JSONObject();
-   p.put("courseId",courseId);p.put("attemptId",attempt);p.put("requestedCents",cents);p.put("stage","setup");p.put("status","pending");
+   p.put("courseId",courseId);p.put("attemptId",attempt);p.put("requestedCents",cents);p.put("stage","setup");p.put("status","pending");p.put("localReceipt",localReceipt);
    persistSumUp(p);
    activeSumUpAttempt=attempt;
    if(SumUpAPI.isLoggedIn())openSumUpReader();else askSumUpAffiliateKey();
@@ -304,12 +304,38 @@ public class MainActivity extends Activity {
    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->awaitSumUpReader(attempt,deadline),400L);
   }catch(Exception e){cancelSumUpSetup();}
  }
+ private void shareTaxiReceipt(String channel,String body){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||body==null||body.length()>1800||!body.startsWith("Mon Taxi Pro"))return;
+  try{
+   if("qr".equals(channel)){
+    java.util.Map<com.google.zxing.EncodeHintType,Object> hints=new java.util.EnumMap<>(com.google.zxing.EncodeHintType.class);
+    hints.put(com.google.zxing.EncodeHintType.CHARACTER_SET,"UTF-8");
+    hints.put(com.google.zxing.EncodeHintType.MARGIN,4);
+    com.google.zxing.common.BitMatrix matrix=new com.google.zxing.qrcode.QRCodeWriter().encode(body,com.google.zxing.BarcodeFormat.QR_CODE,600,600,hints);
+    android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(600,600,android.graphics.Bitmap.Config.ARGB_8888);
+    for(int y=0;y<600;y++)for(int x=0;x<600;x++)bitmap.setPixel(x,y,matrix.get(x,y)?0xff000000:0xffffffff);
+    android.widget.ImageView img=new android.widget.ImageView(this);img.setImageBitmap(bitmap);img.setAdjustViewBounds(true);img.setContentDescription("QR code du justificatif de paiement");
+    new AlertDialog.Builder(this).setTitle("Justificatif - QR texte").setMessage("Le QR contient le texte du justificatif, pas un lien bancaire. Si le scan échoue, revenez aux autres options.").setView(img).setPositiveButton("Retour aux options",null).show();return;
+   }
+   android.content.Intent intent;
+   if("sms".equals(channel)){intent=new android.content.Intent(android.content.Intent.ACTION_SENDTO,android.net.Uri.parse("smsto:"));intent.putExtra("sms_body",body);}
+   else if("email".equals(channel)){intent=new android.content.Intent(android.content.Intent.ACTION_SENDTO,android.net.Uri.parse("mailto:"));intent.putExtra(android.content.Intent.EXTRA_SUBJECT,"Justificatif Mon Taxi Pro");intent.putExtra(android.content.Intent.EXTRA_TEXT,body);}
+   else if("whatsapp".equals(channel)){
+    intent=new android.content.Intent(android.content.Intent.ACTION_SEND);intent.setType("text/plain");intent.putExtra(android.content.Intent.EXTRA_TEXT,body);intent.setPackage("com.whatsapp");
+    try{startActivity(intent);return;}catch(android.content.ActivityNotFoundException ex){intent.setPackage("com.whatsapp.w4b");}
+   }else if("share".equals(channel)){intent=new android.content.Intent(android.content.Intent.ACTION_SEND);intent.setType("text/plain");intent.putExtra(android.content.Intent.EXTRA_TEXT,body);intent=android.content.Intent.createChooser(intent,"Partager le justificatif");}
+   else return;
+   startActivity(intent);
+  }catch(Exception e){new AlertDialog.Builder(this).setTitle("Partage indisponible").setMessage("Aucun paiement supplémentaire n’a été lancé. Revenez aux options et choisissez un autre moyen de partage.").setPositiveButton("Retour",null).show();}
+ }
  private void openSumUpCheckout(){
   try{
    org.json.JSONObject p=pendingSumUp();if(p==null||"checkout".equals(p.optString("stage"))||"result".equals(p.optString("stage")))return;
-   SumUpPayment payment=SumUpPayment.builder().total(BigDecimal.valueOf(p.getInt("requestedCents"),2))
+   var builder=SumUpPayment.builder().total(BigDecimal.valueOf(p.getInt("requestedCents"),2))
     .currency(SumUpPayment.Currency.EUR).title("Course Mon Taxi Pro")
-    .foreignTransactionId(p.getString("attemptId")).configureRetryPolicy(2000,60000,true).build();
+    .foreignTransactionId(p.getString("attemptId")).configureRetryPolicy(2000,60000,true);
+   if(p.optBoolean("localReceipt",false))builder.skipSuccessScreen();
+   SumUpPayment payment=builder.build();
    setSumUpStage("checkout"); // Durable before any external debit is possible.
    SumUpAPI.checkout(this,payment,SUMUP_CHECKOUT);
   }catch(Exception e){if(sumUpStage("checkout"))finishSumUp("uncertain",null,null,null);else cancelSumUpSetup();}
@@ -795,13 +821,19 @@ public class MainActivity extends Activity {
    },"TaxiPaymentSound");
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void checkout(String courseId,String attemptId,int cents){
-     runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))beginSumUpPayment(courseId,attemptId,cents);});
+     runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))beginSumUpPayment(courseId,attemptId,cents,false);});
+    }
+    @android.webkit.JavascriptInterface public void checkoutWithLocalReceipt(String courseId,String attemptId,int cents){
+     runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))beginSumUpPayment(courseId,attemptId,cents,true);});
     }
     @android.webkit.JavascriptInterface public void recover(){runOnUiThread(()->publishSumUp());}
     @android.webkit.JavascriptInterface public void recoverInterrupted(String courseId,String attemptId){runOnUiThread(()->recoverInterruptedSumUp(courseId,attemptId));}
     @android.webkit.JavascriptInterface public void verifyOnline(String courseId,String attemptId){runOnUiThread(()->verifySumUpOnline(courseId,attemptId));}
     @android.webkit.JavascriptInterface public void ack(String attemptId){runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))ackSumUp(attemptId);});}
    },"TaxiSumUp");
+   web.addJavascriptInterface(new Object(){
+    @android.webkit.JavascriptInterface public void share(String channel,String body){runOnUiThread(()->shareTaxiReceipt(channel,body));}
+   },"TaxiReceipt");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
