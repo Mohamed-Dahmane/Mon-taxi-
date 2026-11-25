@@ -98,6 +98,7 @@ window.addEventListener("taxi-receipt-preview",e=>safe(()=>{
  img.src="data:image/png;base64,"+d.png;
 }));
 function openReceipt(id,back){
+ if(controller.snapshot().courses.find(x=>x.id===id)?.removal?.mode==="void-test")throw Error("Reçu fictif annulé.");
  const body=receiptData(id);receiptCourse=id;receiptReturn=back;$("receipt-summary").textContent=body;
  const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
  $("receipt-verify").hidden=cash;$("receipt-configure").hidden=cash||typeof window.TaxiReceipt?.configure!=="function";$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;
@@ -433,6 +434,41 @@ function requestBankRefund(c,amount,mode){
  window.TaxiRefund.request(updated.id,updated.payment.reference,updated.payment.attemptId,updated.payment.amountCents,amount,mode);
  refundMessages.set(c.id,"Vérification SumUp en cours…");renderLists();
 }
+let pendingRemoval=null;
+function requestArchiveRemoval(c,mode){
+ if($("archives").hidden||typeof window.TaxiCourseRemoval?.request!=="function")throw Error("Authentification biométrique disponible sur Android uniquement.");
+ const fresh=controller.snapshot().courses.find(x=>x.id===c.id);
+ if(!fresh||fresh.removal||fresh.refundPending||JSON.stringify(fresh)!==JSON.stringify(c))throw Error("Course modifiée : recommence.");
+ const request=newId();pendingRemoval={request,id:c.id,mode,snapshot:JSON.stringify(c)};
+ window.TaxiCourseRemoval.request(c.id,mode,request,route(c)+" · "+euros(c.payment.amountCents));
+}
+window.addEventListener("taxi-course-removal",e=>{
+ const p=pendingRemoval,d=e.detail;if(!p||d?.request!==p.request||d.id!==p.id||d.mode!==p.mode)return;
+ pendingRemoval=null;
+ safe(()=>{
+  if(!d.grant){message("Suppression annulée : aucune modification.");return;}
+  const c=controller.snapshot().courses.find(x=>x.id===p.id);
+  if($("archives").hidden||!c||JSON.stringify(c)!==p.snapshot||!window.TaxiCourseRemoval?.consume(p.id,p.mode,p.request,d.grant))throw Error("Autorisation expirée ou course modifiée.");
+  controller.removeArchived(p.id,p.mode);
+  if(selected===p.id)selected=null;if(successCourse===p.id)successCourse=null;receiptVerified.delete(p.id);
+  renderLists();renderCashTotals();message(p.mode==="void-test"?"Saisie fictive annulée et retirée des recettes.":"Course retirée de l’historique courant ; justificatif et comptabilité conservés.");
+ });
+});
+function removalControls(c,box){
+ if(c.removal||c.refundPending)return;
+ const trigger=document.createElement("button");trigger.type="button";trigger.textContent="Supprimer de l’historique";
+ const panel=document.createElement("div");panel.hidden=true;
+ const note=document.createElement("p");note.textContent="Choisis le motif. Une nouvelle empreinte est obligatoire. Cette action est définitive dans l’historique courant.";
+ const hide=document.createElement("button");hide.type="button";hide.textContent="Retirer la course (recette conservée)";
+ hide.addEventListener("click",()=>safe(()=>requestArchiveRemoval(c,"hide")));
+ panel.append(note,hide);
+ if(c.payment.method==="cash"&&!c.refund){
+  const test=document.createElement("button");test.type="button";test.textContent="Confirmer : course fictive, aucune espèce reçue";
+  test.addEventListener("click",()=>safe(()=>requestArchiveRemoval(c,"void-test")));panel.append(test);
+ }
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Annuler";cancel.addEventListener("click",()=>{panel.hidden=true;trigger.hidden=false;});panel.append(cancel);
+ trigger.addEventListener("click",()=>{panel.hidden=false;trigger.hidden=true;});box.append(trigger,panel);
+}
 function card(c,archived=false){
  const box=document.createElement("article");box.className="card";
  const h=document.createElement("h3");h.textContent=c.client||(c.kind==="free"?"Course libre":"Course sans nom");
@@ -481,6 +517,7 @@ function card(c,archived=false){
    yes.addEventListener("click",()=>safe(()=>{if($('archives').hidden)throw Error("Ouvre l’historique.");controller.refund(c.id,date.value,entryCents(amount.value));renderLists();renderCashTotals();message("Remboursement enregistré localement.");}));
   }
  }
+ if(archived&&c.payment)removalControls(c,box);
  if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
  return box;
 }
@@ -491,8 +528,14 @@ function renderLists(){
  // Les dernières courses encaissées sont en haut, indépendamment de leur date de création.
  const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>(Date.parse(b.payment?.paidAt)||0)-(Date.parse(a.payment?.paidAt)||0));
  $('course-list').replaceChildren(...active.map(c=>card(c)));
- $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
- $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
+ const visible=archived.filter(c=>!c.removal),retained=archived.filter(c=>c.removal);
+ $('archive-list').replaceChildren(...visible.map(c=>card(c,true)));
+ $('retained-list').replaceChildren(...retained.map(c=>{
+  if(c.removal.mode==="hide")return card(c,true);
+  const p=document.createElement("p");p.textContent="Saisie fictive annulée · "+route(c)+" · "+euros(c.payment.amountCents)+" · "+c.removal.at.slice(0,10);return p;
+ }));
+ $('retained-history').hidden=retained.length===0;
+ $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=visible.length>0;
 }
 function show(id){
  if(id!=="receipt")clearReceiptPreview();
