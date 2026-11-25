@@ -1,0 +1,20 @@
+name: History removal isolated checks
+on:
+  push:
+    branches: [fix/history-biometric-removal-20261125]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  history-removal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check refonte/course-ui.js
+      - run: node tests/refonte-history-removal.cjs
+      - run: node tests/refonte-reliability.cjs
+      - run: node tests/refonte-cash-receipt.cjs
+      - run: node tests/refonte-refund.cjs
