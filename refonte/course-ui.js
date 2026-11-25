@@ -100,7 +100,7 @@ window.addEventListener("taxi-receipt-preview",e=>safe(()=>{
 function openReceipt(id,back){
  const body=receiptData(id);receiptCourse=id;receiptReturn=back;$("receipt-summary").textContent=body;
  const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
- $("receipt-verify").hidden=cash;$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;
+ $("receipt-verify").hidden=cash;$("receipt-configure").hidden=cash||typeof window.TaxiReceipt?.configure!=="function";$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;
  $("cash-receipt-pdf").hidden=true;$("card-receipt-pdf").hidden=true;$("receipt-signature").hidden=true;
  $("receipt-privacy").hidden=false;
  const r=cash?cashReceipt(id):null;
@@ -576,6 +576,7 @@ document.addEventListener("click",e=>{
  if(b.id==="receipt-preview-retry"){safe(()=>requestReceiptPreview());return;}
  if(b.id==="receipt-confirm-preview"){safe(()=>{if(!previewReady||$("receipt").hidden)throw Error("Aperçu non disponible.");$("receipt-confirm-preview").hidden=true;$("receipt-delivery-note").hidden=false;$("receipt-status").textContent="Reçu confirmé pour prévisualisation uniquement. Aucun envoi effectué.";});return;}
  if(b.id==="receipt-verify"){safe(()=>{receiptData(receiptCourse);const p=controller.snapshot().courses.find(x=>x.id===receiptCourse).payment;if($("receipt").hidden||typeof window.TaxiReceipt?.retrieve!=="function")throw Error("Consultation disponible sur Android.");window.TaxiReceipt.retrieve(p.reference,p.amountCents);});return;}
+ if(b.id==="receipt-configure"){safe(()=>{receiptData(receiptCourse);const p=controller.snapshot().courses.find(x=>x.id===receiptCourse).payment;if($("receipt").hidden||typeof window.TaxiReceipt?.configure!=="function")throw Error("Configuration disponible sur Android.");window.TaxiReceipt.configure(p.reference,p.amountCents);});return;}
  if(b.dataset.receiptChannel){message("Envoi sécurisé non encore disponible.",true);return;}
  if(b.id==="success-home"){safe(()=>show("home"));return;}
  if(b.id==="ride-next"){safe(()=>{

@@ -182,6 +182,7 @@ jobs:
       - run: command -v google-chrome || npx playwright install --with-deps chromium
       - run: node tests/refonte-cash-receipt.cjs
       - run: node tests/refonte-receipt-browser.cjs
+      - run: node tests/refonte-receipt-credential.cjs
       - name: Tester la géométrie et les deux chemins de paiement
         run: |
           mkdir -p interface-report
@@ -941,7 +942,7 @@ jobs:
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2120'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2121'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -969,7 +970,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2120-signe
+          name: Mon-Taxi-Pro-2121-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt

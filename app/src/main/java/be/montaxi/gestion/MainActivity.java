@@ -314,13 +314,25 @@ public class MainActivity extends Activity {
  private static String receiptField(org.json.JSONObject object,String key){if(object==null||object.isNull(key))return "";String v=object.optString(key,"").replaceAll("[\\p{Cntrl}]"," ").trim();return v.length()>160?v.substring(0,160):v;}
  private void retrieveTaxiReceipt(String reference,int cents){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||receiptLookupRunning||reference==null||!reference.matches("[A-Za-z0-9_-]{1,128}")||cents<100||cents>9999900)return;
-  final EditText field=new EditText(this);field.setSingleLine(true);field.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);field.setHint("Clé API SumUp");
-  new AlertDialog.Builder(this).setTitle("Reçu SumUp — lecture seule")
-   .setMessage("Pour cet essai, utilise une clé API autorisée à lire les reçus. Elle n’est ni enregistrée ni envoyée à Mon Taxi. La requête est adressée uniquement à SumUp.")
-   .setView(field).setNegativeButton("Retour",(d,b)->field.setText(""))
-   .setPositiveButton("Consulter",(d,b)->{
+  String key;try{key=receiptCredentials().load();}catch(Exception ex){receiptCredentials().clear();key="";}
+  if(key.isEmpty()){receiptLookupResult(reference,null,"Accès SumUp non configuré. Utilise Configurer l’accès SumUp une seule fois.");return;}
+  performReceiptLookup(reference,cents,key,false);
+ }
+ private TaxiReceiptCredentials receiptCredentials(){return new TaxiReceiptCredentials(this);}
+ private void configureTaxiReceipt(String reference,int cents){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||receiptLookupRunning||reference==null||!reference.matches("[A-Za-z0-9_-]{1,128}")||cents<100||cents>9999900)return;
+  final EditText field=new EditText(this);field.setSingleLine(true);field.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);field.setHint("Clé de lecture SumUp");
+  new AlertDialog.Builder(this).setTitle("Configurer l’accès aux reçus SumUp")
+   .setMessage("Configuration unique : utilise une clé autorisée en lecture. Après vérification du reçu, elle sera chiffrée sur ce téléphone avec Android Keystore. Elle ne sera pas transmise à Mon Taxi ni utilisée pour un paiement.")
+   .setView(field).setNegativeButton("Annuler",(d,b)->field.setText(""))
+   .setPositiveButton("Vérifier et enregistrer",(d,b)->{
     final String key=field.getText().toString().trim();field.setText("");
-    if(key.isEmpty()||key.length()>512||key.contains("\\n")||key.contains("\\r")){receiptLookupResult(reference,null,"Clé API invalide.");return;}
+    if(key.isEmpty()||key.length()>512||key.indexOf('\n')>=0||key.indexOf('\r')>=0){receiptLookupResult(reference,null,"Clé de lecture invalide.");return;}
+    if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||receiptLookupRunning)return;
+    performReceiptLookup(reference,cents,key,true);
+   }).show();
+ }
+ private void performReceiptLookup(String reference,int cents,String key,boolean provision){
     receiptLookupRunning=true;
     new Thread(()->{
      try{
@@ -334,10 +346,10 @@ public class MainActivity extends Activity {
       org.json.JSONObject md=receipt.optJSONObject("merchant_data"),mp=md==null?null:md.optJSONObject("merchant_profile");
       org.json.JSONObject result=new org.json.JSONObject();
       result.put("reference",reference);result.put("amountCents",cents);result.put("currency","EUR");result.put("timestamp",tx.getString("timestamp"));result.put("business",receiptField(mp,"business_name"));result.put("vat",receiptField(mp,"vat_id"));result.put("number",receiptField(tx,"receipt_no"));
+      if(provision)receiptCredentials().save(key);
       runOnUiThread(()->{receiptLookupRunning=false;receiptLookupResult(reference,result,null);});
-     }catch(Exception ex){runOnUiThread(()->{receiptLookupRunning=false;receiptLookupResult(reference,null,"Reçu officiel non récupéré : vérifier les droits, la connexion ou la référence. Les options locales restent disponibles.");});}
+     }catch(Exception ex){boolean denied="HTTP 401".equals(ex.getMessage())||"HTTP 403".equals(ex.getMessage());if(denied&&!provision)receiptCredentials().clear();runOnUiThread(()->{receiptLookupRunning=false;receiptLookupResult(reference,null,denied?"Accès SumUp refusé. Utilise Configurer l’accès SumUp.":"Reçu officiel non récupéré : vérifier la connexion, les droits ou la référence. Aucun paiement déclenché.");});}
     },"TaxiReceiptReadOnly").start();
-   }).show();
  }
  private static final int CASH_RECEIPT_PICK=706, RECEIPT_PROFILE_PICK=707;
  private void receiptProfileEvent(String content,String error){if(!backupTrusted())return;try{org.json.JSONObject d=new org.json.JSONObject();if(content!=null)d.put("content",content);if(error!=null)d.put("error",error);web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-receipt-profile',{detail:"+d.toString()+"}))",null);}catch(Exception ignored){}}
@@ -929,6 +941,7 @@ public class MainActivity extends Activity {
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void share(String channel,String body){runOnUiThread(()->shareTaxiReceipt(channel,body));}
     @android.webkit.JavascriptInterface public void retrieve(String reference,int cents){runOnUiThread(()->retrieveTaxiReceipt(reference,cents));}
+    @android.webkit.JavascriptInterface public void configure(String reference,int cents){runOnUiThread(()->configureTaxiReceipt(reference,cents));}
     @android.webkit.JavascriptInterface public void importProfile(){runOnUiThread(()->pickReceiptProfile());}
     @android.webkit.JavascriptInterface public void cashPdf(String raw){runOnUiThread(()->exportCashReceipt(raw));}
     @android.webkit.JavascriptInterface public void cardPdf(String raw){runOnUiThread(()->exportReceiptPdf(raw,true));}
