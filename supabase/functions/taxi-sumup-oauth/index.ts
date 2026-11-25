@@ -11,7 +11,9 @@ Deno.serve(async (req:Request)=>{
   const merchant=env("TAXI_RECEIPT_MERCHANT")||env("TAXI_REFUND_MERCHANT");
   const deviceToken=env("TAXI_RECEIPT_DEVICE_TOKEN"),keyHex=env("TAXI_RECEIPT_ENCRYPTION_KEY");
   const url=env("SUPABASE_URL"),serviceKey=env("SUPABASE_SERVICE_ROLE_KEY");
-  phase="oauth_client_secret"; if(!clientSecret||clientSecret.length>8192||/[\s\x00-\x1f\x7f]/.test(clientSecret))throw Error("not configured");
+  phase="oauth_client_secret_missing"; if(!clientSecret)throw Error("not configured");
+  phase="oauth_client_secret_length"; if(clientSecret.length>8192)throw Error("not configured");
+  phase="oauth_client_secret_whitespace"; if(/[\s\x00-\x1f\x7f]/.test(clientSecret))throw Error("not configured");
   phase="oauth_client_id"; if(!/^[A-Za-z0-9_-]{8,200}$/.test(clientId))throw Error("not configured");
   phase="merchant"; if(!/^[A-Za-z0-9_-]{1,80}$/.test(merchant))throw Error("not configured");
   phase="device_token"; if(!/^[A-Za-z0-9_-]{43,128}$/.test(deviceToken)||deviceToken===env("TAXI_REFUND_DEVICE_TOKEN"))throw Error("not configured");
