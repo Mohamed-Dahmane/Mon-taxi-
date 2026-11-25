@@ -4,6 +4,8 @@ import {createSumUpTransport} from "./sumup-transport.mjs";
 const env=(k:string)=>Deno.env.get(k)??"";
 Deno.serve(async (req:Request)=>{
  try{
+  // Explicit rollout gate; keep closed until dedicated secrets and checks are ready.
+  if(env("TAXI_RECEIPT_OAUTH_ENABLED")!=="true")throw Error("not enabled");
   const clientId=env("SUMUP_OAUTH_CLIENT_ID"),clientSecret=env("SUMUP_OAUTH_CLIENT_SECRET");
   const merchant=env("TAXI_RECEIPT_MERCHANT")||env("TAXI_REFUND_MERCHANT");
   const deviceToken=env("TAXI_RECEIPT_DEVICE_TOKEN"),keyHex=env("TAXI_RECEIPT_ENCRYPTION_KEY");
