@@ -49,8 +49,10 @@ function makeCore(){
  function validateReceiptProfile(p){
   if(!p||typeof p!=="object"||typeof p.driverNumber!=="string"||p.driverNumber.length>40||typeof p.enabled!=="boolean"||!Array.isArray(p.strokes)||p.strokes.length>40)throw Error("Profil reçu invalide");
   let n=0;for(const stroke of p.strokes){if(!Array.isArray(stroke)||stroke.length<2)throw Error("Signature invalide");for(const pt of stroke){if(!Array.isArray(pt)||pt.length!==2||!pt.every(v=>Number.isInteger(v)&&v>=0&&v<=1000)||++n>2500)throw Error("Signature invalide");}}
-  if(p.enabled&&n<2)throw Error("Signature manquante");
-  return {driverNumber:p.driverNumber.trim(),enabled:p.enabled,strokes:p.strokes.map(s=>s.map(pt=>pt.slice()))};
+  const png=p.signaturePng;
+  if(png!==undefined&&(typeof png!=="string"||png.length>20000||!/^iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/.test(png)))throw Error("Image de signature invalide");
+  if(p.enabled&&n<2&&!png)throw Error("Signature manquante");
+  return {driverNumber:p.driverNumber.trim(),enabled:p.enabled,strokes:p.strokes.map(s=>s.map(pt=>pt.slice())),...(png?{signaturePng:png}:{})};
  }
  function setReceiptProfile(s,p){return {...s,receiptProfile:validateReceiptProfile(p)};}
  function recordCash(state,id,amountCents){

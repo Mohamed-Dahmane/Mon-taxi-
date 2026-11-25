@@ -13,4 +13,8 @@ assert.throws(()=>c.setReceiptProfile({driverNumber:"",enabled:true,strokes:[]})
 c=create(storage);assert.deepEqual(c.snapshot().courses.find(x=>x.id==="new").receiptIdentity,p);
 assert.deepEqual(require("../refonte/clean-core").readBackup(c.backup()),c.snapshot());
 assert.equal(c.snapshot().ledger.length,4);
+const png="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aVJkAAAAASUVORK5CYII=";
+c.setReceiptProfile({driverNumber:"TEST",enabled:true,strokes:[],signaturePng:png});
+assert.equal(pay("image").receiptIdentity.signaturePng,png);
+assert.throws(()=>c.setReceiptProfile({driverNumber:"TEST",enabled:true,strokes:[],signaturePng:"bad"}));
 console.log("Cash receipt identity: immutable snapshots, profile changes, cash-only, backup and reload OK");

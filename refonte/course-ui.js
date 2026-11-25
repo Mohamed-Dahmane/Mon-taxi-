@@ -39,21 +39,22 @@ function showPaymentSuccess(c){
   if(next)button.dataset.course=next.id;else delete button.dataset.course;
   show("success");
 }
-let signatureStrokes=[],activeStroke=null;
-function drawSignature(canvas,strokes){
- const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle="#17324B";ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";
+let signatureStrokes=[],activeStroke=null,signaturePng="";
+function drawSignature(canvas,strokes,png=""){
+ const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle="#000000";ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";
+ if(png){const img=new Image();canvas.dataset.signatureImage=png;img.onload=()=>{if(canvas.dataset.signatureImage!==png)return;const scale=Math.min(canvas.width/img.width,canvas.height/img.height);ctx.drawImage(img,(canvas.width-img.width*scale)/2,(canvas.height-img.height*scale)/2,img.width*scale,img.height*scale);};img.src="data:image/png;base64,"+png;return;}delete canvas.dataset.signatureImage;
  for(const stroke of strokes){if(stroke.length<2)continue;ctx.beginPath();stroke.forEach(([x,y],i)=>{const px=x*canvas.width/1000,py=y*canvas.height/1000;if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);});ctx.stroke();}
 }
 const pad=$("signature-pad");
 function point(e){const r=pad.getBoundingClientRect();return [Math.max(0,Math.min(1000,Math.round((e.clientX-r.left)*1000/r.width))),Math.max(0,Math.min(1000,Math.round((e.clientY-r.top)*1000/r.height)))];}
-pad.addEventListener("pointerdown",e=>{if(activeStroke||signatureStrokes.length>=40||signatureStrokes.flat().length>=2498)return;e.preventDefault();pad.setPointerCapture(e.pointerId);activeStroke=[point(e)];signatureStrokes.push(activeStroke);});
+pad.addEventListener("pointerdown",e=>{if(activeStroke||signatureStrokes.length>=40||signatureStrokes.flat().length>=2498)return;e.preventDefault();if(signaturePng){signaturePng="";signatureStrokes=[];drawSignature(pad,[]);}pad.setPointerCapture(e.pointerId);activeStroke=[point(e)];signatureStrokes.push(activeStroke);});
 pad.addEventListener("pointermove",e=>{if(!activeStroke||!pad.hasPointerCapture(e.pointerId)||signatureStrokes.flat().length>=2499)return;activeStroke.push(point(e));drawSignature(pad,signatureStrokes);});
 function endStroke(){if(activeStroke&&activeStroke.length<2)signatureStrokes.pop();activeStroke=null;drawSignature(pad,signatureStrokes);}
 pad.addEventListener("pointerup",endStroke);pad.addEventListener("pointercancel",endStroke);pad.addEventListener("lostpointercapture",endStroke);
-function loadReceiptProfile(){const p=controller.snapshot().receiptProfile;$("receipt-driver").value=p?.driverNumber||"";$("signature-enabled").checked=!!p?.enabled;signatureStrokes=p?.strokes||[];activeStroke=null;drawSignature(pad,signatureStrokes);}
+function loadReceiptProfile(){const p=controller.snapshot().receiptProfile;$("receipt-driver").value=p?.driverNumber||"";$("signature-enabled").checked=!!p?.enabled;signatureStrokes=p?.strokes||[];signaturePng=p?.signaturePng||"";activeStroke=null;drawSignature(pad,signatureStrokes,signaturePng);}
 function cashReceipt(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;if(c?.status!=="archived"||p?.method!=="cash")throw Error("Aucun paiement espèces confirmé.");
- const ident=c.receiptIdentity;return {reference:p.reference,paidAt:p.paidAt,amountCents:p.amountCents,route:[c.from,c.to].filter(Boolean).join(" → "),vehicle:c.vehicle==="van"?"Van":"",driverNumber:ident?.driverNumber||"",strokes:ident?.enabled?ident.strokes:[],refundCents:c.refund?.amountCents||0};
+ const ident=c.receiptIdentity;return {reference:p.reference,paidAt:p.paidAt,amountCents:p.amountCents,route:[c.from,c.to].filter(Boolean).join(" → "),vehicle:c.vehicle==="van"?"Van":"",driverNumber:ident?.driverNumber||"",strokes:ident?.enabled?ident.strokes:[],signaturePng:ident?.enabled?ident.signaturePng||"":"",refundCents:c.refund?.amountCents||0};
 }
 function receiptData(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
@@ -66,9 +67,10 @@ function receiptData(id){
 }
 function openReceipt(id,back){const body=receiptData(id);receiptCourse=id;receiptReturn=back;$('receipt-summary').textContent=body;$('receipt-status').textContent="";const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
  $("receipt-verify").hidden=cash;$("receipt-share-options").hidden=cash;$("receipt-share-other").hidden=cash;$("cash-receipt-pdf").hidden=!cash;
- const strokes=cash?cashReceipt(id).strokes:[];$("receipt-signature").hidden=!strokes.length;drawSignature($("receipt-signature"),strokes);
+ const r=cash?cashReceipt(id):null,strokes=r?.strokes||[],png=r?.signaturePng||"";$("receipt-signature").hidden=!strokes.length&&!png;drawSignature($("receipt-signature"),strokes,png);$("receipt-privacy").hidden=cash;
  if(cash)$("receipt-status").textContent="PDF local disponible. Envoi par lien sécurisé à intégrer ultérieurement.";
  show("receipt");}
+window.addEventListener("taxi-receipt-profile",e=>safe(()=>{if($("accounts").hidden)return;if(e.detail?.error)throw Error(e.detail.error);const doc=JSON.parse(e.detail.content);if(doc.format!=="taximo-receipt-profile-v1")throw Error("Fichier de profil invalide.");controller.setReceiptProfile(doc.profile);loadReceiptProfile();message("Profil chauffeur privé importé. Signature automatique activée.");}));
 window.addEventListener("taxi-receipt-result",e=>safe(()=>{
  const d=e.detail,c=controller.snapshot().courses.find(x=>x.id===receiptCourse),p=c?.payment;
  if(!p||p.method!=="sumup"||d?.reference!==p.reference)return;
@@ -517,8 +519,9 @@ document.addEventListener("submit",e=>{
 document.addEventListener("click",e=>{
  const b=e.target.closest("button");if(!b||b.disabled)return;
  if(b.dataset.course){safe(()=>{selected=b.dataset.course;const c=current();if(!c)throw Error("Course inconnue");$('amount').value=c.paymentDraftCents?(c.paymentDraftCents/100).toFixed(2).replace(".",","):"";show(c.status==="awaiting_payment"?"payment":c.status==="payment_pending"?"sumup":"ride");if(c.status==="payment_pending")recoverSumUp();});return;}
- if(b.id==="receipt-profile-save"){safe(()=>{controller.setReceiptProfile({driverNumber:$("receipt-driver").value.trim(),enabled:$("signature-enabled").checked,strokes:signatureStrokes.filter(s=>s.length>=2)});loadReceiptProfile();message("Préférences de reçu enregistrées.");});return;}
- if(b.id==="signature-clear"){signatureStrokes=[];activeStroke=null;$("signature-enabled").checked=false;drawSignature(pad,[]);return;}
+ if(b.id==="receipt-profile-import"){safe(()=>{if(typeof window.TaxiReceipt?.importProfile!=="function")throw Error("Import disponible sur Android.");window.TaxiReceipt.importProfile();});return;}
+ if(b.id==="receipt-profile-save"){safe(()=>{controller.setReceiptProfile({driverNumber:$("receipt-driver").value.trim(),enabled:$("signature-enabled").checked,strokes:signatureStrokes.filter(s=>s.length>=2),...(signaturePng?{signaturePng}:{})});loadReceiptProfile();message("Préférences de reçu enregistrées.");});return;}
+ if(b.id==="signature-clear"){signaturePng="";signatureStrokes=[];activeStroke=null;$("signature-enabled").checked=false;drawSignature(pad,[]);return;}
  if(b.id==="cash-receipt-pdf"){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.cashPdf!=="function")throw Error("PDF disponible sur Android.");window.TaxiReceipt.cashPdf(JSON.stringify(cashReceipt(receiptCourse)));});return;}
  if(b.id==="receipt-open"){safe(()=>openReceipt(successCourse,"success"));return;}
  if(b.dataset.receiptCourse){safe(()=>openReceipt(b.dataset.receiptCourse,"archives"));return;}

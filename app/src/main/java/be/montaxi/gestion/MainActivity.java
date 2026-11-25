@@ -339,7 +339,11 @@ public class MainActivity extends Activity {
     },"TaxiReceiptReadOnly").start();
    }).show();
  }
- private static final int CASH_RECEIPT_PICK=706;
+ private static final int CASH_RECEIPT_PICK=706, RECEIPT_PROFILE_PICK=707;
+ private void receiptProfileEvent(String content,String error){if(!backupTrusted())return;try{org.json.JSONObject d=new org.json.JSONObject();if(content!=null)d.put("content",content);if(error!=null)d.put("error",error);web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-receipt-profile',{detail:"+d.toString()+"}))",null);}catch(Exception ignored){}}
+ private void pickReceiptProfile(){if(!backupTrusted())return;try{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RECEIPT_PROFILE_PICK);}catch(Exception ex){receiptProfileEvent(null,"Sélecteur indisponible.");}}
+ private void readReceiptProfile(int code,Intent data){if(code!=RESULT_OK||data==null||data.getData()==null||!backupTrusted())return;android.net.Uri uri=data.getData();if(!"content".equals(uri.getScheme()))return;new Thread(()->{try(InputStream in=getContentResolver().openInputStream(uri);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){if(in==null)throw new IOException();byte[] buf=new byte[4096];int n;while((n=in.read(buf))!=-1){if(out.size()+n>50000)throw new IOException();out.write(buf,0,n);}String raw=new String(out.toByteArray(),java.nio.charset.StandardCharsets.UTF_8);org.json.JSONObject doc=new org.json.JSONObject(raw);if(!"taximo-receipt-profile-v1".equals(doc.optString("format")))throw new IOException();String png=doc.getJSONObject("profile").optString("signaturePng","");if(!png.isEmpty()){if(png.length()>20000)throw new IOException();byte[] bytes=Base64.decode(png,Base64.DEFAULT);BitmapFactory.Options b=new BitmapFactory.Options();b.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(bytes,0,bytes.length,b);if(b.outWidth<1||b.outHeight<1||b.outWidth>1200||b.outHeight>600||!"image/png".equals(b.outMimeType))throw new IOException();}runOnUiThread(()->receiptProfileEvent(raw,null));}catch(Exception e){runOnUiThread(()->receiptProfileEvent(null,"Profil chauffeur invalide ou illisible."));}},"ReceiptProfileImport").start();}
+
  private byte[] pendingCashPdf;
  private void exportCashReceipt(String raw){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||raw==null||raw.length()>50000||pendingCashPdf!=null)return;
@@ -703,6 +707,7 @@ public class MainActivity extends Activity {
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data){
   super.onActivityResult(requestCode,resultCode,data);
+  if(requestCode==RECEIPT_PROFILE_PICK){readReceiptProfile(resultCode,data);return;}
   if(requestCode==CASH_RECEIPT_PICK){finishCashReceiptExport(resultCode,data);return;}
   if(requestCode==BACKUP_PICK){readLocalBackup(resultCode,data);return;}
   if(requestCode==SUMUP_LOGIN){
@@ -887,6 +892,7 @@ public class MainActivity extends Activity {
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void share(String channel,String body){runOnUiThread(()->shareTaxiReceipt(channel,body));}
     @android.webkit.JavascriptInterface public void retrieve(String reference,int cents){runOnUiThread(()->retrieveTaxiReceipt(reference,cents));}
+    @android.webkit.JavascriptInterface public void importProfile(){runOnUiThread(()->pickReceiptProfile());}
     @android.webkit.JavascriptInterface public void cashPdf(String raw){runOnUiThread(()->exportCashReceipt(raw));}
    },"TaxiReceipt");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
