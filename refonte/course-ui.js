@@ -108,7 +108,7 @@ function openReceipt(id,back){
  const body=receiptData(id);receiptCourse=id;receiptReturn=back;$("receipt-summary").textContent=body;
  const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
  $("receipt-verify").hidden=cash;$("receipt-configure").hidden=cash||typeof window.TaxiReceipt?.configure!=="function";$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;
- $("cash-receipt-pdf").hidden=true;$("card-receipt-pdf").hidden=true;$("receipt-signature").hidden=true;
+ $("receipt-signature").hidden=true;
  $("receipt-privacy").hidden=false;
  const r=cash?cashReceipt(id):null;
  $("receipt-identity-note").hidden=!cash||!!(r.driverNumber&&(r.signaturePng||r.strokes?.length));
@@ -590,8 +590,6 @@ document.addEventListener("click",e=>{
  if(b.id==="receipt-profile-import"){safe(()=>{if(typeof window.TaxiReceipt?.importProfile!=="function")throw Error("Import disponible sur Android.");window.TaxiReceipt.importProfile();});return;}
  if(b.id==="receipt-profile-save"){safe(()=>{controller.setReceiptProfile({driverNumber:$("receipt-driver").value.trim(),enabled:$("signature-enabled").checked,strokes:signatureStrokes.filter(s=>s.length>=2),...(signaturePng?{signaturePng}:{})});loadReceiptProfile();message("Préférences de reçu enregistrées.");});return;}
  if(b.id==="signature-clear"){signaturePng="";signatureStrokes=[];activeStroke=null;$("signature-enabled").checked=false;drawSignature(pad,[]);return;}
- if(b.id==="cash-receipt-pdf"){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.cashPdf!=="function")throw Error("PDF disponible sur Android.");window.TaxiReceipt.cashPdf(JSON.stringify(cashReceipt(receiptCourse)));});return;}
- if(b.id==="card-receipt-pdf"){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.cardPdf!=="function")throw Error("PDF disponible sur Android.");window.TaxiReceipt.cardPdf(JSON.stringify(cardReceipt(receiptCourse)));});return;}
  if(b.id==="receipt-open"){safe(()=>openReceipt(successCourse,"success"));return;}
  if(b.dataset.receiptCourse){safe(()=>openReceipt(b.dataset.receiptCourse,"archives"));return;}
  if(b.id==="receipt-back"){safe(()=>show(receiptReturn));return;}
