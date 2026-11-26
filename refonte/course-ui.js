@@ -60,7 +60,7 @@ function cardReceipt(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
  if(c?.status!=="archived"||p?.method!=="sumup"||!p.reference||!Number.isSafeInteger(p.amountCents)||p.amountCents<=0)throw Error("Aucun paiement carte confirmé.");
  const v=receiptVerified.get(p.reference),verified=v?.reference===p.reference&&v.amountCents===p.amountCents&&v.currency==="EUR"&&Number.isFinite(Date.parse(v.timestamp));
- return {remark:$("receipt-remark").value.trim(),reference:p.reference,paidAt:verified?v.timestamp:p.paidAt,amountCents:p.amountCents,from:c.from||"",to:c.to||"",vehicle:c.vehicle==="van"?"Van":"",verified:!!verified,business:verified?v.business||"":"",vat:verified?v.vat||"":"",number:verified?v.number||"":"",refundCents:c.refund?.amountCents||0};
+ return {remark:"",reference:p.reference,paidAt:verified?v.timestamp:p.paidAt,amountCents:p.amountCents,from:c.from||"",to:c.to||"",vehicle:c.vehicle==="van"?"Van":"",verified:!!verified,business:verified?v.business||"":"",vat:verified?v.vat||"":"",number:verified?v.number||"":"",refundCents:c.refund?.amountCents||0};
 }
 function receiptData(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
@@ -107,6 +107,7 @@ function openReceipt(id,back){
  $("receipt-remark").value="";
  const body=receiptData(id);receiptCourse=id;receiptReturn=back;$("receipt-summary").textContent=body;
  const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
+ $("receipt-remark").hidden=!cash;document.querySelector('label[for="receipt-remark"]').hidden=!cash;
  $("receipt-verify").hidden=cash;$("receipt-configure").hidden=cash||typeof window.TaxiReceipt?.configure!=="function";$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;
  $("receipt-signature").hidden=true;
  $("receipt-privacy").hidden=false;
