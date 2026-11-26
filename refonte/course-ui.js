@@ -413,7 +413,7 @@ window.addEventListener("mon-taxi-sumup-result",e=>{
   if(result.status==="archived"){
    ackSumUp(d.attemptId);
    playConfirmedPayment();
-   if(selected===c.id){selected=null;sumupDraft=null;$('amount').value="";showPaymentSuccess(result);}
+   if(selected===c.id){selected=null;sumupDraft=null;$('amount').value="";showPaymentSuccess(result);openReceipt(result.id,"success");}
    else{renderLists();renderCashTotals();}
    message("Paiement SumUp confirmé : "+euros(result.payment.amountCents)+". Course archivée.");
   }else if(result.status==="awaiting_payment"){
