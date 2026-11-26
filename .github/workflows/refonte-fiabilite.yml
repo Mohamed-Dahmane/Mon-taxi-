@@ -1,7 +1,7 @@
 name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
-    branches: [test/sumup-oauth-receipts-2122-20261125]
+    branches: [test/recus-remarques-tva-20261126]
     paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
     inputs:
@@ -185,6 +185,7 @@ jobs:
           node-version: '22'
       - run: npm install --no-save playwright
       - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - run: node tests/vehicle-allocations.test.cjs && node tests/vehicle-allocations-regression.cjs
       - run: node tests/refonte-cash-receipt.cjs
       - run: node tests/refonte-receipt-browser.cjs
       - run: node tests/refonte-receipt-credential.cjs
@@ -873,8 +874,8 @@ jobs:
         run: echo "Points 1 à 10 validés techniquement, sans ancienne donnée. Compilation et essais matériels restent à confirmer."
 
   point11-signed-apk:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.compile_apk == true }}
-    needs: [points-1-to-10, receipt-contract, pdf-interface]
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.compile_apk == true) || (github.event_name == 'push' && github.ref_name == 'test/recus-remarques-tva-20261126') }}
+    needs: [points-1-to-10, receipt-contract, pdf-interface, integration]
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
