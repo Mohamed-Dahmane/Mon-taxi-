@@ -673,7 +673,7 @@ document.addEventListener("click",e=>{
   const cents=readCashCents($('amount').value);
   if(cents<100||cents>9999900)throw Error("Montant terminal : de 1 à 99 999 euros.");
   controller.savePaymentDraft(c.id,cents);
-  sumupDraft={id:c.id,cents};$("sumup-local-receipt").checked=false;show("sumup");
+  sumupDraft={id:c.id,cents};show("sumup");
  });return;}
  if(b.id==="sumup-confirm"){safe(()=>{
   const c=current(),draft=sumupDraft;
@@ -681,7 +681,7 @@ document.addEventListener("click",e=>{
   if(typeof window.TaxiSumUp?.checkout!=="function")throw Error("Terminal disponible uniquement sur Android.");
   const blocking=controller.snapshot().courses.find(x=>x.status==="payment_pending");
   if(blocking)throw Error("Une tentative SumUp doit être vérifiée avant une nouvelle. Course concernée : "+(blocking.client||route(blocking))+" · "+euros(blocking.payment.amountCents)+". Ouvre cette course dans le planning. Aucun nouvel envoi au terminal.");
-  const localReceipt=$("sumup-local-receipt").checked;
+  const localReceipt=true;
   if(localReceipt&&typeof window.TaxiSumUp.checkoutWithLocalReceipt!=="function")throw Error("Retour direct non disponible sur cette version.");
   const attempt=newId();
   controller.beginSumUp(c.id,draft.cents,attempt);
