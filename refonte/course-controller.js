@@ -19,6 +19,13 @@ function create(core,sumupEvent,storage){
     daily:day=>core.dayTotals(state,day),
     monthly:month=>core.monthTotals(state,month),
     backup:()=>core.backup(state),
+    clearRideHistory(){
+      if(state.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Attends la confirmation du paiement ou du remboursement en cours.");
+      const entries=Object.fromEntries(Object.entries(state.entries||{}).map(([day,row])=>[
+        day,{...row,cash:0,appli:0,commission:0,invoiceHt:0}
+      ]));
+      commit({...state,courses:[],ledger:[],entries});
+    },
     restore(raw){
       if(state.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Paiement en attente : restauration interdite.");
       const next=core.readBackup(raw);commit(clone(next));

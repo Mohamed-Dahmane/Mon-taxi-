@@ -646,6 +646,12 @@ document.addEventListener("click",e=>{
  if(b.id==="pick-contact"||b.id==="pick-driver"){safe(()=>pickPerson(b.id==="pick-contact"?"contacts":"drivers"));return;}
  if(b.id==="directory-delete-cancel"){clearDelete();return;}
  if(b.id==="directory-delete-confirm"){safe(()=>{if(!deleteDraft)throw Error("Aucune suppression à confirmer.");controller.removeDirectory(deleteDraft.kind,deleteDraft.id);clearDelete();clearPerson();resetHotel();renderDirectory();message("Suppression locale effectuée.");});return;}
+ if(b.id==="clear-ride-history"){safe(()=>{
+  if($('accounts').hidden)return;
+  const state=controller.snapshot();
+  if(!confirm("Effacer "+state.courses.length+" course(s), le planning, l’historique, les encaissements et les recettes journalières de Mon Taxi Pro ? Les dépenses, le carburant, le répertoire, la signature et les réglages seront conservés."))return;
+  controller.clearRideHistory();clearRestore();selected=null;renderLists();loadAccountFields();message("Courses et encaissements effacés.");
+ });return;}
  if(b.id==="backup-export"){safe(()=>{
   if($('accounts').hidden||typeof window.TaxiBackup?.exportJson!=="function")throw Error("Sauvegarde disponible sur Android.");
   window.TaxiBackup.exportJson(controller.backup());
