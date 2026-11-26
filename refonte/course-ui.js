@@ -452,7 +452,7 @@ function card(c,archived=false){
   if(["cash","sumup"].includes(c.payment.method)){const receipt=document.createElement("button");receipt.type="button";receipt.textContent="Justificatif de paiement";receipt.dataset.receiptCourse=c.id;box.append(receipt);}
   const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
   if(c.refund){
-   const note=document.createElement("p");note.style.color="#d74343";note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
+   const note=document.createElement("p");note.className="refund-notice";note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
   }else if(c.payment.method==="sumup"&&typeof window.TaxiRefund?.request==="function"){
    const note=document.createElement("p");note.setAttribute("role","status");note.textContent=refundMessages.get(c.id)||(c.refundPending?"Remboursement en attente de vérification officielle.":"Remboursement bancaire SumUp · les frais initiaux restent comptabilisés.");
    box.append(note);
