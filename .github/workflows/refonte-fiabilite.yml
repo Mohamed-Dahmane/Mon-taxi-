@@ -1,7 +1,7 @@
 name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
-    branches: [test/sumup-oauth-receipts-2122-20261125]
+    branches: [test/forfait-aeroport-6480-20261126]
     paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
     inputs:
@@ -873,8 +873,8 @@ jobs:
         run: echo "Points 1 à 10 validés techniquement, sans ancienne donnée. Compilation et essais matériels restent à confirmer."
 
   point11-signed-apk:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.compile_apk == true }}
-    needs: [points-1-to-10, receipt-contract, pdf-interface]
+    if: ${{ (github.event_name == 'push' && github.ref_name == 'test/forfait-aeroport-6480-20261126') || (github.event_name == 'workflow_dispatch' && inputs.compile_apk == true) }}
+    needs: [points-1-to-10, receipt-contract, pdf-interface, integration, forfait]
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -1018,3 +1018,26 @@ jobs:
       - run: node tests/refonte-cash-receipt.cjs
       - run: node tests/refonte-receipt-browser.cjs
       - run: node tests/refonte-receipt-credential.cjs
+
+  forfait:
+    needs: clean-data-gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier le forfait et les corrections sur données fictives
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict');
+          const c=require('./refonte/course-controller')();
+          assert.equal(c.plan({id:'test',to:'BRU'}).paymentDraftCents,6480);
+          c.savePaymentDraft('test',5500);
+          c.editDetails('test',{room:'207',to:'CRL'});
+          assert.equal(c.load('test').paymentDraftCents,5500);
+          c.start('test');
+          c.savePaymentDraft('test',7000);
+          assert.equal(c.finish('test').paymentDraftCents,7000);
+          c.savePaymentDraft('test',null);
+          assert.equal(c.snapshot().ledger.length,0);
+          c.removeCourse('test');
+          assert.equal(c.snapshot().courses.length,0);
+          JS
