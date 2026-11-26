@@ -52,6 +52,7 @@ final class TaxiCardReceiptPdf {
    text(c,p,"TAXIMO TRANSPORT",180,44,23,NAVY,true,Paint.Align.CENTER);p.setColor(GOLD);c.drawRect(145,54,215,56,p);
    text(c,p,"Reçu carte / Card receipt",180,80,12,GRAY,false,Paint.Align.CENTER);
    text(c,p,money(cents),180,129,35,NAVY,true,Paint.Align.CENTER);
+   text(c,p,"TVA incl.",180,143,9,GRAY,false,Paint.Align.CENTER);
    text(c,p,"PAYÉ / PAID",180,153,13,GREEN,true,Paint.Align.CENTER);
    text(c,p,date,180,177,11,GRAY,false,Paint.Align.CENTER);
    p.setColor(GOLD);c.drawRect(30,193,330,194,p);
