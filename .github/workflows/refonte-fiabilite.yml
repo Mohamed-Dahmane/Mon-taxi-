@@ -1024,12 +1024,19 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Vérifier le forfait et les corrections sur données fictives
+      - name: Vérifier le prix manuel et les corrections sur données fictives
         run: |
           node <<'JS'
           const assert=require('node:assert/strict');
           const c=require('./refonte/course-controller')();
-          assert.equal(c.plan({id:'test',to:'BRU'}).paymentDraftCents,6480);
+          assert.equal(c.plan({id:'test',to:'BRU'}).paymentDraftCents,undefined);
+          c.plan({id:'sans-prix',to:'CRL'});
+          assert.equal(c.load('sans-prix').paymentDraftCents,undefined);
+          c.start('sans-prix');
+          assert.equal(c.finish('sans-prix').paymentDraftCents,undefined);
+          c.savePaymentDraft('sans-prix',4200);
+          c.savePaymentDraft('sans-prix',null);
+          c.removeCourse('sans-prix');
           c.savePaymentDraft('test',5500);
           c.editDetails('test',{room:'207',to:'CRL'});
           assert.equal(c.load('test').paymentDraftCents,5500);
