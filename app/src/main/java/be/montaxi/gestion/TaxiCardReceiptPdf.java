@@ -44,20 +44,23 @@ final class TaxiCardReceiptPdf {
   }
   int refund=r.optInt("refundCents",0);if(refund<0||refund>cents)throw new IOException("Refund");
   if(refund>0)wrap(rows,p,"Remboursement / Refund : "+money(refund));
+  String remark=field(r,"remark",300);
+  ArrayList<String> remarkRows=new ArrayList<>();wrap(remarkRows,p,remark);
   PdfDocument doc=new PdfDocument();PdfDocument.Page page=null;
   try(ByteArrayOutputStream out=new ByteArrayOutputStream()){
-   int height=Math.max(455,303+rows.size()*18);
+   int height=Math.max(455,303+(rows.size()+remarkRows.size()+1)*18);
    page=doc.startPage(new PdfDocument.PageInfo.Builder(360,height,1).create());
    Canvas c=page.getCanvas();c.drawColor(Color.WHITE);
    text(c,p,"TAXIMO TRANSPORT",180,44,23,NAVY,true,Paint.Align.CENTER);p.setColor(GOLD);c.drawRect(145,54,215,56,p);
    text(c,p,"Reçu carte / Card receipt",180,80,12,GRAY,false,Paint.Align.CENTER);
    text(c,p,money(cents),180,129,35,NAVY,true,Paint.Align.CENTER);
-   text(c,p,"PAYÉ / PAID",180,153,13,GREEN,true,Paint.Align.CENTER);
+   text(c,p,"TVA 6 % incl.",180,141,9,GRAY,false,Paint.Align.CENTER);text(c,p,"PAYÉ / PAID",180,158,13,GREEN,true,Paint.Align.CENTER);
    text(c,p,date,180,177,11,GRAY,false,Paint.Align.CENTER);
    p.setColor(GOLD);c.drawRect(30,193,330,194,p);
    text(c,p,"Transport taxi / Taxi service",30,216,13,NAVY,true,Paint.Align.LEFT);
    text(c,p,"SumUp",330,216,11,GRAY,true,Paint.Align.RIGHT);
    float y=239;for(String row:rows){text(c,p,row,30,y,12,NAVY,false,Paint.Align.LEFT);y+=18;}
+   if(!remarkRows.isEmpty()){text(c,p,"Remarque",30,y,12,NAVY,true,Paint.Align.LEFT);y+=18;for(String row:remarkRows){text(c,p,row,30,y,12,NAVY,false,Paint.Align.LEFT);y+=18;}}
    p.setColor(0xffdddddd);c.drawRect(30,y+1,330,y+2,p);y+=20;
    text(c,p,verified?"Données SumUp vérifiées / SumUp data checked":"Justificatif local / Local payment record",180,y,10,GRAY,false,Paint.Align.CENTER);
    text(c,p,"Distinct du reçu SumUp / Not a SumUp-issued receipt",180,y+15,9,GRAY,false,Paint.Align.CENTER);

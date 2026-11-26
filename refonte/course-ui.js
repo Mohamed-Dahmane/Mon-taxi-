@@ -54,13 +54,13 @@ pad.addEventListener("pointerup",endStroke);pad.addEventListener("pointercancel"
 function loadReceiptProfile(){const p=controller.snapshot().receiptProfile;$("receipt-driver").value=p?.driverNumber||"";$("signature-enabled").checked=!!p?.enabled;signatureStrokes=p?.strokes||[];signaturePng=p?.signaturePng||"";activeStroke=null;drawSignature(pad,signatureStrokes,signaturePng);}
 function cashReceipt(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;if(c?.status!=="archived"||p?.method!=="cash")throw Error("Aucun paiement espèces confirmé.");
- const ident=c.receiptIdentity;return {reference:p.reference,paidAt:p.paidAt,amountCents:p.amountCents,route:[c.from,c.to].filter(Boolean).join(" → "),vehicle:c.vehicle==="van"?"Van":"",driverNumber:ident?.driverNumber||"",strokes:ident?.enabled?ident.strokes:[],signaturePng:ident?.enabled?ident.signaturePng||"":"",refundCents:c.refund?.amountCents||0};
+ const ident=c.receiptIdentity;return {remark:$("receipt-remark").value.trim(),reference:p.reference,paidAt:p.paidAt,amountCents:p.amountCents,route:[c.from,c.to].filter(Boolean).join(" → "),vehicle:c.vehicle==="van"?"Van":"",driverNumber:ident?.driverNumber||"",strokes:ident?.enabled?ident.strokes:[],signaturePng:ident?.enabled?ident.signaturePng||"":"",refundCents:c.refund?.amountCents||0};
 }
 function cardReceipt(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
  if(c?.status!=="archived"||p?.method!=="sumup"||!p.reference||!Number.isSafeInteger(p.amountCents)||p.amountCents<=0)throw Error("Aucun paiement carte confirmé.");
  const v=receiptVerified.get(p.reference),verified=v?.reference===p.reference&&v.amountCents===p.amountCents&&v.currency==="EUR"&&Number.isFinite(Date.parse(v.timestamp));
- return {reference:p.reference,paidAt:verified?v.timestamp:p.paidAt,amountCents:p.amountCents,from:c.from||"",to:c.to||"",vehicle:c.vehicle==="van"?"Van":"",verified:!!verified,business:verified?v.business||"":"",vat:verified?v.vat||"":"",number:verified?v.number||"":"",refundCents:c.refund?.amountCents||0};
+ return {remark:$("receipt-remark").value.trim(),reference:p.reference,paidAt:verified?v.timestamp:p.paidAt,amountCents:p.amountCents,from:c.from||"",to:c.to||"",vehicle:c.vehicle==="van"?"Van":"",verified:!!verified,business:verified?v.business||"":"",vat:verified?v.vat||"":"",number:verified?v.number||"":"",refundCents:c.refund?.amountCents||0};
 }
 function receiptData(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
@@ -97,7 +97,14 @@ window.addEventListener("taxi-receipt-preview",e=>safe(()=>{
  img.onerror=()=>{if(token!==previewSequence)return;previewReady=false;$("receipt-confirm-preview").disabled=true;$("receipt-status").textContent="Impossible d’afficher le PDF. Réessaie.";};
  img.src="data:image/png;base64,"+d.png;
 }));
+document.addEventListener("input",event=>{
+ if(event.target.id==="receipt-remark") clearReceiptPreview();
+});
+document.addEventListener("change",event=>{
+ if(event.target.id==="receipt-remark") requestReceiptPreview();
+});
 function openReceipt(id,back){
+ $("receipt-remark").value="";
  const body=receiptData(id);receiptCourse=id;receiptReturn=back;$("receipt-summary").textContent=body;
  const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
  $("receipt-verify").hidden=cash;$("receipt-configure").hidden=cash||typeof window.TaxiReceipt?.configure!=="function";$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;
@@ -445,7 +452,7 @@ function card(c,archived=false){
   if(["cash","sumup"].includes(c.payment.method)){const receipt=document.createElement("button");receipt.type="button";receipt.textContent="Justificatif de paiement";receipt.dataset.receiptCourse=c.id;box.append(receipt);}
   const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
   if(c.refund){
-   const note=document.createElement("p");note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
+   const note=document.createElement("p");note.style.color="#d74343";note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
   }else if(c.payment.method==="sumup"&&typeof window.TaxiRefund?.request==="function"){
    const note=document.createElement("p");note.setAttribute("role","status");note.textContent=refundMessages.get(c.id)||(c.refundPending?"Remboursement en attente de vérification officielle.":"Remboursement bancaire SumUp · les frais initiaux restent comptabilisés.");
    box.append(note);
