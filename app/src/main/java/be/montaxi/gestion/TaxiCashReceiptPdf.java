@@ -26,7 +26,7 @@ final class TaxiCashReceiptPdf {
    page=doc.startPage(new PdfDocument.PageInfo.Builder(360,remark.isEmpty()?780:1100,1).create());Canvas c=page.getCanvas();Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);c.drawColor(Color.WHITE);
    text(c,p,"TAXIMO TRANSPORT",180,46,23,NAVY,true,Paint.Align.CENTER);p.setColor(GOLD);c.drawRect(145,55,215,57,p);
    text(c,p,"Reçu espèces / Cash receipt",180,81,12,GRAY,false,Paint.Align.CENTER);
-   text(c,p,money(cents),180,130,35,NAVY,true,Paint.Align.CENTER);text(c,p,"TVA 6 % incl.",180,141,9,GRAY,false,Paint.Align.CENTER);text(c,p,"PAYÉ / PAID",180,158,13,GREEN,true,Paint.Align.CENTER);text(c,p,date,180,177,11,GRAY,false,Paint.Align.CENTER);
+   text(c,p,money(cents),180,130,35,NAVY,true,Paint.Align.CENTER);text(c,p,"TVA incl.",180,141,9,GRAY,false,Paint.Align.CENTER);text(c,p,"PAYÉ / PAID",180,158,13,GREEN,true,Paint.Align.CENTER);text(c,p,date,180,177,11,GRAY,false,Paint.Align.CENTER);
    p.setColor(GOLD);c.drawRect(30,193,330,194,p);float y=219;
    text(c,p,"Transport taxi / Taxi service",30,y,13,NAVY,true,Paint.Align.LEFT);y+=22;
    if(!route.isEmpty())y=wrapped(c,p,route,y,12);if(!vehicle.isEmpty())y=wrapped(c,p,"Véhicule / Vehicle : "+vehicle,y,12);
