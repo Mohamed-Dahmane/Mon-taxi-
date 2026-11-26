@@ -874,7 +874,7 @@ jobs:
 
   point11-signed-apk:
     if: ${{ (github.event_name == 'push' && github.ref_name == 'test/forfait-aeroport-6480-20261126') || (github.event_name == 'workflow_dispatch' && inputs.compile_apk == true) }}
-    needs: [points-1-to-10, receipt-contract, pdf-interface, integration, forfait]
+    needs: [points-1-to-10, receipt-contract, pdf-interface, integration, forfait, sumup-branches]
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -1041,3 +1041,36 @@ jobs:
           c.removeCourse('test');
           assert.equal(c.snapshot().courses.length,0);
           JS
+
+  sumup-branches:
+    name: SumUp et remboursements (${{ matrix.branch }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: test/forfait-aeroport-6480-20261126
+            ref: ${{ github.sha }}
+          - branch: test/sumup-oauth-receipts-2122-20261125
+            ref: ecda7a0cd99c684b6cd5d896b8d20117b2dc34e2
+          - branch: test/planning-multi-vehicules-20261125
+            ref: ecda7a0cd99c684b6cd5d896b8d20117b2dc34e2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/refonte-refund.cjs
+      - run: node tests/refund-bank-2112.mjs
+      - run: node tests/sumup-oauth-receipt-contract.mjs
+      - run: node tests/sumup-oauth-transport.mjs
+      - run: node tests/sumup-oauth-protection.mjs
+      - run: node tests/sumup-oauth-integration.mjs
+      - run: npm install --no-save playwright
+      - run: command -v google-chrome || npx playwright install --with-deps chromium
+      - run: node tests/refonte-refund-browser.cjs
+      - run: node tests/refonte-receipt-browser.cjs
