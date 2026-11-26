@@ -981,6 +981,16 @@ public class MainActivity extends Activity {
    },"TaxiSumUp");
    web.addJavascriptInterface(new Object(){
     @android.webkit.JavascriptInterface public void share(String channel,String body){runOnUiThread(()->shareTaxiReceipt(channel,body));}
+    @android.webkit.JavascriptInterface public void recent(String requestId){runOnUiThread(()->{
+     if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||requestId==null||!requestId.matches("[a-zA-Z0-9-]{1,80}"))return;
+     String token=loadReceiptLink();
+     new Thread(()->{
+      org.json.JSONArray rows=null;
+      try{rows=new TaxiReceiptOAuthClient().recent(token);}catch(Exception ignored){}
+      String payload=rows==null?"null":rows.toString();
+      runOnUiThread(()->{if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))web.evaluateJavascript("window.taxiExternalResult("+org.json.JSONObject.quote(requestId)+","+payload+")",null);});
+     }).start();
+    });}
     @android.webkit.JavascriptInterface public void retrieve(String reference,int cents){runOnUiThread(()->retrieveTaxiReceipt(reference,cents));}
     @android.webkit.JavascriptInterface public void configure(String reference,int cents){runOnUiThread(()->configureTaxiReceipt(reference,cents));}
     @android.webkit.JavascriptInterface public void importProfile(){runOnUiThread(()->pickReceiptProfile());}

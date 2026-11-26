@@ -481,7 +481,7 @@ function card(c,archived=false){
    yes.addEventListener("click",()=>safe(()=>{if($('archives').hidden)throw Error("Ouvre l’historique.");controller.refund(c.id,date.value,entryCents(amount.value));renderLists();renderCashTotals();message("Remboursement enregistré localement.");}));
   }
  }
- if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
+ if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?(c.externalReview?"Paiement externe à vérifier":"Ouvrir le paiement"):"Ouvrir la course";box.append(b);}
  return box;
 }
 function renderLists(){
@@ -494,7 +494,40 @@ function renderLists(){
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
 }
+let externalRequest=null;
+function externalLookup(choice){
+ const c=current();
+ if(c?.status!=="awaiting_payment")throw Error("Vérifie le premier paiement.");
+ const id=newId();
+ externalRequest={id,course:c.id,choice};
+ $('external-options').hidden=false;
+ $('external-list').textContent="Recherche dans SumUp…";
+ if(!window.TaxiReceipt?.recent){$('external-list').textContent="Recherche disponible sur Android.";return;}
+ window.TaxiReceipt.recent(id);
+}
+window.taxiExternalResult=(id,rows)=>safe(()=>{
+ const request=externalRequest;
+ if(request?.id!==id||request.course!==selected||$('payment').hidden)return;
+ externalRequest=null;
+ const list=$('external-list');list.replaceChildren();
+ if(!Array.isArray(rows)){list.textContent="SumUp indisponible. Tu peux vérifier plus tard.";return;}
+ const used=new Set(controller.snapshot().ledger.filter(p=>p.method==="sumup").map(p=>p.reference));
+ const available=rows.filter(t=>!used.has(t.reference));
+ if(request.choice){
+  const tx=available.find(t=>t.reference===request.choice.reference&&t.amountCents===request.choice.amountCents&&t.timestamp===request.choice.timestamp);
+  if(!tx)throw Error("Transaction indisponible. Relance la recherche.");
+  const result=controller.associateExternal(selected,tx);selected=null;showPaymentSuccess(result);return;
+ }
+ if(!available.length)list.textContent="Aucun paiement disponible.";
+ for(const tx of available){
+  const button=document.createElement("button");button.type="button";
+  button.textContent=euros(tx.amountCents)+" · "+new Date(tx.timestamp).toLocaleString("fr-BE")+" · "+tx.reference;
+  button.onclick=()=>safe(()=>{if(confirm("Associer à cette course : "+button.textContent+" ?"))externalLookup(tx);});
+  list.append(button);
+ }
+});
 function show(id){
+ externalRequest=null;
  if(id!=="receipt")clearReceiptPreview();
  closeMoneyPad();
  if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
@@ -504,7 +537,8 @@ function show(id){
   if(id==="payment"){
    $('payment-title').textContent=preview?"Aperçu du montant":"Paiement";
    $('fare-save').hidden=!preview;
-   $('payment-methods').hidden=preview;
+   $('external-pay').hidden=preview;$('external-options').hidden=true;$('external-list').replaceChildren();
+   $('payment-methods').hidden=preview||c.externalReview===true;
    $('payment-methods').nextElementSibling.hidden=preview;
   }
   if(!preview&&id!=="ride"&&c.status!=="awaiting_payment"&&!(id==="sumup"&&c.status==="payment_pending"))throw Error("La course doit être terminée avant le paiement");
@@ -592,6 +626,8 @@ document.addEventListener("click",e=>{
  if(b.id==="details-back"){safe(()=>show(current().status==="awaiting_payment"?"payment":"ride"));return;}
  if(b.id==="delete-course"){safe(()=>{if(confirm("Supprimer cette course ?")){controller.removeCourse(current().id);selected=null;show("planning");}});return;}
  if(b.id==="fare-clear"){safe(()=>{controller.savePaymentDraft(current().id,null);$('amount').value="";});return;}
+ if(b.id==="external-open"){safe(()=>externalLookup(null));return;}
+ if(b.id==="external-later"){safe(()=>{controller.externalLater(selected);show("planning");});return;}
  if(b.id==="fare-preview"){safe(()=>show("payment"));return;}
  if(b.id==="fare-save"){safe(()=>{controller.savePaymentDraft(current().id,readCashCents($('amount').value));show("ride");});return;}
  if(b.id==="ride-next"){safe(()=>{

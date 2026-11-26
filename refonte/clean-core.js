@@ -41,7 +41,7 @@ function makeCore(){
   let ledger=state.ledger;
   if(course.status==="archived"){
    if(ledger.some(x=>x.courseId===id||x.attemptId===course.payment.attemptId||x.method===course.payment.method&&x.reference===course.payment.reference))throw Error("Paiement déjà enregistré");
-   ledger=[...ledger,{courseId:id,...course.payment}];
+   ledger=[...ledger,{courseId:id,...course.payment,...(course.payment.method==="sumup"?{feeCents:Math.round(course.payment.amountCents*2/100)}:{})}];
   }
   return {...state,courses,ledger};
  }
@@ -131,7 +131,7 @@ function makeCore(){
    if(c?.refund?.day===day){if(p.method==="cash")cash-=c.refund.amountCents;else cardGross-=c.refund.amountCents;}
    if(paymentDay(p.paidAt)!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
-   else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*169/10000);}
+   else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=p.feeCents??Math.round(p.amountCents*169/10000);}
    if(c?.driverIsMe===true&&validAmount(c.commissionCents))hotelCommission+=c.commissionCents;
   }
   const commission=e.commission+hotelCommission,cashReal=cash-commission,cardNet=cardGross-fee;

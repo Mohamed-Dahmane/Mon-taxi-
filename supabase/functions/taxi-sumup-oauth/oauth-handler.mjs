@@ -47,8 +47,8 @@ export function createHandler({clientId,merchant,deviceToken,keyHex,transport,st
     const x=await readBody(req);
     if(x?.action==="start")response=json({authorizeUrl:buildAuthorize(clientId,redirect,await protection.start(device,merchant))});
     else if(x?.action==="status")response=json(await store.status());
-    else if(x?.action==="receipt"){
-     if(typeof x.reference!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(x.reference)||!Number.isSafeInteger(x.cents)||x.cents<1||x.cents>9999900)throw Error("request_invalid");
+    else if(x?.action==="receipt"||x?.action==="recent"){
+     if(x.action==="receipt"&&(typeof x.reference!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(x.reference)||!Number.isSafeInteger(x.cents)||x.cents<1||x.cents>9999900))throw Error("request_invalid");
      const envelope=await store.claim(now());if(!envelope)throw Error("reauthorize");
      let tokens=await protection.open(device,merchant,envelope);
      validateScopes(tokens.scope);
@@ -61,9 +61,9 @@ export function createHandler({clientId,merchant,deviceToken,keyHex,transport,st
       await store.save(await protection.seal(device,merchant,tokens));
      };
      let refreshed=false;if(tokens.expiresAt<=now()+60000){await renew();refreshed=true;}
-     const read=()=>transport.getReceipt({accessToken:tokens.accessToken,merchant,reference:x.reference,cents:x.cents});
+     const read=()=>x.action==="recent"?transport.recent({accessToken:tokens.accessToken,merchant}):transport.getReceipt({accessToken:tokens.accessToken,merchant,reference:x.reference,cents:x.cents});
      let receipt;try{receipt=await read();}catch(e){if(e?.message!=="sumup_unauthorized")throw e;if(refreshed){await store.save(null);throw Error("reauthorize");}await renew();try{receipt=await read();}catch(e2){if(e2?.message==="sumup_unauthorized"){await store.save(null);throw Error("reauthorize");}throw e2;}}
-     response=json({receipt});
+     response=json(x.action==="recent"?{items:receipt}:{receipt});
     }else throw Error("request_invalid");
    }
   }catch(e){

@@ -35,6 +35,12 @@ export function createSumUpTransport({clientId,clientSecret,fetchImpl=globalThis
    if(!result||result.merchant_code!==merchant)throw Error("merchant_mismatch");
    return true;
   },
+  async recent({accessToken,merchant}){
+   if(!valid(accessToken)||!segment(merchant,80))throw Error("request_invalid");
+   const page=await request("/v2.1/merchants/"+encodeURIComponent(merchant)+"/transactions/history?limit=50&order=descending",{method:"GET",headers:{Authorization:"Bearer "+accessToken,Accept:"application/json"}});
+   if(!Array.isArray(page.items))throw Error("sumup_invalid_json");
+   return page.items.filter(t=>t.merchant_code===merchant&&t.type==="PAYMENT"&&t.status==="SUCCESSFUL"&&t.currency==="EUR"&&t.refunded_amount===0&&segment(t.transaction_code,128)&&Number.isFinite(Date.parse(t.timestamp))&&typeof t.amount==="number"&&t.amount>0&&t.amount<=99999).map(t=>({reference:t.transaction_code,amountCents:Math.round(t.amount*100),timestamp:t.timestamp}));
+  },
   async getReceipt({accessToken,merchant,reference,cents}){
    if(!valid(accessToken)||!segment(merchant,80)||!segment(reference,128)||!Number.isSafeInteger(cents)||cents<1||cents>9999900)throw Error("request_invalid");
    // Single transaction route explicitly supports transactions.history; use it first.

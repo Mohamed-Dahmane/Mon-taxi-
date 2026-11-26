@@ -35,6 +35,7 @@ final class TaxiReceiptOAuthClient {
    return result;
   }finally{c.disconnect();}
  }
+ org.json.JSONArray recent(String token)throws Exception{return call(token,new JSONObject().put("action","recent")).getJSONArray("items");}
  JSONObject status(String token)throws Exception{return call(token,new JSONObject().put("action","status"));}
  Uri start(String token)throws Exception{
   JSONObject r=call(token,new JSONObject().put("action","start"));

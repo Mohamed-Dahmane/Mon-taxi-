@@ -29,6 +29,16 @@ function create(core,sumupEvent,storage){
       const next=core.apply(core.apply(core.addCourse(state,{...clone(course),kind:"free",driverIsMe:true,commissionCents:0}),id,{type:"load"}),id,{type:"start"});
       commit(next);return clone(get(id));
     },
+    externalLater(id){
+      const c=get(id);if(c.status!=="awaiting_payment")throw Error("Vérifie le premier paiement.");
+      commit({...state,courses:state.courses.map(x=>x.id===id?{...x,externalReview:true}:x)});
+    },
+    associateExternal(id,tx){
+      const attemptId="external-"+tx.reference;
+      const pending=core.apply(state,id,{type:"beginPayment",method:"sumup",amountCents:tx.amountCents,attemptId});
+      commit(core.apply(pending,id,{type:"paymentConfirmed",attemptId,result:"confirmed",reference:tx.reference,paidAt:tx.timestamp}));
+      return clone(get(id));
+    },
     editDetails(id,fields){
       const c=get(id);
       if(!["planned","loaded","in_progress","awaiting_payment"].includes(c.status))throw Error("Course déjà en paiement ou archivée.");
