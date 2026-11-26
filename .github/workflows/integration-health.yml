@@ -1,0 +1,42 @@
+name: Mon Taxi Pro - audit integration sans modification
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - integration/mon-taxi-pro-saine-20261126
+permissions:
+  contents: read
+concurrency:
+  group: mon-taxi-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventaire non destructif
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## Audit Mon Taxi Pro" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branche: ${GITHUB_REF_NAME}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
+          for path in .github/workflows/sumup-sync.yml supabase/functions/taxi-sumup-sync/index.ts; do
+            if test -f "$path"; then
+              echo "PRESENT: $path" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "MANQUANT: $path" | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          done
+          echo "Fichiers suivis: $(git ls-files | wc -l)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verification des conflits de fusion
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -n -E '^(<<<<<<< |=======|>>>>>>> )' -- ':!*.lock'; then
+            echo "Marqueurs de conflit detectes" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Aucun marqueur de conflit detecte" >> "$GITHUB_STEP_SUMMARY"
