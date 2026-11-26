@@ -450,7 +450,8 @@ function card(c,archived=false){
  if(c.hotelName||c.driverName){const a=document.createElement("p");a.textContent=[c.hotelName,c.driverName,c.commissionCents?euros(c.commissionCents):""].filter(Boolean).join(" · ");box.append(a);}
  if(archived&&c.payment){
   if(["cash","sumup"].includes(c.payment.method)){const receipt=document.createElement("button");receipt.type="button";receipt.textContent="Justificatif de paiement";receipt.dataset.receiptCourse=c.id;box.append(receipt);}
-  const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
+  const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);if(c.payment.paidAt)pay.textContent+=" · Encaissée le "+new Date(c.payment.paidAt).toLocaleString("fr-BE",{timeZone:"Europe/Brussels",dateStyle:"short",timeStyle:"short"});
+  box.append(pay);
   if(c.refund){
    const note=document.createElement("p");note.className="refund-notice";note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
   }else if(c.payment.method==="sumup"&&typeof window.TaxiRefund?.request==="function"){
@@ -507,8 +508,14 @@ function renderLists(){
   if(!first || !second)return Number(!first)-Number(!second);
   return first.localeCompare(second);
  });
- // Les dernières courses encaissées sont en haut, indépendamment de leur date de création.
- const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>(Date.parse(b.payment?.paidAt)||0)-(Date.parse(a.payment?.paidAt)||0));
+ const executionTime=c=>{
+  for(const value of [c.startedAt,c.finishedAt,c.scheduledAt,c.date && c.date+"T"+(c.time||"00:00"),c.payment?.paidAt]){
+   const timestamp=Date.parse(value);
+   if(Number.isFinite(timestamp))return timestamp;
+  }
+  return -Infinity;
+ };
+ const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>executionTime(b)-executionTime(a));
  if($("planning-reverse").getAttribute("aria-pressed")==="true")active.reverse();
  if($("archives-reverse").getAttribute("aria-pressed")==="true")archived.reverse();
  $('course-list').replaceChildren(...active.map(c=>card(c)));
