@@ -21,7 +21,8 @@ function normalize(rows){
   if(!driver)throw Error("Chauffeur obligatoire à la ligne "+(index+1));
   const commissionCents=money(row.commissionUnit);
   if(!Number.isSafeInteger(commissionCents*quantity))throw Error("Commission totale trop élevée à la ligne "+(index+1));
-  return {type,quantity,driver,commissionUnit:commissionCents/100,commissionCents:commissionCents*quantity};
+  const destination=String(row.destination??"").trim();
+  return {type,quantity,driver,commissionUnit:commissionCents/100,commissionCents:commissionCents*quantity,...(destination?{destination}:{})};
  });
  const totalVehicles=result.reduce((n,r)=>n+r.quantity,0);
  if(!Number.isSafeInteger(totalVehicles))throw Error("Trop de véhicules");
