@@ -11,7 +11,7 @@ function create(core,sumupEvent,storage){
   return {
     snapshot:()=>clone(state),
     setReceiptProfile(p){commit(core.setReceiptProfile(state,clone(p)));},
-    saveDirectory(kind,item){commit(core.saveDirectory(state,kind,clone(item)));},
+    saveDirectory(kind,item,decision){commit(core.saveDirectory(state,kind,clone(item),decision));},
     removeDirectory(kind,id){commit(core.removeDirectory(state,kind,id));},
     moveDirectory(kind,id,delta){commit(core.moveDirectory(state,kind,id,delta));},
     setDay(day,entry){commit(core.setDay(state,day,entry));},

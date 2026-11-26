@@ -316,8 +316,11 @@ function renderDirectory(){
   for(const item of items){
    const box=document.createElement("article");box.className="card";
    const h=document.createElement("h3");h.textContent=item.name;box.append(h);
-   if(kind!=="hotels"){const p=document.createElement("p");p.textContent=item.phone+(kind==="contacts"?" · "+(s.hotels.find(h=>h.id===item.hotelId)?.name||""):"");box.append(p);}
+   if(kind!=="hotels"){const p=document.createElement("p");p.textContent=[item.phone,...(item.otherPhones||[])].join(" / ")+(kind==="contacts"?" · "+(s.hotels.find(h=>h.id===item.hotelId)?.name||""):"");box.append(p);}
    if(kind==="contacts"){const h=s.hotels.find(h=>h.id===item.hotelId);if(h?.defaultContactId===item.id){const p=document.createElement("p");p.textContent="Contact par défaut";box.append(p);}else box.append(localButton("Définir par défaut","default",kind,item.id));}
+   if(kind!=="hotels"&&window.TaxiCleanCore.directoryMatches(s,kind,item).length){
+    box.append(localButton("Vérifier les doublons","edit",kind,item.id));
+   }
    box.append(localButton("Modifier","edit",kind,item.id),localButton("Supprimer","delete",kind,item.id));
    if(mode==="priority"){
     const row=document.createElement("div");row.className="grid";
@@ -331,7 +334,7 @@ function renderDirectory(){
 }
 function resetHotel(){hotelEdit=null;$('hotel-form').reset();$('hotel-form-title').textContent="Ajouter un hôtel";$('hotel-cancel').hidden=true;}
 function clearPerson(){personDraft=null;$('person-form').hidden=true;$('person-form').reset();}
-function editPerson(kind,item){personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi Pro":"Contact de l'hôtel dans Mon Taxi Pro";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
+function editPerson(kind,item){$('person-form').querySelector('[data-review]')?.remove();personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi Pro":"Contact de l'hôtel dans Mon Taxi Pro";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
 function clearDelete(){deleteDraft=null;$('directory-delete').hidden=true;}
 $('directory-sort').addEventListener("change",()=>safe(renderDirectory));
 $('contact-hotel').addEventListener("change",()=>safe(renderDirectory));
@@ -340,9 +343,31 @@ $('hotel-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
  controller.saveDirectory("hotels",{id:old?.id||newId(),name:$('hotel-name').value,defaultContactId:old?.defaultContactId});
  resetHotel();renderDirectory();message("Hôtel enregistré.");
 });});
+$('person-form').addEventListener("input",()=>$('person-form').querySelector('[data-review]')?.remove());
 $('person-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
  if(!personDraft)throw Error("Aucun contact sélectionné.");
- controller.saveDirectory(personDraft.kind,{...personDraft,name:$('person-name').value,phone:$('person-phone').value});
+ const draft={...personDraft,name:$('person-name').value,phone:$('person-phone').value};
+ if(draft.name!==personDraft.name||draft.phone!==personDraft.phone)delete draft.separateFrom;
+ const state=controller.snapshot(),matches=window.TaxiCleanCore.directoryMatches(state,draft.kind,draft);
+ if(matches.length){
+  const form=$('person-form');
+  form.querySelector('[data-review]')?.remove();
+  const panel=document.createElement("div");panel.dataset.review="true";
+  const finish=decision=>safe(()=>{
+   controller.saveDirectory(draft.kind,draft,decision);
+   panel.remove();clearPerson();renderDirectory();message("Répertoire enregistré.");
+  });
+  const option=(label,action)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.onclick=action;panel.append(b);};
+  const heading=document.createElement("p");heading.textContent="Comparer avec "+draft.name+" · "+draft.phone;panel.append(heading);
+  for(const other of matches){
+   const line=document.createElement("p");
+   line.textContent=[other.name,other.phone,...(other.otherPhones||[]),state.hotels.find(h=>h.id===other.hotelId)?.name].filter(Boolean).join(" · ");panel.append(line);
+   if(draft.kind==="drivers"||draft.hotelId===other.hotelId)option("Fusionner avec "+other.name,()=>finish(other.id));
+  }
+  option("Garder les fiches séparées",()=>finish("keep"));
+  form.append(panel);panel.scrollIntoView({block:"nearest"});return;
+ }
+ controller.saveDirectory(draft.kind,draft);
  clearPerson();renderDirectory();message("Contact enregistré uniquement dans Mon Taxi Pro.");
 });});
 function pickPerson(kind){
