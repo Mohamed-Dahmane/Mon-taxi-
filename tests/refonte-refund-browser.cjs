@@ -28,7 +28,7 @@ core.validateState(fixture);
  await page.screenshot({path:"refund-preview/"+width+"-confirmation.png",fullPage:true});
  await card.getByRole("button",{name:"Annuler",exact:true}).click();
  assert.ok(await button.isVisible());assert.equal(await confirm.isVisible(),false);
- await button.click();await amount.fill("36");await confirm.click();assert.match(await page.locator("#status").innerText(),/invalide/);await amount.fill("35,00");await confirm.click();
+ await button.click();await amount.fill("36,00");assert.equal(await amount.inputValue(),"36,00");await confirm.click();assert.match(await page.locator("#status").innerText(),/invalide/);await amount.fill("35,00");await confirm.click();
  assert.match(await page.locator("#archive-list").innerText(),/Remboursée/);
  assert.equal(await button.count(),0);
  const s=await page.evaluate(()=>JSON.parse(localStorage.getItem("mon-taxi-android-refonte:v1")).state);

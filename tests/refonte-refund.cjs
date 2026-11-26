@@ -10,7 +10,7 @@ function ready(id){c.plan({id,driverIsMe:true,commissionCents:0});c.load(id);c.s
 function unchanged(fn){const before=c.snapshot(),disk=clone(saved);assert.throws(fn);assert.deepEqual(c.snapshot(),before);assert.deepEqual(saved,disk)}
 ready("card");c.beginSumUp("card",3500,"a");const result={attemptId:"a",status:"success",transactionCode:"tx",amountCents:3500,currency:"EUR"};c.receiveSumUp("card",result);
 const paid=c.snapshot(),day=core.paymentDay(paid.ledger[0].paidAt);
-assert.equal(c.daily(day).cardGross,3500);assert.equal(c.daily(day).fee,59);
+assert.equal(c.daily(day).cardGross,3500);assert.equal(c.daily(day).fee,70);
 unchanged(()=>c.refund("card","2000-01-01",3500));
 unchanged(()=>c.refund("card","9999-01-01",3500));
 fail=true;unchanged(()=>c.refund("card",day,3500));fail=false;
@@ -18,16 +18,16 @@ c.refund("card",day,3500);
 assert.deepEqual(c.snapshot().ledger,paid.ledger);
 assert.deepEqual(c.snapshot().courses[0].payment,paid.courses[0].payment);
 assert.equal(c.snapshot().courses[0].status,"archived");
-assert.equal(c.daily(day).cardGross,0);assert.equal(c.daily(day).cardNet,-59);assert.equal(c.daily(day).worked,false);
+assert.equal(c.daily(day).cardGross,0);assert.equal(c.daily(day).cardNet,-70);assert.equal(c.daily(day).worked,false);
 unchanged(()=>c.refund("card",day,3500));unchanged(()=>c.receiveSumUp("card",result));
-c=create(storage);assert.equal(c.daily(day).cardNet,-59);
+c=create(storage);assert.equal(c.daily(day).cardNet,-70);
 const backup=c.backup();assert.deepEqual(core.readBackup(backup),c.snapshot());
 const bad=JSON.parse(backup);bad.state.courses[0].refund.amountCents=3501;unchanged(()=>c.restore(JSON.stringify(bad)));
 ready("cash");c.cash("cash",1500);assert.equal(c.daily(day).cash,1500);
 unchanged(()=>c.refund("cash",day,1501));unchanged(()=>c.refund("cash",day,0));unchanged(()=>c.refund("cash",day,1.5));
 c.refund("cash",day,500);assert.equal(c.daily(day).cash,1000);unchanged(()=>c.refund("cash",day,500));
 assert.equal(c.snapshot().courses.find(x=>x.id==="cash").refund.amountCents,500);
-ready("partial");c.beginSumUp("partial",1000,"partial-a");c.receiveSumUp("partial",{attemptId:"partial-a",status:"success",transactionCode:"partial-tx",amountCents:1000,currency:"EUR"});c.refund("partial",day,400);assert.equal(c.daily(day).cardGross,600);assert.equal(c.daily(day).fee,76);
+ready("partial");c.beginSumUp("partial",1000,"partial-a");c.receiveSumUp("partial",{attemptId:"partial-a",status:"success",transactionCode:"partial-tx",amountCents:1000,currency:"EUR"});c.refund("partial",day,400);assert.equal(c.daily(day).cardGross,600);assert.equal(c.daily(day).fee,90);
 ready("pending");c.beginSumUp("pending",100,"b");unchanged(()=>c.refund("pending",day,100));
 c.receiveSumUp("pending",{attemptId:"b",status:"cancelled"});
 // Paiement et remboursement sur deux mois distincts : conservation de la date réelle.
@@ -35,6 +35,6 @@ let previous=clone(paid);previous.ledger[0].paidAt="2025-01-31T11:00:00Z";previo
 previous=core.recordRefund(previous,"card","2025-02-01",3500);core.validateState(previous);
 assert.equal(core.monthTotals(previous,"2025-01").cardGross,3500);
 assert.equal(core.monthTotals(previous,"2025-02").cardGross,-3500);
-assert.equal(core.monthTotals(previous,"2025-01").fee,59);
+assert.equal(core.monthTotals(previous,"2025-01").fee,70);
 assert.equal(core.monthTotals(previous,"2025-02").fee,0);
 console.log("Remboursements : garde-fous, conservation du paiement, comptabilité, redémarrage et sauvegarde validés.");
