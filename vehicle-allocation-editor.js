@@ -24,6 +24,7 @@ function mount(host, options={}){
   model.TYPES.forEach(t=>{const o=doc.createElement("option");o.value=t;o.textContent=t;type.el.append(o)});
   type.el.value=value.type==="Petite voiture"?"Voiture normale":value.type||"Voiture normale";
   const quantity=field("input","Quantité",value.quantity??1);quantity.el.type="number";quantity.el.min="1";quantity.el.step="1";
+  const destination=field("input","Destination (facultative)",value.destination??"");
   const driver=field("input","Chauffeur",value.driver??options.defaultDriver??"Moi");
   driver.el.setAttribute("list",options.driverListId||"driverSuggestions");
   const defaultForType=t=>typeof options.commissionFor==="function"?options.commissionFor(t):options.defaultCommission??10;
@@ -33,15 +34,15 @@ function mount(host, options={}){
   function updateSubtotal(){const q=Number(quantity.el.value),c=Number(commission.el.value);subtotal.textContent=Number.isSafeInteger(q)&&q>0&&Number.isFinite(c)&&c>=0&&Number.isSafeInteger(Math.round(q*c*100))?"Sous-total : "+(Math.round(q*c*100)/100).toFixed(2)+" €":"Sous-total : à vérifier";}
   [quantity.el,commission.el].forEach(el=>el.addEventListener("input",updateSubtotal));
   const remove=doc.createElement("button");remove.type="button";remove.textContent="Supprimer";
-  [type,quantity,driver,commission].forEach(f=>{line.append(f.wrap);f.el.addEventListener("input",invalidate);f.el.addEventListener("change",invalidate)});
+  [type,quantity,driver,commission,destination].forEach(f=>{line.append(f.wrap);f.el.addEventListener("input",invalidate);f.el.addEventListener("change",invalidate)});
   type.el.addEventListener("change",()=>{if(!commission.el.dataset.manuallyEdited){commission.el.value=defaultForType(type.el.value)}updateSubtotal();invalidate()});
   commission.el.addEventListener("input",()=>{commission.el.dataset.manuallyEdited="1"});
   line.append(subtotal,remove);list.append(line);updateSubtotal();
-  const row={line,type:type.el,quantity:quantity.el,driver:driver.el,commission:commission.el};rows.push(row);
+  const row={line,type:type.el,quantity:quantity.el,driver:driver.el,commission:commission.el,destination:destination.el};rows.push(row);
   remove.addEventListener("click",()=>{const index=rows.indexOf(row);if(index<0)return;line.remove();rows.splice(index,1);invalidate()});
   invalidate();
  }
- function values(){return rows.map(r=>({type:r.type.value,quantity:r.quantity.value,driver:r.driver.value,commissionUnit:r.commission.value}))}
+ function values(){return rows.map(r=>({type:r.type.value,quantity:r.quantity.value,driver:r.driver.value,commissionUnit:r.commission.value,...(r.destination.value.trim()?{destination:r.destination.value.trim()}:{})}))}
  function validate(){
   try{
    approved=model.normalize(values());
