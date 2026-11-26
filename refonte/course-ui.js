@@ -500,7 +500,14 @@ function show(id){
  if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
  if(['ride','payment','cash','sumup'].includes(id)){
   const c=current();if(!c||c.status==="archived")throw Error("Aucune course active");
-  if(id!=="ride"&&c.status!=="awaiting_payment"&&!(id==="sumup"&&c.status==="payment_pending"))throw Error("La course doit être terminée avant le paiement");
+  const preview=id==="payment"&&["planned","loaded","in_progress"].includes(c.status);
+  if(id==="payment"){
+   $('payment-title').textContent=preview?"Aperçu du montant":"Paiement";
+   $('fare-save').hidden=!preview;
+   $('payment-methods').hidden=preview;
+   $('payment-methods').nextElementSibling.hidden=preview;
+  }
+  if(!preview&&id!=="ride"&&c.status!=="awaiting_payment"&&!(id==="sumup"&&c.status==="payment_pending"))throw Error("La course doit être terminée avant le paiement");
   if(id==="ride"){
    $('ride-step').textContent=labels[c.status];$('ride-route').textContent=route(c);
    $('ride-next').textContent=actions[c.status]||"Accéder au paiement";$('ride-next').disabled=c.status==="payment_pending";
@@ -541,12 +548,13 @@ function localDate(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,
 function localTime(d){return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function newId(){if(globalThis.crypto?.randomUUID)return crypto.randomUUID();const bytes=crypto.getRandomValues(new Uint8Array(16));return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");}
 document.addEventListener("submit",e=>{
+ if(e.target.id==="ride-details-form"){e.preventDefault();safe(()=>{controller.editDetails(current().id,Object.fromEntries(new FormData(e.target)));show(current().status==="awaiting_payment"?"payment":"ride");});return;}
  const free=e.target.closest("#free-ride-form");if(free){e.preventDefault();safe(()=>{
    if(!free.reportValidity())return;
    const fields=Object.fromEntries(new FormData(free)),now=new Date();
    const from=String(fields.from||"").trim().slice(0,250),to=String(fields.to||"").trim().slice(0,250);
    const id=newId();controller.startFree({id,from,to,client:String(fields.label||"").trim().slice(0,160),date:localDate(now),time:localTime(now),scheduledAt:localDate(now)+"T"+localTime(now)});
-   selected=id;$('amount').value="";free.reset();show("ride");if(to)launchWaze(current());
+   selected=id;$('amount').value=current().paymentDraftCents?(current().paymentDraftCents/100).toFixed(2).replace(".",","):"";free.reset();show("ride");if(to)launchWaze(current());
  });return;}
  const form=e.target.closest("form[data-kind]");if(!form)return;e.preventDefault();
  safe(()=>{
@@ -580,6 +588,12 @@ document.addEventListener("click",e=>{
  if(b.id==="receipt-configure"){safe(()=>{receiptData(receiptCourse);const p=controller.snapshot().courses.find(x=>x.id===receiptCourse).payment;if($("receipt").hidden||typeof window.TaxiReceipt?.configure!=="function")throw Error("Configuration disponible sur Android.");window.TaxiReceipt.configure(p.reference,p.amountCents);});return;}
  if(b.dataset.receiptChannel){message("Envoi sécurisé non encore disponible.",true);return;}
  if(b.id==="success-home"){safe(()=>show("home"));return;}
+ if(b.id==="ride-details"||b.id==="payment-details"){safe(()=>{const c=current();for(const input of $('ride-details-form').querySelectorAll("input"))input.value=c[input.name]||"";show("details");});return;}
+ if(b.id==="details-back"){safe(()=>show(current().status==="awaiting_payment"?"payment":"ride"));return;}
+ if(b.id==="delete-course"){safe(()=>{if(confirm("Supprimer cette course ?")){controller.removeCourse(current().id);selected=null;show("planning");}});return;}
+ if(b.id==="fare-clear"){safe(()=>{controller.savePaymentDraft(current().id,null);$('amount').value="";});return;}
+ if(b.id==="fare-preview"){safe(()=>show("payment"));return;}
+ if(b.id==="fare-save"){safe(()=>{controller.savePaymentDraft(current().id,readCashCents($('amount').value));show("ride");});return;}
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");
   if(c.status==="planned"){controller.load(c.id);show("ride");}

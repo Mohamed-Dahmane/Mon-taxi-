@@ -69,15 +69,18 @@ function makeCore(){
   return {...state,courses,ledger:[...state.ledger,{courseId:id,...payment}]};
  }
  function savePaymentDraft(state,id,cents){
-  if(!Number.isSafeInteger(cents)||cents<100||cents>9999900)throw Error("Montant terminal invalide");
+  if(cents!==null&&(!validAmount(cents)||cents===0))throw Error("Montant invalide");
   const index=state.courses.findIndex(c=>c.id===id);
-  if(index<0||state.courses[index].status!=="awaiting_payment")throw Error("Course non disponible pour la saisie du montant");
+  if(index<0||!["planned","loaded","in_progress","awaiting_payment"].includes(state.courses[index].status))throw Error("Course non disponible pour la saisie du montant");
   const courses=state.courses.slice();courses[index]={...courses[index],paymentDraftCents:cents};
+  if(cents===null)delete courses[index].paymentDraftCents;
   return {...state,courses};
  }
  function addCourse(state,course){
   if(!course?.id||state.courses.some(c=>c.id===course.id))throw Error("Identifiant de course manquant ou en double");
-  return {...state,courses:[...state.courses,{...course,status:"planned",payment:null}]};
+  const airport = /\b(?:BRU|CRL|Zaventem|aeroport|airport)\b/i;
+  const defaults = [course.from,course.to].some(place=>airport.test(String(place||"").normalize("NFD").replace(/[\u0300-\u036f]/g,""))) ? {paymentDraftCents:6480} : {};
+  return {...state,courses:[...state.courses,{...defaults,...course,status:"planned",payment:null}]};
  }
  const fields=["cash","appli","commission","fuel","expense","invoiceHt"];
  const validAmount=n=>Number.isSafeInteger(n)&&n>=0&&n<=99999999999;

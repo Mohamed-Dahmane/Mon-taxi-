@@ -91,12 +91,19 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <button type="submit" class="primary">Démarrer la course</button></form></section>
 <section class="screen" id="ride" hidden>
 <h2>Course sélectionnée</h2><div class="steps" aria-label="Étapes de course"><span data-step="planned">Planning</span><span data-step="loaded">Chargement</span><span data-step="in_progress">Démarrage</span><span data-step="awaiting_payment">Paiement</span></div>
-<div class="card"><h3 id="ride-step"></h3><p id="ride-route"></p><button id="ride-next" class="primary"></button><button id="waze-reopen" hidden>Ouvrir Waze</button><button id="waze-overlay" hidden>Autoriser le bouton flottant</button></div>
+<div class="card"><h3 id="ride-step"></h3><p id="ride-route"></p><button id="fare-preview">👁 Modifier le montant</button><button id="ride-details">Modifier autre</button><button id="ride-next" class="primary"></button><button id="waze-reopen" hidden>Ouvrir Waze</button><button id="waze-overlay" hidden>Autoriser le bouton flottant</button></div>
 </section>
-<section class="screen" id="payment" hidden><h2>Paiement</h2><div class="card">
+<section class="screen" id="details" hidden><h2>Modifier la course</h2><form class="card" id="ride-details-form">
+<label class="field">Destination<input name="to" maxlength="250"></label>
+<label class="field">Départ<input name="from" maxlength="250"></label>
+<label class="field">Chambre<input name="room" maxlength="250"></label>
+<label class="field">Client<input name="client" maxlength="250"></label>
+<label class="field">Téléphone<input name="phone" maxlength="250"></label>
+<button class="primary">Enregistrer</button><button type="button" id="details-back">Retour</button><button type="button" id="delete-course">Supprimer la course</button></form></section>
+<section class="screen" id="payment" hidden><h2 id="payment-title">Paiement</h2><div class="card">
 <p id="payment-route"></p>
 <div class="field"><label for="amount">Montant à payer (€)</label><div style="position:relative"><input id="amount" type="text" inputmode="none" data-money autocomplete="off" placeholder="0,00" style="padding-right:52px"><span aria-hidden="true" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1.6rem;pointer-events:none">€</span></div></div>
-<div class="pay"><button class="cash" id="pay-cash" data-go="cash">Espèces</button><button class="primary" id="pay-sumup" data-go="sumup">SumUp</button></div><p class="muted">Les espèces sont enregistrées localement. Le paiement carte utilise uniquement le terminal SumUp.</p>
+<button id="payment-details">Modifier autre</button><button id="fare-clear">Effacer le montant</button><button hidden id="fare-save">Enregistrer et revenir à la course</button><div class="pay" id="payment-methods"><button class="cash" id="pay-cash" data-go="cash">Espèces</button><button class="primary" id="pay-sumup" data-go="sumup">SumUp</button></div><p class="muted">Les espèces sont enregistrées localement. Le paiement carte utilise uniquement le terminal SumUp.</p>
 </div></section>
 <section class="screen" id="cash" hidden><h2>Paiement en espèces</h2><div class="card"><p id="cash-route"></p><span class="muted">Montant effectivement reçu</span><strong class="amount" id="cash-confirm-amount"></strong><p>Valide uniquement après réception des espèces. La course sera alors archivée.</p><button id="cash-confirm" class="cash">Valider les espèces reçues</button><button data-go="payment">Retour au paiement</button></div></section>
 <section class="screen" id="sumup" hidden><h2>Paiement SumUp</h2><div class="card"><p id="sumup-route"></p><strong class="amount" id="sumup-amount"></strong><p id="sumup-message">Envoi du montant au terminal et attente de confirmation.</p><label class="field" id="sumup-receipt-choice"><span><input type="checkbox" id="sumup-local-receipt"> Tester le retour direct et l’aperçu PDF Mon Taxi Pro</span><small class="muted">Facultatif : envoi interne non disponible. Décochez pour conserver l’écran de reçu SumUp habituel.</small></label><button id="sumup-confirm" class="primary">Envoyer au terminal</button><button id="sumup-recover" hidden>Vérifier le dernier retour du terminal</button><p id="sumup-reference" class="muted" hidden></p><p id="sumup-diagnostic" role="status" aria-live="polite" hidden></p><button id="sumup-online" hidden>Vérifier le statut officiel dans SumUp</button><button id="sumup-back" data-go="payment">Retour au paiement</button></div></section>

@@ -29,6 +29,18 @@ function create(core,sumupEvent,storage){
       const next=core.apply(core.apply(core.addCourse(state,{...clone(course),kind:"free",driverIsMe:true,commissionCents:0}),id,{type:"load"}),id,{type:"start"});
       commit(next);return clone(get(id));
     },
+    editDetails(id,fields){
+      const c=get(id);
+      if(!["planned","loaded","in_progress","awaiting_payment"].includes(c.status))throw Error("Course déjà en paiement ou archivée.");
+      const edited={...c};
+      for(const key of ["to","from","room","client","phone"])edited[key]=String(fields[key]??c[key]??"").trim();
+      commit({...state,courses:state.courses.map(item=>item.id===id?edited:item)});
+    },
+    removeCourse(id){
+      const c=get(id);
+      if(!["planned","loaded","in_progress","awaiting_payment"].includes(c.status)||c.payment?.reference)throw Error("Suppression indisponible après paiement.");
+      commit({...state,courses:state.courses.filter(item=>item.id!==id)});
+    },
     load:id=>apply(id,{type:"load"}),
     start:id=>apply(id,{type:"start"}),
     finish:id=>apply(id,{type:"finish"}),
