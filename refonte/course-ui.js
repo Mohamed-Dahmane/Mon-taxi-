@@ -491,6 +491,13 @@ function card(c,archived=false){
  if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
  return box;
 }
+for(const id of ["planning-reverse","archives-reverse"]){
+ const button=$(id);
+ button.addEventListener("click",()=>{
+  button.setAttribute("aria-pressed",String(button.getAttribute("aria-pressed")!=="true"));
+  renderLists();
+ });
+}
 function renderLists(){
  const all=controller.snapshot().courses;
  // Les horaires du planning sont enregistrés en heure locale au format ISO.
@@ -502,11 +509,14 @@ function renderLists(){
  });
  // Les dernières courses encaissées sont en haut, indépendamment de leur date de création.
  const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>(Date.parse(b.payment?.paidAt)||0)-(Date.parse(a.payment?.paidAt)||0));
+ if($("planning-reverse").getAttribute("aria-pressed")==="true")active.reverse();
+ if($("archives-reverse").getAttribute("aria-pressed")==="true")archived.reverse();
  $('course-list').replaceChildren(...active.map(c=>card(c)));
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
 }
 function show(id){
+ for(const list of ["planning","archives"])if(list!==id)$(list+"-reverse").setAttribute("aria-pressed","false");
  if(id!=="receipt")clearReceiptPreview();
  closeMoneyPad();
  if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
