@@ -1,8 +1,8 @@
 name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
-    branches: [test/recus-remarques-tva-20261126]
-    paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
+    branches: [test/recus-remarques-tva-20261126, integration/mon-taxi-pro-2122-global-20261126]
+    paths: ['vehicle-allocations.js', 'vehicle-allocation-editor.js', 'tests/**', 'refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
     inputs:
       compile_apk:
