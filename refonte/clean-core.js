@@ -78,9 +78,7 @@ function makeCore(){
  }
  function addCourse(state,course){
   if(!course?.id||state.courses.some(c=>c.id===course.id))throw Error("Identifiant de course manquant ou en double");
-  const airport = /\b(?:BRU|CRL|Zaventem|aeroport|airport)\b/i;
-  const defaults = [course.from,course.to].some(place=>airport.test(String(place||"").normalize("NFD").replace(/[\u0300-\u036f]/g,""))) ? {paymentDraftCents:6480} : {};
-  return {...state,courses:[...state.courses,{...defaults,...course,status:"planned",payment:null}]};
+  return {...state,courses:[...state.courses,{...course,status:"planned",payment:null}]};
  }
  const fields=["cash","appli","commission","fuel","expense","invoiceHt"];
  const validAmount=n=>Number.isSafeInteger(n)&&n>=0&&n<=99999999999;
