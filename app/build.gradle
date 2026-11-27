@@ -3,7 +3,7 @@ android {
  namespace 'be.montaxi.gestion'
  compileSdk 35
  compileOptions { coreLibraryDesugaringEnabled true; sourceCompatibility JavaVersion.VERSION_21; targetCompatibility JavaVersion.VERSION_21 }
- defaultConfig { applicationId 'be.montaxi.pro'; minSdk 26; targetSdk 35; versionCode 2124; versionName 'Mon Taxi Pro 2124' }
+ defaultConfig { applicationId 'be.montaxi.pro'; minSdk 26; targetSdk 35; versionCode 2125; versionName 'Mon Taxi Pro 2125' }
 }
 
 def signingFile = System.getenv('TAXI_SIGNING_STORE_FILE')

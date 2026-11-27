@@ -307,10 +307,11 @@ function localButton(label,action,kind,id){
  const b=document.createElement("button");b.type="button";b.textContent=label;b.dataset.dirAction=action;b.dataset.dirKind=kind;b.dataset.dirId=id;return b;
 }
 function renderDirectory(){
- const s=controller.snapshot(),mode=$('directory-sort').value;
+ const s=controller.snapshot();
  selectOptions($('contact-hotel'),s.hotels,"Choisir un hôtel");
  $('pick-contact').disabled=!$('contact-hotel').value||!!contactRequest;$('pick-driver').disabled=!!contactRequest;
  for(const kind of ["hotels","contacts","drivers"]){
+  const mode=$(kind+"-sort").value;
   const items=s[kind].slice();if(mode!=="priority")items.sort((a,b)=>(mode==="az"?1:-1)*a.name.localeCompare(b.name,"fr",{sensitivity:"base"}));
   const root=$(kind+'-list');root.replaceChildren();
   $(kind+'-empty').hidden=items.length>0;
@@ -337,7 +338,16 @@ function resetHotel(){hotelEdit=null;$('hotel-form').reset();$('hotel-form-title
 function clearPerson(){personDraft=null;$('person-form').hidden=true;$('person-form').reset();}
 function editPerson(kind,item){$('person-form').querySelector('[data-review]')?.remove();personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi Pro":"Contact de l'hôtel dans Mon Taxi Pro";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
 function clearDelete(){deleteDraft=null;$('directory-delete').hidden=true;}
-$('directory-sort').addEventListener("change",()=>safe(renderDirectory));
+for(const kind of ["hotels","contacts","drivers"]){
+ const select=$(kind+"-sort");
+ const key=storeKey+":sort:"+kind;
+ const saved=localStorage.getItem(key);
+ if(["priority","az","za"].includes(saved))select.value=saved;
+ select.addEventListener("change",()=>safe(()=>{
+  renderDirectory();
+  localStorage.setItem(key,select.value);
+ }));
+}
 $('contact-hotel').addEventListener("change",()=>safe(renderDirectory));
 $('hotel-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
  const old=controller.snapshot().hotels.find(h=>h.id===hotelEdit);
