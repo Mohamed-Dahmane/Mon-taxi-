@@ -576,6 +576,7 @@ function keepFocusedFieldVisible(){
   const viewport=window.visualViewport;
   const top=viewport?viewport.offsetTop:0;
   const height=viewport?viewport.height:window.innerHeight;
+  if(!Number.isFinite(height)||height<=0)return;
   const bounds=el.getBoundingClientRect();
   const safeTop=top+16,safeBottom=Math.max(safeTop+1,top+height-24);
   if(bounds.bottom>safeBottom||bounds.top<safeTop){
