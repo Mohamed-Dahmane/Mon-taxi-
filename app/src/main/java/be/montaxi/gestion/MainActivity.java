@@ -524,6 +524,15 @@ public class MainActivity extends Activity {
       String id=new String(new android.util.AtomicFile(link).readFully(),java.nio.charset.StandardCharsets.US_ASCII);
       TaxiReceiptPublisher.publish(credential,id,new android.util.AtomicFile(png).readFully());
       marker.createNewFile();
+      final byte[] published=new android.util.AtomicFile(png).readFully();
+      runOnUiThread(()->{
+       try{
+        if(receiptTrusted()&&sharePreviewRaw!=null&&png.equals(receiptArchive(sharePreviewRaw,sharePreviewCard))){
+         sharePreviewPng=published;
+         receiptPreviewEvent(sharePreviewToken,android.util.Base64.encodeToString(published,android.util.Base64.NO_WRAP),null);
+        }
+       }catch(Exception ignored){}
+      });
      }catch(Exception ex){break;}
     }
    }catch(Exception ignored){}finally{receiptRetryRunning.set(false);}
@@ -544,10 +553,12 @@ public class MainActivity extends Activity {
  private void shareReceiptPng(String token,String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
   try{
+   java.io.File archived=receiptArchive(raw,card);
+   byte[] original=new android.util.AtomicFile(archived).readFully();
    java.io.File dir=new java.io.File(getCacheDir(),"receipt-share");if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException();
    java.io.File[] old=dir.listFiles();if(old!=null)for(java.io.File f:old)if(f.isFile()&&System.currentTimeMillis()-f.lastModified()>86400000L)f.delete();
    java.io.File file=java.io.File.createTempFile(card?"Recu-carte-":"Recu-especes-",".png",dir);
-   try(java.io.FileOutputStream out=new java.io.FileOutputStream(file)){out.write(sharePreviewPng);}
+   try(java.io.FileOutputStream out=new java.io.FileOutputStream(file)){out.write(original);}
    android.net.Uri uri=androidx.core.content.FileProvider.getUriForFile(this,getPackageName()+".receiptfiles",file);
    Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("image/png");intent.putExtra(Intent.EXTRA_STREAM,uri);intent.setClipData(android.content.ClipData.newRawUri("Reçu PNG",uri));intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
    startActivity(Intent.createChooser(intent,"Partager le reçu PNG"));
