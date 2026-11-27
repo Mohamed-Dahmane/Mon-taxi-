@@ -756,8 +756,13 @@ document.addEventListener("click",e=>{
  });return;}
  if(b.id==="pay-cash"){safe(()=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
-  cashDraft={id:c.id,cents:readCashCents($('amount').value)};
-  show("cash");
+  const cents=readCashCents($('amount').value);
+  b.disabled=true;
+  try{
+   const result=controller.cash(c.id,cents);
+   cashDraft=null;selected=null;$('amount').value="";
+   playConfirmedPayment();showPaymentSuccess(result);openReceipt(result.id,"success");
+  }finally{b.disabled=false;}
  });return;}
  if(b.id==="cash-confirm"){safe(()=>{
   const c=current(),draft=cashDraft;
@@ -766,7 +771,7 @@ document.addEventListener("click",e=>{
   try{
    const result=controller.cash(draft.id,draft.cents);
    cashDraft=null;selected=null;$('amount').value="";
-   playConfirmedPayment();showPaymentSuccess(result);message("Espèces enregistrées : "+euros(draft.cents)+". Course archivée.");
+   playConfirmedPayment();showPaymentSuccess(result);openReceipt(result.id,"success");
   }finally{b.disabled=false;}
  });return;}
  if(b.id==="waze-reopen"){safe(()=>{const c=current();if(!c)throw Error("Course inconnue");launchWaze(c);});return;}
