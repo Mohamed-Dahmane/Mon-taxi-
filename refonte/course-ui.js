@@ -586,6 +586,12 @@ document.addEventListener('focusin',e=>{
 });
 window.visualViewport?.addEventListener('resize',keepFocusedFieldVisible);
 window.visualViewport?.addEventListener('scroll',keepFocusedFieldVisible);
+// Avoid stale animation callbacks after the keyboard closes or the focused input is removed.
+document.addEventListener('focusout',()=>{
+ cancelAnimationFrame(keyboardFocusFrame);
+ keyboardFocusFrame=0;
+});
+
 // Close the navigation drawer whenever a destination is shown, including programmatic transitions.
 function closeNavigationMenu(){
  const menu=document.querySelector('.nav-menu');
