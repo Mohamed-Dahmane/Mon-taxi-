@@ -27,7 +27,13 @@ export function createHandler({clientId,merchant,deviceToken,keyHex,transport,st
   if(!["/taxi-sumup-oauth","/functions/v1/taxi-sumup-oauth"].includes(url.pathname))return json({error:"not_found"},404);
   if(req.method!=="GET"&&req.method!=="POST")return json({error:"method"},405);
   if(req.method==="POST"&&!await equal(req.headers.get("authorization"),"Bearer "+deviceToken))return json({error:"unauthorized"},401);
-  const store=storeFactory({device,merchant}),protection=createOAuthProtection({keyHex,store,now});
+  let store,protection;
+  try{
+   store=storeFactory({device,merchant});
+   protection=createOAuthProtection({keyHex,store,now});
+  }catch{
+   return req.method==="GET"?page("Connexion non confirmée. Retournez dans Mon Taxi Pro.",503):json({error:"storage_unavailable"},503);
+  }
   let response;
   try{
    if(req.method==="GET"){
