@@ -417,10 +417,25 @@ public class MainActivity extends Activity {
   java.io.File dir=new java.io.File(getFilesDir(),"confirmed-receipts");if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException();
   return new java.io.File(dir,key.toString()+".png");
  }
+ private synchronized String receiptLinkId(String raw,boolean card)throws Exception{
+  java.io.File png=receiptArchive(raw,card);
+  android.util.AtomicFile file=new android.util.AtomicFile(new java.io.File(png.getParentFile(),png.getName()+".link"));
+  if(file.getBaseFile().exists()){
+   String id=new String(file.readFully(),java.nio.charset.StandardCharsets.US_ASCII);
+   if(!id.matches("[0-9a-f]{64}"))throw new IOException("Invalid receipt link");
+   return id;
+  }
+  byte[] random=new byte[32];new java.security.SecureRandom().nextBytes(random);
+  StringBuilder id=new StringBuilder();for(byte b:random)id.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
+  java.io.FileOutputStream out=file.startWrite();
+  try{out.write(id.toString().getBytes(java.nio.charset.StandardCharsets.US_ASCII));file.finishWrite(out);}catch(Exception ex){file.failWrite(out);throw ex;}
+  return id.toString();
+ }
  private void confirmReceiptPng(String token,String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
   try{
    java.io.File target=receiptArchive(raw,card);
+   receiptLinkId(raw,card);
    if(!target.exists()){
     android.util.AtomicFile atomic=new android.util.AtomicFile(target);
     java.io.FileOutputStream out=atomic.startWrite();
