@@ -128,7 +128,7 @@ function makeCore(){
    if(c?.refund?.day===day){if(p.method==="cash")cash-=c.refund.amountCents;else cardGross-=c.refund.amountCents;}
    if(paymentDay(p.paidAt)!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
-   else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*169/10000);}
+   else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*2/100);}
    if(c?.driverIsMe===true&&validAmount(c.commissionCents))hotelCommission+=c.commissionCents;
   }
   const commission=e.commission+hotelCommission,cashReal=cash-commission,cardNet=cardGross-fee;
