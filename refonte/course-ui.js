@@ -586,7 +586,22 @@ document.addEventListener('focusin',e=>{
 });
 window.visualViewport?.addEventListener('resize',keepFocusedFieldVisible);
 window.visualViewport?.addEventListener('scroll',keepFocusedFieldVisible);
+// Close the navigation drawer whenever a destination is shown, including programmatic transitions.
+function closeNavigationMenu(){
+ const menu=document.querySelector('.nav-menu');
+ if(menu?.open)menu.open=false;
+}
+document.addEventListener('keydown',event=>{
+ if(event.key!=='Escape')return;
+ const menu=document.querySelector('.nav-menu');
+ if(menu?.open){
+  event.preventDefault();
+  event.stopPropagation();
+  closeNavigationMenu();
+ }
+},true);
 function show(id){
+ closeNavigationMenu();
  if(id==="reservation"){
   const now=new Date();
   if(!$("reservation-date").value)$("reservation-date").value=localDate(now);
