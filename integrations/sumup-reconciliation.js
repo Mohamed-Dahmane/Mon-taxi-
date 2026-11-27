@@ -12,7 +12,9 @@ export function sumupDailyTotals(transactions) {
     if (!Number.isFinite(amount) || amount < 0 || tx.currency !== "EUR") continue;
     // Explicit business-local day supplied by backend; avoids timezone shifts.
     const date = tx.localDate;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) continue;
+    if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    const parsedDay = new Date(`${date}T00:00:00Z`);
+    if (!Number.isFinite(parsedDay.getTime()) || parsedDay.toISOString().slice(0, 10) !== date) continue;
     const cents = Math.round(amount * 100);
     if (!Number.isSafeInteger(cents)) continue;
     // Mark as seen only after validation; an invalid duplicate must not hide a valid payment.
