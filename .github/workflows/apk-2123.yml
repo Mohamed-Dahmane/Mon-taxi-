@@ -1,0 +1,149 @@
+name: APK Mon Taxi Pro 2123
+on:
+  push:
+    branches: [isolation/sumup-oauth-only-20261127]
+    paths: ['.github/workflows/apk-2123.yml']
+permissions:
+  contents: read
+jobs:
+  signed-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - name: Préparer exclusivement les ressources Android de refonte
+        run: |
+          set -euo pipefail
+          rm -rf app/src/main/assets
+          mkdir -p app/src/main/assets/app app/src/main/res/drawable-nodpi
+          cp refonte/interface.html app/src/main/assets/index.html
+          cp refonte/clean-core.js refonte/course-controller.js refonte/sumup-course-payment.js refonte/course-ui.js app/src/main/assets/
+          cp app/mercedes-foreground.webp app/mercedes-studio.webp app/src/main/assets/app/
+          base64 -d app/icon/mon_taxi.jpg.base64 > app/src/main/res/drawable-nodpi/mon_taxi_icon.jpg
+          cmp refonte/interface.html app/src/main/assets/index.html
+          ! grep -rE 'taxi_management_backups|taxi_hotel_sync|github[.]io|taxi_sumup_transactions' app/src/main/assets --include='*.html' --include='*.js'
+      - name: Préparer la clé persistante de production sans exposer les secrets
+        env:
+          TAXI_KEYSTORE_B64: ${{ secrets.TAXI_KEYSTORE_B64 }}
+          TAXI_SIGNING_STORE_PASSWORD: ${{ secrets.TAXI_SIGNING_STORE_PASSWORD }}
+          TAXI_SIGNING_KEY_ALIAS: ${{ secrets.TAXI_SIGNING_KEY_ALIAS }}
+          TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 - <<'PY'
+          import base64, os, re
+          from pathlib import Path
+          names=('TAXI_KEYSTORE_B64','TAXI_SIGNING_STORE_PASSWORD','TAXI_SIGNING_KEY_ALIAS','TAXI_SIGNING_KEY_PASSWORD')
+          if any(not os.environ.get(n,'').strip() for n in names):
+              raise SystemExit('Signature de production non configurée. Aucun APK de remplacement ne sera livré.')
+          value=os.environ[names[0]].strip()
+          value=re.sub(r'^(?:export\s+)?TAXI_KEYSTORE_B64\s*=\s*','',value)
+          value=value.strip("'\"").replace("\\r","").replace("\\n","")
+          value=re.sub(r'\s+','',value)
+          data=base64.b64decode(value+'='*(-len(value)%4),altchars=b'-_',validate=True)
+          if not data.startswith((b'\xfe\xed\xfe\xed',b'\xce\xce\xce\xce',b'\x30')):
+              raise SystemExit('Format du magasin de signature non reconnu.')
+          Path(os.environ['RUNNER_TEMP'],'taxi-refonte-release.jks').write_bytes(data)
+          PY
+      - name: Compiler et signer exclusivement la nouvelle application
+        env:
+          TAXI_SIGNING_STORE_FILE: ${{ runner.temp }}/taxi-refonte-release.jks
+          TAXI_SIGNING_STORE_PASSWORD: ${{ secrets.TAXI_SIGNING_STORE_PASSWORD }}
+          TAXI_SIGNING_KEY_ALIAS: ${{ secrets.TAXI_SIGNING_KEY_ALIAS }}
+          TAXI_SIGNING_KEY_PASSWORD: ${{ secrets.TAXI_SIGNING_KEY_PASSWORD }}
+          JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --console=plain --max-workers=2 assembleRelease 2>&1 | tee android-release-build.log
+          test -s app/build/outputs/apk/release/app-release.apk
+      - name: Vérifier le contenu réellement embarqué dans l'APK
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          apk=Path('app/build/outputs/apk/release/app-release.apk')
+          expected={'index.html','clean-core.js','course-controller.js','sumup-course-payment.js','course-ui.js'}
+          with zipfile.ZipFile(apk) as z:
+              app_sources={n.removeprefix('assets/') for n in z.namelist() if n.startswith('assets/') and n.endswith(('.html','.js','.css'))}
+              assert app_sources==expected, f'Sources embarquées inattendues: {app_sources}'
+              for n in sorted(expected):
+                  original='interface.html' if n=='index.html' else n
+                  data=z.read('assets/'+n)
+                  assert data==Path('refonte',original).read_bytes(), n
+                  for forbidden in (b'taxi_management_backups',b'taxi_hotel_sync',b'taxi_sumup_transactions',b'github.io'):
+                      assert forbidden not in data,(n,forbidden)
+              print('APK : seules les sources Android de refonte sont embarquées, aucun ancien flux partagé.')
+          PY
+      - name: Vérifier signature, identifiant, version, ressources et absence de données héritées
+        env:
+          TAXI_INSTALLED_SIGNING_CERT_SHA256: ${{ secrets.TAXI_INSTALLED_SIGNING_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release.apk
+          sdk="$ANDROID_HOME/build-tools/35.0.0"
+          "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
+          # Une signature valide ne prouve pas qu'elle est compatible avec l'APK installée.
+          # Exiger l'empreinte SHA-256 relevée sur l'APK stable avant de publier un candidat.
+          if [ -z "${TAXI_INSTALLED_SIGNING_CERT_SHA256:-}" ]; then
+            echo "Empreinte du certificat de l'APK stable absente : publication bloquée." >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os,re
+          from pathlib import Path
+          output=Path("signature-verification.txt").read_text()
+          match=re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F:]+)",output)
+          if not match:
+              raise SystemExit("Certificat de signature APK introuvable")
+          actual=re.sub(r"[^0-9a-fA-F]","",match.group(1)).lower()
+          expected=re.sub(r"[^0-9a-fA-F]","",os.environ["TAXI_INSTALLED_SIGNING_CERT_SHA256"]).lower()
+          if len(expected)!=64 or actual!=expected:
+              raise SystemExit("Signature incompatible avec l'APK stable : livraison interdite.")
+          print("Certificat de signature identique à celui de l'APK stable.")
+          PY
+          "$sdk/aapt" dump badging "$apk" > apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2123'" apk-identity.txt
+          grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
+          if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
+          "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
+          grep -E 'android:allowBackup.*0x0$' manifest-verification.txt
+          grep -q 'android:dataExtractionRules' manifest-verification.txt
+          mkdir -p "$RUNNER_TEMP/point11"
+          cp "$apk" "$RUNNER_TEMP/point11/Mon-Taxi-Pro.apk"
+          cd "$RUNNER_TEMP/point11"
+          sha256sum Mon-Taxi-Pro.apk > SHA256SUMS.txt
+      - name: Supprimer le magasin temporaire
+        if: always()
+        run: rm -f "$RUNNER_TEMP/taxi-refonte-release.jks"
+      - name: Publier le dossier de contrôle de signature
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Point-11-controles-APK
+          path: |
+            android-release-build.log
+            signature-verification.txt
+            apk-identity.txt
+            manifest-verification.txt
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Conserver le candidat APK signé et son empreinte
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mon-Taxi-Pro-2123-signe
+          path: |
+            ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
+            ${{ runner.temp }}/point11/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
