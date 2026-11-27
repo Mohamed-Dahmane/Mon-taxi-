@@ -38,7 +38,7 @@ core.validateState(fixture);
  await cashCard.getByRole("button",{name:"Remboursement",exact:true}).click();assert.match(await cashCard.innerText(),/Espèces/);
  const ca=cashCard.getByLabel("Montant remboursé (€)");assert.equal(await ca.inputValue(),"15,00");await ca.fill("5,00");await cashCard.getByRole("button",{name:"Confirmer le remboursement effectué",exact:true}).click();assert.match(await cashCard.innerText(),/Remboursée partiellement/);
  const cs=await page.evaluate(()=>JSON.parse(localStorage.getItem("mon-taxi-android-refonte:v1")).state);assert.equal(core.dayTotals(cs,day).cash,1000);assert.deepEqual(cs.ledger,fixture.ledger);
- await page.locator("[data-page=accounts]").click();assert.match(await page.locator("#accounts-card").innerText(),/0,00/);
+ await page.locator(".nav-menu summary").click();await page.locator("[data-page=accounts]").click();assert.match(await page.locator("#accounts-card").innerText(),/0,00/);
  await page.reload();await page.locator('.nav-menu summary').click();await page.locator("[data-go=archives]").click();assert.match(await page.locator("#archive-list").innerText(),/Remboursée/);assert.deepEqual(errors,[]);
  await context.close();
  }
