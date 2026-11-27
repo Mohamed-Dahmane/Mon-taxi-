@@ -572,6 +572,7 @@ function keepFocusedFieldVisible(){
  if(el.closest('[hidden], [inert]')||el.getClientRects().length===0)return;
  cancelAnimationFrame(keyboardFocusFrame);
  keyboardFocusFrame=requestAnimationFrame(()=>{
+  if(document.activeElement!==el||el.closest('[hidden], [inert]')||el.getClientRects().length===0)return;
   const viewport=window.visualViewport;
   const top=viewport?viewport.offsetTop:0;
   const height=viewport?viewport.height:window.innerHeight;
