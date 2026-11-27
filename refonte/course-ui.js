@@ -601,7 +601,7 @@ document.addEventListener('keydown',event=>{
  }
 },true);
 function show(id){
- closeNavigationMenu();
+ if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
  if(id==="reservation"){
   const now=new Date();
   if(!$("reservation-date").value)$("reservation-date").value=localDate(now);
@@ -610,7 +610,6 @@ function show(id){
  // Conserver le sens du tri lors des allers-retours entre écrans.
  if(id!=="receipt")clearReceiptPreview();
  closeMoneyPad();
- if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
  if(['ride','payment','cash','sumup'].includes(id)){
   const c=current();if(!c||c.status==="archived")throw Error("Aucune course active");
   if(id!=="ride"&&c.status!=="awaiting_payment"&&!(id==="sumup"&&c.status==="payment_pending"))throw Error("La course doit être terminée avant le paiement");
@@ -646,6 +645,7 @@ function show(id){
  if(id==="reservation"||id==="direct")refreshCourseDirectory();
  if(id==="home")renderCashTotals();
  if(id==="accounts"){loadAccountFields();loadReceiptProfile();}else clearRestore();
+ closeNavigationMenu();
  screens.forEach(e=>e.hidden=e.id!==id);
  document.querySelectorAll('[data-page]').forEach(e=>{if(e.dataset.page===id)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current')});
  window.scrollTo(0,0);
