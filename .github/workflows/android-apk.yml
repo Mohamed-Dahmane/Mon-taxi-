@@ -1,4 +1,5 @@
 name: Construire APK Mon Taxi - icone mise a jour
+# Nouvelle tentative de compilation isolee sur branche de test, sans deploiement production.
 on:
   workflow_dispatch:
   push:
