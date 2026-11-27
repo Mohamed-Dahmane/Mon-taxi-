@@ -441,7 +441,7 @@ window.addEventListener("taxi-sumup-diagnostic",e=>{
  $('sumup-diagnostic').textContent=String(d.message||"");$('sumup-diagnostic').hidden=false;
 });
 window.addEventListener("taxi-native-resume",recoverSumUp);
-const labels={planned:"Client à charger",loaded:"Client chargé",in_progress:"Course en cours",awaiting_payment:"En attente de paiement",payment_pending:"Paiement en attente",archived:"Course archivée"};
+const labels={planned:"Client à charger",loaded:"Client chargé",in_progress:"Course en cours",awaiting_payment:"Effectuée – Non encaissée",payment_pending:"Paiement en attente",archived:"Course archivée"};
 function launchWaze(c){
  if(c.status!=="in_progress")throw Error("La course doit être démarrée.");
  if(!window.TaxiContacts||typeof window.TaxiContacts.navigateWaze!=="function")throw Error("Waze est disponible uniquement dans l’application Android.");
@@ -748,6 +748,12 @@ document.addEventListener("click",e=>{
  });return;}
  if(b.id==="sumup-online"){safe(()=>{const c=current();if(c?.status!=="payment_pending"||$('sumup').hidden)throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.verifyOnline!=="function")throw Error("Vérification officielle disponible uniquement sur Android.");window.TaxiSumUp.verifyOnline(c.id,c.payment.attemptId);});return;}
  if(b.id==="sumup-recover"){safe(()=>{const c=current();if(c?.status!=="payment_pending")throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.recoverInterrupted==="function")window.TaxiSumUp.recoverInterrupted(c.id,c.payment.attemptId);else recoverSumUp();});return;}
+ if(b.id==="finish-unpaid"){safe(()=>{
+  const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée.");
+  controller.savePaymentDraft(c.id,readCashCents($('amount').value));
+  selected=null;cashDraft=null;sumupDraft=null;$('amount').value="";
+  renderLists();show("home");message("Course effectuée — non encaissée.");
+ });return;}
  if(b.id==="pay-cash"){safe(()=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
   cashDraft={id:c.id,cents:readCashCents($('amount').value)};
