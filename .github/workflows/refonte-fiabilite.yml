@@ -253,7 +253,8 @@ jobs:
                     });
                     for(const control of await page.locator('button:visible:not(:disabled),input:visible,select:visible').all()){
                       await control.scrollIntoViewIfNeeded();
-                      assert.ok(await control.evaluate(e=>{const r=e.getBoundingClientRect();const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&(e===hit||e.contains(hit));}),'Cible tactile masquée '+await control.getAttribute('id'));
+                      const hitResult=await control.evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {ok:!!hit&&(e===hit||e.contains(hit)),target:e.id||e.tagName,hit:hit?.id||hit?.tagName||'aucun',top:Math.round(r.top),bottom:Math.round(r.bottom),viewport:innerHeight};});
+                      assert.ok(hitResult.ok,'Cible tactile masquée '+JSON.stringify(hitResult));
                     }
                     if(screen==='payment'){
                       const a=await page.locator('#pay-cash').boundingBox(),b=await page.locator('#pay-sumup').boundingBox();
