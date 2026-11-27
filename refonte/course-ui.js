@@ -495,7 +495,7 @@ function card(c,archived=false){
  more.textContent="⋮";more.setAttribute("aria-label","Actions pour "+h.textContent);
  const remove=document.createElement("button");remove.type="button";remove.textContent="Supprimer cette course";
  remove.addEventListener("click",()=>safe(()=>{
-  const impact=archived?" et son encaissement dans les comptes locaux":" du planning";
+  const impact=c.status==="archived"?" et son encaissement dans les comptes locaux":archived?" de l’historique":" du planning";
   if(!confirm("Supprimer la course « "+h.textContent+" »"+impact+" ?"))return;
   controller.removeCourse(c.id);
   if(selected===c.id)selected=null;
@@ -546,7 +546,8 @@ function card(c,archived=false){
    yes.addEventListener("click",()=>safe(()=>{if($('archives').hidden)throw Error("Ouvre l’historique.");controller.refund(c.id,date.value,entryCents(amount.value));renderLists();renderCashTotals();message("Remboursement enregistré localement.");}));
   }
  }
- if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
+ if(archived&&c.status==="awaiting_payment"&&Number.isSafeInteger(c.paymentDraftCents)){const due=document.createElement("p");due.textContent="À encaisser : "+euros(c.paymentDraftCents);box.append(due);}
+ if(!archived||c.status==="awaiting_payment"){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
  return box;
 }
 for(const id of ["planning-reverse","archives-reverse"]){
@@ -560,7 +561,7 @@ function renderLists(){
  const all=controller.snapshot().courses;
  // Les horaires du planning sont enregistrés en heure locale au format ISO.
  const planningTime=c=>c.scheduledAt || (c.date ? c.date+"T"+(c.time || "99:99") : "");
- const active=all.filter(c=>c.status!=="archived").sort((a,b)=>{
+ const active=all.filter(c=>c.status!=="archived"&&c.status!=="awaiting_payment").sort((a,b)=>{
   const first=planningTime(a),second=planningTime(b);
   if(!first || !second)return Number(!first)-Number(!second);
   return first.localeCompare(second);
@@ -572,7 +573,7 @@ function renderLists(){
   }
   return -Infinity;
  };
- const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>executionTime(b)-executionTime(a));
+ const archived=all.filter(c=>c.status==="archived"||c.status==="awaiting_payment").reverse().sort((a,b)=>executionTime(b)-executionTime(a));
  if($("planning-reverse").getAttribute("aria-pressed")==="true")active.reverse();
  if($("archives-reverse").getAttribute("aria-pressed")==="true")archived.reverse();
  $('course-list').replaceChildren(...active.map(c=>card(c)));
