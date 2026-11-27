@@ -563,6 +563,29 @@ function renderLists(){
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
 }
+// Keep the focused field reachable when Samsung's on-screen keyboard resizes the viewport.
+let keyboardFocusFrame=0;
+function keepFocusedFieldVisible(){
+ const el=document.activeElement;
+ if(!el||!el.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+ if(el.closest('[hidden]'))return;
+ cancelAnimationFrame(keyboardFocusFrame);
+ keyboardFocusFrame=requestAnimationFrame(()=>{
+  const viewport=window.visualViewport;
+  const top=viewport?viewport.offsetTop:0;
+  const height=viewport?viewport.height:window.innerHeight;
+  const bounds=el.getBoundingClientRect();
+  const safeTop=top+16,safeBottom=top+height-24;
+  if(bounds.bottom>safeBottom||bounds.top<safeTop){
+   el.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+  }
+ });
+}
+document.addEventListener('focusin',e=>{
+ if(e.target.matches?.('input,textarea,select,[contenteditable="true"]'))keepFocusedFieldVisible();
+});
+window.visualViewport?.addEventListener('resize',keepFocusedFieldVisible);
+window.visualViewport?.addEventListener('scroll',keepFocusedFieldVisible);
 function show(id){
  if(id==="reservation"){
   const now=new Date();
