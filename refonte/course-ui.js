@@ -488,8 +488,9 @@ function renderLists(){
  const all=controller.snapshot().courses;
  // Les dernières courses ajoutées sont en haut; la prochaine réservation conserve son tri horaire propre.
  const active=all.filter(c=>c.status!=="archived").reverse();
- // Les dernières courses encaissées sont en haut, indépendamment de leur date de création.
- const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>(Date.parse(b.payment?.paidAt)||0)-(Date.parse(a.payment?.paidAt)||0));
+ // Historique par heure de course (pas par date de paiement) : un paiement le lendemain ne déplace pas la course.
+ const courseTime=c=>Date.parse(c.finishedAt||c.scheduledAt||c.startedAt||c.payment?.paidAt)||0;
+ const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>courseTime(b)-courseTime(a));
  $('course-list').replaceChildren(...active.map(c=>card(c)));
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
