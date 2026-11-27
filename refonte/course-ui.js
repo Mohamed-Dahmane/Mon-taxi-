@@ -579,7 +579,7 @@ function keepFocusedFieldVisible(){
   const bounds=el.getBoundingClientRect();
   const safeTop=top+16,safeBottom=Math.max(safeTop+1,top+height-24);
   if(bounds.bottom>safeBottom||bounds.top<safeTop){
-   el.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+   el.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
   }
  });
 }
