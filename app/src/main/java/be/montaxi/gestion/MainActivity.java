@@ -552,7 +552,7 @@ public class MainActivity extends Activity {
  }
  private void shareReceiptSms(String token,String raw,boolean card,String number){
   if(!receiptTrusted()||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard)return;
-  if(number==null||!number.matches("[+]?[0-9]{6,20}")){Toast.makeText(this,"Numéro invalide.",Toast.LENGTH_SHORT).show();return;}
+  if(number==null||!number.matches("(?:[+][1-9][0-9]{6,14}|[0-9]{6,15})")){Toast.makeText(this,"Numéro invalide.",Toast.LENGTH_SHORT).show();return;}
   try{
    java.io.File archived=receiptArchive(raw,card);
    if(!new java.io.File(archived.getParentFile(),archived.getName()+".published").isFile()){
