@@ -87,7 +87,7 @@ jobs:
           PY
       - name: Vérifier signature, identifiant, version, ressources et absence de données héritées
         env:
-          TAXI_INSTALLED_SIGNING_CERT_SHA256: ${{ secrets.TAXI_INSTALLED_SIGNING_CERT_SHA256 }}
+          TAXI_INSTALLED_SIGNING_CERT_SHA256: '51194b5c8e43bfeb8abb1f8c6ecd8ea4234e2921dafe04735f2cdf341806c2e1'
         run: |
           set -euo pipefail
           apk=app/build/outputs/apk/release/app-release.apk
