@@ -496,7 +496,7 @@ function renderLists(){
   return 0;
  });
  // Historique par heure de course (pas par date de paiement) : un paiement le lendemain ne déplace pas la course.
- const courseTime=c=>Date.parse(c.finishedAt||c.scheduledAt||c.startedAt||c.payment?.paidAt)||0;
+ const courseTime=c=>Date.parse(c.finishedAt||c.startedAt||(c.date&&c.time?c.date+"T"+c.time+":00":null)||c.payment?.paidAt)||0;
  const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>courseTime(b)-courseTime(a));
  $('course-list').replaceChildren(...active.map(c=>card(c)));
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
