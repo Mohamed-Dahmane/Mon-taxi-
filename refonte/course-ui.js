@@ -31,8 +31,13 @@ function showPaymentSuccess(c){
   $('success-amount').textContent=euros(c.payment.amountCents);
   $('success-route').textContent=route(c);
   $('success-method').textContent=c.payment.method==="cash"?"Espèces enregistrées":"Paiement réussi";
-  const now=new Date(),local=localDate(now)+"T"+localTime(now);
-  const planned=controller.snapshot().courses.filter(x=>x.status==="planned"&&typeof x.scheduledAt==="string"&&x.scheduledAt>=local).sort((a,b)=>a.scheduledAt.localeCompare(b.scheduledAt));
+  const now=new Date();
+  const planned=controller.snapshot().courses.filter(x=>x.status==="planned").sort((a,b)=>{
+   const first=a.scheduledAt||(a.date?a.date+"T"+(a.time||"99:99"):"");
+   const second=b.scheduledAt||(b.date?b.date+"T"+(b.time||"99:99"):"");
+   if(!first||!second)return Number(!first)-Number(!second);
+   return first.localeCompare(second);
+  });
   const next=planned[0],button=$('success-next');
   $('success-next-time').textContent=next?(next.date===localDate(now)?"Aujourd’hui":next.date||"")+" · "+(next.time||""):"Aucune course planifiée";
   button.hidden=!next;
