@@ -836,10 +836,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Distinguer le candidat d’essai de la validation finale
-        if: github.ref_name == 'integration/mon-taxi-pro-2122-global-20261126'
+        if: github.ref_name == 'integration/mon-taxi-pro-2122-global-20261126' || github.ref_name == 'integration/mon-taxi-pro-recus-planning-20261126'
         run: grep -Fq 'Version de test locale.' refonte/interface.html
       - name: Empêcher une validation finale prématurée
-        if: github.ref_name != 'integration/mon-taxi-pro-2122-global-20261126'
+        if: github.ref_name != 'integration/mon-taxi-pro-2122-global-20261126' && github.ref_name != 'integration/mon-taxi-pro-recus-planning-20261126'
         run: |
           if grep -q 'comptabilité définitive' refonte/interface.html; then
             echo 'RESTE A FAIRE : essais matériels SumUp Air/Waze, comptabilité et répertoire définitifs.'
