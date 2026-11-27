@@ -569,7 +569,40 @@ function renderLists(){
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
 }
+function closeMenu(){
+ $("main-menu").hidden=true;
+ $("menu-toggle").setAttribute("aria-expanded","false");
+}
+$("menu-toggle").addEventListener("click",()=>{
+ const open=$("main-menu").hidden;
+ $("main-menu").hidden=!open;
+ $("menu-toggle").setAttribute("aria-expanded",String(open));
+});
+function renderCommissions(){
+ const month=$("commission-month").value;
+ const groups=new Map();let monthly=0,total=0;
+ for(const c of controller.snapshot().courses){
+  if(!c.hotelName||!c.commissionCents||!(c.finishedAt||c.status==="archived"))continue;
+  total+=c.commissionCents;
+  const day=c.finishedAt?window.TaxiCleanCore.paymentDay(c.finishedAt):c.date;
+  if(!day||day.slice(0,7)!==month)continue;
+  monthly+=c.commissionCents;
+  const label=[c.hotelName,...(/doubletree|standard/i.test(c.hotelName)?[c.contactName||"Sans contact"]:[])].join(" · ");
+  groups.set(label,(groups.get(label)||0)+c.commissionCents);
+ }
+ const root=$("commission-report");root.replaceChildren();
+ for(const [name,amount] of [...groups,["Total du mois",monthly],["Total général",total]]){
+  const line=document.createElement("p");line.textContent=name+" · "+euros(amount);root.append(line);
+ }
+}
+$("commission-month").addEventListener("change",renderCommissions);
 function show(id){
+ closeMenu();
+ if(id==="commissions"){
+  if(!$("commission-month").value)$("commission-month").value=localDate(new Date()).slice(0,7);
+  renderCommissions();
+ }
+ if(id==="dispatch")selectOptions($("dispatch-driver"),controller.snapshot().drivers,"Choisir un chauffeur");
  if(id==="reservation"){
   const now=new Date();
   if(!$("reservation-date").value)$("reservation-date").value=localDate(now);
@@ -732,7 +765,17 @@ document.addEventListener("click",e=>{
  });return;}
  if(b.id==="waze-reopen"){safe(()=>{const c=current();if(!c)throw Error("Course inconnue");launchWaze(c);});return;}
  if(b.id==="waze-overlay"){safe(()=>{if(current()?.status!=="in_progress")throw Error("Aucune course en cours.");if(typeof window.TaxiContacts?.enableWazeOverlay!=="function")throw Error("Disponible uniquement sur Android.");window.TaxiContacts.enableWazeOverlay();});return;}
- const id=b.dataset.page||b.dataset.go;if(id)safe(()=>show(id));
+ if(b.id==="dispatch-call"||b.id==="dispatch-sms"){safe(()=>{
+  const driver=controller.snapshot().drivers.find(d=>d.id===$("dispatch-driver").value);
+  const number=(driver?.phone||"").replace(/[ ().-]/g,"");
+  if(!/^\+?[0-9]{3,20}$/.test(number))throw Error("Choisis un chauffeur avec un numéro valide.");
+  if(!window.TaxiContacts?.open)throw Error("Disponible sur Android.");
+  window.TaxiContacts.open(b.id==="dispatch-call"?"tel:"+number:"sms:"+number+"?body="+encodeURIComponent($("dispatch-body").value));
+ });return;}
+ const id=b.dataset.page||b.dataset.go;if(id)safe(()=>{
+  show(id);
+  if(b.dataset.jump){const target=$(b.dataset.jump);target.focus({preventScroll:true});target.closest(".card").scrollIntoView({block:"start"});}
+ });
 });
 function words(value){
  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("fr").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
