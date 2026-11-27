@@ -694,14 +694,12 @@ document.addEventListener("click",e=>{
  if(b.id==="sumup-confirm"){safe(()=>{
   const c=current(),draft=sumupDraft;
   if($('sumup').hidden||!draft||draft.id!==c?.id||c.status!=="awaiting_payment")throw Error("Aucun paiement carte à confirmer.");
-  if(typeof window.TaxiSumUp?.checkout!=="function")throw Error("Terminal disponible uniquement sur Android.");
   const blocking=controller.snapshot().courses.find(x=>x.status==="payment_pending");
   if(blocking)throw Error("Une tentative SumUp doit être vérifiée avant une nouvelle. Course concernée : "+(blocking.client||route(blocking))+" · "+euros(blocking.payment.amountCents)+". Ouvre cette course dans le planning. Aucun nouvel envoi au terminal.");
-  const localReceipt=true;
-  if(localReceipt&&typeof window.TaxiSumUp.checkoutWithLocalReceipt!=="function")throw Error("Retour direct non disponible sur cette version.");
+  if(typeof window.TaxiSumUp?.checkoutWithLocalReceipt!=="function")throw Error("Retour direct non disponible sur cette version.");
   const attempt=newId();
   controller.beginSumUp(c.id,draft.cents,attempt);
-  show("sumup");if(localReceipt)window.TaxiSumUp.checkoutWithLocalReceipt(c.id,attempt,draft.cents);else window.TaxiSumUp.checkout(c.id,attempt,draft.cents);
+  show("sumup");window.TaxiSumUp.checkoutWithLocalReceipt(c.id,attempt,draft.cents);
  });return;}
  if(b.id==="sumup-online"){safe(()=>{const c=current();if(c?.status!=="payment_pending"||$('sumup').hidden)throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.verifyOnline!=="function")throw Error("Vérification officielle disponible uniquement sur Android.");window.TaxiSumUp.verifyOnline(c.id,c.payment.attemptId);});return;}
  if(b.id==="sumup-recover"){safe(()=>{const c=current();if(c?.status!=="payment_pending")throw Error("Aucune tentative à vérifier.");if(typeof window.TaxiSumUp?.recoverInterrupted==="function")window.TaxiSumUp.recoverInterrupted(c.id,c.payment.attemptId);else recoverSumUp();});return;}
