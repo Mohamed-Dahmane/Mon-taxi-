@@ -1,7 +1,7 @@
 name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
-    branches: [test/recus-remarques-tva-20261126, integration/mon-taxi-pro-2122-global-20261126]
+    branches: [integration/mon-taxi-pro-recus-planning-20261126, test/recus-remarques-tva-20261126, integration/mon-taxi-pro-2122-global-20261126]
     paths: ['vehicle-allocations.js', 'vehicle-allocation-editor.js', 'tests/**', 'refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
     inputs:
@@ -878,7 +878,7 @@ jobs:
         run: echo "Points 1 à 10 validés techniquement, sans ancienne donnée. Compilation et essais matériels restent à confirmer."
 
   point11-signed-apk:
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.compile_apk == true) || (github.event_name == 'push' && (github.ref_name == 'test/recus-remarques-tva-20261126' || (github.ref_name == 'integration/mon-taxi-pro-2122-global-20261126' && github.event.head_commit.message == 'Préparer l’APK candidat pour le contrôle sur Samsung'))) }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.compile_apk == true) || (github.event_name == 'push' && (github.ref_name == 'test/recus-remarques-tva-20261126' || (contains(fromJSON('["integration/mon-taxi-pro-2122-global-20261126","integration/mon-taxi-pro-recus-planning-20261126"]'), github.ref_name) && github.event.head_commit.message == 'Préparer l’APK candidat pour le contrôle sur Samsung'))) }}
     needs: [points-1-to-10, receipt-contract, pdf-interface, integration]
     runs-on: ubuntu-24.04
     timeout-minutes: 35
