@@ -5,7 +5,7 @@ const init=()=>{
  b.onclick=async()=>{
   const email=prompt("Adresse de destination du message de test Gmail :","dbs.maral@gmail.com");
   if(email===null)return;
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254){alert("Adresse e-mail invalide.");return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254){alert("Adresse e-mail invalide.");return;}
   if(typeof privateSession==="undefined"||!privateSession?.access_token){alert("Connecte-toi à Mon Taxi Pro avant le test Gmail.");return;}
   b.disabled=true;b.textContent="Envoi en cours…";
   try{
