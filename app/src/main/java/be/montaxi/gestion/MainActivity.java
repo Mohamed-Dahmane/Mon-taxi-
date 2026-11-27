@@ -461,11 +461,30 @@ public class MainActivity extends Activity {
    publishConfirmedReceipt(publicationId,confirmed);
   }catch(Exception ex){Toast.makeText(this,"Conservation du reçu impossible. Réessaie.",Toast.LENGTH_LONG).show();}
  }
+ private boolean publicationPromptOpen=false;
+ private void configureReceiptPublication(){
+  if(!receiptTrusted()||publicationPromptOpen)return;
+  publicationPromptOpen=true;
+  final EditText field=new EditText(this);
+  field.setSingleLine(true);field.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+  field.setHint("Code de publication");
+  AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Publication sécurisée des reçus")
+   .setMessage("Configuration unique. Utilise le code dédié à la publication, pas celui de SumUp.")
+   .setView(field).setNegativeButton("Plus tard",null).setPositiveButton("Enregistrer",null).create();
+  dialog.setOnDismissListener(d->{publicationPromptOpen=false;field.setText("");});
+  dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+   String value=field.getText().toString().trim();
+   if(!TaxiReceiptPublisher.valid(value)){field.setError("Code de 64 caractères hexadécimaux requis");return;}
+   try{new TaxiReceiptPublishCredentials(this).save(value);dialog.dismiss();Toast.makeText(this,"Code de publication enregistré.",Toast.LENGTH_SHORT).show();}
+   catch(Exception ex){field.setError("Stockage sécurisé indisponible");}
+  }));
+  dialog.show();
+ }
  private void publishConfirmedReceipt(String id,byte[] png){
   new Thread(()->{
    try{
     String credential=new TaxiReceiptPublishCredentials(this).load();
-    if(!TaxiReceiptPublisher.valid(credential))return;
+    if(!TaxiReceiptPublisher.valid(credential)){runOnUiThread(()->configureReceiptPublication());return;}
     TaxiReceiptPublisher.publish(credential,id,png);
    }catch(Exception ex){runOnUiThread(()->Toast.makeText(this,"Reçu conservé localement. Publication indisponible.",Toast.LENGTH_LONG).show());}
   },"TaxiReceiptPublish").start();
