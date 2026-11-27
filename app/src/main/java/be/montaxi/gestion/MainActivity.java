@@ -1154,6 +1154,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void sharePng(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
    },"TaxiReceipt");
+   web.addJavascriptInterface(new GmailTestBridge(this, () -> unlocked && web != null && isLocalAppPage(web.getUrl())), "TaxiGmail");
    web.addJavascriptInterface(new TaxiRefundBridge(this,web,()->unlocked&&web!=null&&isLocalAppPage(web.getUrl())),"TaxiRefund");
    taxiContacts=new TaxiContactsBridge(this,web);
    web.addJavascriptInterface(taxiContacts,"TaxiContacts");
