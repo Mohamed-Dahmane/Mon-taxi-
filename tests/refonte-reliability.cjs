@@ -99,3 +99,15 @@ const datedRides=[
 const datedOrder=vm.runInNewContext("const all=rides;"+archiveSort+";archived.map(c=>c.id)",{rides:datedRides});
 assert.deepEqual(Array.from(datedOrder),["mardi","lundi"]);
 console.log("Historique : repli sur la date et l'heure de course sans timestamp OK.");
+ 
+// Régression comptable : un paiement le mardi ne déplace pas une course du lundi.
+let deferred=core.addCourse(core.empty(),{id:"deferred",date:"2026-11-23",time:"10:00"});
+for(const type of ["load","start","finish"])deferred=core.apply(deferred,"deferred",{type});
+deferred=core.recordCash(deferred,"deferred",4200);
+deferred.courses[0].finishedAt="2026-11-23T10:00:00Z";
+deferred.ledger[0].paidAt="2026-11-24T11:00:00Z";
+deferred.courses[0].payment.paidAt="2026-11-24T11:00:00Z";
+assert.equal(core.dayTotals(deferred,"2026-11-23").cash,4200);
+assert.equal(core.dayTotals(deferred,"2026-11-24").cash,0);
+assert.equal(core.monthTotals(deferred,"2026-11").revenue,4200);
+console.log("Comptabilité : course lundi, paiement mardi, recette lundi OK.");
