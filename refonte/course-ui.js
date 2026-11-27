@@ -471,7 +471,18 @@ function card(c,archived=false){
  const h=document.createElement("h3");h.textContent=c.client||(c.kind==="free"?"Course libre":"Course sans nom");
  const p=document.createElement("p");p.textContent=route(c);
  const detail=document.createElement("p");detail.className="muted";detail.textContent=[c.kind==="reservation"?"Réservation":c.kind==="free"?"Course libre":"Course directe",c.direction==="pickup"?"Pick-up":"Dépose",c.date,c.time,labels[c.status]].filter(Boolean).join(" · ");
- box.append(h,p,detail);
+ const menu=document.createElement("details"),more=document.createElement("summary");
+ more.textContent="⋮";more.setAttribute("aria-label","Actions pour "+h.textContent);
+ const remove=document.createElement("button");remove.type="button";remove.textContent="Supprimer cette course";
+ remove.addEventListener("click",()=>safe(()=>{
+  const impact=archived?" et son encaissement dans les comptes locaux":" du planning";
+  if(!confirm("Supprimer la course « "+h.textContent+" »"+impact+" ?"))return;
+  controller.removeCourse(c.id);
+  if(selected===c.id)selected=null;
+  renderLists();message("Course supprimée.");
+ }));
+ menu.append(more,remove);
+ box.append(h,menu,p,detail);
  if(c.startedAt||c.finishedAt){const times=document.createElement("p");times.className="muted";const format=t=>t?new Date(t).toLocaleString("fr-BE",{timeZone:"Europe/Brussels",dateStyle:"short",timeStyle:"short"}):"—";times.textContent="Début : "+format(c.startedAt)+" · Fin : "+format(c.finishedAt);box.append(times);}
  if(c.hotelName||c.driverName){const a=document.createElement("p");a.textContent=[c.hotelName,c.driverName,c.commissionCents?euros(c.commissionCents):""].filter(Boolean).join(" · ");box.append(a);}
  if(archived&&c.payment){
