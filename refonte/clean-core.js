@@ -126,7 +126,11 @@ function makeCore(){
   for(const p of s.ledger){
    const c=byId.get(p.courseId);
    if(c?.refund?.day===day){if(p.method==="cash")cash-=c.refund.amountCents;else cardGross-=c.refund.amountCents;}
-   if(paymentDay(p.paidAt)!==day)continue;
+   // Une course effectuée lundi et encaissée mardi reste comptabilisée lundi.
+   // Sans date d’exécution fiable, conserver la date du paiement.
+   const executionTime=c?.finishedAt||c?.startedAt||(c?.date&&c?.time?c.date+"T"+c.time+":00":null);
+   const accountingDay=executionTime&&Number.isFinite(Date.parse(executionTime))?paymentDay(executionTime):paymentDay(p.paidAt);
+   if(accountingDay!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
    else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*2/100);}
    if(c?.driverIsMe===true&&validAmount(c.commissionCents))hotelCommission+=c.commissionCents;
