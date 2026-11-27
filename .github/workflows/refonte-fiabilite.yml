@@ -885,6 +885,7 @@ jobs:
       - name: Validation cumulative technique des points 1 à 10
         run: echo "Points 1 à 10 validés techniquement, sans ancienne donnée. Compilation et essais matériels restent à confirmer."
 
+  # APK candidat isolé : aucune modification de la version de référence.
   point11-signed-apk:
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.compile_apk == true) || (github.event_name == 'push' && (github.ref_name == 'test/recus-remarques-tva-20261126' || (contains(fromJSON('["integration/mon-taxi-pro-2122-global-20261126","integration/mon-taxi-pro-recus-planning-20261126"]'), github.ref_name) && github.event.head_commit.message == 'Préparer l’APK candidat pour le contrôle sur Samsung'))) }}
     needs: [points-1-to-10, receipt-contract, pdf-interface, integration]
