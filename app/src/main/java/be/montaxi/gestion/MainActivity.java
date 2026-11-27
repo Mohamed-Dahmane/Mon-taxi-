@@ -377,7 +377,7 @@ public class MainActivity extends Activity {
     if(!bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,image))throw new IOException("Preview encoding");
     java.io.File archived=receiptArchive(raw,card);
     byte[] pngBytes;
-    if(archived.isFile()){
+    if(archived.isFile()&&new java.io.File(archived.getParentFile(),archived.getName()+".published").isFile()){
      if(archived.length()<8||archived.length()>6000000)throw new IOException("Archived receipt size");
      try(java.io.FileInputStream in=new java.io.FileInputStream(archived);java.io.ByteArrayOutputStream saved=new java.io.ByteArrayOutputStream()){
       byte[] buf=new byte[8192];int n;while((n=in.read(buf))!=-1){if(saved.size()+n>6000000)throw new IOException("Archived receipt size");saved.write(buf,0,n);}pngBytes=saved.toByteArray();
@@ -432,7 +432,25 @@ public class MainActivity extends Activity {
   java.io.File dir=new java.io.File(getFilesDir(),"confirmed-receipts");if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException();
   return new java.io.File(dir,key.toString()+".png");
  }
- private boolean receiptQrEnabled(){return false;} // Enable only after authenticated upload is verified.
+ private boolean receiptQrEnabled(){return false;} // Draft previews never contain a live QR.
+ private byte[] receiptPngWithQr(byte[] original,String id)throws Exception{
+  android.graphics.Bitmap source=android.graphics.BitmapFactory.decodeByteArray(original,0,original.length);
+  if(source==null)throw new IOException("Invalid receipt PNG");
+  android.graphics.Bitmap combined=null;
+  try{
+   int side=Math.min(420,source.getWidth());
+   java.util.Map<com.google.zxing.EncodeHintType,Object> hints=new java.util.EnumMap<>(com.google.zxing.EncodeHintType.class);
+   hints.put(com.google.zxing.EncodeHintType.MARGIN,4);
+   com.google.zxing.common.BitMatrix matrix=new com.google.zxing.qrcode.QRCodeWriter().encode(TaxiReceiptPublisher.link(id),com.google.zxing.BarcodeFormat.QR_CODE,side,side,hints);
+   combined=android.graphics.Bitmap.createBitmap(source.getWidth(),source.getHeight()+side+24,android.graphics.Bitmap.Config.ARGB_8888);
+   android.graphics.Canvas canvas=new android.graphics.Canvas(combined);canvas.drawColor(android.graphics.Color.WHITE);canvas.drawBitmap(source,0,0,null);
+   int left=(combined.getWidth()-side)/2,top=source.getHeight()+12;
+   for(int y=0;y<side;y++)for(int x=0;x<side;x++)if(matrix.get(x,y))combined.setPixel(left+x,top+y,android.graphics.Color.BLACK);
+   java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();
+   if(!combined.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out)||out.size()>6000000)throw new IOException("QR PNG size");
+   return out.toByteArray();
+  }finally{source.recycle();if(combined!=null)combined.recycle();}
+ }
  private synchronized String receiptLinkId(String raw,boolean card)throws Exception{
   java.io.File png=receiptArchive(raw,card);
   android.util.AtomicFile file=new android.util.AtomicFile(new java.io.File(png.getParentFile(),png.getName()+".link"));
@@ -455,10 +473,10 @@ public class MainActivity extends Activity {
    if(!target.exists()){
     android.util.AtomicFile atomic=new android.util.AtomicFile(target);
     java.io.FileOutputStream out=atomic.startWrite();
-    try{out.write(sharePreviewPng);atomic.finishWrite(out);}catch(Exception ex){atomic.failWrite(out);throw ex;}
+    try{out.write(receiptPngWithQr(sharePreviewPng,publicationId));atomic.finishWrite(out);}catch(Exception ex){atomic.failWrite(out);throw ex;}
    }
    final byte[] confirmed=new android.util.AtomicFile(target).readFully();
-   publishConfirmedReceipt(publicationId,confirmed);
+   publishConfirmedReceipt(publicationId,confirmed,target,token,raw,card);
   }catch(Exception ex){Toast.makeText(this,"Conservation du reçu impossible. Réessaie.",Toast.LENGTH_LONG).show();}
  }
  private boolean publicationPromptOpen=false;
@@ -504,12 +522,14 @@ public class MainActivity extends Activity {
    }catch(Exception ignored){}finally{receiptRetryRunning.set(false);}
   },"TaxiReceiptRetry").start();
  }
- private void publishConfirmedReceipt(String id,byte[] png){
+ private void publishConfirmedReceipt(String id,byte[] png,java.io.File target,String token,String raw,boolean card){
   new Thread(()->{
    try{
     String credential=new TaxiReceiptPublishCredentials(this).load();
     if(!TaxiReceiptPublisher.valid(credential)){runOnUiThread(()->configureReceiptPublication());return;}
     TaxiReceiptPublisher.publish(credential,id,png);
+    new java.io.File(target.getParentFile(),target.getName()+".published").createNewFile();
+    runOnUiThread(()->{if(receiptTrusted()&&token.equals(sharePreviewToken)&&raw.equals(sharePreviewRaw)&&card==sharePreviewCard){sharePreviewPng=png;receiptPreviewEvent(token,android.util.Base64.encodeToString(png,android.util.Base64.NO_WRAP),null);}});
    }catch(Exception ex){runOnUiThread(()->Toast.makeText(this,"Reçu conservé localement. Publication indisponible.",Toast.LENGTH_LONG).show());}
   },"TaxiReceiptPublish").start();
 
