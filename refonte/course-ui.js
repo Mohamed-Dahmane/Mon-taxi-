@@ -486,8 +486,15 @@ function card(c,archived=false){
 }
 function renderLists(){
  const all=controller.snapshot().courses;
- // Les dernières courses ajoutées sont en haut; la prochaine réservation conserve son tri horaire propre.
- const active=all.filter(c=>c.status!=="archived").reverse();
+ // Planning chronologique : réservations datées en premier, courses sans horaire ensuite.
+ const plannedTime=c=>c.date&&c.time?Date.parse(c.date+"T"+c.time+":00"):NaN;
+ const active=all.filter(c=>c.status!=="archived").reverse().sort((a,b)=>{
+  const ta=plannedTime(a),tb=plannedTime(b);
+  if(Number.isFinite(ta)&&Number.isFinite(tb))return ta-tb;
+  if(Number.isFinite(ta))return -1;
+  if(Number.isFinite(tb))return 1;
+  return 0;
+ });
  // Historique par heure de course (pas par date de paiement) : un paiement le lendemain ne déplace pas la course.
  const courseTime=c=>Date.parse(c.finishedAt||c.scheduledAt||c.startedAt||c.payment?.paidAt)||0;
  const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>courseTime(b)-courseTime(a));
