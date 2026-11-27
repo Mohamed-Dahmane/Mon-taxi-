@@ -213,7 +213,7 @@ jobs:
                     window.wazeCalls=[];window.wazeAcks=[];window.overlayRequests=0;window.terminalCalls=0;
                     window.sumupAttempts=[];window.sumupAcks=[];window.savedBackup=null;window.paymentSounds=0;window.TaxiPaymentSound={play:()=>window.paymentSounds++};
                     window.TaxiBackup={exportJson:raw=>{window.savedBackup=raw;window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'exported'}}));},pickJson:()=>window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'imported',content:window.savedBackup}})),approveRestore:()=>window.dispatchEvent(new CustomEvent('taxi-backup-result',{detail:{action:'restore-approved'}}))};
-                    window.TaxiSumUp={checkout:(courseId,attemptId,amountCents)=>{window.terminalCalls++;window.sumupAttempts.push({courseId,attemptId,amountCents,currency:'EUR'});},recover:()=>{},ack:id=>window.sumupAcks.push(id)};
+                    window.TaxiSumUp={checkoutWithLocalReceipt:(courseId,attemptId,amountCents)=>{window.terminalCalls++;window.sumupAttempts.push({courseId,attemptId,amountCents,currency:'EUR'});},recover:()=>{},ack:id=>window.sumupAcks.push(id)};
                     window.TaxiContacts={
                       pick:requestId=>{window.contactPicks=(window.contactPicks||0)+1;window.dispatchEvent(new CustomEvent('taxi-contacts-result',{detail:{requestId,contacts:[{nativeId:'demo-'+window.contactPicks,name:'Personne fictive '+window.contactPicks,phone:'+3247000000'+window.contactPicks}]}}));},
                       navigateWaze:(id,destination)=>{window.wazeCalls.push({id,destination});window.dispatchEvent(new CustomEvent('taxi-waze-result',{detail:{courseId:id,status:'opened',overlay:true}}));},
@@ -390,7 +390,7 @@ jobs:
                   await page.locator('[data-page=planning]').click();
                   assert.equal(await page.locator('#course-list article').count(),1);
                   assert.match(await page.locator('#course-list').innerText(),/Client direct fictif/);
-                  await page.locator('#course-list article button').click();await page.locator('#ride-next').click();
+                  await page.locator('#course-list article button[data-course]').click();await page.locator('#ride-next').click();
                   await page.locator('#amount').fill('60,00');await page.locator('#pay-sumup').click();
                   await page.locator('#sumup-confirm').click();
                   const first=await page.evaluate(()=>window.sumupAttempts[0]);
@@ -407,12 +407,12 @@ jobs:
                   const second=await page.evaluate(()=>window.sumupAttempts[1]);assert.notEqual(first.attemptId,second.attemptId);
                   await emit({...second,status:'uncertain'});
                   assert.match(await page.locator('#status').innerText(),/Statut incertain/);
-                  await page.reload();await page.locator('[data-page=planning]').click();await page.locator('#course-list article button').click();
+                  await page.reload();await page.locator('[data-page=planning]').click();await page.locator('#course-list article button[data-course]').click();
                   assert.equal(await page.locator('#sumup-confirm').isVisible(),false);
                   await emit({...second,status:'success',transactionCode:'TX-TEST',amountCents:5999});
                   assert.equal(await page.locator('#sumup').isVisible(),true);
                   await emit({...second,status:'success',transactionCode:'TX-TEST'});
-                  await inspect('success');
+                  await inspect('receipt');await page.locator('#receipt-back').click();await inspect('success');
                   assert.match(await page.locator('#success-amount').innerText(),/60,00/);
                   assert.equal(await page.evaluate(()=>window.paymentSounds),1);
                   await page.locator('#success-home').click();
