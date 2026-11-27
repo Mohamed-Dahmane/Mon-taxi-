@@ -2,7 +2,7 @@ name: Fiabilité globale Mon Taxi - refonte
 on:
   push:
     branches: [test/sumup-oauth-receipts-2122-20261125]
-    paths: ['refonte/**', 'app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
+    paths: ['refonte/**', 'app/**', 'tests/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/**']
   workflow_dispatch:
     inputs:
       compile_apk:
