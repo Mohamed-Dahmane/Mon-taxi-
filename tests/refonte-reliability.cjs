@@ -124,15 +124,15 @@ assert.equal(core.dayTotals(paid,"2026-11-24").cash,0);
 console.log("Comptabilité : date de course seule sans heure conservée OK.");
  
 // Régression : remboursement le mois suivant, sans déplacer la recette d'origine.
-let refundState=core.addCourse(core.empty(),{id:"refundable",date:"2026-11-23",time:"14:00"});
+let refundState=core.addCourse(core.empty(),{id:"refundable",date:"2026-10-23",time:"14:00"});
 for(const type of ["load","start","finish"])refundState=core.apply(refundState,"refundable",{type});
 refundState=core.recordCash(refundState,"refundable",6000);
-refundState.courses[0].finishedAt="2026-11-23T14:00:00Z";
-refundState.ledger[0].paidAt="2026-11-24T10:00:00Z";
-refundState.courses[0].payment.paidAt="2026-11-24T10:00:00Z";
-refundState=core.recordRefund(refundState,"refundable","2026-12-01",2000);
-assert.equal(core.monthTotals(refundState,"2026-11").cash,6000);
-assert.equal(core.monthTotals(refundState,"2026-12").cash,-2000);
-assert.equal(core.monthTotals(refundState,"2026-11").revenue,6000);
-assert.equal(core.monthTotals(refundState,"2026-12").revenue,-2000);
+refundState.courses[0].finishedAt="2026-10-23T14:00:00Z";
+refundState.ledger[0].paidAt="2026-10-24T10:00:00Z";
+refundState.courses[0].payment.paidAt="2026-10-24T10:00:00Z";
+refundState=core.recordRefund(refundState,"refundable","2026-11-01",2000);
+assert.equal(core.monthTotals(refundState,"2026-10").cash,6000);
+assert.equal(core.monthTotals(refundState,"2026-11").cash,-2000);
+assert.equal(core.monthTotals(refundState,"2026-10").revenue,6000);
+assert.equal(core.monthTotals(refundState,"2026-11").revenue,-2000);
 console.log("Comptabilité : remboursement du mois suivant sans déplacement de la recette initiale OK.");
