@@ -115,7 +115,7 @@ jobs:
                   await page.locator('#contacts-list [data-dir-action=default]').click();
                   await page.locator('#pick-driver').click();await page.locator('#person-form button[type=submit]').click();
                   await page.locator('#directory-sort').selectOption('az');
-                  await clickRoute('[data-page=home]');await clickRoute('[data-go=reservation]');
+                  await clickRoute('[data-page=home]');await clickRoute('[data-page=reservation]');
                   await page.locator('#reservation-hotel').selectOption({label:'Hôtel fictif'});
                   assert.equal(await page.locator('#reservation-contact option:checked').innerText(),'Personne fictive 1');
                   await page.locator('#reservation-driver').selectOption({label:'Personne fictive 2'});
