@@ -569,7 +569,7 @@ function keepFocusedFieldVisible(){
  if(document.visibilityState==='hidden')return;
  const el=document.activeElement;
  if(!el||!el.matches?.('input,textarea,select,[contenteditable="true"]')||el.disabled||el.readOnly)return;
- if(el.closest('[hidden]'))return;
+ if(el.closest('[hidden], [inert]')||el.getClientRects().length===0)return;
  cancelAnimationFrame(keyboardFocusFrame);
  keyboardFocusFrame=requestAnimationFrame(()=>{
   const viewport=window.visualViewport;
