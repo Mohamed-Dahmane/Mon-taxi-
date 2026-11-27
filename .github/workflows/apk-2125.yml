@@ -2,7 +2,7 @@ name: APK Mon Taxi Pro 2200
 on:
   push:
     branches: [isolation/sumup-oauth-only-20261127]
-    paths: ['.github/workflows/apk-2125.yml', 'refonte/**', 'app/**']
+    paths: ['.github/workflows/apk-2125.yml', 'refonte/**', 'app/**', 'settings.gradle', 'build.gradle', 'gradle.properties']
 permissions:
   contents: read
 jobs:
