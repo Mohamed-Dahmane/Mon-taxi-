@@ -29,3 +29,8 @@ assert.deepEqual(sumupDailyTotals([
   {id:'impossible',status:'SUCCESSFUL',timestamp:'2026-11-05T08:00:00Z',localDate:'2026-02-30',amount:10,currency:'EUR'},
   {id:'valid-leap',status:'SUCCESSFUL',timestamp:'2028-02-29T08:00:00Z',localDate:'2028-02-29',amount:3,currency:'EUR'}
 ]), {'2028-02-29':3});
+
+assert.deepEqual(sumupDailyTotals([
+  {id:'large',status:'SUCCESSFUL',timestamp:'2026-11-05T08:00:00Z',localDate:'2026-11-05',amount:90071992547409,currency:'EUR'},
+  {id:'overflow',status:'SUCCESSFUL',timestamp:'2026-11-05T08:01:00Z',localDate:'2026-11-05',amount:100,currency:'EUR'}
+]), {'2026-11-05':90071992547409});
