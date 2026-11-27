@@ -17,7 +17,7 @@ core.validateState(fixture);
  await context.addInitScript(s=>{if(!localStorage.getItem("mon-taxi-android-refonte:v1"))localStorage.setItem("mon-taxi-android-refonte:v1",JSON.stringify({version:1,state:s}));},fixture);
  const page=await context.newPage(),errors=[];page.on("pageerror",e=>errors.push(e.message));
  await page.goto("http://refund.test/");
- await page.locator('[data-go=archives]').click();
+ await page.locator('.nav-menu summary').click();await page.locator('[data-go=archives]').click();
  const card=page.locator("#archive-list article").filter({has:page.getByRole("heading",{name:"Client fictif",exact:true})});
  const button=card.getByRole("button",{name:"Remboursement",exact:true});
  await button.click();
