@@ -544,7 +544,7 @@ function renderLists(){
  const all=controller.snapshot().courses;
  // Les horaires du planning sont enregistrés en heure locale au format ISO.
  const planningTime=c=>c.scheduledAt || (c.date ? c.date+"T"+(c.time || "99:99") : "");
- const active=all.filter(c=>c.status!=="archived").sort((a,b)=>{
+ const active=all.filter(c=>c.status==="planned").sort((a,b)=>{
   const first=planningTime(a),second=planningTime(b);
   if(!first || !second)return Number(!first)-Number(!second);
   return first.localeCompare(second);
@@ -569,7 +569,7 @@ function show(id){
   if(!$("reservation-date").value)$("reservation-date").value=localDate(now);
   if(!$("reservation-time").value)$("reservation-time").value=localTime(now);
  }
- for(const list of ["planning","archives"])if(list!==id)$(list+"-reverse").setAttribute("aria-pressed","false");
+ // Conserver le sens du tri lors des allers-retours entre écrans.
  if(id!=="receipt")clearReceiptPreview();
  closeMoneyPad();
  if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
