@@ -567,7 +567,7 @@ function renderLists(){
   return first.localeCompare(second);
  });
  const executionTime=c=>{
-  for(const value of [c.startedAt,c.finishedAt,c.scheduledAt,c.date && c.date+"T"+(c.time||"00:00"),c.payment?.paidAt]){
+  for(const value of [c.finishedAt,c.startedAt,c.scheduledAt,c.date && c.date+"T"+(c.time||"00:00"),c.payment?.paidAt]){
    const timestamp=Date.parse(value);
    if(Number.isFinite(timestamp))return timestamp;
   }
