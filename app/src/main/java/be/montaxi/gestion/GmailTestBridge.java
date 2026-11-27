@@ -28,6 +28,7 @@ final class GmailTestBridge {
     private final BooleanSupplier unlocked;
     private final SharedPreferences prefs;
     private boolean busy;
+    private boolean linkRequested;
     GmailTestBridge(Activity activity, BooleanSupplier unlocked) {
         this.activity = activity;
         this.unlocked = unlocked;
@@ -37,38 +38,72 @@ final class GmailTestBridge {
         activity.runOnUiThread(() -> {
             if (busy || !unlocked.getAsBoolean()) return;
             boolean login = !prefs.contains("session");
-            EditText password = new EditText(activity);
-            password.setSingleLine();
-            password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            if (login && !linkRequested) {
+                new AlertDialog.Builder(activity).setTitle("Connexion par e-mail")
+                    .setMessage("Recevoir un lien de connexion sur " + ACCOUNT + " ?")
+                    .setNegativeButton("Annuler", null)
+                    .setPositiveButton("Recevoir le lien", (d, which) -> requestLink()).show();
+                return;
+            }
+            EditText link = new EditText(activity);
+            link.setSingleLine();
+            link.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             AlertDialog.Builder dialog = new AlertDialog.Builder(activity).setTitle("Tester Gmail")
-                .setMessage("Envoyer un message de test depuis Maral vers " + RECIPIENT + " ?"
-                    + (login ? "\n\nMot de passe Mon Taxi Pro du compte " + ACCOUNT : ""));
-            if (login) dialog.setView(password);
-            dialog.setNegativeButton("Annuler", null).setPositiveButton("Envoyer", (d, which) -> {
+                .setMessage((login ? "Dans le dernier mail de connexion Maral, fais un appui long sur Se connecter, copie le lien et colle-le ici.\n\n" : "")
+                    + "Envoyer le test vers " + RECIPIENT + " ?");
+            if (login) {
+                dialog.setView(link);
+                dialog.setNeutralButton("Nouveau lien", (d, which) -> requestLink());
+            }
+            dialog.setNegativeButton("Plus tard", null).setPositiveButton("Envoyer", (d, which) -> {
                 if (busy || !unlocked.getAsBoolean()) return;
                 busy = true;
-                String input = password.getText().toString();
-                password.setText("");
+                String input = link.getText().toString().trim();
+                link.setText("");
                 new Thread(() -> runTest(login, input)).start();
             }).show();
         });
     }
-    private void runTest(boolean login, String password) {
-        String message;
+    private void requestLink() {
+        if (busy || !unlocked.getAsBoolean()) return;
+        busy = true;
+        new Thread(() -> {
+            try {
+                post("/auth/v1/otp", new JSONObject().put("email", ACCOUNT).put("create_user", false), null);
+                activity.runOnUiThread(() -> { busy = false; linkRequested = true; open(); });
+            } catch (Exception e) {
+                finish("Demande de lien impossible. " + (e instanceof UserError ? e.getMessage() : "Vérifie la connexion."));
+            }
+        }).start();
+    }
+    private JSONObject verifyLink(String input) throws Exception {
+        android.net.Uri uri = android.net.Uri.parse(input);
+        if (!BASE.equals("https://" + uri.getEncodedAuthority()) || !"https".equals(uri.getScheme())
+                || !"/auth/v1/verify".equals(uri.getPath()))
+            throw new UserError("Copie le lien du bouton Se connecter dans le mail Maral.");
+        String type = uri.getQueryParameter("type");
+        String hash = uri.getQueryParameter("token");
+        if (!("magiclink".equals(type) || "email".equals(type)) || hash == null || hash.length() > 512 || hash.isEmpty())
+            throw new UserError("Utilise le dernier mail de connexion demandé depuis Tester Gmail.");
+        JSONObject session = post("/auth/v1/verify", new JSONObject().put("type", "email").put("token_hash", hash), null);
+        if (!ACCOUNT.equalsIgnoreCase(session.getJSONObject("user").optString("email")))
+            throw new UserError("Demande un lien pour le compte Maral.");
+        return session;
+    }
+    private void runTest(boolean login, String input) {
         try {
-            JSONObject credentials = new JSONObject();
-            if (login) credentials.put("email", ACCOUNT).put("password", password);
-            else credentials.put("refresh_token", readSession());
-            JSONObject session = post("/auth/v1/token?grant_type=" + (login ? "password" : "refresh_token"), credentials, null);
+            JSONObject session = login ? verifyLink(input) : post("/auth/v1/token?grant_type=refresh_token",
+                new JSONObject().put("refresh_token", readSession()), null);
             saveSession(session.getString("refresh_token"));
             JSONObject mail = new JSONObject().put("to", RECIPIENT).put("subject", "Mon Taxi Pro — test Gmail")
                 .put("text", "Message de test envoyé depuis Mon Taxi Pro sur Android.");
             JSONObject result = post("/functions/v1/taxi-gmail-send-v1", mail, session.getString("access_token"));
-            message = "sent".equals(result.optString("code")) ? "Message envoyé à " + RECIPIENT : "Envoi non confirmé.";
+            finish("sent".equals(result.optString("code")) ? "Message envoyé à " + RECIPIENT : "Envoi non confirmé.");
         } catch (Exception e) {
-            message = e instanceof UserError ? e.getMessage() : "Connexion indisponible ou session illisible. Vérifie ta boîte avant de réessayer.";
+            finish(e instanceof UserError ? e.getMessage() : "Connexion indisponible. Vérifie ta boîte avant de réessayer.");
         }
-        final String status = message;
+    }
+    private void finish(String status) {
         activity.runOnUiThread(() -> {
             busy = false;
             if (!activity.isFinishing() && !activity.isDestroyed() && unlocked.getAsBoolean())
@@ -91,7 +126,7 @@ final class GmailTestBridge {
             if (code < 200 || code >= 300) {
                 if (token == null && (code == 400 || code == 401 || code == 403)) {
                     prefs.edit().remove("session").commit();
-                    throw new UserError("Connexion refusée. Vérifie le mot de passe Mon Taxi Pro du compte Maral.");
+                    throw new UserError("Connexion refusée. Demande un nouveau lien dans Tester Gmail.");
                 }
                 throw new UserError("Le service a répondu avec le code " + code + ".");
             }
@@ -99,7 +134,7 @@ final class GmailTestBridge {
                 StringBuilder data = new StringBuilder();
                 String line;
                 while ((line = in.readLine()) != null) data.append(line);
-                return new JSONObject(data.toString());
+                return data.length() == 0 ? new JSONObject() : new JSONObject(data.toString());
             }
         } finally { connection.disconnect(); }
     }

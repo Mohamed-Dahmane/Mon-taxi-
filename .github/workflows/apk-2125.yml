@@ -1,4 +1,4 @@
-name: APK Mon Taxi Pro 2201
+name: APK Mon Taxi Pro 2202
 on:
   push:
     branches: [isolation/sumup-oauth-only-20261127]
@@ -113,7 +113,7 @@ jobs:
           print("Certificat de signature identique à celui de l'APK stable.")
           PY
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
-          grep -q "package: name='be.montaxi.pro' versionCode='2201'" apk-identity.txt
+          grep -q "package: name='be.montaxi.pro' versionCode='2202'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
           if grep -q "application-debuggable" apk-identity.txt; then exit 1; fi
           "$sdk/aapt" dump xmltree "$apk" AndroidManifest.xml > manifest-verification.txt
@@ -141,7 +141,7 @@ jobs:
       - name: Conserver le candidat APK signé et son empreinte
         uses: actions/upload-artifact@v4
         with:
-          name: Mon-Taxi-Pro-2201-signe
+          name: Mon-Taxi-Pro-2202-signe
           path: |
             ${{ runner.temp }}/point11/Mon-Taxi-Pro.apk
             ${{ runner.temp }}/point11/SHA256SUMS.txt
