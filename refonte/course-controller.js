@@ -19,6 +19,11 @@ function create(core,sumupEvent,storage){
     daily:day=>core.dayTotals(state,day),
     monthly:month=>core.monthTotals(state,month),
     backup:()=>core.backup(state),
+    removeCourse(id){
+      const course=get(id);
+      if(course.status==="payment_pending"||course.refundPending)throw Error("Attends la confirmation du paiement ou du remboursement.");
+      commit({...state,courses:state.courses.filter(c=>c.id!==id),ledger:state.ledger.filter(row=>row.courseId!==id)});
+    },
     clearRideHistory(){
       if(state.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Attends la confirmation du paiement ou du remboursement en cours.");
       const entries=Object.fromEntries(Object.entries(state.entries||{}).map(([day,row])=>[
