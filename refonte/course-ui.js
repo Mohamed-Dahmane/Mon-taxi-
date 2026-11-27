@@ -114,7 +114,7 @@ document.addEventListener("change",event=>{
  if(event.target.id==="receipt-remark") requestReceiptPreview();
 });
 function openReceipt(id,back){
- $("receipt-phone").value="";$("receipt-remark").disabled=false;$("receipt-remark").value="";
+ $("receipt-phone").value="";$("receipt-email").value="";$("receipt-remark").disabled=false;$("receipt-remark").value="";
  const body=receiptData(id);receiptCourse=id;receiptReturn=back;$("receipt-summary").textContent=body;
  const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
  $("receipt-remark").hidden=!cash;document.querySelector('label[for="receipt-remark"]').hidden=!cash;
