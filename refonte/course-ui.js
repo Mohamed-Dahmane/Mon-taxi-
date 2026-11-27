@@ -549,6 +549,11 @@ function renderLists(){
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
 }
 function show(id){
+ if(id==="reservation"){
+  const now=new Date();
+  if(!$("reservation-date").value)$("reservation-date").value=localDate(now);
+  if(!$("reservation-time").value)$("reservation-time").value=localTime(now);
+ }
  for(const list of ["planning","archives"])if(list!==id)$(list+"-reverse").setAttribute("aria-pressed","false");
  if(id!=="receipt")clearReceiptPreview();
  closeMoneyPad();
@@ -708,6 +713,80 @@ document.addEventListener("click",e=>{
  if(b.id==="waze-overlay"){safe(()=>{if(current()?.status!=="in_progress")throw Error("Aucune course en cours.");if(typeof window.TaxiContacts?.enableWazeOverlay!=="function")throw Error("Disponible uniquement sur Android.");window.TaxiContacts.enableWazeOverlay();});return;}
  const id=b.dataset.page||b.dataset.go;if(id)safe(()=>show(id));
 });
+function words(value){
+ return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("fr").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+}
+function suggest(input,choices,accept){
+ const menu=document.createElement("div");
+ menu.className="actions";
+ input.after(menu);
+ input.autocomplete="off";
+ function close(){menu.replaceChildren();}
+ function display(){
+  close();
+  const tokens=words(input.value);
+  if(!tokens.length)return;
+  for(const choice of choices().filter(item=>tokens.every(t=>words(item.label).some(w=>w.startsWith(t)))).slice(0,12)){
+   const button=document.createElement("button");
+   button.type="button";button.textContent=choice.label;
+   button.addEventListener("mousedown",e=>e.preventDefault());
+   button.addEventListener("click",()=>{accept(choice);close();});
+   menu.append(button);
+  }
+ }
+ input.addEventListener("input",display);
+ input.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+ input.parentElement.addEventListener("focusout",e=>{if(!input.parentElement.contains(e.relatedTarget))close();});
+ input.form?.addEventListener("reset",close);
+}
+for(const select of document.querySelectorAll("select[name=hotelId],select[name=contactId],select[name=driverId],#contact-hotel")){
+ const search=document.createElement("input");
+ search.type="search";search.placeholder="Rechercher : "+select.labels[0].textContent;
+ search.setAttribute("aria-label",search.placeholder);
+ select.before(search);
+ suggest(search,()=>Array.from(select.options,o=>({label:o.text,value:o.value})),choice=>{
+  select.value=choice.value;search.value="";
+  select.dispatchEvent(new Event("change",{bubbles:true}));
+ });
+}
+for(const form of document.querySelectorAll("form[data-kind]")){
+ const {hotelId,direction,from,to}=form.elements;
+ let automatic=null;
+ function defaultHotel(){
+  if(automatic&&automatic.field.value===automatic.value)automatic.field.value="";
+  automatic=null;
+  if(!hotelId.value)return;
+  const field=direction.value==="pickup"?to:from;
+  if(field.value)return;
+  field.value=hotelId.selectedOptions[0].text;
+  automatic={field,value:field.value};
+ }
+ hotelId.addEventListener("change",defaultHotel);
+ direction.addEventListener("change",defaultHotel);
+ for(const field of [from,to])field.addEventListener("input",()=>{if(automatic?.field===field)automatic=null;});
+ form.addEventListener("reset",()=>{automatic=null;});
+}
+for(const field of document.querySelectorAll("input[name=from],input[name=to],input[name=client],input[name=label]")){
+ field.addEventListener("focus",()=>field.select());
+ suggest(field,()=>{
+  const state=controller.snapshot(),places=["from","to"].includes(field.name);
+  const values=places?[...state.hotels.map(h=>h.name),...state.courses.flatMap(c=>[c.from,c.to])]:state.courses.map(c=>c.client);
+  return Array.from(new Set(values.filter(Boolean)),label=>({label}));
+ },choice=>{field.value=choice.label;field.dispatchEvent(new Event("change",{bubbles:true}));});
+}
+const reservationTime=$("reservation-time");
+reservationTime.type="text";reservationTime.inputMode="numeric";reservationTime.maxLength=5;
+reservationTime.placeholder="8:35";reservationTime.addEventListener("focus",()=>reservationTime.select());
+function normalizeTime(){
+ const match=reservationTime.value.trim().match(/^(\d{1,2}):?(\d{2})$/);
+ const valid=match&&Number(match[1])<24&&Number(match[2])<60;
+ reservationTime.setCustomValidity(reservationTime.value&&!valid?"Entre une heure valide, par exemple 835 ou 1430.":"");
+ if(valid)reservationTime.value=match[1].padStart(2,"0")+":"+match[2];
+}
+reservationTime.addEventListener("input",()=>reservationTime.setCustomValidity(""));
+reservationTime.addEventListener("blur",normalizeTime);
+reservationTime.form.addEventListener("submit",normalizeTime,true);
+
 renderLists();
 renderCashTotals();
 resumeWaze();
