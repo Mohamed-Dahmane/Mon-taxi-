@@ -550,6 +550,20 @@ public class MainActivity extends Activity {
   },"TaxiReceiptPublish").start();
 
  }
+ private void shareReceiptSms(String token,String raw,boolean card,String number){
+  if(!receiptTrusted()||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard)return;
+  if(number==null||!number.matches("[+]?[0-9]{6,20}")){Toast.makeText(this,"Numéro invalide.",Toast.LENGTH_SHORT).show();return;}
+  try{
+   java.io.File archived=receiptArchive(raw,card);
+   if(!new java.io.File(archived.getParentFile(),archived.getName()+".published").isFile()){
+    Toast.makeText(this,"Lien pas encore disponible. Réessaie après publication.",Toast.LENGTH_LONG).show();retryReceiptPublications();return;
+   }
+   String id=receiptLinkId(raw,card);
+   Intent intent=new Intent(Intent.ACTION_SENDTO,android.net.Uri.fromParts("smsto",number,null));
+   intent.putExtra("sms_body","Votre reçu Mon Taxi Pro : "+TaxiReceiptPublisher.link(id));
+   startActivity(intent);
+  }catch(Exception ex){Toast.makeText(this,"SMS indisponible. Reçu conservé.",Toast.LENGTH_LONG).show();}
+ }
  private void shareReceiptPng(String token,String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
   try{
@@ -1118,6 +1132,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void cardPdf(String raw){runOnUiThread(()->exportReceiptPdf(raw,true));}
     @android.webkit.JavascriptInterface public void sharePdf(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPdf(token,raw,card));}
     @android.webkit.JavascriptInterface public void confirmPng(String token,String raw,boolean card){runOnUiThread(()->confirmReceiptPng(token,raw,card));}
+    @android.webkit.JavascriptInterface public void shareSms(String token,String raw,boolean card,String number){runOnUiThread(()->shareReceiptSms(token,raw,card,number));}
     @android.webkit.JavascriptInterface public void sharePng(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
    },"TaxiReceipt");
