@@ -382,6 +382,21 @@ public class MainActivity extends Activity {
      try(java.io.FileInputStream in=new java.io.FileInputStream(archived);java.io.ByteArrayOutputStream saved=new java.io.ByteArrayOutputStream()){
       byte[] buf=new byte[8192];int n;while((n=in.read(buf))!=-1){if(saved.size()+n>6000000)throw new IOException("Archived receipt size");saved.write(buf,0,n);}pngBytes=saved.toByteArray();
      }
+    }else if(receiptQrEnabled()){
+     String link="https://uenyvsiturkihectolxp.supabase.co/functions/v1/taxi-receipt-view-v1?id="+receiptLinkId(raw,card);
+     java.util.Map<com.google.zxing.EncodeHintType,Object> hints=new java.util.EnumMap<>(com.google.zxing.EncodeHintType.class);
+     hints.put(com.google.zxing.EncodeHintType.MARGIN,4);
+     int side=Math.min(420,bitmap.getWidth());
+     com.google.zxing.common.BitMatrix matrix=new com.google.zxing.qrcode.QRCodeWriter().encode(link,com.google.zxing.BarcodeFormat.QR_CODE,side,side,hints);
+     android.graphics.Bitmap combined=android.graphics.Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight()+side+24,android.graphics.Bitmap.Config.ARGB_8888);
+     try{
+      android.graphics.Canvas canvas=new android.graphics.Canvas(combined);canvas.drawColor(android.graphics.Color.WHITE);canvas.drawBitmap(bitmap,0,0,null);
+      int left=(combined.getWidth()-side)/2,top=bitmap.getHeight()+12;
+      for(int y=0;y<side;y++)for(int x=0;x<side;x++)if(matrix.get(x,y))combined.setPixel(left+x,top+y,android.graphics.Color.BLACK);
+      java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream();
+      if(!combined.compress(android.graphics.Bitmap.CompressFormat.PNG,100,output))throw new IOException("QR PNG encoding");
+      pngBytes=output.toByteArray();
+     }finally{combined.recycle();}
     }else pngBytes=image.toByteArray();
     String png=android.util.Base64.encodeToString(pngBytes,android.util.Base64.NO_WRAP);
     if(png.length()>8000000)throw new IOException("Preview size");
@@ -417,6 +432,7 @@ public class MainActivity extends Activity {
   java.io.File dir=new java.io.File(getFilesDir(),"confirmed-receipts");if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException();
   return new java.io.File(dir,key.toString()+".png");
  }
+ private boolean receiptQrEnabled(){return false;} // Enable only after authenticated upload is verified.
  private synchronized String receiptLinkId(String raw,boolean card)throws Exception{
   java.io.File png=receiptArchive(raw,card);
   android.util.AtomicFile file=new android.util.AtomicFile(new java.io.File(png.getParentFile(),png.getName()+".link"));
