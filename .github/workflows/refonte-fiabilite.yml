@@ -630,7 +630,7 @@ jobs:
           assert.ok(recovery.includes('"checkout".equals(stage)?'));
           assert.match(u,/recoverInterrupted\(c.id,c.payment.attemptId\)/);
           assert.match(u,/controller.beginSumUp\(c.id,draft.cents,attempt\)/);
-          assert.match(u,/window.TaxiSumUp.checkout\(c.id,attempt,draft.cents\)/);
+          assert.match(u,/window.TaxiSumUp.checkoutWithLocalReceipt\(c.id,attempt,draft.cents\)/);
           const lookup=m.slice(m.indexOf('// Read-only reconciliation;'),m.indexOf('private void ackSumUp('));
           assert.match(lookup,/foreign_transaction_id=/);assert.match(lookup,/setRequestMethod\("GET"\)/);assert.match(lookup,/!attempt.equals\(tx.optString\("foreign_transaction_id"\)\)/);assert.doesNotMatch(lookup,/SumUpAPI\.checkout|remove\("pending"\)/);
           console.log('Point 6 : contrat SDK, référence unique, montant confirmé, journal persistant et blocage en cas de doute.');
