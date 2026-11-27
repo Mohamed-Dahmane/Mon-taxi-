@@ -579,6 +579,7 @@ function keepFocusedFieldVisible(){
   if(!Number.isFinite(height)||height<=0)return;
   const bounds=el.getBoundingClientRect();
   if(!Number.isFinite(bounds.top)||!Number.isFinite(bounds.bottom))return;
+  if(bounds.height>=height-40)return;
   const safeTop=top+16,safeBottom=Math.max(safeTop+1,top+height-24);
   if(bounds.bottom>safeBottom||bounds.top<safeTop){
    el.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
@@ -617,8 +618,6 @@ function show(id){
   if(!$("reservation-date").value)$("reservation-date").value=localDate(now);
   if(!$("reservation-time").value)$("reservation-time").value=localTime(now);
  }
- // Conserver le sens du tri lors des allers-retours entre écrans.
- if(id!=="receipt")clearReceiptPreview();
  if(['ride','payment','cash','sumup'].includes(id)){
   const c=current();if(!c||c.status==="archived")throw Error("Aucune course active");
   if(id!=="ride"&&c.status!=="awaiting_payment"&&!(id==="sumup"&&c.status==="payment_pending"))throw Error("La course doit être terminée avant le paiement");
@@ -647,6 +646,7 @@ function show(id){
    }
   }
  }
+ if(id!=="receipt")clearReceiptPreview();
  closeMoneyPad();
  if(id!=="cash")cashDraft=null;
  if(id!=="sumup")sumupDraft=null;
