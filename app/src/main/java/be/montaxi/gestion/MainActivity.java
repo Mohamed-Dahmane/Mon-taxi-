@@ -401,6 +401,26 @@ public class MainActivity extends Activity {
    startActivity(Intent.createChooser(intent,"Partager le reçu PDF"));
   }catch(Exception ex){Toast.makeText(this,"Partage PDF impossible. Aucun paiement supplémentaire.",Toast.LENGTH_LONG).show();}
  }
+ private java.io.File receiptArchive(String raw,boolean card)throws Exception{
+  org.json.JSONObject data=new org.json.JSONObject(raw);
+  String reference=data.getString("reference");
+  if(reference.trim().isEmpty())throw new IOException("Missing reference");
+  byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(((card?"card:":"cash:")+reference).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+  StringBuilder key=new StringBuilder();for(byte b:hash)key.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
+  java.io.File dir=new java.io.File(getFilesDir(),"confirmed-receipts");if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException();
+  return new java.io.File(dir,key.toString()+".png");
+ }
+ private void confirmReceiptPng(String token,String raw,boolean card){
+  if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
+  try{
+   java.io.File target=receiptArchive(raw,card);
+   if(!target.exists()){
+    android.util.AtomicFile atomic=new android.util.AtomicFile(target);
+    java.io.FileOutputStream out=atomic.startWrite();
+    try{out.write(sharePreviewPng);atomic.finishWrite(out);}catch(Exception ex){atomic.failWrite(out);throw ex;}
+   }
+  }catch(Exception ex){Toast.makeText(this,"Conservation du reçu impossible. Réessaie.",Toast.LENGTH_LONG).show();}
+ }
  private void shareReceiptPng(String token,String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
   try{
@@ -966,6 +986,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void cashPdf(String raw){runOnUiThread(()->exportCashReceipt(raw));}
     @android.webkit.JavascriptInterface public void cardPdf(String raw){runOnUiThread(()->exportReceiptPdf(raw,true));}
     @android.webkit.JavascriptInterface public void sharePdf(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPdf(token,raw,card));}
+    @android.webkit.JavascriptInterface public void confirmPng(String token,String raw,boolean card){runOnUiThread(()->confirmReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void sharePng(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
    },"TaxiReceipt");
