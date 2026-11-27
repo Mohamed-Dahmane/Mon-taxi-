@@ -52,7 +52,7 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <p id="status" role="status" aria-live="polite"></p>
 <section class="screen" id="home">
 <h2>Accueil</h2><div class="card overview grid"><div class="balance"><span class="muted">Recette nette du jour</span><strong class="amount" id="home-receipts">0,00 €</strong></div><div class="line"><span class="muted">Espèces</span><strong id="home-cash">0,00 €</strong></div><div class="line"><span class="muted">Carte brute</span><strong id="home-card">0,00 €</strong></div></div>
-<div class="actions"><button class="primary" data-go="reservation">Réservation</button><button class="primary" data-go="direct">Course directe</button><button data-go="free-ride">Course libre</button><button data-go="archives">Historique</button></div>
+<div class="actions"><button class="primary" data-go="reservation">Réservation</button><button class="primary" data-go="direct">Course directe</button><button data-go="reservation" id="past-ride">Encoder une course passée</button><button data-go="free-ride">Course libre</button><button data-go="archives">Historique</button></div>
 </section>
 <section class="screen" id="planning" hidden>
 <div class="list-heading"><h2>Planning</h2><button type="button" id="planning-reverse" aria-label="Inverser l’ordre du planning" aria-pressed="false" title="Inverser l’ordre">⇅</button></div><div class="card" id="planning-empty"><h3>Aucune course enregistrée</h3></div><div id="course-list"></div>
@@ -69,7 +69,10 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <div class="field"><label for="reservation-from">Départ</label><input id="reservation-from" name="from" required maxlength="250"></div>
 <div class="field"><label for="reservation-to">Destination</label><input id="reservation-to" name="to" required maxlength="250"></div>
 <div class="field"><label for="reservation-date">Date</label><input id="reservation-date" type="date" name="date" required></div><div class="field"><label for="reservation-time">Heure</label><input id="reservation-time" type="time" name="time" required></div>
-<button class="primary" type="submit">Enregistrer</button>
+<fieldset id="past-fields" hidden disabled><legend>Course déjà effectuée</legend>
+<label>Règlement<select name="pastSettlement"><option value="pending">À régler</option><option value="cash">Espèces déjà reçues</option></select></label>
+<div id="past-cash" hidden><label>Montant reçu (€)<input name="pastAmount" inputmode="decimal"></label><label>Date du paiement (par défaut, celle de la course)<input type="date" name="pastPaidDay"></label></div>
+</fieldset><button class="primary" type="submit">Enregistrer</button>
 </form></section>
 <section class="screen" id="direct" hidden><h2>Course directe</h2>
 <form class="card" data-kind="direct">
@@ -127,3 +130,4 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <div class="card" id="directory-delete" hidden><p id="directory-delete-label"></p><button id="directory-delete-confirm" type="button">Confirmer la suppression locale</button><button id="directory-delete-cancel" type="button">Annuler</button></div>
 </section>
 </main></body></html>
+

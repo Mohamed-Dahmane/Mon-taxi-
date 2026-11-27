@@ -629,7 +629,13 @@ document.addEventListener("submit",e=>{
   if(!date||!time)throw Error("Renseigne la date et l’heure.");
   const s=controller.snapshot(),hotel=s.hotels.find(x=>x.id===fields.hotelId),contact=s.contacts.find(x=>x.id===fields.contactId&&x.hotelId===hotel?.id),driver=s.drivers.find(x=>x.id===fields.driverId);
   if((fields.hotelId&&!hotel)||(fields.contactId&&!contact)||(fields.driverId&&!driver))throw Error("Répertoire modifié : vérifier la sélection.");
-  controller.plan({id:newId(),kind,direction:fields.direction,client:String(fields.client||"").trim(),phone:String(fields.phone||"").trim(),from,to,date,time,scheduledAt:date+"T"+time,hotelId:hotel?.id||null,hotelName:hotel?.name||"",contactId:contact?.id||null,contactName:contact?.name||"",driverId:driver?.id||null,driverName:driver?.name||"Moi",driverPhone:driver?.phone||"",driverIsMe:!driver,commissionCents:entryCents(fields.commission||"")});
+  const course={id:newId(),kind,direction:fields.direction,client:String(fields.client||"").trim(),phone:String(fields.phone||"").trim(),from,to,date,time,scheduledAt:date+"T"+time,hotelId:hotel?.id||null,hotelName:hotel?.name||"",contactId:contact?.id||null,contactName:contact?.name||"",driverId:driver?.id||null,driverName:driver?.name||"Moi",driverPhone:driver?.phone||"",driverIsMe:!driver,commissionCents:entryCents(fields.commission||"")};
+  if(fields.pastSettlement){
+   const cash=fields.pastSettlement==="cash";
+   controller.recordPast(course,cash?entryCents(fields.pastAmount):null,fields.pastPaidDay||date);
+   form.reset();show(cash?"archives":"planning");message(cash?"Course passée archivée.":"Course effectuée, en attente de règlement.");return;
+  }
+  controller.plan(course);
   form.reset();show("home");message("Course enregistrée dans le planning.");
  });
 });
@@ -720,7 +726,14 @@ document.addEventListener("click",e=>{
  });return;}
  if(b.id==="waze-reopen"){safe(()=>{const c=current();if(!c)throw Error("Course inconnue");launchWaze(c);});return;}
  if(b.id==="waze-overlay"){safe(()=>{if(current()?.status!=="in_progress")throw Error("Aucune course en cours.");if(typeof window.TaxiContacts?.enableWazeOverlay!=="function")throw Error("Disponible uniquement sur Android.");window.TaxiContacts.enableWazeOverlay();});return;}
- const id=b.dataset.page||b.dataset.go;if(id)safe(()=>show(id));
+ const id=b.dataset.page||b.dataset.go;
+ if(id==="reservation"){
+  const past=b.id==="past-ride";
+  $("past-fields").disabled=!past;$("past-fields").hidden=!past;
+  $("reservation").querySelector("h2").textContent=past?"Encoder une course passée":"Réservation";
+  $("past-cash").hidden=$("past-fields").querySelector("select").value!=="cash";
+ }
+ if(id)safe(()=>show(id));
 });
 function words(value){
  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("fr").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
@@ -783,6 +796,7 @@ for(const field of document.querySelectorAll("input[name=from],input[name=to],in
   return Array.from(new Set(values.filter(Boolean)),label=>({label}));
  },choice=>{field.value=choice.label;field.dispatchEvent(new Event("change",{bubbles:true}));});
 }
+$("past-fields").querySelector("select").addEventListener("change",e=>{$("past-cash").hidden=e.target.value!=="cash";});
 const reservationTime=$("reservation-time");
 reservationTime.type="text";reservationTime.inputMode="numeric";reservationTime.maxLength=5;
 reservationTime.placeholder="8:35";reservationTime.addEventListener("focus",()=>reservationTime.select());
@@ -801,3 +815,4 @@ renderCashTotals();
 resumeWaze();
 recoverSumUp();
 })();
+

@@ -55,13 +55,13 @@ function makeCore(){
   return {driverNumber:p.driverNumber.trim(),enabled:p.enabled,strokes:p.strokes.map(s=>s.map(pt=>pt.slice())),...(png?{signaturePng:png}:{})};
  }
  function setReceiptProfile(s,p){return {...s,receiptProfile:validateReceiptProfile(p)};}
- function recordCash(state,id,amountCents){
+ function recordCash(state,id,amountCents,paidAt=new Date().toISOString()){
   if(!Number.isSafeInteger(amountCents)||amountCents<=0)throw Error("Montant espèces invalide");
   const index=state.courses.findIndex(c=>c.id===id);
   if(index<0||state.courses[index].status!=="awaiting_payment")throw Error("Course non disponible pour le paiement en espèces");
   const reference="cash:"+id;
   if(state.ledger.some(x=>x.courseId===id||x.attemptId===reference))throw Error("Paiement déjà enregistré");
-  const payment={method:"cash",amountCents,attemptId:reference,reference,paidAt:new Date().toISOString()};
+  const payment={method:"cash",amountCents,attemptId:reference,reference,paidAt};
   const courses=state.courses.slice();
   const profile=state.receiptProfile;
   const receiptIdentity=profile?validateReceiptProfile(profile):null;
@@ -287,3 +287,4 @@ function makeCore(){
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();
+

@@ -36,6 +36,20 @@ function create(core,sumupEvent,storage){
       const next=core.readBackup(raw);commit(clone(next));
     },
     plan(course){commit(core.addCourse(state,clone(course)));return clone(get(course.id))},
+    recordPast(course,cents,paidDay){
+      const execution=new Date(course.date+"T"+course.time);
+      const now=new Date();
+      if(!Number.isFinite(+execution)||execution>now)throw Error("Choisis la date et l’heure d’une course déjà effectuée.");
+      let next=core.addCourse(state,clone(course));
+      const ride=next.courses[next.courses.length-1];
+      ride.status="awaiting_payment";ride.startedAt=execution.toISOString();ride.recordedAt=now.toISOString();
+      if(cents!==null){
+        const payment=new Date(paidDay+"T"+course.time);
+        if(!Number.isFinite(+payment)||paidDay<course.date||paidDay>core.paymentDay(now))throw Error("Vérifie la date de paiement.");
+        next=core.recordCash(next,ride.id,cents,new Date(Math.min(+payment,+now)).toISOString());
+      }
+      commit(next);return clone(get(ride.id));
+    },
     startFree(course){
       const id=course?.id;
       const next=core.apply(core.apply(core.addCourse(state,{...clone(course),kind:"free",driverIsMe:true,commissionCents:0}),id,{type:"load"}),id,{type:"start"});
@@ -62,3 +76,4 @@ function create(core,sumupEvent,storage){
 if(typeof module==="object"&&module.exports)module.exports=(storage)=>create(require("./clean-core"),require("./sumup-course-payment"),storage);
 else root.createTaxiCourseController=(storage)=>create(root.TaxiCleanCore,root.TaxiSumUpEvent,storage);
 })(typeof window==="undefined"?globalThis:window);
+
