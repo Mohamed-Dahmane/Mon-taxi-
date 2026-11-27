@@ -169,25 +169,63 @@ function makeCore(){
     if(item.defaultContactId&&!s.contacts.some(c=>c.id===item.defaultContactId&&c.hotelId===item.id))throw Error("Contact par défaut invalide");
    }else{
     if(typeof item.phone!=="string"||!/^\+?[0-9]{3,20}$/.test(item.phone))throw Error("Téléphone invalide");
+    if(item.separateFrom!==undefined&&(!Array.isArray(item.separateFrom)||item.separateFrom.some(key=>typeof key!=="string")))throw Error("Décision de répertoire invalide");
+    if(item.otherPhones!==undefined&&(!Array.isArray(item.otherPhones)||item.otherPhones.some(n=>typeof n!=="string"||!/^\+?[0-9]{3,20}$/.test(n))))throw Error("Téléphone secondaire invalide");
     if(k==="contacts"&&!s.hotels.some(h=>h.id===item.hotelId))throw Error("Hôtel du contact manquant");
    }
   }
-  for(const k of ["contacts","drivers"]){
-   const keys=new Set();for(const item of s[k]){
-    const scope=k==="contacts"?item.hotelId+":":"";
-    const candidates=["phone:"+phoneKey(item.phone),"name:"+nameKey(item.name),...(item.nativeId?["native:"+item.nativeId]:[])];
-    for(const candidate of candidates){const key=scope+candidate;if(keys.has(key))throw Error("Doublon possible : vérifier la fiche existante avant tout ajout.");keys.add(key);}
-   }
-  }
  }
- function saveDirectory(s,kind,item){
+ function personMatches(a,b){
+  const numbers=p=>[p.phone,...(p.otherPhones||[])].filter(Boolean).map(phoneKey);
+  if(numbers(a).some(n=>numbers(b).includes(n)))return true;
+  if(a.nativeId&&a.nativeId===b.nativeId)return true;
+  const x=nameKey(a.name).replace(/ /g,""),y=nameKey(b.name).replace(/ /g,"");
+  if(!x||!y)return false;
+  if(x===y)return true;
+  if(Math.min(x.length,y.length)<4||Math.abs(x.length-y.length)>1)return false;
+  let i=0,j=0,edits=0;
+  while(i<x.length&&j<y.length){
+   if(x[i]===y[j]){i++;j++;continue;}
+   if(++edits>1)return false;
+   if(x.length>=y.length)i++;
+   if(y.length>=x.length)j++;
+  }
+  return edits+x.length-i+y.length-j<=1;
+ }
+ const personIdentity=p=>JSON.stringify([p.id,nameKey(p.name),phoneKey(p.phone),p.otherPhones||[],p.nativeId||"",p.hotelId||""]);
+ function directoryMatches(s,kind,item){
+  if(!["drivers","contacts"].includes(kind))return [];
+  return s[kind].filter(p=>p.id!==item.id&&personMatches(p,item)&&!(item.separateFrom||[]).includes(personIdentity(p))&&!(p.separateFrom||[]).includes(personIdentity(item)));
+ }
+ function saveDirectory(s,kind,item,decision){
   if(!["hotels","contacts","drivers"].includes(kind)||!item||!validId(item.id))throw Error("Élément inconnu");
+  const list=s[kind],existing=list.find(p=>p.id===item.id);
   const name=cleanName(item.name);
   const next=kind==="hotels"?{id:item.id,name,defaultContactId:item.defaultContactId||null}:
    {id:item.id,name,phone:phoneKey(item.phone),nativeId:String(item.nativeId||"").slice(0,120),...(kind==="contacts"?{hotelId:item.hotelId}:{})};
-  const list=s[kind],existing=list.findIndex(x=>x.id===item.id);
-  const updated=existing<0?[...list,next]:list.map(x=>x.id===item.id?next:x);
-  const result={...s,[kind]:updated};validateDirectory(result);return result;
+  if(existing?.otherPhones)next.otherPhones=existing.otherPhones.filter(n=>n!==next.phone);
+  if(existing?.separateFrom&&personIdentity(existing)===personIdentity(next))next.separateFrom=existing.separateFrom;
+  const matches=directoryMatches(s,kind,next);
+  if(matches.length&&!decision)throw Error("Doublon possible : vérifier les fiches.");
+  if(decision==="keep")next.separateFrom=[...new Set([...(next.separateFrom||[]),...matches.map(personIdentity)])];
+  let result={...s};
+  let updated=list;
+  if(decision&&decision!=="keep"){
+   const other=matches.find(p=>p.id===decision);
+   if(!other||kind==="contacts"&&other.hotelId!==next.hotelId)throw Error("Fusion incompatible avec les liens hôtel.");
+   const retained=existing?next.id:other.id;
+   next.otherPhones=[...new Set([...(next.otherPhones||[]),other.phone,...(other.otherPhones||[])])].filter(n=>n!==next.phone);
+   next.id=retained;
+   if(!next.nativeId)next.nativeId=other.nativeId||"";
+   if(retained!==other.id){
+    updated=list.filter(p=>p.id!==other.id);
+    if(kind==="contacts")result.hotels=s.hotels.map(h=>h.defaultContactId===other.id?{...h,defaultContactId:retained}:h);
+    const key=kind==="contacts"?"contactId":"driverId";
+    result.courses=s.courses.map(c=>c[key]===other.id?{...c,[key]:retained}:c);
+   }
+  }
+  result[kind]=updated.some(p=>p.id===next.id)?updated.map(p=>p.id===next.id?next:p):[...updated,next];
+  validateDirectory(result);return result;
  }
  function removeDirectory(s,kind,id){
   if(!["hotels","contacts","drivers"].includes(kind)||!s[kind].some(x=>x.id===id))throw Error("Élément inconnu");
@@ -249,7 +287,7 @@ function makeCore(){
   if(s.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Sauvegarde contenant un paiement incertain : restauration interdite.");
   return s;
  }
- return {empty,setReceiptProfile,addCourse,apply,savePaymentDraft,recordCash,recordRefund,prepareRefund,confirmRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
+ return {directoryMatches,empty,setReceiptProfile,addCourse,apply,savePaymentDraft,recordCash,recordRefund,prepareRefund,confirmRefund,fields,setDay,setFixed,dayTotals,monthTotals,validateState,backup,readBackup,paymentDay,saveDirectory,removeDirectory,moveDirectory};
 }
 if(typeof module==='object'&&module.exports)module.exports=makeCore();
 else if(typeof window!=='undefined')window.TaxiCleanCore=makeCore();

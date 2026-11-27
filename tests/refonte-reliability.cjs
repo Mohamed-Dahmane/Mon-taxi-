@@ -68,7 +68,7 @@ const fs=require("node:fs"),vm=require("node:vm");
 const ui=fs.readFileSync(require("node:path").join(__dirname,"../refonte/course-ui.js"),"utf8");
 const render=ui.slice(ui.indexOf("function renderLists(){"),ui.indexOf("function show(id){"));
 assert.ok(render.startsWith("function renderLists(){"),"Tri des archives introuvable");
-const archiveSort=render.slice(render.indexOf("const courseTime="),render.indexOf(" $('course-list')"));
+const archiveSort=render.slice(render.indexOf("const executionTime="),render.indexOf(' if($("planning-reverse")'));
 assert.ok(archiveSort.includes("c.finishedAt"),"Tri par heure de course requis");
 const rides=[
  {id:"lundi",status:"archived",finishedAt:"2026-11-23T10:00:00Z",payment:{paidAt:"2026-11-24T17:00:00Z"}},
@@ -80,7 +80,7 @@ assert.deepEqual(Array.from(order),["mardi","lundi","ancienne"]);
 console.log("Historique : ordre des courses indépendant des paiements différés OK.");
 
 // Régression : planning trié par date/heure, courses directes sans horaire toujours visibles.
-const planningSort=render.slice(render.indexOf("const plannedTime="),render.indexOf(" // Historique par heure"));
+const planningSort=render.slice(render.indexOf("const planningTime="),render.indexOf(" const executionTime="));
 assert.ok(planningSort.includes("c.date")&&planningSort.includes("c.time"));
 const planned=[
  {id:"sans-heure",status:"planned"},

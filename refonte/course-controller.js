@@ -11,7 +11,7 @@ function create(core,sumupEvent,storage){
   return {
     snapshot:()=>clone(state),
     setReceiptProfile(p){commit(core.setReceiptProfile(state,clone(p)));},
-    saveDirectory(kind,item){commit(core.saveDirectory(state,kind,clone(item)));},
+    saveDirectory(kind,item,decision){commit(core.saveDirectory(state,kind,clone(item),decision));},
     removeDirectory(kind,id){commit(core.removeDirectory(state,kind,id));},
     moveDirectory(kind,id,delta){commit(core.moveDirectory(state,kind,id,delta));},
     setDay(day,entry){commit(core.setDay(state,day,entry));},
@@ -19,6 +19,18 @@ function create(core,sumupEvent,storage){
     daily:day=>core.dayTotals(state,day),
     monthly:month=>core.monthTotals(state,month),
     backup:()=>core.backup(state),
+    removeCourse(id){
+      const course=get(id);
+      if(course.status==="payment_pending"||course.refundPending)throw Error("Attends la confirmation du paiement ou du remboursement.");
+      commit({...state,courses:state.courses.filter(c=>c.id!==id),ledger:state.ledger.filter(row=>row.courseId!==id)});
+    },
+    clearRideHistory(){
+      if(state.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Attends la confirmation du paiement ou du remboursement en cours.");
+      const entries=Object.fromEntries(Object.entries(state.entries||{}).map(([day,row])=>[
+        day,{...row,cash:0,appli:0,commission:0,invoiceHt:0}
+      ]));
+      commit({...state,courses:[],ledger:[],entries});
+    },
     restore(raw){
       if(state.courses.some(c=>c.status==="payment_pending"||c.refundPending))throw Error("Paiement en attente : restauration interdite.");
       const next=core.readBackup(raw);commit(clone(next));

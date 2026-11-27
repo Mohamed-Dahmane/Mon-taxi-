@@ -54,13 +54,13 @@ pad.addEventListener("pointerup",endStroke);pad.addEventListener("pointercancel"
 function loadReceiptProfile(){const p=controller.snapshot().receiptProfile;$("receipt-driver").value=p?.driverNumber||"";$("signature-enabled").checked=!!p?.enabled;signatureStrokes=p?.strokes||[];signaturePng=p?.signaturePng||"";activeStroke=null;drawSignature(pad,signatureStrokes,signaturePng);}
 function cashReceipt(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;if(c?.status!=="archived"||p?.method!=="cash")throw Error("Aucun paiement espèces confirmé.");
- const ident=c.receiptIdentity;return {reference:p.reference,paidAt:p.paidAt,amountCents:p.amountCents,route:[c.from,c.to].filter(Boolean).join(" → "),vehicle:c.vehicle==="van"?"Van":"",driverNumber:ident?.driverNumber||"",strokes:ident?.enabled?ident.strokes:[],signaturePng:ident?.enabled?ident.signaturePng||"":"",refundCents:c.refund?.amountCents||0};
+ const ident=c.receiptIdentity;return {remark:$("receipt-remark").value.trim(),reference:p.reference,paidAt:p.paidAt,amountCents:p.amountCents,route:[c.from,c.to].filter(Boolean).join(" → "),vehicle:c.vehicle==="van"?"Van":"",driverNumber:ident?.driverNumber||"",strokes:ident?.enabled?ident.strokes:[],signaturePng:ident?.enabled?ident.signaturePng||"":"",refundCents:c.refund?.amountCents||0};
 }
 function cardReceipt(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
  if(c?.status!=="archived"||p?.method!=="sumup"||!p.reference||!Number.isSafeInteger(p.amountCents)||p.amountCents<=0)throw Error("Aucun paiement carte confirmé.");
  const v=receiptVerified.get(p.reference),verified=v?.reference===p.reference&&v.amountCents===p.amountCents&&v.currency==="EUR"&&Number.isFinite(Date.parse(v.timestamp));
- return {reference:p.reference,paidAt:verified?v.timestamp:p.paidAt,amountCents:p.amountCents,from:c.from||"",to:c.to||"",vehicle:c.vehicle==="van"?"Van":"",verified:!!verified,business:verified?v.business||"":"",vat:verified?v.vat||"":"",number:verified?v.number||"":"",refundCents:c.refund?.amountCents||0};
+ return {remark:"",reference:p.reference,paidAt:verified?v.timestamp:p.paidAt,amountCents:p.amountCents,from:c.from||"",to:c.to||"",vehicle:c.vehicle==="van"?"Van":"",verified:!!verified,business:verified?v.business||"":"",vat:verified?v.vat||"":"",number:verified?v.number||"":"",refundCents:c.refund?.amountCents||0};
 }
 function receiptData(id){
  const c=controller.snapshot().courses.find(x=>x.id===id),p=c?.payment;
@@ -97,11 +97,19 @@ window.addEventListener("taxi-receipt-preview",e=>safe(()=>{
  img.onerror=()=>{if(token!==previewSequence)return;previewReady=false;$("receipt-confirm-preview").disabled=true;$("receipt-status").textContent="Impossible d’afficher le PDF. Réessaie.";};
  img.src="data:image/png;base64,"+d.png;
 }));
+document.addEventListener("input",event=>{
+ if(event.target.id==="receipt-remark") clearReceiptPreview();
+});
+document.addEventListener("change",event=>{
+ if(event.target.id==="receipt-remark") requestReceiptPreview();
+});
 function openReceipt(id,back){
+ $("receipt-remark").value="";
  const body=receiptData(id);receiptCourse=id;receiptReturn=back;$("receipt-summary").textContent=body;
  const cash=controller.snapshot().courses.find(x=>x.id===id).payment.method==="cash";
+ $("receipt-remark").hidden=!cash;document.querySelector('label[for="receipt-remark"]').hidden=!cash;
  $("receipt-verify").hidden=cash;$("receipt-configure").hidden=cash||typeof window.TaxiReceipt?.configure!=="function";$("receipt-share-options").hidden=true;$("receipt-share-other").hidden=true;
- $("cash-receipt-pdf").hidden=true;$("card-receipt-pdf").hidden=true;$("receipt-signature").hidden=true;
+ $("receipt-signature").hidden=true;
  $("receipt-privacy").hidden=false;
  const r=cash?cashReceipt(id):null;
  $("receipt-identity-note").hidden=!cash||!!(r.driverNumber&&(r.signaturePng||r.strokes?.length));
@@ -309,8 +317,11 @@ function renderDirectory(){
   for(const item of items){
    const box=document.createElement("article");box.className="card";
    const h=document.createElement("h3");h.textContent=item.name;box.append(h);
-   if(kind!=="hotels"){const p=document.createElement("p");p.textContent=item.phone+(kind==="contacts"?" · "+(s.hotels.find(h=>h.id===item.hotelId)?.name||""):"");box.append(p);}
+   if(kind!=="hotels"){const p=document.createElement("p");p.textContent=[item.phone,...(item.otherPhones||[])].join(" / ")+(kind==="contacts"?" · "+(s.hotels.find(h=>h.id===item.hotelId)?.name||""):"");box.append(p);}
    if(kind==="contacts"){const h=s.hotels.find(h=>h.id===item.hotelId);if(h?.defaultContactId===item.id){const p=document.createElement("p");p.textContent="Contact par défaut";box.append(p);}else box.append(localButton("Définir par défaut","default",kind,item.id));}
+   if(kind!=="hotels"&&window.TaxiCleanCore.directoryMatches(s,kind,item).length){
+    box.append(localButton("Vérifier les doublons","edit",kind,item.id));
+   }
    box.append(localButton("Modifier","edit",kind,item.id),localButton("Supprimer","delete",kind,item.id));
    if(mode==="priority"){
     const row=document.createElement("div");row.className="grid";
@@ -324,7 +335,7 @@ function renderDirectory(){
 }
 function resetHotel(){hotelEdit=null;$('hotel-form').reset();$('hotel-form-title').textContent="Ajouter un hôtel";$('hotel-cancel').hidden=true;}
 function clearPerson(){personDraft=null;$('person-form').hidden=true;$('person-form').reset();}
-function editPerson(kind,item){personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi Pro":"Contact de l'hôtel dans Mon Taxi Pro";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
+function editPerson(kind,item){$('person-form').querySelector('[data-review]')?.remove();personDraft={kind,...item};$('person-title').textContent=kind==="drivers"?"Chauffeur dans Mon Taxi Pro":"Contact de l'hôtel dans Mon Taxi Pro";$('person-name').value=item.name;$('person-phone').value=item.phone;$('person-form').hidden=false;$('person-form').scrollIntoView({block:"nearest"});}
 function clearDelete(){deleteDraft=null;$('directory-delete').hidden=true;}
 $('directory-sort').addEventListener("change",()=>safe(renderDirectory));
 $('contact-hotel').addEventListener("change",()=>safe(renderDirectory));
@@ -333,9 +344,31 @@ $('hotel-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
  controller.saveDirectory("hotels",{id:old?.id||newId(),name:$('hotel-name').value,defaultContactId:old?.defaultContactId});
  resetHotel();renderDirectory();message("Hôtel enregistré.");
 });});
+$('person-form').addEventListener("input",()=>$('person-form').querySelector('[data-review]')?.remove());
 $('person-form').addEventListener("submit",e=>{e.preventDefault();safe(()=>{
  if(!personDraft)throw Error("Aucun contact sélectionné.");
- controller.saveDirectory(personDraft.kind,{...personDraft,name:$('person-name').value,phone:$('person-phone').value});
+ const draft={...personDraft,name:$('person-name').value,phone:$('person-phone').value};
+ if(draft.name!==personDraft.name||draft.phone!==personDraft.phone)delete draft.separateFrom;
+ const state=controller.snapshot(),matches=window.TaxiCleanCore.directoryMatches(state,draft.kind,draft);
+ if(matches.length){
+  const form=$('person-form');
+  form.querySelector('[data-review]')?.remove();
+  const panel=document.createElement("div");panel.dataset.review="true";
+  const finish=decision=>safe(()=>{
+   controller.saveDirectory(draft.kind,draft,decision);
+   panel.remove();clearPerson();renderDirectory();message("Répertoire enregistré.");
+  });
+  const option=(label,action)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.onclick=action;panel.append(b);};
+  const heading=document.createElement("p");heading.textContent="Comparer avec "+draft.name+" · "+draft.phone;panel.append(heading);
+  for(const other of matches){
+   const line=document.createElement("p");
+   line.textContent=[other.name,other.phone,...(other.otherPhones||[]),state.hotels.find(h=>h.id===other.hotelId)?.name].filter(Boolean).join(" · ");panel.append(line);
+   if(draft.kind==="drivers"||draft.hotelId===other.hotelId)option("Fusionner avec "+other.name,()=>finish(other.id));
+  }
+  option("Garder les fiches séparées",()=>finish("keep"));
+  form.append(panel);panel.scrollIntoView({block:"nearest"});return;
+ }
+ controller.saveDirectory(draft.kind,draft);
  clearPerson();renderDirectory();message("Contact enregistré uniquement dans Mon Taxi Pro.");
 });});
 function pickPerson(kind){
@@ -380,7 +413,7 @@ window.addEventListener("mon-taxi-sumup-result",e=>{
   if(result.status==="archived"){
    ackSumUp(d.attemptId);
    playConfirmedPayment();
-   if(selected===c.id){selected=null;sumupDraft=null;$('amount').value="";showPaymentSuccess(result);}
+   if(selected===c.id){selected=null;sumupDraft=null;$('amount').value="";showPaymentSuccess(result);openReceipt(result.id,"success");}
    else{renderLists();renderCashTotals();}
    message("Paiement SumUp confirmé : "+euros(result.payment.amountCents)+". Course archivée.");
   }else if(result.status==="awaiting_payment"){
@@ -438,14 +471,26 @@ function card(c,archived=false){
  const h=document.createElement("h3");h.textContent=c.client||(c.kind==="free"?"Course libre":"Course sans nom");
  const p=document.createElement("p");p.textContent=route(c);
  const detail=document.createElement("p");detail.className="muted";detail.textContent=[c.kind==="reservation"?"Réservation":c.kind==="free"?"Course libre":"Course directe",c.direction==="pickup"?"Pick-up":"Dépose",c.date,c.time,labels[c.status]].filter(Boolean).join(" · ");
- box.append(h,p,detail);
+ const menu=document.createElement("details"),more=document.createElement("summary");
+ more.textContent="⋮";more.setAttribute("aria-label","Actions pour "+h.textContent);
+ const remove=document.createElement("button");remove.type="button";remove.textContent="Supprimer cette course";
+ remove.addEventListener("click",()=>safe(()=>{
+  const impact=archived?" et son encaissement dans les comptes locaux":" du planning";
+  if(!confirm("Supprimer la course « "+h.textContent+" »"+impact+" ?"))return;
+  controller.removeCourse(c.id);
+  if(selected===c.id)selected=null;
+  renderLists();message("Course supprimée.");
+ }));
+ menu.append(more,remove);
+ box.append(h,menu,p,detail);
  if(c.startedAt||c.finishedAt){const times=document.createElement("p");times.className="muted";const format=t=>t?new Date(t).toLocaleString("fr-BE",{timeZone:"Europe/Brussels",dateStyle:"short",timeStyle:"short"}):"—";times.textContent="Début : "+format(c.startedAt)+" · Fin : "+format(c.finishedAt);box.append(times);}
  if(c.hotelName||c.driverName){const a=document.createElement("p");a.textContent=[c.hotelName,c.driverName,c.commissionCents?euros(c.commissionCents):""].filter(Boolean).join(" · ");box.append(a);}
  if(archived&&c.payment){
   if(["cash","sumup"].includes(c.payment.method)){const receipt=document.createElement("button");receipt.type="button";receipt.textContent="Justificatif de paiement";receipt.dataset.receiptCourse=c.id;box.append(receipt);}
-  const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);box.append(pay);
+  const pay=document.createElement("p");pay.textContent=(c.payment.method==="cash"?"Espèces":"Carte")+" · "+euros(c.payment.amountCents);if(c.payment.paidAt)pay.textContent+=" · Encaissée le "+new Date(c.payment.paidAt).toLocaleString("fr-BE",{timeZone:"Europe/Brussels",dateStyle:"short",timeStyle:"short"});
+  box.append(pay);
   if(c.refund){
-   const note=document.createElement("p");note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
+   const note=document.createElement("p");note.className="refund-notice";note.textContent=(c.refund.amountCents===c.payment.amountCents?"Remboursée":"Remboursée partiellement")+" · "+euros(c.refund.amountCents)+" · "+c.refund.day;box.append(note);
   }else if(c.payment.method==="sumup"&&typeof window.TaxiRefund?.request==="function"){
    const note=document.createElement("p");note.setAttribute("role","status");note.textContent=refundMessages.get(c.id)||(c.refundPending?"Remboursement en attente de vérification officielle.":"Remboursement bancaire SumUp · les frais initiaux restent comptabilisés.");
    box.append(note);
@@ -484,25 +529,43 @@ function card(c,archived=false){
  if(!archived){const b=document.createElement("button");b.type="button";b.className="primary";b.dataset.course=c.id;b.textContent=c.status==="awaiting_payment"||c.status==="payment_pending"?"Ouvrir le paiement":"Ouvrir la course";box.append(b);}
  return box;
 }
+for(const id of ["planning-reverse","archives-reverse"]){
+ const button=$(id);
+ button.addEventListener("click",()=>{
+  button.setAttribute("aria-pressed",String(button.getAttribute("aria-pressed")!=="true"));
+  renderLists();
+ });
+}
 function renderLists(){
  const all=controller.snapshot().courses;
- // Planning chronologique : réservations datées en premier, courses sans horaire ensuite.
- const plannedTime=c=>c.date&&c.time?Date.parse(c.date+"T"+c.time+":00"):NaN;
- const active=all.filter(c=>c.status!=="archived").reverse().sort((a,b)=>{
-  const ta=plannedTime(a),tb=plannedTime(b);
-  if(Number.isFinite(ta)&&Number.isFinite(tb))return ta-tb;
-  if(Number.isFinite(ta))return -1;
-  if(Number.isFinite(tb))return 1;
-  return 0;
+ // Les horaires du planning sont enregistrés en heure locale au format ISO.
+ const planningTime=c=>c.scheduledAt || (c.date ? c.date+"T"+(c.time || "99:99") : "");
+ const active=all.filter(c=>c.status!=="archived").sort((a,b)=>{
+  const first=planningTime(a),second=planningTime(b);
+  if(!first || !second)return Number(!first)-Number(!second);
+  return first.localeCompare(second);
  });
- // Historique par heure de course (pas par date de paiement) : un paiement le lendemain ne déplace pas la course.
- const courseTime=c=>Date.parse(c.finishedAt||c.startedAt||(c.date&&c.time?c.date+"T"+c.time+":00":null)||c.payment?.paidAt)||0;
- const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>courseTime(b)-courseTime(a));
+ const executionTime=c=>{
+  for(const value of [c.startedAt,c.finishedAt,c.scheduledAt,c.date && c.date+"T"+(c.time||"00:00"),c.payment?.paidAt]){
+   const timestamp=Date.parse(value);
+   if(Number.isFinite(timestamp))return timestamp;
+  }
+  return -Infinity;
+ };
+ const archived=all.filter(c=>c.status==="archived").reverse().sort((a,b)=>executionTime(b)-executionTime(a));
+ if($("planning-reverse").getAttribute("aria-pressed")==="true")active.reverse();
+ if($("archives-reverse").getAttribute("aria-pressed")==="true")archived.reverse();
  $('course-list').replaceChildren(...active.map(c=>card(c)));
  $('archive-list').replaceChildren(...archived.map(c=>card(c,true)));
  $('planning-empty').hidden=active.length>0;$('archives-empty').hidden=archived.length>0;
 }
 function show(id){
+ if(id==="reservation"){
+  const now=new Date();
+  if(!$("reservation-date").value)$("reservation-date").value=localDate(now);
+  if(!$("reservation-time").value)$("reservation-time").value=localTime(now);
+ }
+ for(const list of ["planning","archives"])if(list!==id)$(list+"-reverse").setAttribute("aria-pressed","false");
  if(id!=="receipt")clearReceiptPreview();
  closeMoneyPad();
  if(!screens.some(e=>e.id===id))throw Error("Écran inconnu");
@@ -576,8 +639,6 @@ document.addEventListener("click",e=>{
  if(b.id==="receipt-profile-import"){safe(()=>{if(typeof window.TaxiReceipt?.importProfile!=="function")throw Error("Import disponible sur Android.");window.TaxiReceipt.importProfile();});return;}
  if(b.id==="receipt-profile-save"){safe(()=>{controller.setReceiptProfile({driverNumber:$("receipt-driver").value.trim(),enabled:$("signature-enabled").checked,strokes:signatureStrokes.filter(s=>s.length>=2),...(signaturePng?{signaturePng}:{})});loadReceiptProfile();message("Préférences de reçu enregistrées.");});return;}
  if(b.id==="signature-clear"){signaturePng="";signatureStrokes=[];activeStroke=null;$("signature-enabled").checked=false;drawSignature(pad,[]);return;}
- if(b.id==="cash-receipt-pdf"){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.cashPdf!=="function")throw Error("PDF disponible sur Android.");window.TaxiReceipt.cashPdf(JSON.stringify(cashReceipt(receiptCourse)));});return;}
- if(b.id==="card-receipt-pdf"){safe(()=>{if($("receipt").hidden||typeof window.TaxiReceipt?.cardPdf!=="function")throw Error("PDF disponible sur Android.");window.TaxiReceipt.cardPdf(JSON.stringify(cardReceipt(receiptCourse)));});return;}
  if(b.id==="receipt-open"){safe(()=>openReceipt(successCourse,"success"));return;}
  if(b.dataset.receiptCourse){safe(()=>openReceipt(b.dataset.receiptCourse,"archives"));return;}
  if(b.id==="receipt-back"){safe(()=>show(receiptReturn));return;}
@@ -602,6 +663,12 @@ document.addEventListener("click",e=>{
  if(b.id==="pick-contact"||b.id==="pick-driver"){safe(()=>pickPerson(b.id==="pick-contact"?"contacts":"drivers"));return;}
  if(b.id==="directory-delete-cancel"){clearDelete();return;}
  if(b.id==="directory-delete-confirm"){safe(()=>{if(!deleteDraft)throw Error("Aucune suppression à confirmer.");controller.removeDirectory(deleteDraft.kind,deleteDraft.id);clearDelete();clearPerson();resetHotel();renderDirectory();message("Suppression locale effectuée.");});return;}
+ if(b.id==="clear-ride-history"){safe(()=>{
+  if($('accounts').hidden)return;
+  const state=controller.snapshot();
+  if(!confirm("Effacer "+state.courses.length+" course(s), le planning, l’historique, les encaissements et les recettes journalières de Mon Taxi Pro ? Les dépenses, le carburant, le répertoire, la signature et les réglages seront conservés."))return;
+  controller.clearRideHistory();clearRestore();selected=null;renderLists();loadAccountFields();message("Courses et encaissements effacés.");
+ });return;}
  if(b.id==="backup-export"){safe(()=>{
   if($('accounts').hidden||typeof window.TaxiBackup?.exportJson!=="function")throw Error("Sauvegarde disponible sur Android.");
   window.TaxiBackup.exportJson(controller.backup());
@@ -622,7 +689,7 @@ document.addEventListener("click",e=>{
   const cents=readCashCents($('amount').value);
   if(cents<100||cents>9999900)throw Error("Montant terminal : de 1 à 99 999 euros.");
   controller.savePaymentDraft(c.id,cents);
-  sumupDraft={id:c.id,cents};$("sumup-local-receipt").checked=false;show("sumup");
+  sumupDraft={id:c.id,cents};$("sumup-local-receipt").checked=true;show("sumup");
  });return;}
  if(b.id==="sumup-confirm"){safe(()=>{
   const c=current(),draft=sumupDraft;
@@ -657,6 +724,80 @@ document.addEventListener("click",e=>{
  if(b.id==="waze-overlay"){safe(()=>{if(current()?.status!=="in_progress")throw Error("Aucune course en cours.");if(typeof window.TaxiContacts?.enableWazeOverlay!=="function")throw Error("Disponible uniquement sur Android.");window.TaxiContacts.enableWazeOverlay();});return;}
  const id=b.dataset.page||b.dataset.go;if(id)safe(()=>show(id));
 });
+function words(value){
+ return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("fr").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+}
+function suggest(input,choices,accept){
+ const menu=document.createElement("div");
+ menu.className="actions";
+ input.after(menu);
+ input.autocomplete="off";
+ function close(){menu.replaceChildren();}
+ function display(){
+  close();
+  const tokens=words(input.value);
+  if(!tokens.length)return;
+  for(const choice of choices().filter(item=>tokens.every(t=>words(item.label).some(w=>w.startsWith(t)))).slice(0,12)){
+   const button=document.createElement("button");
+   button.type="button";button.textContent=choice.label;
+   button.addEventListener("mousedown",e=>e.preventDefault());
+   button.addEventListener("click",()=>{accept(choice);close();});
+   menu.append(button);
+  }
+ }
+ input.addEventListener("input",display);
+ input.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+ input.parentElement.addEventListener("focusout",e=>{if(!input.parentElement.contains(e.relatedTarget))close();});
+ input.form?.addEventListener("reset",close);
+}
+for(const select of document.querySelectorAll("select[name=hotelId],select[name=contactId],select[name=driverId],#contact-hotel")){
+ const search=document.createElement("input");
+ search.type="search";search.placeholder="Rechercher : "+select.labels[0].textContent;
+ search.setAttribute("aria-label",search.placeholder);
+ select.before(search);
+ suggest(search,()=>Array.from(select.options,o=>({label:o.text,value:o.value})),choice=>{
+  select.value=choice.value;search.value="";
+  select.dispatchEvent(new Event("change",{bubbles:true}));
+ });
+}
+for(const form of document.querySelectorAll("form[data-kind]")){
+ const {hotelId,direction,from,to}=form.elements;
+ let automatic=null;
+ function defaultHotel(){
+  if(automatic&&automatic.field.value===automatic.value)automatic.field.value="";
+  automatic=null;
+  if(!hotelId.value)return;
+  const field=direction.value==="pickup"?to:from;
+  if(field.value)return;
+  field.value=hotelId.selectedOptions[0].text;
+  automatic={field,value:field.value};
+ }
+ hotelId.addEventListener("change",defaultHotel);
+ direction.addEventListener("change",defaultHotel);
+ for(const field of [from,to])field.addEventListener("input",()=>{if(automatic?.field===field)automatic=null;});
+ form.addEventListener("reset",()=>{automatic=null;});
+}
+for(const field of document.querySelectorAll("input[name=from],input[name=to],input[name=client],input[name=label]")){
+ field.addEventListener("focus",()=>field.select());
+ suggest(field,()=>{
+  const state=controller.snapshot(),places=["from","to"].includes(field.name);
+  const values=places?[...state.hotels.map(h=>h.name),...state.courses.flatMap(c=>[c.from,c.to])]:state.courses.map(c=>c.client);
+  return Array.from(new Set(values.filter(Boolean)),label=>({label}));
+ },choice=>{field.value=choice.label;field.dispatchEvent(new Event("change",{bubbles:true}));});
+}
+const reservationTime=$("reservation-time");
+reservationTime.type="text";reservationTime.inputMode="numeric";reservationTime.maxLength=5;
+reservationTime.placeholder="8:35";reservationTime.addEventListener("focus",()=>reservationTime.select());
+function normalizeTime(){
+ const match=reservationTime.value.trim().match(/^(\d{1,2}):?(\d{2})$/);
+ const valid=match&&Number(match[1])<24&&Number(match[2])<60;
+ reservationTime.setCustomValidity(reservationTime.value&&!valid?"Entre une heure valide, par exemple 835 ou 1430.":"");
+ if(valid)reservationTime.value=match[1].padStart(2,"0")+":"+match[2];
+}
+reservationTime.addEventListener("input",()=>reservationTime.setCustomValidity(""));
+reservationTime.addEventListener("blur",normalizeTime);
+reservationTime.form.addEventListener("submit",normalizeTime,true);
+
 renderLists();
 renderCashTotals();
 resumeWaze();

@@ -8,11 +8,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import android.app.AlertDialog;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.MotionEvent;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.Gravity;
 import android.os.Build;
@@ -83,37 +80,7 @@ public class MainActivity extends Activity {
  private TextView lockAction;
  private SharedPreferences vault;
  private boolean unlocked=false, prompting=false;
- private static final long IDLE_TIMEOUT_MS=120000L;
- private long lastInteraction=SystemClock.elapsedRealtime();
- private final Handler idleHandler=new Handler(Looper.getMainLooper());
- private final Runnable idleCheck=this::checkIdleTimeout;
- private void checkIdleTimeout(){
-  idleHandler.removeCallbacks(idleCheck);
-  if(!unlocked)return;
-  long remaining=IDLE_TIMEOUT_MS-(SystemClock.elapsedRealtime()-lastInteraction);
-  if(remaining<=0L)lockTaxi();
-  else if(resumed)idleHandler.postDelayed(idleCheck,remaining);
- }
- private void touchSession(){
-  lastInteraction=SystemClock.elapsedRealtime();
-  checkIdleTimeout();
- }
- private void lockTaxi(){idleHandler.removeCallbacks(idleCheck);if(!unlocked)return;unlocked=false;if(web!=null){web.setVisibility(View.INVISIBLE);web.onPause();}showLock();}
- private boolean acceptSessionInteraction(){
-  if(!unlocked)return true;
-  if(SystemClock.elapsedRealtime()-lastInteraction>=IDLE_TIMEOUT_MS){
-   lockTaxi();
-   return false;
-  }
-  touchSession();
-  return true;
- }
- @Override public boolean dispatchTouchEvent(MotionEvent event){
-  return !acceptSessionInteraction()||super.dispatchTouchEvent(event);
- }
- @Override public boolean dispatchKeyEvent(KeyEvent event){
-  return !acceptSessionInteraction()||super.dispatchKeyEvent(event);
- }
+ // La session reste ouverte pendant la vie de cette activité.
  private CancellationSignal biometric;
  private static final int SUMUP_LOGIN=701, SUMUP_READER=702, SUMUP_CHECKOUT=703;
  // Process-local marker: never cancel an SDK setup that may still be running.
@@ -873,7 +840,6 @@ public class MainActivity extends Activity {
  private void openTaxi(boolean withFingerprint) {
   unlockedWithFingerprint=withFingerprint;
   unlocked=true;
-  touchSession();
   prepareIdleSumUpReader();
   FrameLayout content=unlockContent;
   Runnable reveal=revealHome;
@@ -1227,7 +1193,6 @@ public class MainActivity extends Activity {
  @Override protected void onPause(){
   super.onPause();
   resumed=false;
-  idleHandler.removeCallbacks(idleCheck);
  }
  @Override protected void onResume(){
   super.onResume();
@@ -1235,7 +1200,7 @@ public class MainActivity extends Activity {
   if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))web.evaluateJavascript("window.dispatchEvent(new Event('taxi-native-resume'))",null);
   resumed=true;
   if(unlocked)publishSumUp();
-  if(unlocked){checkIdleTimeout();prepareIdleSumUpReader();}
+  if(unlocked)prepareIdleSumUpReader();
   else scheduleFingerprint();
  }
  @Override protected void onStop(){
@@ -1250,5 +1215,5 @@ public class MainActivity extends Activity {
   }
  }
  @Override protected void onDestroy(){if(taxiContacts!=null)taxiContacts.hideBubble();super.onDestroy();}
- @Override public void onBackPressed(){if(unlocked&&web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
+ @Override public void onBackPressed(){if(unlocked&&web!=null&&web.canGoBack())web.goBack();else if(unlocked)finish();else super.onBackPressed();}
 }

@@ -46,13 +46,13 @@ final class TaxiCardReceiptPdf {
   if(refund>0)wrap(rows,p,"Remboursement / Refund : "+money(refund));
   PdfDocument doc=new PdfDocument();PdfDocument.Page page=null;
   try(ByteArrayOutputStream out=new ByteArrayOutputStream()){
-   int height=Math.max(455,303+rows.size()*18);
+   int height=Math.max(455,303+(rows.size()+1)*18);
    page=doc.startPage(new PdfDocument.PageInfo.Builder(360,height,1).create());
    Canvas c=page.getCanvas();c.drawColor(Color.WHITE);
    text(c,p,"TAXIMO TRANSPORT",180,44,23,NAVY,true,Paint.Align.CENTER);p.setColor(GOLD);c.drawRect(145,54,215,56,p);
    text(c,p,"Reçu carte / Card receipt",180,80,12,GRAY,false,Paint.Align.CENTER);
-   text(c,p,money(cents),180,129,35,NAVY,true,Paint.Align.CENTER);
-   text(c,p,"PAYÉ / PAID",180,153,13,GREEN,true,Paint.Align.CENTER);
+   String amount=money(cents);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextSize(35);int amountSize=35;while(p.measureText(amount)>230&&amountSize>16){p.setTextSize(--amountSize);}text(c,p,amount,180,129,amountSize,NAVY,true,Paint.Align.CENTER);float vatX=180+p.measureText(amount)/2+6;text(c,p,"TVA incl.",vatX,129,7,GRAY,false,Paint.Align.LEFT);
+   text(c,p,"PAYÉ / PAID",180,158,13,GREEN,true,Paint.Align.CENTER);
    text(c,p,date,180,177,11,GRAY,false,Paint.Align.CENTER);
    p.setColor(GOLD);c.drawRect(30,193,330,194,p);
    text(c,p,"Transport taxi / Taxi service",30,216,13,NAVY,true,Paint.Align.LEFT);
