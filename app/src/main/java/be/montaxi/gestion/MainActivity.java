@@ -375,7 +375,14 @@ public class MainActivity extends Activity {
     }
     java.io.ByteArrayOutputStream image=new java.io.ByteArrayOutputStream();
     if(!bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,image))throw new IOException("Preview encoding");
-    byte[] pngBytes=image.toByteArray();
+    java.io.File archived=receiptArchive(raw,card);
+    byte[] pngBytes;
+    if(archived.isFile()){
+     if(archived.length()<8||archived.length()>6000000)throw new IOException("Archived receipt size");
+     try(java.io.FileInputStream in=new java.io.FileInputStream(archived);java.io.ByteArrayOutputStream saved=new java.io.ByteArrayOutputStream()){
+      byte[] buf=new byte[8192];int n;while((n=in.read(buf))!=-1){if(saved.size()+n>6000000)throw new IOException("Archived receipt size");saved.write(buf,0,n);}pngBytes=saved.toByteArray();
+     }
+    }else pngBytes=image.toByteArray();
     String png=android.util.Base64.encodeToString(pngBytes,android.util.Base64.NO_WRAP);
     if(png.length()>8000000)throw new IOException("Preview size");
     runOnUiThread(()->{if(!token.equals(sharePreviewToken)||!unlocked||web==null||!isLocalAppPage(web.getUrl()))return;sharePreviewRaw=raw;sharePreviewCard=card;sharePreviewBytes=pdf;sharePreviewPng=pngBytes;receiptPreviewEvent(token,png,null);});
@@ -405,7 +412,7 @@ public class MainActivity extends Activity {
   org.json.JSONObject data=new org.json.JSONObject(raw);
   String reference=data.getString("reference");
   if(reference.trim().isEmpty())throw new IOException("Missing reference");
-  byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(((card?"card:":"cash:")+reference).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+  byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(((card?"card:":"cash:")+reference+(data.optLong("refundCents",0)>0?":refund:"+data.optLong("refundCents",0):"")).getBytes(java.nio.charset.StandardCharsets.UTF_8));
   StringBuilder key=new StringBuilder();for(byte b:hash)key.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
   java.io.File dir=new java.io.File(getFilesDir(),"confirmed-receipts");if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException();
   return new java.io.File(dir,key.toString()+".png");
