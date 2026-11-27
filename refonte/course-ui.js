@@ -713,8 +713,9 @@ document.addEventListener("click",e=>{
  });return;}
  if(b.dataset.receiptChannel==="sms"){safe(()=>{
   if(!previewConfirmed||$("receipt").hidden||typeof window.TaxiReceipt?.shareSms!=="function")throw Error("SMS indisponible.");
-  const number=($("receipt-phone").value||"").replace(/[ ().-]/g,"");
-  if(!/^\+?[0-9]{6,20}$/.test(number))throw Error("Saisis le numéro du client.");
+  let number=($("receipt-phone").value||"").replace(/[\s().-]/g,"");
+  if(number.startsWith("00"))number="+"+number.slice(2);
+  if(!/^(?:\+[1-9][0-9]{6,14}|[0-9]{6,15})$/.test(number))throw Error("Saisis un numéro de téléphone valide.");
   const cash=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="cash";
   window.TaxiReceipt.shareSms(String(previewSequence),JSON.stringify(cash?cashReceipt(receiptCourse):cardReceipt(receiptCourse)),!cash,number);
  });return;}
