@@ -566,6 +566,7 @@ function renderLists(){
 // Keep the focused field reachable when Samsung's on-screen keyboard resizes the viewport.
 let keyboardFocusFrame=0;
 function keepFocusedFieldVisible(){
+ if(document.visibilityState==='hidden')return;
  const el=document.activeElement;
  if(!el||!el.matches?.('input,textarea,select,[contenteditable="true"]'))return;
  if(el.closest('[hidden]'))return;
