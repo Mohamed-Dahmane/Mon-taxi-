@@ -304,6 +304,8 @@ jobs:
                   await page.reload();await clickRoute('[data-page=planning]');await inspect('planning');
                   assert.equal(await page.locator('#course-list article').count(),2);
                   assert.match(await page.locator('#course-list article').first().innerText(),/Client direct fictif/);
+                  const planningCards=await page.locator('#course-list article').allInnerTexts();
+                  assert.ok(planningCards.some(t=>t.includes('Client réservation fictif')),'Réservation introuvable dans le planning : '+JSON.stringify(planningCards));
                   await page.locator('#course-list article').filter({hasText:'Client réservation fictif'}).locator('button[data-course]').click();await inspect('ride');
                   await page.locator('#ride-next').click();
                   assert.match(await page.locator('#ride-step').innerText(),/Client chargé/);
