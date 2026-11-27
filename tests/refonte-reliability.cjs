@@ -78,3 +78,15 @@ const rides=[
 const order=vm.runInNewContext("const all=rides;"+archiveSort+";archived.map(c=>c.id)",{rides});
 assert.deepEqual(Array.from(order),["mardi","lundi","ancienne"]);
 console.log("Historique : ordre des courses indépendant des paiements différés OK.");
+
+// Régression : planning trié par date/heure, courses directes sans horaire toujours visibles.
+const planningSort=render.slice(render.indexOf("const plannedTime="),render.indexOf(" // Historique par heure"));
+assert.ok(planningSort.includes("c.date")&&planningSort.includes("c.time"));
+const planned=[
+ {id:"sans-heure",status:"planned"},
+ {id:"demain",status:"planned",date:"2026-11-28",time:"08:00"},
+ {id:"aujourdhui",status:"planned",date:"2026-11-27",time:"17:00"}
+];
+const planningOrder=vm.runInNewContext("const all=planned;"+planningSort+";active.map(c=>c.id)",{planned});
+assert.deepEqual(Array.from(planningOrder),["aujourdhui","demain","sans-heure"]);
+console.log("Planning : ordre chronologique et courses sans horaire conservées OK.");
