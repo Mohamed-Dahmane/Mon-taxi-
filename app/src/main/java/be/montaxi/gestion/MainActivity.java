@@ -475,10 +475,34 @@ public class MainActivity extends Activity {
   dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
    String value=field.getText().toString().trim();
    if(!TaxiReceiptPublisher.valid(value)){field.setError("Code de 64 caractères hexadécimaux requis");return;}
-   try{new TaxiReceiptPublishCredentials(this).save(value);dialog.dismiss();Toast.makeText(this,"Code de publication enregistré.",Toast.LENGTH_SHORT).show();}
+   try{new TaxiReceiptPublishCredentials(this).save(value);dialog.dismiss();retryReceiptPublications();Toast.makeText(this,"Code de publication enregistré.",Toast.LENGTH_SHORT).show();}
    catch(Exception ex){field.setError("Stockage sécurisé indisponible");}
   }));
   dialog.show();
+ }
+ private final java.util.concurrent.atomic.AtomicBoolean receiptRetryRunning=new java.util.concurrent.atomic.AtomicBoolean(false);
+ private void retryReceiptPublications(){
+  if(!receiptRetryRunning.compareAndSet(false,true))return;
+  new Thread(()->{
+   try{
+    String credential=new TaxiReceiptPublishCredentials(this).load();
+    if(!TaxiReceiptPublisher.valid(credential))return;
+    java.io.File dir=new java.io.File(getFilesDir(),"confirmed-receipts");
+    java.io.File[] files=dir.listFiles();if(files==null)return;
+    for(java.io.File png:files){
+     if(!png.getName().endsWith(".png")||!png.isFile()||png.length()>6000000)continue;
+     java.io.File marker=new java.io.File(dir,png.getName()+".published");
+     if(marker.exists())continue;
+     java.io.File link=new java.io.File(dir,png.getName()+".link");
+     if(!link.isFile()||link.length()!=64)continue;
+     try{
+      String id=new String(new android.util.AtomicFile(link).readFully(),java.nio.charset.StandardCharsets.US_ASCII);
+      TaxiReceiptPublisher.publish(credential,id,new android.util.AtomicFile(png).readFully());
+      marker.createNewFile();
+     }catch(Exception ex){break;}
+    }
+   }catch(Exception ignored){}finally{receiptRetryRunning.set(false);}
+  },"TaxiReceiptRetry").start();
  }
  private void publishConfirmedReceipt(String id,byte[] png){
   new Thread(()->{
@@ -1300,6 +1324,7 @@ public class MainActivity extends Activity {
  }
  @Override protected void onResume(){
   super.onResume();
+  retryReceiptPublications();
   if(taxiContacts!=null)taxiContacts.hideBubble();
   if(unlocked&&web!=null&&isLocalAppPage(web.getUrl()))web.evaluateJavascript("window.dispatchEvent(new Event('taxi-native-resume'))",null);
   resumed=true;
