@@ -465,6 +465,12 @@ public class MainActivity extends Activity {
   try{out.write(id.toString().getBytes(java.nio.charset.StandardCharsets.US_ASCII));file.finishWrite(out);}catch(Exception ex){file.failWrite(out);throw ex;}
   return id.toString();
  }
+ private void receiptConfirmationEvent(String token,boolean saved){
+  if(!receiptTrusted())return;
+  try{org.json.JSONObject d=new org.json.JSONObject();d.put("token",token);d.put("saved",saved);
+   web.evaluateJavascript("window.dispatchEvent(new CustomEvent('taxi-receipt-confirmation',{detail:"+d.toString()+"}))",null);
+  }catch(Exception ignored){}
+ }
  private void confirmReceiptPng(String token,String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
   try{
@@ -476,8 +482,9 @@ public class MainActivity extends Activity {
     try{out.write(receiptPngWithQr(sharePreviewPng,publicationId));atomic.finishWrite(out);}catch(Exception ex){atomic.failWrite(out);throw ex;}
    }
    final byte[] confirmed=new android.util.AtomicFile(target).readFully();
+   receiptConfirmationEvent(token,true);
    publishConfirmedReceipt(publicationId,confirmed,target,token,raw,card);
-  }catch(Exception ex){Toast.makeText(this,"Conservation du reçu impossible. Réessaie.",Toast.LENGTH_LONG).show();}
+  }catch(Exception ex){receiptConfirmationEvent(token,false);Toast.makeText(this,"Conservation du reçu impossible. Réessaie.",Toast.LENGTH_LONG).show();}
  }
  private boolean publicationPromptOpen=false;
  private void configureReceiptPublication(){
