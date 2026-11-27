@@ -1,7 +1,7 @@
 name: OAuth SumUp 2122 - tests isolés
 on:
   push:
-    branches: [test/sumup-oauth-receipts-2122-20261125]
+    branches: [test/sumup-oauth-receipts-2122-20261125, isolation/sumup-oauth-only-20261127]
   workflow_dispatch:
 permissions:
   contents: read
