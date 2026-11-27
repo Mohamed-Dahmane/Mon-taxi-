@@ -954,11 +954,32 @@ jobs:
               print('APK : seules les sources Android de refonte sont embarquées, aucun ancien flux partagé.')
           PY
       - name: Vérifier signature, identifiant, version, ressources et absence de données héritées
+        env:
+          TAXI_INSTALLED_SIGNING_CERT_SHA256: ${{ secrets.TAXI_INSTALLED_SIGNING_CERT_SHA256 }}
         run: |
           set -euo pipefail
           apk=app/build/outputs/apk/release/app-release.apk
           sdk="$ANDROID_HOME/build-tools/35.0.0"
           "$sdk/apksigner" verify --verbose --print-certs "$apk" | tee signature-verification.txt
+          # Une signature valide ne prouve pas qu'elle est compatible avec l'APK installée.
+          # Exiger l'empreinte SHA-256 relevée sur l'APK stable avant de publier un candidat.
+          if [ -z "${TAXI_INSTALLED_SIGNING_CERT_SHA256:-}" ]; then
+            echo "Empreinte du certificat de l'APK stable absente : publication bloquée." >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os,re
+          from pathlib import Path
+          output=Path("signature-verification.txt").read_text()
+          match=re.search(r"Signer #1 certificate SHA-256 digest:\\s*([0-9a-fA-F:]+)",output)
+          if not match:
+              raise SystemExit("Certificat de signature APK introuvable")
+          actual=re.sub(r"[^0-9a-fA-F]","",match.group(1)).lower()
+          expected=re.sub(r"[^0-9a-fA-F]","",os.environ["TAXI_INSTALLED_SIGNING_CERT_SHA256"]).lower()
+          if len(expected)!=64 or actual!=expected:
+              raise SystemExit("Signature incompatible avec l'APK stable : livraison interdite.")
+          print("Certificat de signature identique à celui de l'APK stable.")
+          PY
           "$sdk/aapt" dump badging "$apk" > apk-identity.txt
           grep -q "package: name='be.montaxi.pro' versionCode='2123'" apk-identity.txt
           grep -q "^application-label:'Mon Taxi Pro'" apk-identity.txt
