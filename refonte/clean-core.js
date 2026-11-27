@@ -128,7 +128,7 @@ function makeCore(){
    if(c?.refund?.day===day){if(p.method==="cash")cash-=c.refund.amountCents;else cardGross-=c.refund.amountCents;}
    // Une course effectuée lundi et encaissée mardi reste comptabilisée lundi.
    // Sans date d’exécution fiable, conserver la date du paiement.
-   const executionTime=c?.finishedAt||c?.startedAt||(c?.date&&c?.time?c.date+"T"+c.time+":00":null);
+   const executionTime=c?.finishedAt||c?.startedAt||(c?.date&&validDay(c.date)?c.date+"T"+(c.time&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(c.time)?c.time:"12:00")+":00":null);
    const accountingDay=executionTime&&Number.isFinite(Date.parse(executionTime))?paymentDay(executionTime):paymentDay(p.paidAt);
    if(accountingDay!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
