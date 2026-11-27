@@ -564,6 +564,18 @@ public class MainActivity extends Activity {
    startActivity(intent);
   }catch(Exception ex){Toast.makeText(this,"SMS indisponible. Reçu conservé.",Toast.LENGTH_LONG).show();}
  }
+ private void shareReceiptWhatsAppLink(String token,String raw,boolean card,String number){
+  if(!receiptTrusted()||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard)return;
+  if(number==null||!number.matches("[+][1-9][0-9]{6,14}")){Toast.makeText(this,"Indique le numéro international (+32…).",Toast.LENGTH_LONG).show();return;}
+  try{
+   java.io.File archived=receiptArchive(raw,card);
+   if(!new java.io.File(archived.getParentFile(),archived.getName()+".published").isFile()){Toast.makeText(this,"Lien pas encore disponible.",Toast.LENGTH_LONG).show();retryReceiptPublications();return;}
+   String body="Votre reçu Mon Taxi Pro : "+TaxiReceiptPublisher.link(receiptLinkId(raw,card));
+   android.net.Uri uri=android.net.Uri.parse("https://wa.me/"+number.substring(1)).buildUpon().appendQueryParameter("text",body).build();
+   Intent intent=new Intent(Intent.ACTION_VIEW,uri);intent.setPackage("com.whatsapp");
+   try{startActivity(intent);}catch(android.content.ActivityNotFoundException ex){intent.setPackage("com.whatsapp.w4b");startActivity(intent);}
+  }catch(Exception ex){Toast.makeText(this,"WhatsApp indisponible. Reçu conservé.",Toast.LENGTH_LONG).show();}
+ }
  private void shareReceiptPng(String token,String raw,boolean card){shareReceiptPng(token,raw,card,false);}
  private void shareReceiptPng(String token,String raw,boolean card,boolean whatsapp){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
@@ -1137,6 +1149,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void sharePdf(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPdf(token,raw,card));}
     @android.webkit.JavascriptInterface public void confirmPng(String token,String raw,boolean card){runOnUiThread(()->confirmReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void shareSms(String token,String raw,boolean card,String number){runOnUiThread(()->shareReceiptSms(token,raw,card,number));}
+    @android.webkit.JavascriptInterface public void shareWhatsAppLink(String token,String raw,boolean card,String number){runOnUiThread(()->shareReceiptWhatsAppLink(token,raw,card,number));}
     @android.webkit.JavascriptInterface public void shareWhatsApp(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card,true));}
     @android.webkit.JavascriptInterface public void sharePng(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
