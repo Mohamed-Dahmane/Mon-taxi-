@@ -90,3 +90,12 @@ const planned=[
 const planningOrder=vm.runInNewContext("const all=planned;"+planningSort+";active.map(c=>c.id)",{planned});
 assert.deepEqual(Array.from(planningOrder),["aujourdhui","demain","sans-heure"]);
 console.log("Planning : ordre chronologique et courses sans horaire conservées OK.");
+
+// Une course archivée avec date/heure mais sans finishedAt reste classée par sa course.
+const datedRides=[
+ {id:"lundi",status:"archived",date:"2026-11-23",time:"10:00",payment:{paidAt:"2026-11-27T12:00:00Z"}},
+ {id:"mardi",status:"archived",date:"2026-11-24",time:"09:00",payment:{paidAt:"2026-11-24T10:00:00Z"}}
+];
+const datedOrder=vm.runInNewContext("const all=rides;"+archiveSort+";archived.map(c=>c.id)",{rides:datedRides});
+assert.deepEqual(Array.from(datedOrder),["mardi","lundi"]);
+console.log("Historique : repli sur la date et l'heure de course sans timestamp OK.");
