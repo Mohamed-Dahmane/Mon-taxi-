@@ -564,7 +564,8 @@ public class MainActivity extends Activity {
    startActivity(intent);
   }catch(Exception ex){Toast.makeText(this,"SMS indisponible. Reçu conservé.",Toast.LENGTH_LONG).show();}
  }
- private void shareReceiptPng(String token,String raw,boolean card){
+ private void shareReceiptPng(String token,String raw,boolean card){shareReceiptPng(token,raw,card,false);}
+ private void shareReceiptPng(String token,String raw,boolean card,boolean whatsapp){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
   try{
    java.io.File archived=receiptArchive(raw,card);
@@ -575,7 +576,10 @@ public class MainActivity extends Activity {
    try(java.io.FileOutputStream out=new java.io.FileOutputStream(file)){out.write(original);}
    android.net.Uri uri=androidx.core.content.FileProvider.getUriForFile(this,getPackageName()+".receiptfiles",file);
    Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("image/png");intent.putExtra(Intent.EXTRA_STREAM,uri);intent.setClipData(android.content.ClipData.newRawUri("Reçu PNG",uri));intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-   startActivity(Intent.createChooser(intent,"Partager le reçu PNG"));
+   if(whatsapp){
+    intent.setPackage("com.whatsapp");
+    try{startActivity(intent);}catch(android.content.ActivityNotFoundException ex){intent.setPackage("com.whatsapp.w4b");startActivity(intent);}
+   }else startActivity(Intent.createChooser(intent,"Partager le reçu PNG"));
   }catch(Exception ex){Toast.makeText(this,"Partage PNG impossible. Aucun paiement supplémentaire.",Toast.LENGTH_LONG).show();}
  }
  private byte[] pendingCashPdf;
@@ -1133,6 +1137,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void sharePdf(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPdf(token,raw,card));}
     @android.webkit.JavascriptInterface public void confirmPng(String token,String raw,boolean card){runOnUiThread(()->confirmReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void shareSms(String token,String raw,boolean card,String number){runOnUiThread(()->shareReceiptSms(token,raw,card,number));}
+    @android.webkit.JavascriptInterface public void shareWhatsApp(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card,true));}
     @android.webkit.JavascriptInterface public void sharePng(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void previewPdf(String token,String raw,boolean card){runOnUiThread(()->previewReceiptPdf(token,raw,card));}
    },"TaxiReceipt");
