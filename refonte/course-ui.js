@@ -727,6 +727,11 @@ document.addEventListener("click",e=>{
   if(typeof window.TaxiBackup?.approveRestore!=="function")throw Error("Restauration disponible sur Android.");
   window.TaxiBackup.approveRestore(); 
  });return;}
+ if(b.id==="airport-flat-rate"){safe(()=>{
+  const c=current();if(c?.status!=="awaiting_payment"||$("payment").hidden)throw Error("La course doit être terminée avant le paiement.");
+  $("amount").value="64,80";
+  $("amount").dispatchEvent(new Event("input",{bubbles:true}));
+ });return;}
  if(b.id==="pay-sumup"){safe(()=>{
   const c=current();if(c?.status!=="awaiting_payment"||$('payment').hidden)throw Error("La course doit être terminée avant le paiement.");
   const cents=readCashCents($('amount').value);
