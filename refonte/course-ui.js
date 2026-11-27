@@ -576,7 +576,7 @@ function keepFocusedFieldVisible(){
   const top=viewport?viewport.offsetTop:0;
   const height=viewport?viewport.height:window.innerHeight;
   const bounds=el.getBoundingClientRect();
-  const safeTop=top+16,safeBottom=top+height-24;
+  const safeTop=top+16,safeBottom=Math.max(safeTop+1,top+height-24);
   if(bounds.bottom>safeBottom||bounds.top<safeTop){
    el.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
   }
