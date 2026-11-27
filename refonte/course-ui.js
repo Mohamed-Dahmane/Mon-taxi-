@@ -782,7 +782,7 @@ document.addEventListener("click",e=>{
  });return;}
  if(b.id==="waze-reopen"){safe(()=>{const c=current();if(!c)throw Error("Course inconnue");launchWaze(c);});return;}
  if(b.id==="waze-overlay"){safe(()=>{if(current()?.status!=="in_progress")throw Error("Aucune course en cours.");if(typeof window.TaxiContacts?.enableWazeOverlay!=="function")throw Error("Disponible uniquement sur Android.");window.TaxiContacts.enableWazeOverlay();});return;}
- const id=b.dataset.page||b.dataset.go;
+ const id=b.id==="past-ride"?"reservation":(b.dataset.page||b.dataset.go);
  if(id==="reservation"){
   const past=b.id==="past-ride";
   $("past-fields").disabled=!past;$("past-fields").hidden=!past;
