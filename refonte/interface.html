@@ -99,6 +99,7 @@ select{font:inherit;color:inherit;min-height:48px;width:100%;min-width:0;backgro
 <section class="screen" id="payment" hidden><h2>Paiement</h2><div class="card">
 <p id="payment-route"></p>
 <div class="field"><label for="amount">Montant à payer (€)</label><div style="position:relative"><input id="amount" type="text" inputmode="none" data-money autocomplete="off" placeholder="0,00" style="padding-right:52px"><span aria-hidden="true" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1.6rem;pointer-events:none">€</span></div></div>
+<button type="button" id="airport-flat-rate">Forfait aéroport — 64,80 €</button>
 <div class="pay"><button class="cash" id="pay-cash" data-go="cash">Espèces</button><button class="primary" id="pay-sumup" data-go="sumup">SumUp</button></div><p class="muted">Les espèces sont enregistrées localement. Le paiement carte utilise uniquement le terminal SumUp.</p>
 </div></section>
 <section class="screen" id="cash" hidden><h2>Paiement en espèces</h2><div class="card"><p id="cash-route"></p><span class="muted">Montant effectivement reçu</span><strong class="amount" id="cash-confirm-amount"></strong><p>Valide uniquement après réception des espèces. La course sera alors archivée.</p><button id="cash-confirm" class="cash">Valider les espèces reçues</button><button data-go="payment">Retour au paiement</button></div></section>
