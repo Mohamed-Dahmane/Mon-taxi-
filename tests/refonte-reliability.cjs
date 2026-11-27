@@ -62,3 +62,19 @@ const damaged=JSON.parse(backup);damaged.state.ledger.push(damaged.state.ledger[
 const day=core.paymentDay(c.snapshot().ledger[0].paidAt);
 assert.ok(c.daily(day).cardGross+c.daily(day).cash>0);
 console.log("Point 10 : 26 courses fictives, redémarrages, écritures interrompues, refus, annulations, paiements incertains, absence de doublon, sauvegarde et indépendance des archives vérifiés.");
+
+// Régression : l'ordre des archives dépend de l'exécution, jamais de l'encaissement.
+const fs=require("node:fs"),vm=require("node:vm");
+const ui=fs.readFileSync(require("node:path").join(__dirname,"../refonte/course-ui.js"),"utf8");
+const render=ui.slice(ui.indexOf("function renderLists(){"),ui.indexOf("function show(id){"));
+assert.ok(render.startsWith("function renderLists(){"),"Tri des archives introuvable");
+const archiveSort=render.slice(render.indexOf("const courseTime="),render.indexOf(" $('course-list')"));
+assert.ok(archiveSort.includes("c.finishedAt"),"Tri par heure de course requis");
+const rides=[
+ {id:"lundi",status:"archived",finishedAt:"2026-11-23T10:00:00Z",payment:{paidAt:"2026-11-24T17:00:00Z"}},
+ {id:"mardi",status:"archived",finishedAt:"2026-11-24T09:00:00Z",payment:{paidAt:"2026-11-24T09:30:00Z"}},
+ {id:"ancienne",status:"archived",finishedAt:"2026-11-22T18:00:00Z",payment:{paidAt:"2026-11-25T08:00:00Z"}}
+];
+const order=vm.runInNewContext("const all=rides;"+archiveSort+";archived.map(c=>c.id)",{rides});
+assert.deepEqual(Array.from(order),["mardi","lundi","ancienne"]);
+console.log("Historique : ordre des courses indépendant des paiements différés OK.");
