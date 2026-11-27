@@ -19,7 +19,9 @@ export function sumupDailyTotals(transactions) {
     if (!Number.isSafeInteger(cents)) continue;
     // Mark as seen only after validation; an invalid duplicate must not hide a valid payment.
     seen.add(tx.id);
-    days.set(date, (days.get(date) || 0) + cents);
+    const nextTotal = (days.get(date) || 0) + cents;
+    if (!Number.isSafeInteger(nextTotal)) continue;
+    days.set(date, nextTotal);
   }
   return Object.fromEntries([...days].map(([date, cents]) => [date, cents / 100]));
 }
