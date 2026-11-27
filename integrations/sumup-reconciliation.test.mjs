@@ -24,3 +24,8 @@ assert.throws(() => taxiCashbox({card:'not-a-number'}), TypeError);
 assert.throws(() => taxiCashbox({card:-2}), RangeError);
 assert.throws(() => taxiCashbox({card:'1.234'}), TypeError);
 assert.equal(taxiCashbox({card:'12.34',cash:'0.66'}),13);
+
+assert.deepEqual(sumupDailyTotals([
+  {id:'impossible',status:'SUCCESSFUL',timestamp:'2026-11-05T08:00:00Z',localDate:'2026-02-30',amount:10,currency:'EUR'},
+  {id:'valid-leap',status:'SUCCESSFUL',timestamp:'2028-02-29T08:00:00Z',localDate:'2028-02-29',amount:3,currency:'EUR'}
+]), {'2028-02-29':3});
