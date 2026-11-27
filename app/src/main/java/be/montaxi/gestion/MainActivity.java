@@ -451,13 +451,25 @@ public class MainActivity extends Activity {
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
   try{
    java.io.File target=receiptArchive(raw,card);
-   receiptLinkId(raw,card);
+   final String publicationId=receiptLinkId(raw,card);
    if(!target.exists()){
     android.util.AtomicFile atomic=new android.util.AtomicFile(target);
     java.io.FileOutputStream out=atomic.startWrite();
     try{out.write(sharePreviewPng);atomic.finishWrite(out);}catch(Exception ex){atomic.failWrite(out);throw ex;}
    }
+   final byte[] confirmed=new android.util.AtomicFile(target).readFully();
+   publishConfirmedReceipt(publicationId,confirmed);
   }catch(Exception ex){Toast.makeText(this,"Conservation du reçu impossible. Réessaie.",Toast.LENGTH_LONG).show();}
+ }
+ private void publishConfirmedReceipt(String id,byte[] png){
+  new Thread(()->{
+   try{
+    String credential=new TaxiReceiptPublishCredentials(this).load();
+    if(!TaxiReceiptPublisher.valid(credential))return;
+    TaxiReceiptPublisher.publish(credential,id,png);
+   }catch(Exception ex){runOnUiThread(()->Toast.makeText(this,"Reçu conservé localement. Publication indisponible.",Toast.LENGTH_LONG).show());}
+  },"TaxiReceiptPublish").start();
+
  }
  private void shareReceiptPng(String token,String raw,boolean card){
   if(!unlocked||web==null||!isLocalAppPage(web.getUrl())||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard||sharePreviewPng==null)return;
