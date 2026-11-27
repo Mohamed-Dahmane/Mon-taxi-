@@ -28,6 +28,16 @@ Aucun bouton, menu à trois barres, menu déroulant, panneau, dialogue, clavier,
 - Harmoniser le comportement de la touche système avec les éventuelles flèches Retour de l'interface, dans Chrome/WebView et l'APK Android ; tenir compte du bouton physique/virtuel et du geste Retour.
 - **Tests de non-régression :** parcourir au moins trois niveaux de pages, ouvrir puis fermer clavier/menu/dialogue avec Retour, revenir niveau par niveau jusqu'à l'accueil, vérifier qu'aucune étape ne ferme l'APK ni ne réinitialise une saisie. Tester sur les deux écrans du Galaxy Z Fold 8.
 
+
+## Règle fonctionnelle — Planning : courses restantes et tri chronologique
+- Le Planning ne montre **que les courses restant à effectuer** (statut actif/en attente). Les courses validées « Effectuée », « Fausse course », annulées ou archivées ne doivent plus apparaître dans cette liste ; elles restent accessibles dans l'Historique selon leurs règles de conservation.
+- **Tri par défaut : ordre chronologique croissant de la date et de l'heure prévues**. La prochaine course prévue est en haut, puis les suivantes : 05 h 30 → 08 h 00 → 09 h 00. Utiliser la date complète, pas seulement l'heure, pour gérer plusieurs journées ; ne pas éliminer une course encore à effectuer simplement parce que son heure est passée.
+- Le bouton existant à deux flèches ne fait **plus aucun tri alphabétique** : il inverse uniquement l'ordre chronologique de la liste (plus ancienne/prochaine d'abord ↔ plus tardive d'abord). Adapter son libellé accessible et son indication d'état au tri par date/heure.
+- Quand l'utilisateur entre dans une fiche puis revient en arrière dans le Planning, **conserver exactement le sens de tri et la position de consultation** tant qu'il reste dans la session de navigation.
+- Après une véritable sortie/fermeture de l'application puis une nouvelle ouverture, **réinitialiser le sens de tri au chronologique croissant**, prochaine course en tête. Ne pas réinitialiser ce choix sur un simple retour arrière, changement de page ou ouverture/fermeture du clavier.
+- Ne pas modifier les statuts, dates, heures, attributions ni données de course pour réaliser ce tri. Si une course est modifiée, recalculer sa position sans la dupliquer.
+- Tests de non-régression : courses à 05 h 30, 08 h 00 et 09 h 00 ; inversion et retour arrière ; passage à une autre page ; sortie et réouverture ; plusieurs dates ; courses déjà effectuées/fausses/annulées ; course encore active dont l'heure est dépassée.
+
 ## Méthode avant toute modification
 1. Consulter les anciens incidents, corrections et branches GitHub concernant menus, superpositions et Fold avant de réinventer une solution.
 2. Examiner globalement les écrans, menus et dépendances avant de modifier des éléments isolés.
