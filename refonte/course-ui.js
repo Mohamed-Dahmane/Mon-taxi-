@@ -698,6 +698,14 @@ document.addEventListener("click",e=>{
  if(b.id==="receipt-back"){safe(()=>show(receiptReturn));return;}
  if(b.id==="receipt-preview-retry"){safe(()=>requestReceiptPreview());return;}
  if(b.id==="receipt-confirm-preview"){safe(()=>{if(!previewReady||previewConfirmed||$("receipt").hidden)throw Error("Aperçu non disponible.");const cash=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="cash";if(typeof window.TaxiReceipt?.confirmPng!=="function")throw Error("Confirmation Android indisponible.");b.disabled=true;$("receipt-status").textContent="Conservation du reçu…";window.TaxiReceipt.confirmPng(String(previewSequence),JSON.stringify(cash?cashReceipt(receiptCourse):cardReceipt(receiptCourse)),!cash);});return;}
+ if(b.dataset.receiptChannel==="whatsapp-link"){safe(()=>{
+  if(!previewConfirmed||$("receipt").hidden||typeof window.TaxiReceipt?.shareWhatsAppLink!=="function")throw Error("WhatsApp indisponible.");
+  let number=($("receipt-phone").value||"").replace(/[\s().-]/g,"");
+  if(number.startsWith("00"))number="+"+number.slice(2);
+  if(!/^\+[1-9][0-9]{6,14}$/.test(number))throw Error("Saisis le numéro international du client (+32…).");
+  const cash=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="cash";
+  window.TaxiReceipt.shareWhatsAppLink(String(previewSequence),JSON.stringify(cash?cashReceipt(receiptCourse):cardReceipt(receiptCourse)),!cash,number);
+ });return;}
  if(b.dataset.receiptChannel==="whatsapp"){safe(()=>{
   if(!previewConfirmed||$("receipt").hidden||typeof window.TaxiReceipt?.shareWhatsApp!=="function")throw Error("WhatsApp indisponible.");
   const cash=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="cash";
