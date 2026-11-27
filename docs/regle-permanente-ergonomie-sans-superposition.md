@@ -11,6 +11,14 @@ Aucun bouton, menu à trois barres, menu déroulant, panneau, dialogue, clavier,
 - Contrôler l'écran externe étroit et l'écran interne du Samsung Galaxy Z Fold 8, les changements de taille/orientation, le clavier ouvert, le défilement et les zones sûres.
 - Un bouton visible mais non cliquable est un défaut bloquant. Les tests doivent détecter chevauchements réels, interceptions de clic et éléments hors écran, sans confondre deux chemins légitimes vers une même fonction avec un doublon fonctionnel.
 
+
+## Règle obligatoire — clavier Samsung et champs de saisie
+- Lorsqu'un clavier Samsung apparaît (texte, chiffres, heure, nom d'hôtel, nom de contact, téléphone, remarque ou toute autre saisie), **le champ actif, son libellé et les commandes nécessaires pour valider ou poursuivre doivent rester visibles et accessibles**, jamais masqués sous le clavier.
+- L'écran, la fenêtre ou le formulaire doit pouvoir se redimensionner et défiler jusqu'au champ actif avec une marge confortable au-dessus du clavier, y compris dans les dialogues, listes, menus déroulants et formulaires à étapes.
+- Gérer les variations de hauteur du clavier Samsung, le mode clavier flottant ou partagé, l'ouverture/fermeture du clavier, le changement d'orientation et les écrans extérieur/intérieur du Galaxy Z Fold 8. Éviter les hauteurs fixes qui emprisonnent la saisie.
+- Au focus, amener le champ à l'écran sans sauts intempestifs ni perte du contenu saisi ; permettre de fermer le clavier ou de passer au champ suivant sans bloquer l'interface.
+- **Test de non-régression obligatoire :** saisir un hôtel, un contact, une heure et un champ numérique sur écran externe et interne, avec clavier Samsung ouvert ; vérifier que le curseur, le champ et l'action de validation restent utilisables. Aucun correctif ne peut être considéré validé sans ce contrôle.
+
 ## Méthode avant toute modification
 1. Consulter les anciens incidents, corrections et branches GitHub concernant menus, superpositions et Fold avant de réinventer une solution.
 2. Examiner globalement les écrans, menus et dépendances avant de modifier des éléments isolés.
