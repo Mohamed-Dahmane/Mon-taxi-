@@ -971,7 +971,7 @@ jobs:
           import os,re
           from pathlib import Path
           output=Path("signature-verification.txt").read_text()
-          match=re.search(r"Signer #1 certificate SHA-256 digest:\\s*([0-9a-fA-F:]+)",output)
+          match=re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F:]+)",output)
           if not match:
               raise SystemExit("Certificat de signature APK introuvable")
           actual=re.sub(r"[^0-9a-fA-F]","",match.group(1)).lower()
