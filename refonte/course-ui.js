@@ -741,7 +741,7 @@ document.addEventListener("click",e=>{
   $("reservation").querySelector("h2").textContent=past?"Encoder une course passée":"Réservation";
   $("past-cash").hidden=$("past-fields").querySelector("select").value!=="cash";
  }
- if(id)safe(()=>show(id));
+ if(id)safe(()=>{document.querySelector(".nav-menu")?.removeAttribute("open");show(id);});
 });
 function words(value){
  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("fr").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
