@@ -73,6 +73,7 @@ function receiptData(id){
 }
 let previewSequence=0,previewReady=false,previewConfirmed=false;
 function clearReceiptPreview(){
+ $("receipt-share-options").hidden=true;
  previewSequence++;previewReady=false;previewConfirmed=false;$("receipt-share-pdf").hidden=true;
  $("receipt-pdf-preview").hidden=true;$("receipt-pdf-preview").removeAttribute("src");
  $("receipt-confirm-preview").disabled=true;$("receipt-confirm-preview").hidden=false;
@@ -82,6 +83,8 @@ function requestReceiptPreview(){
  clearReceiptPreview();
  const c=controller.snapshot().courses.find(x=>x.id===receiptCourse),cash=c?.payment?.method==="cash";
  const r=cash?cashReceipt(receiptCourse):cardReceipt(receiptCourse);
+ $("receipt-confirm-preview").textContent=cash?"Confirmer le reçu":"Envoyer reçu";
+ $("receipt-confirm-preview").disabled=cash;
  $("receipt-summary").hidden=false;
  $("receipt-status").textContent="Préparation du PDF…";
  if(typeof window.TaxiReceipt?.previewPdf!=="function"){$("receipt-status").textContent="Aperçu PDF disponible dans l’application Android.";return;}
@@ -93,8 +96,9 @@ window.addEventListener("taxi-receipt-preview",e=>safe(()=>{
  if(d.error){$("receipt-status").textContent=d.error;return;}
  if(typeof d.png!=="string"||!d.png.length||d.png.length>8000000||!/^[A-Za-z0-9+/=]+$/.test(d.png))throw Error("Aperçu PDF invalide.");
  const img=$("receipt-pdf-preview"),token=previewSequence;
- img.onload=()=>{if(token!==previewSequence||$("receipt").hidden)return;previewReady=true;img.hidden=false;$("receipt-summary").hidden=true;$("receipt-confirm-preview").disabled=false;$("receipt-status").textContent="Vérifie le reçu avant de le confirmer.";};
- img.onerror=()=>{if(token!==previewSequence)return;previewReady=false;$("receipt-confirm-preview").disabled=true;$("receipt-status").textContent="Impossible d’afficher le PDF. Réessaie.";};
+ img.onload=()=>{if(token!==previewSequence||$("receipt").hidden)return;previewReady=true;img.hidden=false;$("receipt-summary").hidden=true;$("receipt-confirm-preview").disabled=false;if(previewConfirmed)$("receipt-share-pdf").hidden=typeof window.TaxiReceipt?.sharePdf!=="function";
+ $("receipt-status").textContent=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="cash"?"Vérifie le reçu avant de le confirmer.":"";};
+ img.onerror=()=>{if(token!==previewSequence)return;previewReady=false;$("receipt-confirm-preview").disabled=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="cash";$("receipt-status").textContent="Impossible d’afficher le PDF. Réessaie.";};
  img.src="data:image/png;base64,"+d.png;
 }));
 document.addEventListener("input",event=>{
@@ -649,11 +653,15 @@ document.addEventListener("click",e=>{
  if(b.dataset.receiptCourse){safe(()=>openReceipt(b.dataset.receiptCourse,"archives"));return;}
  if(b.id==="receipt-back"){safe(()=>show(receiptReturn));return;}
  if(b.id==="receipt-preview-retry"){safe(()=>requestReceiptPreview());return;}
- if(b.id==="receipt-confirm-preview"){safe(()=>{if(!previewReady||$("receipt").hidden)throw Error("Aperçu non disponible.");previewConfirmed=true;$("receipt-confirm-preview").hidden=true;$("receipt-delivery-note").hidden=false;$("receipt-share-pdf").hidden=typeof window.TaxiReceipt?.sharePdf!=="function";$("receipt-status").textContent="Reçu confirmé. Aucun envoi effectué.";});return;}
+ if(b.id==="receipt-confirm-preview"){safe(()=>{const card=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="sumup";if($("receipt").hidden||(!previewReady&&!card))throw Error("Aperçu non disponible.");if(card)$("receipt-share-options").hidden=typeof window.TaxiReceipt?.share!=="function";previewConfirmed=true;$("receipt-confirm-preview").hidden=true;$("receipt-delivery-note").hidden=false;$("receipt-share-pdf").hidden=!previewReady||typeof window.TaxiReceipt?.sharePdf!=="function";$("receipt-status").textContent="Reçu confirmé. Aucun envoi effectué.";});return;}
  if(b.id==="receipt-share-pdf"){safe(()=>{if(!previewConfirmed||!previewReady||$("receipt").hidden||typeof window.TaxiReceipt?.sharePdf!=="function")throw Error("Confirme d’abord le reçu.");const cash=controller.snapshot().courses.find(x=>x.id===receiptCourse)?.payment?.method==="cash";window.TaxiReceipt.sharePdf(String(previewSequence),JSON.stringify(cash?cashReceipt(receiptCourse):cardReceipt(receiptCourse)),!cash);});return;}
  if(b.id==="receipt-verify"){safe(()=>{receiptData(receiptCourse);const p=controller.snapshot().courses.find(x=>x.id===receiptCourse).payment;if($("receipt").hidden||typeof window.TaxiReceipt?.retrieve!=="function")throw Error("Consultation disponible sur Android.");window.TaxiReceipt.retrieve(p.reference,p.amountCents);});return;}
  if(b.id==="receipt-configure"){safe(()=>{receiptData(receiptCourse);const p=controller.snapshot().courses.find(x=>x.id===receiptCourse).payment;if($("receipt").hidden||typeof window.TaxiReceipt?.configure!=="function")throw Error("Configuration disponible sur Android.");window.TaxiReceipt.configure(p.reference,p.amountCents);});return;}
- if(b.dataset.receiptChannel){message("Envoi sécurisé non encore disponible.",true);return;}
+ if(b.dataset.receiptChannel){safe(()=>{
+  if($("receipt").hidden||$("receipt-share-options").hidden||!previewConfirmed)return;
+  cardReceipt(receiptCourse);
+  window.TaxiReceipt.share(b.dataset.receiptChannel,receiptData(receiptCourse));
+ });return;}
  if(b.id==="success-home"){safe(()=>show("home"));return;}
  if(b.id==="ride-next"){safe(()=>{
   const c=current();if(!c)throw Error("Course inconnue");
