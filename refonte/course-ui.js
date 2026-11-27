@@ -589,7 +589,7 @@ function show(id){
     if(!pending&&(!sumupDraft||sumupDraft.id!==c.id))throw Error("Montant carte à confirmer.");
     $('sumup-route').textContent=route(c);
     $('sumup-amount').textContent=euros(pending?c.payment.amountCents:sumupDraft.cents);
-    $('sumup-receipt-choice').hidden=pending;$('sumup-confirm').hidden=pending;$('sumup-back').hidden=pending;$('sumup-recover').hidden=!pending;
+    $('sumup-confirm').hidden=pending;$('sumup-back').hidden=pending;$('sumup-recover').hidden=!pending;
     $('sumup-online').hidden=!pending;$('sumup-reference').hidden=!pending;
     $('sumup-reference').textContent=pending?"Référence de tentative : "+c.payment.attemptId:"";
     $('sumup-diagnostic').hidden=true;$('sumup-diagnostic').textContent="";
