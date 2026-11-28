@@ -17,7 +17,7 @@ core.validateState(fixture);
  await context.addInitScript(s=>{if(!localStorage.getItem("mon-taxi-android-refonte:v1"))localStorage.setItem("mon-taxi-android-refonte:v1",JSON.stringify({version:1,state:s}));},fixture);
  const page=await context.newPage(),errors=[];page.on("pageerror",e=>errors.push(e.message));
  await page.goto("http://refund.test/");
- await page.locator('[data-go=archives]').click();
+ await page.locator('[data-go=archives]:not([data-jump])').click();
  const card=page.locator("#archive-list article").filter({has:page.getByRole("heading",{name:"Client fictif",exact:true})});
  const button=card.getByRole("button",{name:"Remboursement",exact:true});
  await button.click();
@@ -28,7 +28,7 @@ core.validateState(fixture);
  await page.screenshot({path:"refund-preview/"+width+"-confirmation.png",fullPage:true});
  await card.getByRole("button",{name:"Annuler",exact:true}).click();
  assert.ok(await button.isVisible());assert.equal(await confirm.isVisible(),false);
- await button.click();await amount.fill("36");await confirm.click();assert.match(await page.locator("#status").innerText(),/invalide/);await amount.fill("35,00");await confirm.click();
+ await button.click();await amount.fill("36,00");await confirm.click();assert.match(await page.locator("#status").innerText(),/invalide/);await amount.fill("35,00");await confirm.click();
  assert.match(await page.locator("#archive-list").innerText(),/Remboursée/);
  assert.equal(await button.count(),0);
  const s=await page.evaluate(()=>JSON.parse(localStorage.getItem("mon-taxi-android-refonte:v1")).state);
@@ -39,7 +39,7 @@ core.validateState(fixture);
  const ca=cashCard.getByLabel("Montant remboursé (€)");assert.equal(await ca.inputValue(),"15,00");await ca.fill("5,00");await cashCard.getByRole("button",{name:"Confirmer le remboursement effectué",exact:true}).click();assert.match(await cashCard.innerText(),/Remboursée partiellement/);
  const cs=await page.evaluate(()=>JSON.parse(localStorage.getItem("mon-taxi-android-refonte:v1")).state);assert.equal(core.dayTotals(cs,day).cash,1000);assert.deepEqual(cs.ledger,fixture.ledger);
  await page.locator("[data-page=accounts]").click();assert.match(await page.locator("#accounts-card").innerText(),/0,00/);
- await page.reload();await page.locator("[data-go=archives]").click();assert.match(await page.locator("#archive-list").innerText(),/Remboursée/);assert.deepEqual(errors,[]);
+ await page.reload();await page.locator("[data-go=archives]:not([data-jump])").click();assert.match(await page.locator("#archive-list").innerText(),/Remboursée/);assert.deepEqual(errors,[]);
  await context.close();
  }
  }finally{await browser.close()}
