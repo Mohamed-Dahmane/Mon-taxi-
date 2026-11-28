@@ -96,7 +96,24 @@ jobs:
             adb exec-out run-as be.montaxi.receipttest cat files/receipt.pdf > output/receipt.pdf
             adb exec-out run-as be.montaxi.receipttest cat files/receipt.png > output/receipt.png
             python3 -c "from pathlib import Path; assert Path('output/receipt.pdf').read_bytes().startswith(b'%PDF'); assert Path('output/receipt.png').read_bytes().startswith(bytes.fromhex('89504e470d0a1a0a')); import struct; assert struct.unpack('>II',Path('output/receipt.png').read_bytes()[16:24]) == (1440,3120)"
+      - name: Test authenticated automatic publication
+        env:
+          RECEIPT_PUBLISH_TOKEN: ${{ secrets.TAXI_RECEIPT_PUBLISH_TOKEN }}
+        run: |
+          set -eu
+          if ! [[ "$RECEIPT_PUBLISH_TOKEN" =~ ^[a-f0-9]{64}$ ]]; then
+            echo "::error::Dedicated publication secret missing or invalid"
+            exit 1
+          fi
+          id=$(openssl rand -hex 32)
+          base=https://uenyvsiturkihectolxp.supabase.co/functions/v1
+          status=$(curl --silent --show-error --max-time 40 --output /tmp/publish-response --write-out '%{http_code}' -H "Authorization: Bearer $RECEIPT_PUBLISH_TOKEN" -H 'Content-Type: image/png' --data-binary @output/receipt.png "$base/taxi-receipt-publish-v1?id=$id")
+          [[ "$status" == 200 || "$status" == 201 ]]
+          curl --fail --silent --show-error --max-time 40 "$base/taxi-receipt-view-v1?id=$id" -o /tmp/remote-receipt.png
+          cmp output/receipt.png /tmp/remote-receipt.png
+          echo "Cash receipt publication and exact byte comparison passed"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: native-cash-receipt-hd
           path: output/
