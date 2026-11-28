@@ -607,7 +607,10 @@ function renderCommissions(){
  }
 }
 $("commission-month").addEventListener("change",renderCommissions);
+const backTrail=[];
+let navigatingBack=false;
 function show(id){
+ const previous=screens.find(e=>!e.hidden)?.id;
  closeMenu();
  if(id==="commissions"){
   if(!$("commission-month").value)$("commission-month").value=localDate(new Date()).slice(0,7);
@@ -658,10 +661,38 @@ function show(id){
  if(id==="reservation"||id==="direct")refreshCourseDirectory();
  if(id==="home")renderCashTotals();
  if(id==="accounts"){loadAccountFields();loadReceiptProfile();}else clearRestore();
+ if(!navigatingBack&&previous&&previous!==id){
+  if(id==='home')backTrail.length=0;
+  else {backTrail.push(previous);if(backTrail.length>80)backTrail.shift();}
+ }
  screens.forEach(e=>e.hidden=e.id!==id);
  document.querySelectorAll('[data-page]').forEach(e=>{if(e.dataset.page===id)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current')});
  window.scrollTo(0,0);
 }
+window.taxiSystemNavigateBack=function(){
+ if(!$("main-menu").hidden){closeMenu();return true;}
+ if(!moneyPad.hidden){closeMoneyPad();return true;}
+ const active=document.activeElement;
+ if(active&&active.matches("input,textarea,[contenteditable=true]")){active.blur();return true;}
+ const page=screens.find(e=>!e.hidden)?.id;
+ if(!page||page==="home")return true;
+ // Never revisit a completed payment or trigger a course transition.
+ const course=current();
+ if(page==="sumup"&&course?.status==="payment_pending")return true;
+ let target=page==="receipt"?receiptReturn:backTrail.pop();
+ if(page==="receipt")backTrail.length=0;
+ navigatingBack=true;
+ try{
+  while(target){
+   if(target!==page&&(!["ride","payment","cash","sumup"].includes(target)||(course&&course.status!=="archived"&&target==="ride")||(course?.status==="awaiting_payment"&&target==="payment"))){
+    show(target);return true;
+   }
+   target=backTrail.pop();
+  }
+  show("home");return true;
+ }catch(e){message(e.message||"Retour indisponible",true);return false;}
+ finally{navigatingBack=false;}
+};
 function localDate(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
 function localTime(d){return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function newId(){if(globalThis.crypto?.randomUUID)return crypto.randomUUID();const bytes=crypto.getRandomValues(new Uint8Array(16));return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");}
