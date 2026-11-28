@@ -83,6 +83,17 @@ function prepareFrame(frame){
  page.addEventListener('click',buttonFeedback,true);
 }
 for(const frame of doc.querySelectorAll('iframe')){frame.addEventListener('load',()=>prepareFrame(frame));prepareFrame(frame);}
+// Keep focused fields visible after Android resizes the WebView for the IME.
+const editable='input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]):not([type=hidden]),textarea,[contenteditable="true"]';
+function revealFocused(){
+ const field=doc.activeElement;
+ if(!field?.matches(editable))return;
+ const rect=field.getBoundingClientRect(),height=root.visualViewport?.height||root.innerHeight;
+ if(rect.bottom>height-56||rect.top<12)field.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+}
+doc.addEventListener('focusin',()=>{root.requestAnimationFrame(revealFocused);},true);
+root.addEventListener('resize',revealFocused);
+root.visualViewport?.addEventListener('resize',revealFocused);
 new MutationObserver(refresh).observe(doc.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open','hidden','class']});
 refresh();
 })(window);
