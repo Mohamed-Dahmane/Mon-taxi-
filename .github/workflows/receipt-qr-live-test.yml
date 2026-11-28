@@ -11,52 +11,50 @@ jobs:
     timeout-minutes: 5
     steps:
       - run: python -m pip install Pillow
-      - name: Publier et relire un PNG fictif
+      - name: Publier cinq reçus fictifs et vérifier isolation des QR
         env:
           TOKEN: ${{ secrets.TAXI_RECEIPT_PUBLISH_TOKEN }}
           STORAGE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           python - <<'PY'
-          import os, secrets, urllib.request, urllib.error, struct, zlib
+          import os, secrets, urllib.request, urllib.error, io, hashlib
+          from datetime import datetime, timezone
+          from PIL import Image, ImageDraw
           token=os.environ.get('TOKEN','')
           storage_key=os.environ.get('STORAGE_KEY','')
           if not token and not storage_key:
               raise SystemExit('Aucun secret de publication disponible')
-          # PNG RGB valide, reçu de test sans données personnelles.
-          w,h=400,240
-          def chunk(t,d):
-              return struct.pack('>I',len(d))+t+d+struct.pack('>I',zlib.crc32(t+d)&0xffffffff)
-          rows=b''.join(b'\x00'+bytes([255,255,255])*w for _ in range(h))
-          png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b'')
-          # Ajouter un véritable libellé de test avec Pillow.
-          from PIL import Image, ImageDraw
-          import io
-          img=Image.new('RGB',(400,240),'white')
-          d=ImageDraw.Draw(img)
-          for y,t in [(20,'MON TAXI PRO'),(60,'RECU FICTIF - TEST QR'),(100,'25,00 EUR - ESPECES'),(150,'Aucune valeur comptable')]:
-              d.text((20,y),t,fill='black')
-          buf=io.BytesIO();img.save(buf,format='PNG');png=buf.getvalue()
           base='https://uenyvsiturkihectolxp.supabase.co/functions/v1/'
-          id=secrets.token_hex(32)
-          def request(url,data=None,headers={}):
-              with urllib.request.urlopen(urllib.request.Request(url,data=data,headers=headers),timeout=30) as r:
+          cases=[('especes','12,50'),('carte-simulation','25,00'),('especes','47,80'),('carte-simulation','68,00'),('especes','25,00')]
+          receipts=[]
+          def request(url,data=None,headers=None):
+              with urllib.request.urlopen(urllib.request.Request(url,data=data,headers=headers or {}),timeout=30) as r:
                   return r.status,r.headers,r.read()
-          publish=base+'taxi-receipt-publish-v1?id='+id
-          view=base+'taxi-receipt-view-v1?id='+id
-          try:
+          for index,(kind,amount) in enumerate(cases,1):
+              rid=secrets.token_hex(32)
+              date=datetime.now(timezone.utc).isoformat()
+              img=Image.new('RGB',(600,400),'white')
+              d=ImageDraw.Draw(img)
+              for y,s in [(30,'MON TAXI PRO - TEST SANS VALEUR'),(85,'MODE : '+kind.upper()),(135,'MONTANT : '+amount+' EUR'),(185,'DATE UTC : '+date),(235,'TEST NUMERO : '+str(index)),(285,'REFERENCE : '+rid[:24])]:
+                  d.text((24,y),s,fill='black')
+              out=io.BytesIO();img.save(out,format='PNG');png=out.getvalue()
+              view=base+'taxi-receipt-view-v1?id='+rid
               if token:
-                  status,_,_=request(publish,png,{'Authorization':'Bearer '+token,'Content-Type':'image/png'})
-                  assert status==201,status
-                  print('Canal: fonction de publication')
+                  status,_,_=request(base+'taxi-receipt-publish-v1?id='+rid,png,{'Authorization':'Bearer '+token,'Content-Type':'image/png'})
+                  assert status==201,(index,status)
               else:
-                  storage='https://uenyvsiturkihectolxp.supabase.co/storage/v1/object/mon-taxi-receipts-private/'+id+'.png'
-                  status,_,_=request(storage,png,{'Authorization':'Bearer '+storage_key,'apikey':storage_key,'Content-Type':'image/png','x-upsert':'false'})
-                  assert status in (200,201),status
-                  print('Canal: stockage direct de test; fonction de publication NON testee')
+                  url='https://uenyvsiturkihectolxp.supabase.co/storage/v1/object/mon-taxi-receipts-private/'+rid+'.png'
+                  status,_,_=request(url,png,{'Authorization':'Bearer '+storage_key,'apikey':storage_key,'Content-Type':'image/png','x-upsert':'false'})
+                  assert status in (200,201),(index,status)
+              receipts.append((rid,kind,amount,png,view))
+          assert len({r[0] for r in receipts})==len(receipts)
+          assert len({hashlib.sha256(r[3]).hexdigest() for r in receipts})==len(receipts)
+          for index,(rid,kind,amount,png,view) in enumerate(receipts,1):
               status,headers,body=request(view)
-              assert status==200 and headers.get_content_type()=='image/png' and body==png
-              print('Publication et lecture publique OK')
-              print('TEST_RECEIPT_URL='+view)
-          except urllib.error.HTTPError as e:
-              raise SystemExit('HTTP '+str(e.code))
+              assert status==200 and headers.get_content_type()=='image/png' and body==png,('Mismatch',index)
+              assert all(body!=other[3] for other in receipts if other[0]!=rid),('Cross-receipt',index)
+              print('PASS',index,kind,amount,'unique QR destination and exact PNG',view)
+          print('TOTAL 5/5: distinct receipts, same amount across modes, anonymous retrieval and no cross-link')
+          print('CHANNEL:', 'publish function' if token else 'direct storage; publish function NOT tested')
+          print('NOTE: carte-simulation is NOT an official SumUp receipt')
           PY
