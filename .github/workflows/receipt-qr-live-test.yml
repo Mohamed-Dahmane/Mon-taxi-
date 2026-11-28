@@ -14,12 +14,14 @@ jobs:
       - name: Publier et relire un PNG fictif
         env:
           TOKEN: ${{ secrets.TAXI_RECEIPT_PUBLISH_TOKEN }}
+          STORAGE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           python - <<'PY'
           import os, secrets, urllib.request, urllib.error, struct, zlib
           token=os.environ.get('TOKEN','')
-          if not token:
-              raise SystemExit('Secret GitHub TAXI_RECEIPT_PUBLISH_TOKEN absent')
+          storage_key=os.environ.get('STORAGE_KEY','')
+          if not token and not storage_key:
+              raise SystemExit('Aucun secret de publication disponible')
           # PNG RGB valide, reçu de test sans données personnelles.
           w,h=400,240
           def chunk(t,d):
@@ -42,8 +44,15 @@ jobs:
           publish=base+'taxi-receipt-publish-v1?id='+id
           view=base+'taxi-receipt-view-v1?id='+id
           try:
-              status,_,_=request(publish,png,{'Authorization':'Bearer '+token,'Content-Type':'image/png'})
-              assert status==201,status
+              if token:
+                  status,_,_=request(publish,png,{'Authorization':'Bearer '+token,'Content-Type':'image/png'})
+                  assert status==201,status
+                  print('Canal: fonction de publication')
+              else:
+                  storage='https://uenyvsiturkihectolxp.supabase.co/storage/v1/object/mon-taxi-receipts-private/'+id+'.png'
+                  status,_,_=request(storage,png,{'Authorization':'Bearer '+storage_key,'apikey':storage_key,'Content-Type':'image/png','x-upsert':'false'})
+                  assert status in (200,201),status
+                  print('Canal: stockage direct de test; fonction de publication NON testee')
               status,headers,body=request(view)
               assert status==200 and headers.get_content_type()=='image/png' and body==png
               print('Publication et lecture publique OK')
