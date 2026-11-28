@@ -118,3 +118,5 @@ jobs:
           name: native-cash-receipt-hd
           path: output/
           if-no-files-found: error
+
+# Retry cash publication integration check
