@@ -70,7 +70,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - run: gradle -p receipt-test assembleDebug
+      - name: Build and locate test APK
+        run: |
+          gradle -p receipt-test assembleDebug
+          find receipt-test/build/outputs/apk -type f -name '*.apk' -print
+          mapfile -t apks < <(find receipt-test/build/outputs/apk/debug -type f -name '*.apk')
+          test "${#apks[@]}" -eq 1
+          cp "${apks[0]}" "$GITHUB_WORKSPACE/native-receipt-test.apk"
+          test -s "$GITHUB_WORKSPACE/native-receipt-test.apk"
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -81,7 +88,7 @@ jobs:
           api-level: 35
           arch: x86_64
           script: |
-            adb install receipt-test/build/outputs/apk/debug/receipt-test-debug.apk
+            adb install "$GITHUB_WORKSPACE/native-receipt-test.apk"
             adb shell am start -n be.montaxi.receipttest/be.montaxi.gestion.ReceiptTest
             mkdir -p output
             for i in $(seq 1 30); do adb shell run-as be.montaxi.receipttest test -s files/receipt.png && break; sleep 1; done
