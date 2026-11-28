@@ -95,6 +95,7 @@ function prepareInput(field){
  if(!field?.matches(editable))return;
  if(field.type==='email'){field.setAttribute('inputmode','email');field.setAttribute('autocapitalize','none');field.setAttribute('spellcheck','false');}
  if(field.type==='tel')field.setAttribute('inputmode','tel');
+ if(field.type==='number'&&!field.hasAttribute('inputmode'))field.setAttribute('inputmode',field.step==='1'?'numeric':'decimal');
 }
 doc.addEventListener('focusin',event=>{prepareInput(event.target);root.requestAnimationFrame(revealFocused);},true);
 root.addEventListener('resize',revealFocused);
