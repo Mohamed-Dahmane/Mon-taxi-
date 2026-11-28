@@ -53,11 +53,12 @@ jobs:
             public void onCreate(Bundle state) {
               super.onCreate(state);
               try {
-                JSONObject r=new JSONObject("{\"amountCents\":2500,\"reference\":\"cash:test-native\",\"route\":\"Trajet de démonstration\",\"vehicle\":\"Voiture\",\"driverNumber\":\"TXM-3451\",\"paidAt\":\"2026-11-28T08:00:00Z\",\"strokes\":[[[100,300],[250,150],[400,350],[600,200]]]}");
+                JSONObject r=new JSONObject("{\"amountCents\":2500,\"reference\":\"cash:test-hd-integration\",\"route\":\"Trajet de démonstration\",\"vehicle\":\"Voiture\",\"driverNumber\":\"TXM-3451\",\"paidAt\":\"2026-11-28T08:00:00Z\",\"strokes\":[[[100,300],[250,150],[400,350],[600,200]]]}");
                 File pdf=new File(getFilesDir(),"receipt.pdf");
                 try(FileOutputStream out=new FileOutputStream(pdf)){out.write(TaxiCashReceiptPdf.render(r));}
                 try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY); PdfRenderer renderer=new PdfRenderer(fd); PdfRenderer.Page page=renderer.openPage(0)){
-                  Bitmap bitmap=Bitmap.createBitmap(page.getWidth()*4,page.getHeight()*4,Bitmap.Config.ARGB_8888);
+                  float scale=Math.min(4f,Math.min(2000f/page.getWidth(),5000f/page.getHeight()));
+                  Bitmap bitmap=Bitmap.createBitmap(Math.round(page.getWidth()*scale),Math.round(page.getHeight()*scale),Bitmap.Config.ARGB_8888);
                   bitmap.eraseColor(android.graphics.Color.WHITE);
                   page.render(bitmap,null,null,PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
                   try(FileOutputStream out=new FileOutputStream(new File(getFilesDir(),"receipt.png"))){if(!bitmap.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException("PNG");}
