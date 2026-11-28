@@ -367,7 +367,8 @@ public class MainActivity extends Activity {
     try(android.graphics.pdf.PdfRenderer closeRenderer=renderer){
      if(renderer.getPageCount()!=1)throw new IOException("Unexpected page count");
      try(android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)){
-      float scale=Math.min(2.5f,Math.min(900f/page.getWidth(),2600f/page.getHeight()));
+      // Native HD receipt: preserve proportions and stay within private publisher limits.
+      float scale=Math.min(4f,Math.min(2000f/page.getWidth(),5000f/page.getHeight()));
       bitmap=android.graphics.Bitmap.createBitmap(Math.max(1,Math.round(page.getWidth()*scale)),Math.max(1,Math.round(page.getHeight()*scale)),android.graphics.Bitmap.Config.ARGB_8888);
       bitmap.eraseColor(android.graphics.Color.WHITE);
       page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
