@@ -1,5 +1,6 @@
 name: APK Mon Taxi Pro 2202
 on:
+  workflow_dispatch:
   push:
     branches: [isolation/sumup-oauth-only-20261127]
     paths: ['.github/workflows/apk-2125.yml', 'refonte/**', 'app/**', 'settings.gradle', 'build.gradle', 'gradle.properties']
