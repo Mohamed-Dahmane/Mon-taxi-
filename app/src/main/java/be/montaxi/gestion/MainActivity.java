@@ -479,7 +479,7 @@ public class MainActivity extends Activity {
    if(!target.exists()){
     android.util.AtomicFile atomic=new android.util.AtomicFile(target);
     java.io.FileOutputStream out=atomic.startWrite();
-    try{out.write(receiptPngWithQr(sharePreviewPng,publicationId));atomic.finishWrite(out);}catch(Exception ex){atomic.failWrite(out);throw ex;}
+    try{out.write(sharePreviewPng);atomic.finishWrite(out);}catch(Exception ex){atomic.failWrite(out);throw ex;}
    }
    final byte[] confirmed=new android.util.AtomicFile(target).readFully();
    receiptConfirmationEvent(token,true);
