@@ -137,11 +137,11 @@ jobs:
           s=core.setDay(s,'2026-12-01',{cash:0,appli:2000,commission:500,fuel:1500,expense:500,invoiceHt:1000});
           s=core.setFixed(s,'2026-12',31000);
           const d=core.dayTotals(s,'2026-12-01');
-          assert.equal(d.cardGross,6000);assert.equal(d.fee,120);assert.equal(d.cardNet,5880);
+          assert.equal(d.cardGross,6000);assert.equal(d.fee,101);assert.equal(d.cardNet,5899);
           assert.equal(d.cashReal,4000);assert.equal(d.invoiceTtc,1060);
-          assert.equal(d.revenue,12940);assert.equal(d.result,9940);
+          assert.equal(d.revenue,12959);assert.equal(d.result,9959);
           const m=core.monthTotals(s,'2026-12');
-          assert.equal(m.workedDays,1);assert.equal(m.average,12940);assert.equal(m.fixed,31000);assert.equal(m.result,-20060);
+          assert.equal(m.workedDays,1);assert.equal(m.average,12959);assert.equal(m.fixed,31000);assert.equal(m.result,-20041);
           assert.equal(core.paymentDay('2026-11-30T23:05:00Z'),'2026-12-01');
           // Régression : course du lundi, paiement mardi, recette affectée au lundi.
           let deferred=core.addCourse(core.empty(),{id:'monday'});
@@ -155,7 +155,7 @@ jobs:
           const raw=core.backup(s);assert.deepEqual(core.readBackup(raw),s);
           assert.throws(()=>core.readBackup(JSON.stringify({version:1,state:s})));
           const broken=JSON.parse(raw);broken.state.ledger.push(broken.state.ledger[0]);assert.throws(()=>core.readBackup(JSON.stringify(broken)));
-          const c=create();c.restore(raw);assert.equal(c.monthly('2026-12').revenue,12940);
+          const c=create();c.restore(raw);assert.equal(c.monthly('2026-12').revenue,12959);
           assert.throws(()=>c.restore('invalid'));assert.equal(c.snapshot().ledger.length,2);
           let pending=core.addCourse(core.empty(),{id:'pending'});for(const type of ['load','start','finish'])pending=core.apply(pending,'pending',{type});
           pending=core.apply(pending,'pending',{type:'beginPayment',method:'sumup',amountCents:100,attemptId:'p'});
@@ -765,20 +765,20 @@ jobs:
           s=core.recordCash(s,'cash',5000);
           s=core.apply(s,'card',{type:'beginPayment',method:'sumup',amountCents:6000,attemptId:'a'});
           s=core.apply(s,'card',{type:'paymentConfirmed',attemptId:'a',result:'confirmed',reference:'T'});
-          for(const p of s.ledger){p.paidAt='2026-12-01T12:00:00Z';s.courses.find(c=>c.id===p.courseId).payment.paidAt=p.paidAt;}
+          for(const p of s.ledger){p.paidAt='2026-12-01T12:00:00Z';const course=s.courses.find(c=>c.id===p.courseId);course.payment.paidAt=p.paidAt;course.finishedAt=p.paidAt;}
           s=core.setDay(s,'2026-12-01',{cash:0,appli:2000,commission:500,fuel:1500,expense:500,invoiceHt:1000});
           s=core.setFixed(s,'2026-12',31000);
           const d=core.dayTotals(s,'2026-12-01');
-          assert.equal(d.cardGross,6000);assert.equal(d.fee,120);assert.equal(d.cardNet,5880);
+          assert.equal(d.cardGross,6000);assert.equal(d.fee,101);assert.equal(d.cardNet,5899);
           assert.equal(d.cashReal,4000);assert.equal(d.invoiceTtc,1060);
-          assert.equal(d.revenue,12940);assert.equal(d.result,9940);
+          assert.equal(d.revenue,12959);assert.equal(d.result,9959);
           const m=core.monthTotals(s,'2026-12');
-          assert.equal(m.workedDays,1);assert.equal(m.average,12940);assert.equal(m.fixed,31000);assert.equal(m.result,-20060);
+          assert.equal(m.workedDays,1);assert.equal(m.average,12959);assert.equal(m.fixed,31000);assert.equal(m.result,-20041);
           assert.equal(core.paymentDay('2026-11-30T23:05:00Z'),'2026-12-01');
           const raw=core.backup(s);assert.deepEqual(core.readBackup(raw),s);
           assert.throws(()=>core.readBackup(JSON.stringify({version:1,state:s})));
           const broken=JSON.parse(raw);broken.state.ledger.push(broken.state.ledger[0]);assert.throws(()=>core.readBackup(JSON.stringify(broken)));
-          const c=create();c.restore(raw);assert.equal(c.monthly('2026-12').revenue,12940);
+          const c=create();c.restore(raw);assert.equal(c.monthly('2026-12').revenue,12959);
           assert.throws(()=>c.restore('invalid'));assert.equal(c.snapshot().ledger.length,2);
           let pending=core.addCourse(core.empty(),{id:'pending'});for(const type of ['load','start','finish'])pending=core.apply(pending,'pending',{type});
           pending=core.apply(pending,'pending',{type:'beginPayment',method:'sumup',amountCents:100,attemptId:'p'});
