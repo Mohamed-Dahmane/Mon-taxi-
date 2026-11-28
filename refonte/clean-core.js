@@ -132,7 +132,7 @@ function makeCore(){
    const accountingDay=executionTime&&Number.isFinite(Date.parse(executionTime))?paymentDay(executionTime):paymentDay(p.paidAt);
    if(accountingDay!==day)continue;
    if(p.method==="cash")cash+=p.amountCents;
-   else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*2/100);}
+   else if(p.method==="sumup"){cardGross+=p.amountCents;fee+=Math.round(p.amountCents*169/10000);}
    if(c?.driverIsMe===true&&validAmount(c.commissionCents))hotelCommission+=c.commissionCents;
   }
   const commission=e.commission+hotelCommission,cashReal=cash-commission,cardNet=cardGross-fee;
