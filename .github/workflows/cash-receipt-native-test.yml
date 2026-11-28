@@ -57,7 +57,7 @@ jobs:
                 File pdf=new File(getFilesDir(),"receipt.pdf");
                 try(FileOutputStream out=new FileOutputStream(pdf)){out.write(TaxiCashReceiptPdf.render(r));}
                 try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY); PdfRenderer renderer=new PdfRenderer(fd); PdfRenderer.Page page=renderer.openPage(0)){
-                  Bitmap bitmap=Bitmap.createBitmap(page.getWidth()*2,page.getHeight()*2,Bitmap.Config.ARGB_8888);
+                  Bitmap bitmap=Bitmap.createBitmap(page.getWidth()*4,page.getHeight()*4,Bitmap.Config.ARGB_8888);
                   bitmap.eraseColor(android.graphics.Color.WHITE);
                   page.render(bitmap,null,null,PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
                   try(FileOutputStream out=new FileOutputStream(new File(getFilesDir(),"receipt.png"))){if(!bitmap.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException("PNG");}
@@ -94,9 +94,9 @@ jobs:
             for i in $(seq 1 30); do adb shell run-as be.montaxi.receipttest test -s files/receipt.png && break; sleep 1; done
             adb exec-out run-as be.montaxi.receipttest cat files/receipt.pdf > output/receipt.pdf
             adb exec-out run-as be.montaxi.receipttest cat files/receipt.png > output/receipt.png
-            python3 -c "from pathlib import Path; assert Path('output/receipt.pdf').read_bytes().startswith(b'%PDF'); assert Path('output/receipt.png').read_bytes().startswith(bytes.fromhex('89504e470d0a1a0a'))"
+            python3 -c "from pathlib import Path; assert Path('output/receipt.pdf').read_bytes().startswith(b'%PDF'); assert Path('output/receipt.png').read_bytes().startswith(bytes.fromhex('89504e470d0a1a0a')); import struct; assert struct.unpack('>II',Path('output/receipt.png').read_bytes()[16:24]) == (1440,3120)"
       - uses: actions/upload-artifact@v4
         with:
-          name: native-cash-receipt
+          name: native-cash-receipt-hd
           path: output/
           if-no-files-found: error
