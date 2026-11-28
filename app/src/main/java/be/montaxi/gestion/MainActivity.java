@@ -377,7 +377,7 @@ public class MainActivity extends Activity {
     if(!bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,image))throw new IOException("Preview encoding");
     java.io.File archived=receiptArchive(raw,card);
     byte[] pngBytes;
-    if(archived.isFile()&&new java.io.File(archived.getParentFile(),archived.getName()+".published").isFile()){
+    if(archived.isFile()){
      if(archived.length()<8||archived.length()>6000000)throw new IOException("Archived receipt size");
      try(java.io.FileInputStream in=new java.io.FileInputStream(archived);java.io.ByteArrayOutputStream saved=new java.io.ByteArrayOutputStream()){
       byte[] buf=new byte[8192];int n;while((n=in.read(buf))!=-1){if(saved.size()+n>6000000)throw new IOException("Archived receipt size");saved.write(buf,0,n);}pngBytes=saved.toByteArray();
