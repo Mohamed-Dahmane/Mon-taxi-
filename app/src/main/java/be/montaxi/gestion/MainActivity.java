@@ -1416,5 +1416,18 @@ public class MainActivity extends Activity {
   }
  }
  @Override protected void onDestroy(){if(taxiContacts!=null)taxiContacts.hideBubble();super.onDestroy();}
- @Override public void onBackPressed(){if(unlocked&&web!=null&&web.canGoBack())web.goBack();else if(unlocked)finish();else super.onBackPressed();}
+ @Override public void onBackPressed(){
+  if(!unlocked){super.onBackPressed();return;}
+  if(web==null)return;
+  if(android.os.Build.VERSION.SDK_INT>=30){
+   WindowInsets insets=web.getRootWindowInsets();
+   if(insets!=null&&insets.isVisible(WindowInsets.Type.ime())){
+    android.view.WindowInsetsController controller=web.getWindowInsetsController();
+    if(controller!=null){controller.hide(WindowInsets.Type.ime());return;}
+   }
+  }
+  if(isLocalAppPage(web.getUrl())){
+   web.evaluateJavascript("typeof window.taxiSystemNavigateBack==='function' && window.taxiSystemNavigateBack()",null);
+  }
+ }
 }
