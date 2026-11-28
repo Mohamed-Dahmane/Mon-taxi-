@@ -91,7 +91,12 @@ function revealFocused(){
  const rect=field.getBoundingClientRect(),height=root.visualViewport?.height||root.innerHeight;
  if(rect.bottom>height-56||rect.top<12)field.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
 }
-doc.addEventListener('focusin',()=>{root.requestAnimationFrame(revealFocused);},true);
+function prepareInput(field){
+ if(!field?.matches(editable))return;
+ if(field.type==='email'){field.setAttribute('inputmode','email');field.setAttribute('autocapitalize','none');field.setAttribute('spellcheck','false');}
+ if(field.type==='tel')field.setAttribute('inputmode','tel');
+}
+doc.addEventListener('focusin',event=>{prepareInput(event.target);root.requestAnimationFrame(revealFocused);},true);
 root.addEventListener('resize',revealFocused);
 root.visualViewport?.addEventListener('resize',revealFocused);
 new MutationObserver(refresh).observe(doc.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open','hidden','class']});
