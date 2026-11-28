@@ -1,0 +1,53 @@
+name: Test publication QR fictif
+on:
+  push:
+    branches: [isolation/sumup-oauth-only-20261127]
+    paths: ['.github/workflows/receipt-qr-live-test.yml']
+permissions:
+  contents: read
+jobs:
+  publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: python -m pip install Pillow
+      - name: Publier et relire un PNG fictif
+        env:
+          TOKEN: ${{ secrets.TAXI_RECEIPT_PUBLISH_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os, secrets, urllib.request, urllib.error, struct, zlib
+          token=os.environ.get('TOKEN','')
+          if not token:
+              raise SystemExit('Secret GitHub TAXI_RECEIPT_PUBLISH_TOKEN absent')
+          # PNG RGB valide, reçu de test sans données personnelles.
+          w,h=400,240
+          def chunk(t,d):
+              return struct.pack('>I',len(d))+t+d+struct.pack('>I',zlib.crc32(t+d)&0xffffffff)
+          rows=b''.join(b'\x00'+bytes([255,255,255])*w for _ in range(h))
+          png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b'')
+          # Ajouter un véritable libellé de test avec Pillow.
+          from PIL import Image, ImageDraw
+          import io
+          img=Image.new('RGB',(400,240),'white')
+          d=ImageDraw.Draw(img)
+          for y,t in [(20,'MON TAXI PRO'),(60,'RECU FICTIF - TEST QR'),(100,'25,00 EUR - ESPECES'),(150,'Aucune valeur comptable')]:
+              d.text((20,y),t,fill='black')
+          buf=io.BytesIO();img.save(buf,format='PNG');png=buf.getvalue()
+          base='https://uenyvsiturkihectolxp.supabase.co/functions/v1/'
+          id=secrets.token_hex(32)
+          def request(url,data=None,headers={}):
+              with urllib.request.urlopen(urllib.request.Request(url,data=data,headers=headers),timeout=30) as r:
+                  return r.status,r.headers,r.read()
+          publish=base+'taxi-receipt-publish-v1?id='+id
+          view=base+'taxi-receipt-view-v1?id='+id
+          try:
+              status,_,_=request(publish,png,{'Authorization':'Bearer '+token,'Content-Type':'image/png'})
+              assert status==201,status
+              status,headers,body=request(view)
+              assert status==200 and headers.get_content_type()=='image/png' and body==png
+              print('Publication et lecture publique OK')
+              print('TEST_RECEIPT_URL='+view)
+          except urllib.error.HTTPError as e:
+              raise SystemExit('HTTP '+str(e.code))
+          PY
