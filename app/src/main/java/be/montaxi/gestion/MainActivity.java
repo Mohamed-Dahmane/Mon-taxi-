@@ -550,6 +550,22 @@ public class MainActivity extends Activity {
   },"TaxiReceiptPublish").start();
 
  }
+ private void showPublishedReceiptQr(String token,String raw,boolean card){
+  if(!receiptTrusted()||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard)return;
+  try{
+   java.io.File archived=receiptArchive(raw,card);
+   if(!archived.isFile()||!new java.io.File(archived.getParentFile(),archived.getName()+".published").isFile()){
+    Toast.makeText(this,"QR en attente de publication. Réessaie dans un instant.",Toast.LENGTH_LONG).show();retryReceiptPublications();return;
+   }
+   java.util.Map<com.google.zxing.EncodeHintType,Object> hints=new java.util.EnumMap<>(com.google.zxing.EncodeHintType.class);
+   hints.put(com.google.zxing.EncodeHintType.MARGIN,4);
+   com.google.zxing.common.BitMatrix matrix=new com.google.zxing.qrcode.QRCodeWriter().encode(TaxiReceiptPublisher.link(receiptLinkId(raw,card)),com.google.zxing.BarcodeFormat.QR_CODE,600,600,hints);
+   android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(600,600,android.graphics.Bitmap.Config.ARGB_8888);
+   for(int y=0;y<600;y++)for(int x=0;x<600;x++)bitmap.setPixel(x,y,matrix.get(x,y)?android.graphics.Color.BLACK:android.graphics.Color.WHITE);
+   android.widget.ImageView img=new android.widget.ImageView(this);img.setImageBitmap(bitmap);img.setAdjustViewBounds(true);img.setContentDescription("QR code du reçu PNG");
+   new AlertDialog.Builder(this).setTitle("QR code du reçu").setView(img).setPositiveButton("Retour",null).show();
+  }catch(Exception ex){Toast.makeText(this,"QR indisponible. Reçu conservé.",Toast.LENGTH_LONG).show();}
+ }
  private void shareReceiptSms(String token,String raw,boolean card,String number){
   if(!receiptTrusted()||token==null||!token.equals(sharePreviewToken)||raw==null||!raw.equals(sharePreviewRaw)||card!=sharePreviewCard)return;
   if(number==null||!number.matches("(?:[+][1-9][0-9]{6,14}|[0-9]{6,15})")){Toast.makeText(this,"Numéro invalide.",Toast.LENGTH_SHORT).show();return;}
@@ -1149,6 +1165,7 @@ public class MainActivity extends Activity {
     @android.webkit.JavascriptInterface public void sharePdf(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPdf(token,raw,card));}
     @android.webkit.JavascriptInterface public void confirmPng(String token,String raw,boolean card){runOnUiThread(()->confirmReceiptPng(token,raw,card));}
     @android.webkit.JavascriptInterface public void shareSms(String token,String raw,boolean card,String number){runOnUiThread(()->shareReceiptSms(token,raw,card,number));}
+    @android.webkit.JavascriptInterface public void showQr(String token,String raw,boolean card){runOnUiThread(()->showPublishedReceiptQr(token,raw,card));}
     @android.webkit.JavascriptInterface public void shareWhatsAppLink(String token,String raw,boolean card,String number){runOnUiThread(()->shareReceiptWhatsAppLink(token,raw,card,number));}
     @android.webkit.JavascriptInterface public void shareWhatsApp(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card,true));}
     @android.webkit.JavascriptInterface public void sharePng(String token,String raw,boolean card){runOnUiThread(()->shareReceiptPng(token,raw,card));}
