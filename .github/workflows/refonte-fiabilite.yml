@@ -275,7 +275,7 @@ jobs:
                   await page.locator('#reservation-date').fill('2030-01-01');
                   await page.locator('#reservation-time').fill('12:30');
                   await page.locator('#reservation button[type=submit]').click();
-                  await page.locator('[data-go=direct]').click();await inspect('direct');
+                  await page.locator('[data-go=direct]:not([data-jump])').click();await inspect('direct');
                   await page.locator('#direct-client').fill('Client direct fictif');
                   await page.locator('#direct-from').fill('Départ direct');
                   await page.locator('#direct-to').fill('Destination directe');
@@ -289,7 +289,7 @@ jobs:
                   await page.locator('#contacts-list [data-dir-action=default]').click();
                   await page.locator('#pick-driver').click();await page.locator('#person-form button[type=submit]').click();
                   await page.locator('#hotels-sort').selectOption('az');
-                  await page.locator('[data-page=home]').click();await page.locator('[data-go=reservation]').click();
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=reservation]:not([data-jump])').click();
                   await page.locator('#reservation-hotel').selectOption({label:'Hôtel fictif'});
                   assert.equal(await page.locator('#reservation-contact option:checked').innerText(),'Personne fictive 1');
                   await page.locator('#reservation-driver').selectOption({label:'Personne fictive 2'});
@@ -302,7 +302,7 @@ jobs:
                   assert.equal(await page.locator('#hotels-list article').count(),1);assert.match(await page.locator('#contacts-list').innerText(),/Contact par défaut/);
                   assert.equal(await page.locator('#drivers-list article').count(),0);
                   await page.locator('[data-page=accounts]').click();await inspect('accounts');
-                  await page.locator('[data-page=home]').click();await page.locator('[data-go=archives]').click();await inspect('archives');
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=archives]:not([data-jump])').click();await inspect('archives');
                   assert.equal(await page.locator('#archive-list article').count(),0);
                   await page.reload();await page.locator('[data-page=planning]').click();await inspect('planning');
                   assert.equal(await page.locator('#course-list article').count(),2);
@@ -392,7 +392,7 @@ jobs:
                   assert.match(await page.locator('#accounts-cash').innerText(),/50,25/);
                   await page.reload();
                   assert.match(await page.locator('#home-cash').innerText(),/50,25/);
-                  await page.locator('[data-go=archives]').click();
+                  await page.locator('[data-go=archives]:not([data-jump])').click();
                   assert.equal(await page.locator('#archive-list article').count(),1);
                   assert.match(await page.locator('#archive-list').innerText(),/Espèces.*50,25/);
                   await page.locator('[data-page=planning]').click();
@@ -430,7 +430,7 @@ jobs:
                   assert.equal(await page.evaluate(()=>window.paymentSounds),1);
                   const finalLedger=await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state.ledger);
                   assert.equal(finalLedger.length,2);assert.equal(finalLedger[1].method,'sumup');assert.equal(finalLedger[1].amountCents,6000);
-                  await page.locator('[data-go=archives]').click();assert.equal(await page.locator('#archive-list article').count(),2);
+                  await page.locator('[data-go=archives]:not([data-jump])').click();assert.equal(await page.locator('#archive-list article').count(),2);
                   assert.match(await page.locator('#archive-list article').first().innerText(),/Client direct fictif/);
                   await page.locator('[data-page=accounts]').click();
                   await page.locator('#entry-appli').fill('');await page.locator('#entry-appli').click();
@@ -453,7 +453,7 @@ jobs:
                   await page.locator('#backup-import').click();await page.locator('#backup-restore').click();
                   assert.match(await page.locator('#accounts-revenue').innerText(),/119,24/);
                   await page.reload();await page.locator('[data-page=accounts]').click();assert.match(await page.locator('#accounts-revenue').innerText(),/119,24/);
-                  await page.locator('[data-page=home]').click();await page.locator('[data-go=free-ride]').click();await inspect('free-ride');
+                  await page.locator('[data-page=home]').click();await page.locator('[data-go=free-ride]:not([data-jump])').click();await inspect('free-ride');
                   await page.locator('#free-ride-form button[type=submit]').click();await inspect('ride');
                   await page.locator('#ride-next').click();await inspect('payment');
                   const freeState=await page.evaluate(()=>JSON.parse(localStorage.getItem('mon-taxi-android-refonte:v1')).state);
