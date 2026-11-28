@@ -15,6 +15,13 @@ const style=doc.createElement('style');style.textContent=`
 body{padding-bottom:max(80px,env(safe-area-inset-bottom))}
 #taxiDrivers,#taxiDirectoryEditor{padding-bottom:80px!important}
 `;
+style.textContent += `
+@media (max-width:600px){
+ body:has(input:focus,textarea:focus,[contenteditable="true"]:focus) #taxiQuickNavigation{display:none!important}
+}
+dialog[open]{scroll-padding-bottom:80px}
+input,textarea,button{scroll-margin-bottom:56px}
+`;
 doc.head.append(style);doc.body.append(nav);
 const readPage=()=>({page:doc.querySelector('.page.active')?.id||'home',tab:doc.querySelector('.panel.active')?.id||''});
 const key=state=>state.page==='home'?'home':state.page+':'+state.tab;
