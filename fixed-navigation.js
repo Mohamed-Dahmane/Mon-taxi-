@@ -55,6 +55,12 @@ function goBack(){
  if(previous){current=previous;doc.querySelector('.pageBtn[data-page="'+previous.page+'"]')?.click();if(previous.page!=='home')doc.querySelector('.tab[data-tab="'+previous.tab+'"]')?.click();root.scrollTo(0,0);refresh();}
  else goHome();
 }
+// Native Android back uses the same navigation stack as the in-app arrow.
+root.taxiSystemNavigateBack=function(){
+ refresh();
+ if(!dialogs.length&&current.page==='home'&&!doc.querySelector('#quickMenu:not([hidden]),#hotelQuickMenu:not([hidden]),#calendarDialog:not([hidden])'))return true;
+ goBack();return true;
+};
 back.onclick=goBack;home.onclick=goHome;
 const buttonControls='button, input:is([type=button], [type=submit], [type=reset], [type=image]), summary, [role=button]';
 function buttonFeedback(event){
