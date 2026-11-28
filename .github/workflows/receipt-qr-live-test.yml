@@ -1,8 +1,6 @@
-name: Test publication QR fictif
+name: Test transport QR uniquement (images fictives)
 on:
-  push:
-    branches: [isolation/sumup-oauth-only-20261127]
-    paths: ['.github/workflows/receipt-qr-live-test.yml']
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -54,7 +52,7 @@ jobs:
               assert status==200 and headers.get_content_type()=='image/png' and body==png,('Mismatch',index)
               assert all(body!=other[3] for other in receipts if other[0]!=rid),('Cross-receipt',index)
               print('PASS',index,kind,amount,'unique QR destination and exact PNG',view)
-          print('TOTAL 5/5: distinct receipts, same amount across modes, anonymous retrieval and no cross-link')
+          print('TRANSPORT ONLY 5/5: synthetic images, anonymous retrieval and no cross-link; visual conformity NOT tested')
           print('CHANNEL:', 'publish function' if token else 'direct storage; publish function NOT tested')
           print('NOTE: carte-simulation is NOT an official SumUp receipt')
           PY
