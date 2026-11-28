@@ -102,15 +102,22 @@ jobs:
         run: |
           set -eu
           if ! [[ "$RECEIPT_PUBLISH_TOKEN" =~ ^[a-f0-9]{64}$ ]]; then
-            echo "::error::Dedicated publication secret missing or invalid"
+            echo "::error::GitHub Actions secret TAXI_RECEIPT_PUBLISH_TOKEN missing or invalid (expected 64 lowercase hex characters)"
             exit 1
           fi
           id=$(openssl rand -hex 32)
           base=https://uenyvsiturkihectolxp.supabase.co/functions/v1
           status=$(curl --silent --show-error --max-time 40 --output /tmp/publish-response --write-out '%{http_code}' -H "Authorization: Bearer $RECEIPT_PUBLISH_TOKEN" -H 'Content-Type: image/png' --data-binary @output/receipt.png "$base/taxi-receipt-publish-v1?id=$id")
-          [[ "$status" == 200 || "$status" == 201 ]]
+          echo "Publication HTTP status: $status"
+          case "$status" in
+            200|201) ;;
+            401|403) echo "::error::Publication authorization refused"; exit 1 ;;
+            409) echo "::error::Receipt identifier conflict"; exit 1 ;;
+            5??) echo "::error::Supabase server failure ($status)"; exit 1 ;;
+            *) echo "::error::Unexpected publication response ($status)"; exit 1 ;;
+          esac
           curl --fail --silent --show-error --max-time 40 "$base/taxi-receipt-view-v1?id=$id" -o /tmp/remote-receipt.png
-          cmp output/receipt.png /tmp/remote-receipt.png
+          cmp output/receipt.png /tmp/remote-receipt.png || { echo "::error::Remote PNG differs from original"; exit 1; }
           echo "Cash receipt publication and exact byte comparison passed"
       - uses: actions/upload-artifact@v4
         if: always()
